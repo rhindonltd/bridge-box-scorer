@@ -5,10 +5,12 @@ export const swrKeys = {
     `/api/games/${gameId}/expected-late-seats`,
 
   joinableGames: () => "/api/games/joinable",
+  finalisedGames: () => "/api/games/finalised",
 
   game: (gameId: string) => `/api/games/${gameId}`,
 
   startCheck: (gameId: string) => `/api/games/${gameId}/start-check`,
+  finaliseCheck: (gameId: string) => `/api/games/${gameId}/finalise-check`,
 
   sections: (gameId: string) => `/api/games/${gameId}/sections`,
 

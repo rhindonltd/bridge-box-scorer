@@ -15,6 +15,10 @@ vi.mock("@/lib/log", () => ({
   childLogger: () => mockLog,
 }));
 
+vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
+  isGameFinalised: vi.fn(),
+}));
+import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
 import {
   registerHandler,
   HandlerError,
@@ -149,5 +153,38 @@ describe("registerHandler", () => {
 
     // No cb passed — must not throw.
     await expect(listener({})).resolves.toBeUndefined();
+  });
+
+  describe("blockWhenFinalised", () => {
+    it("rejects a finalised game without running the handler", async () => {
+      vi.mocked(isGameFinalised).mockResolvedValue(true);
+      const handler = vi.fn();
+      const listener = listenerFor({ blockWhenFinalised: true, handler });
+      const cb = vi.fn();
+      await listener({ gameId: "g1" }, cb);
+      expect(handler).not.toHaveBeenCalled();
+      expect(cb).toHaveBeenCalledWith({
+        success: false,
+        error: expect.stringContaining("finalised"),
+      });
+    });
+
+    it("runs the handler for an open game", async () => {
+      vi.mocked(isGameFinalised).mockResolvedValue(false);
+      const handler = vi.fn();
+      const listener = listenerFor({ blockWhenFinalised: true, handler });
+      await listener({ gameId: "g1" }, vi.fn());
+      expect(handler).toHaveBeenCalledOnce();
+      expect(isGameFinalised).toHaveBeenCalledWith("g1");
+    });
+
+    it("does not check finalised unless asked to", async () => {
+      vi.mocked(isGameFinalised).mockResolvedValue(true);
+      const handler = vi.fn();
+      const listener = listenerFor({ handler });
+      await listener({ gameId: "g1" }, vi.fn());
+      expect(handler).toHaveBeenCalledOnce();
+      expect(isGameFinalised).not.toHaveBeenCalled();
+    });
   });
 });

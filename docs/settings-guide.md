@@ -86,7 +86,7 @@ club's **EBU** account.
 - The **Club Name** and **EBU Club Number** identify the club on published
   results and on the files you export. Both are needed.
 - The **EBU Password** is only needed if a director will **Submit to EBU** from
-  **Export & Publish** at the end of a session, for masterpoints and NGS
+  **Export Game** at the end of a session, for masterpoints and NGS
   grading. You can leave it empty and add it later.
 
 1. Open **Settings → EBU**.
@@ -95,8 +95,9 @@ club's **EBU** account.
 4. Tap **Save**. You'll see **EBU settings saved**.
 
 Until the club name and number are set, no results file can be made — the
-**Export & Publish** screen shows **Club information** as **Not ready** (see
-the [Director Guide](director-guide.md#exporting-and-publishing-results)).
+results files can't be downloaded, and the **Export Game** page warns a
+director about it (see the
+[Director Guide](director-guide.md#finalising-and-exporting-results)).
 
 Once a password is saved the screen says **A password is saved. Leave blank to
 keep it.** — so to change only the club details, leave the password empty. The

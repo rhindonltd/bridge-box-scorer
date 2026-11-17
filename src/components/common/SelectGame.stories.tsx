@@ -35,6 +35,7 @@ export const Default: Story = {
         tournamentLevel: "NORMAL_CLUB",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        finalisedAt: null,
       },
       {
         eventName: "Monday PM Pairs",
@@ -54,6 +55,7 @@ export const Default: Story = {
         tournamentLevel: "NORMAL_CLUB",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        finalisedAt: null,
       },
       {
         eventName: "Tuesday PM Pairs",
@@ -73,6 +75,7 @@ export const Default: Story = {
         tournamentLevel: "NORMAL_CLUB",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        finalisedAt: null,
       },
       {
         eventName: "Wednesday PM Pairs",
@@ -92,6 +95,7 @@ export const Default: Story = {
         tournamentLevel: "NORMAL_CLUB",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        finalisedAt: null,
       },
     ],
   },

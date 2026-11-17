@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { withGameRoute } from "@/lib/api/gameRoute";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateCombinedRanking } from "@/db/game-index/actions/update-combined-ranking";
@@ -62,7 +62,7 @@ const bodySchema = z
  * Director-only. Whichever fields are present are applied, then the fresh game
  * row is broadcast so every device's cached game updates.
  */
-export const PATCH = withDirectorRoute(
+export const PATCH = withDirectorEditRoute(
   async ({ gameId, body }) => {
     try {
       if (body.combinedRanking !== undefined) {

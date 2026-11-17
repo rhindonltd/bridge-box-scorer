@@ -6,13 +6,17 @@ vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
+vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
+  isGameFinalised: vi.fn(),
+}));
 vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
 }));
 
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
-import { withDirectorRoute } from "./directorRoute";
+import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
+import { withDirectorEditRoute, withDirectorRoute } from "./directorRoute";
 import type { GameRouteContext } from "@/lib/api/gameRoute";
 
 const fakeDb = { marker: "db" } as never;
@@ -147,5 +151,45 @@ describe("withDirectorRoute", () => {
       );
       expect(res.status).toBe(401);
     });
+  });
+});
+
+describe("withDirectorEditRoute", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getDb).mockResolvedValue(fakeDb);
+    vi.mocked(validateDirectorToken).mockReturnValue(true);
+    vi.mocked(isGameFinalised).mockResolvedValue(false);
+  });
+
+  it("runs the handler for an open game", async () => {
+    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const res = await withDirectorEditRoute(handler)(
+      makeReq("tok"),
+      ctx({ gameId: "g1" }),
+    );
+    expect(handler).toHaveBeenCalledOnce();
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 409 and skips the handler for a finalised game", async () => {
+    vi.mocked(isGameFinalised).mockResolvedValue(true);
+    const handler = vi.fn(async () => NextResponse.json({ ok: true }));
+    const res = await withDirectorEditRoute(handler)(
+      makeReq("tok"),
+      ctx({ gameId: "g1" }),
+    );
+    expect(handler).not.toHaveBeenCalled();
+    expect(res.status).toBe(409);
+  });
+
+  it("still rejects an unauthorised caller with 401 first", async () => {
+    vi.mocked(validateDirectorToken).mockReturnValue(false);
+    vi.mocked(isGameFinalised).mockResolvedValue(true);
+    const res = await withDirectorEditRoute(vi.fn())(
+      makeReq("bad"),
+      ctx({ gameId: "g1" }),
+    );
+    expect(res.status).toBe(401);
   });
 });

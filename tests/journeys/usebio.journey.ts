@@ -3,13 +3,14 @@ import { test, expect } from "@playwright/test";
 import { deleteGame } from "../fixtures/delete-game";
 import { confirmEntireGame } from "../fixtures/complete-game";
 import { fetchAdminToken } from "../fixtures/settings";
+import { finaliseGame } from "../fixtures/game-setup";
 import { setUpStartedTwoTableGame } from "./support";
 
 /**
  * USEBIO export journey.
  *
- * The director can download a USEBIO XML of the results once every board is in.
- * The download screen confirms the club name + EBU number (both required) and
+ * Once every board is in the director finalises the game, after which anyone
+ * can download a USEBIO XML of the results. The download screen confirms the club name + EBU number (both required) and
  * then streams the file. This journey completes a game, sets club info, and
  * downloads the file, plus checks the required-field validation and the API's
  * not-found path.
@@ -42,8 +43,8 @@ test.describe("USEBIO export", () => {
       });
       expect(clubRes.ok()).toBe(true);
 
-      await directorPage.goto(`/game/${gameId}/manage/download-usebio`);
-
+      await finaliseGame(directorPage, gameId);
+      await directorPage.goto(`/game/${gameId}/export/download-usebio`);
       // The configured club details are shown read-only on the export screen.
       await expect(directorPage.getByTestId("usebio-club-name")).toHaveText(
         "E2E Bridge Club",
@@ -95,8 +96,8 @@ test.describe("USEBIO export", () => {
         data: { name: "", clubNumber: "" },
       });
 
-      await directorPage.goto(`/game/${gameId}/manage/download-usebio`);
-
+      await finaliseGame(directorPage, gameId);
+      await directorPage.goto(`/game/${gameId}/export/download-usebio`);
       // With club not configured, the screen points to Settings and the
       // Download button is disabled (club is not editable here).
       await expect(

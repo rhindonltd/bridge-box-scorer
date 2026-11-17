@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { renameSection } from "@/db/games/actions/rename-section";
@@ -13,7 +13,7 @@ const renameSchema = z.object({ label: z.string().min(1) });
 /**
  * PATCH /api/games/[gameId]/sections/[section] — rename a section's label.
  */
-export const PATCH = withDirectorRoute(
+export const PATCH = withDirectorEditRoute(
   async ({ gameId, section, body }) => {
     if (!section) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export const PATCH = withDirectorRoute(
 /**
  * DELETE /api/games/[gameId]/sections/[section] — remove a section.
  */
-export const DELETE = withDirectorRoute(async ({ gameId, section }) => {
+export const DELETE = withDirectorEditRoute(async ({ gameId, section }) => {
   if (!section) {
     return NextResponse.json(
       { success: false, error: "Invalid request" },

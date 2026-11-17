@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
@@ -35,7 +35,7 @@ const bodySchema = z.object({
  *
  * Bad body → 400; infra failures → 500.
  */
-export const PUT = withDirectorRoute(async ({ gameId, section, req }) => {
+export const PUT = withDirectorEditRoute(async ({ gameId, section, req }) => {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
 
   if (!section || !parsed.success) {

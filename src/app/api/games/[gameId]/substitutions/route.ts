@@ -2,7 +2,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 
 import { withGameRoute } from "@/lib/api/gameRoute";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { findSubstitutionSeats } from "@/db/games/queries/find-substitution-seats";
@@ -46,7 +46,7 @@ const patchSchema = z.object({
  * leaderboard snapshot (the choices change the ranking and the stitched names).
  * Rejected (400) for a teams event.
  */
-export const PATCH = withDirectorRoute(
+export const PATCH = withDirectorEditRoute(
   async ({ db: _db, gameId, body }) => {
     try {
       // Split / eligibility are pairs-only concepts: a team's score is never

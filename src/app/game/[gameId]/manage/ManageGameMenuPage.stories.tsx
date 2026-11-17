@@ -41,7 +41,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     onReviewMismatchesClick: fn(),
     onPairsClick: fn(),
     onTeamsClick: fn(),
-    onExportClick: fn(),
+    onFinaliseClick: fn(),
     onDeleteGameClick: fn(),
     showSetUpGame: true,
     showTravellers: false,
@@ -51,7 +51,7 @@ const meta: Meta<typeof ManageGameMenuPage> = {
     showReviewMismatches: false,
     showPairs: false,
     showTeams: false,
-    showExport: false,
+    showFinalise: false,
   },
 };
 
@@ -64,14 +64,13 @@ export const NotStarted: Story = {
     showSetUpGame: true,
     showTravellers: false,
     showMovement: false,
-    showExport: false,
+    showFinalise: false,
   },
 };
 
 /**
- * Game started: Travellers, Movement, Timer and the "Export & Publish" submenu
- * entry are available. The individual export gating (results complete, BridgeWebs /
- * EBU configured) now lives inside that submenu.
+ * Game started: Travellers, Movement, Timer and "Finalise Game" are available.
+ * Finalising checks that every result is in before the game is locked.
  */
 export const Started: Story = {
   args: {
@@ -80,11 +79,11 @@ export const Started: Story = {
     showEnterDeals: true,
     showMovement: true,
     showTimer: true,
-    showExport: true,
+    showFinalise: true,
   },
 };
 
-/** A started Swiss game also shows Review Mismatches above Export & Publish. */
+/** A started Swiss game also shows Review Mismatches above Finalise Game. */
 export const StartedSwiss: Story = {
   args: {
     showSetUpGame: false,
@@ -93,6 +92,6 @@ export const StartedSwiss: Story = {
     showMovement: true,
     showTimer: true,
     showReviewMismatches: true,
-    showExport: true,
+    showFinalise: true,
   },
 };

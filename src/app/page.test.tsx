@@ -15,12 +15,17 @@ describe("MainMenu page", () => {
       "href",
       "/join",
     );
-    expect(
-      screen.getByRole("link", { name: "Create Game" }),
-    ).toHaveAttribute("href", "/create");
+    expect(screen.getByRole("link", { name: "Create Game" })).toHaveAttribute(
+      "href",
+      "/create",
+    );
     expect(screen.getByRole("link", { name: "Manage Game" })).toHaveAttribute(
       "href",
       "/manage",
+    );
+    expect(screen.getByRole("link", { name: "Export Game" })).toHaveAttribute(
+      "href",
+      "/export",
     );
     expect(screen.getByRole("link", { name: "Display Game" })).toHaveAttribute(
       "href",

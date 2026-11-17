@@ -110,10 +110,10 @@ Keep the DIRECTOR on **Tables** to watch seats fill live.
 |---|---|---|---|---|
 | ☐ START-1 | Open **Start Game** from the Setup menu. | A readiness panel. | | |
 | ☐ START-2 | Confirm it reads ready (e.g. **"Everything's ready"**). | No blocking issues listed. | | |
-| ☐ START-3 | Tap **Start Game**. | Game starts; you land on the **Manage Game Menu**. Timer (if set) begins. | | |
+| ☐ START-3 | Tap **Start Game**. | Game starts; you return to the **main menu** (Manage Games → this game opens the **Manage Game Menu**, whose back arrow returns to the main menu). Timer (if set) begins. | | |
 | ☐ START-4 | **NS & EW:** confirm they move into round play. | Players see "Table 1, Round 1". | | |
 | ☐ START-5 | **Start guard:** (fresh game) leave **two** seats empty and unmarked, then try **Start Game**. | Blocked, listing the problem per section ("More than one pair is missing…"); cannot start. Marking the empty seats **Expected late** clears it (`EL-5`). | | |
-| ☐ START-6 | After the start, look at the **Manage Game Menu**. | **Travellers**, **Deals**, **Movement**, **Pairs** (**Teams** in a Teams event), **Export & Publish**, and red **Delete Game**. There is **no** "Share Director Access" button: it is in the header **Menu** ([file 10](10-sharing-export-lifecycle.md) `SHARE-*`). | | |
+| ☐ START-6 | After the start, look at the **Manage Game Menu**. | **Travellers**, **Deals**, **Movement**, **Pairs** (**Teams** in a Teams event), **Finalise Game**, and red **Delete Game**. There is **no** "Share Director Access" button: it is in the header **Menu** ([file 10](10-sharing-export-lifecycle.md) `SHARE-*`). | | |
 
 ---
 

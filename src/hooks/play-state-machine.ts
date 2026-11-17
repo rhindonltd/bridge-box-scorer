@@ -116,14 +116,17 @@ export type ResolvedWithinRound =
       boardNumber: number;
       /** The result this seat submitted (shown while it waits). */
       result?: string;
+      lead?: string;
     }
   | {
       at: "mismatch";
       boardNumber: number;
       nsBoardNumber: number;
       nsResult: string;
+      nsLead?: string;
       ewBoardNumber: number;
       ewResult: string;
+      ewLead?: string;
     }
   | { at: "roundComplete" };
 
@@ -140,6 +143,8 @@ export type PlayState =
        * Optional: absent when it is not known (e.g. an older resolved state).
        */
       result?: string;
+      /** The opening lead this seat entered (shown on the waiting screen). */
+      lead?: string;
     }
   | {
       state: "mismatch";
@@ -147,8 +152,10 @@ export type PlayState =
       boardIndex: number;
       nsBoardNumber: number;
       nsResult: string;
+      nsLead?: string;
       ewBoardNumber: number;
       ewResult: string;
+      ewLead?: string;
     }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
   /**
@@ -184,7 +191,7 @@ export type PlayState =
  */
 export type PlayAction =
   | { type: "enterRound" }
-  | { type: "submit"; boardNumber: number; result?: string }
+  | { type: "submit"; boardNumber: number; result?: string; lead?: string }
   | { type: "reenter" }
   | { type: "boardResultsNext" }
   /** Leave the post-round team results summary (teams game only). */
@@ -205,8 +212,10 @@ export type PlayAction =
       tableNumber: number;
       nsBoardNumber: number;
       nsResult: string;
+      nsLead?: string | null;
       ewBoardNumber: number;
       ewResult: string;
+      ewLead?: string | null;
     };
 
 /**
@@ -262,6 +271,7 @@ export function playStateFromResolved(
             roundIndex,
             boardIndex,
             ...(position.result ? { result: position.result } : {}),
+            ...(position.lead ? { lead: position.lead } : {}),
           };
         }
 
@@ -275,8 +285,10 @@ export function playStateFromResolved(
             boardIndex,
             nsBoardNumber: position.nsBoardNumber,
             nsResult: position.nsResult,
+            ...(position.nsLead ? { nsLead: position.nsLead } : {}),
             ewBoardNumber: position.ewBoardNumber,
             ewResult: position.ewResult,
+            ...(position.ewLead ? { ewLead: position.ewLead } : {}),
           };
         }
 
@@ -383,6 +395,7 @@ export function playReducer(
         roundIndex: prev.roundIndex,
         boardIndex,
         ...(action.result ? { result: action.result } : {}),
+        ...(action.lead ? { lead: action.lead } : {}),
       };
     }
 
@@ -488,8 +501,10 @@ export function playReducer(
         boardIndex: prev.boardIndex,
         nsBoardNumber: action.nsBoardNumber,
         nsResult: action.nsResult,
+        ...(action.nsLead ? { nsLead: action.nsLead } : {}),
         ewBoardNumber: action.ewBoardNumber,
         ewResult: action.ewResult,
+        ...(action.ewLead ? { ewLead: action.ewLead } : {}),
       };
     }
   }

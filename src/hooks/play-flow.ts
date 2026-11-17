@@ -219,8 +219,10 @@ export function usePlayFlow(
       tableNumber: number;
       nsBoardNumber: number;
       nsResult: string;
+      nsLead?: string | null;
       ewBoardNumber: number;
       ewResult: string;
+      ewLead?: string | null;
     }) => {
       dispatch({ type: "boardMismatch", ...payload });
     };
@@ -242,14 +244,14 @@ export function usePlayFlow(
    * emit out of the state updater keeps the updater pure.
    */
   const submitResult = useCallback(
-    (boardNumber: number, result: string) => {
+    (boardNumber: number, result: string, lead?: string | null) => {
       const currentSchedule = scheduleRef.current;
       if (!currentSchedule) return;
 
       const next = playReducer(
         playState,
         // The result rides along so the waiting screen can show it.
-        { type: "submit", boardNumber, result },
+        { type: "submit", boardNumber, result, ...(lead ? { lead } : {}) },
         currentSchedule,
       );
 
@@ -272,6 +274,7 @@ export function usePlayFlow(
         tableNumber: round.tableNumber,
         boardNumber,
         result,
+        lead: lead ?? null,
       });
 
       setPlayState(next);

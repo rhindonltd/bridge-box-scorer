@@ -1,5 +1,6 @@
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { NextResponse } from "next/server";
+import { finalisedGuard } from "@/lib/api/finalised-guard";
 import {
   GameRouteContext,
   GameRouteOptions,
@@ -48,4 +49,22 @@ export function withDirectorRoute<TBody = undefined>(
 
     return handler({ ...context, body });
   });
+}
+
+/**
+ * {@link withDirectorRoute} for director routes that CHANGE a game. After the
+ * director check it rejects the request with 409 when the game is finalised
+ * (read-only until the director reopens it). Use it for edits and deletes; use
+ * plain `withDirectorRoute` for finalise/reopen themselves, the export uploads
+ * and other actions a finalised game must still allow.
+ */
+export function withDirectorEditRoute<TBody = undefined>(
+  handler: (context: GameRouteContext<TBody>) => Promise<NextResponse>,
+  options: GameRouteOptions<TBody> = {},
+) {
+  return withDirectorRoute<TBody>(async (context) => {
+    const blocked = await finalisedGuard(context.gameId);
+    if (blocked) return blocked;
+    return handler(context);
+  }, options);
 }

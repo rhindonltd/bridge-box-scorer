@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { withGameRoute } from "@/lib/api/gameRoute";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
@@ -50,7 +50,7 @@ const patchSchema = z.object({
  * through the seat-transfer code flow — the director mints a REINSTATE code
  * (see `generateSeatTransferCode`) and the returning device claims it.
  */
-export const PATCH = withDirectorRoute(
+export const PATCH = withDirectorEditRoute(
   async ({ db, gameId, body }) => {
     try {
       if (!(await isPairsGame(gameId))) {

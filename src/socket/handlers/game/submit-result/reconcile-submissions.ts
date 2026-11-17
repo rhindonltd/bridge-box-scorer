@@ -1,5 +1,6 @@
 import { BoardSubmission } from "@/db/games/tables/submissions";
 import { BoardOutcome } from "@/model/score";
+import type { Card } from "@/model/common";
 
 /** A submitted result as stored (nullable, matching the submissions table). */
 type SubmittedResult = BoardOutcome | null;
@@ -17,11 +18,16 @@ type SubmittedResult = BoardOutcome | null;
  */
 export type Reconciliation =
   | { status: "pending" }
-  | { status: "confirmed"; boardNumber: number; result: SubmittedResult }
+  | {
+      status: "confirmed";
+      boardNumber: number;
+      result: SubmittedResult;
+      lead: Card | null;
+    }
   | {
       status: "mismatch";
-      ns: { boardNumber: number; result: SubmittedResult };
-      ew: { boardNumber: number; result: SubmittedResult };
+      ns: { boardNumber: number; result: SubmittedResult; lead: Card | null };
+      ew: { boardNumber: number; result: SubmittedResult; lead: Card | null };
     };
 
 export function reconcileSubmissions(
@@ -39,19 +45,33 @@ export function reconcileSubmissions(
     return { status: "pending" };
   }
 
-  const agree = ns.boardNumber === ew.boardNumber && ns.result === ew.result;
+  // The opening lead must also match (a missing lead matches only a missing
+  // lead).
+  const agree =
+    ns.boardNumber === ew.boardNumber &&
+    ns.result === ew.result &&
+    (ns.lead ?? null) === (ew.lead ?? null);
 
   if (agree) {
     return {
       status: "confirmed",
       boardNumber: ns.boardNumber,
       result: ns.result,
+      lead: ns.lead ?? null,
     };
   }
 
   return {
     status: "mismatch",
-    ns: { boardNumber: ns.boardNumber, result: ns.result },
-    ew: { boardNumber: ew.boardNumber, result: ew.result },
+    ns: {
+      boardNumber: ns.boardNumber,
+      result: ns.result,
+      lead: ns.lead ?? null,
+    },
+    ew: {
+      boardNumber: ew.boardNumber,
+      result: ew.result,
+      lead: ew.lead ?? null,
+    },
   };
 }

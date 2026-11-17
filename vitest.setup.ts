@@ -16,3 +16,13 @@ vi.mock("@/hooks/useBackNavigation", () => ({
   useBackNavigation: () => ({ onBack: vi.fn() }),
   useTrackAppNavigation: () => {},
 }));
+
+// registerHandler (socket) and the HTTP finalised guard ask the game-index DB
+// whether a game is finalised before running a mutating event. Most handler
+// tests run without a game-index database, so default every game to "not
+// finalised". Tests of the finalised behaviour itself (finalised-guard tests,
+// the wrapper's blockWhenFinalised tests) provide their own local mock, which
+// overrides this.
+vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
+  isGameFinalised: vi.fn().mockResolvedValue(false),
+}));

@@ -90,21 +90,21 @@ describe("ManageGameMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "onTeamsClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/teams");
 
-    fireEvent.click(screen.getByRole("button", { name: "onExportClick" }));
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/export");
+    fireEvent.click(screen.getByRole("button", { name: "onFinaliseClick" }));
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/finalise");
 
     fireEvent.click(screen.getByRole("button", { name: "onDeleteGameClick" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/delete-game");
   });
 
-  it("shows Export & Publish once started and hides it before start", () => {
+  it("shows Finalise Game once started and hides it before start", () => {
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
     const { rerender } = render(<ManageGameMenu gameId="g1" />);
-    expect(flag("showExport")).toBe("true");
+    expect(flag("showFinalise")).toBe("true");
 
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     rerender(<ManageGameMenu gameId="g1" />);
-    expect(flag("showExport")).toBe("false");
+    expect(flag("showFinalise")).toBe("false");
   });
 
   it("shows Timer once the game has started (setup has its own Timer tab)", () => {
@@ -141,14 +141,14 @@ describe("ManageGameMenu", () => {
     expect(flag("showPairs")).toBe("false");
   });
 
-  it("before start: shows Set Up Game, hides Travellers/Movement/Export", () => {
+  it("before start: shows Set Up Game, hides Travellers/Movement/Finalise", () => {
     mockUseGameStarted.mockReturnValue({ started: false, isLoading: false });
     render(<ManageGameMenu gameId="g1" />);
 
     expect(flag("showSetUpGame")).toBe("true");
     expect(flag("showTravellers")).toBe("false");
     expect(flag("showMovement")).toBe("false");
-    expect(flag("showExport")).toBe("false");
+    expect(flag("showFinalise")).toBe("false");
   });
 
   it("while started state is loading: hides all state-gated buttons", () => {
@@ -158,17 +158,17 @@ describe("ManageGameMenu", () => {
     expect(flag("showSetUpGame")).toBe("false");
     expect(flag("showTravellers")).toBe("false");
     expect(flag("showMovement")).toBe("false");
-    expect(flag("showExport")).toBe("false");
+    expect(flag("showFinalise")).toBe("false");
   });
 
-  it("after start: shows Travellers/Movement/Export", () => {
+  it("after start: shows Travellers/Movement/Finalise", () => {
     mockUseGameStarted.mockReturnValue({ started: true, isLoading: false });
     render(<ManageGameMenu gameId="g1" />);
 
     expect(flag("showSetUpGame")).toBe("false");
     expect(flag("showTravellers")).toBe("true");
     expect(flag("showMovement")).toBe("true");
-    expect(flag("showExport")).toBe("true");
+    expect(flag("showFinalise")).toBe("true");
   });
 
   it("shows Review Mismatches only for a started Swiss game and routes it", () => {

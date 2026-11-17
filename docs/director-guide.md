@@ -2,8 +2,8 @@
 
 This guide explains how to run a session as a director: creating a game,
 arranging tables and sections, choosing movements, running the timer,
-correcting results and making rulings, and exporting and publishing the
-results.
+correcting results and making rulings, and finalising, exporting and
+publishing the results.
 
 You direct from your own phone or tablet, connected to the Bridge Box's
 network — the same way players connect. Whoever creates a game becomes its
@@ -172,7 +172,7 @@ running**: open **Manage Game Menu → Pairs**, tap the pair and use its
 rounds already drawn stay exactly as they were played. (A pair that has since moved
 away is brought back to its home seat when you draw the next round.)
 
-When you're ready, tap **Start Game**.
+When you're ready, tap **Start Game**. You are returned to the main menu; open the game from **Manage Games** to reach the Manage Game Menu.
 
 ### Movements tab
 
@@ -336,7 +336,7 @@ example, to correct a board and then return to enter your own table's result.
 | **Review Mismatches**     | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)). |
 | **Pairs**                 | Pairs and Swiss Pairs events. Every pair's status, plus per-pair actions such as **Withdraw**, **Mark without standing** and **Move to a new device**. |
 | **Teams**                 | Teams and Swiss Teams events. Every team, grouped by section, with its standing (Active, Withdrawn, Late, No standing) and the pairs that have played for it. Tap a team to change its standing. Substitutes are arranged by the players, up to three pairs per team. |
-| **Export & Publish**      | Download or publish the results (see [Exporting and publishing results](#exporting-and-publishing-results)). |
+| **Finalise Game**         | Check every result is in, then lock the game and move it to **Export Game** (see [Finalising and exporting results](#finalising-and-exporting-results)). Shown once the game has started. |
 | **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
 
 **Delete Game** is always there. The other options (apart from **Set Up Game**)
@@ -700,50 +700,65 @@ own device.
 
 ---
 
-## Exporting and publishing results
+## Finalising and exporting results
 
-At the end of the session, open the Manage Game Menu and tap **Export &
-Publish**.
+At the end of the session you finalise the game, then export it.
 
-### Checking you're ready
+### Finalising the game
 
-The first screen is a checklist of what the exports need, each marked
-**Ready**, **Warning**, **Not ready** or **Optional**, with a summary at the
-top:
+Open the Manage Game Menu and tap **Finalise Game**. It works like the Start
+Game screen:
 
-- **Results entered** — whether every board has a result. While some are still
-  outstanding it shows how many. When only a few are left, tap it to see which
-  boards they are (round, table and board, with the pairs who should play it),
-  so you know who to chase.
-- **Club information** — the club name and EBU number. Without them no results
-  file can be made; set them in **Settings → EBU**.
-- **BridgeWebs** and **EBU** — whether this Bridge Box is set up to publish to
-  each (in **Settings → BridgeWebs** and **Settings → EBU**). These are
-  optional: if one isn't set up, only that upload is unavailable.
+- While anything still needs doing it lists it. Usually that is a result that
+  hasn't been entered. When only a few are missing it names each board (round,
+  table and board, with the pairs who should play it), so you know who to
+  chase; otherwise it gives the count.
+- Once every result is in it shows **Everything's in**. Tap it and confirm.
 
-The checklist never stops you. Tap **Continue to Export Options**.
+A finalised game:
 
-### The export options
+- is **read-only**: results, rulings, deals, pairs and teams can't be changed;
+- leaves **Manage Games** (and the Join and Display lists);
+- appears under **Export Game** on the main menu.
 
-- **Download USEBIO** — the results as a standard **USEBIO XML** file, to send
-  to the EBU or import into a scoring program. Available once every result is
-  in.
-- **Download PBN** — the deals entered for the boards (see
-  [Entering the deals](#entering-the-deals)), as a PBN file. Available at any
-  time, since it doesn't depend on the results.
-- **Upload to BridgeWebs** — publish the results to the club's BridgeWebs
-  website. Shown only when BridgeWebs is set up, and available once every
-  result is in.
-- **Submit to EBU** — submit the results to the EBU. Shown only when the EBU is
-  set up, and available once every result is in. The app checks the file and
-  the players with the EBU first, and shows any notes (such as another event
-  already submitted for that date, or a surname that doesn't match the EBU's
-  records) before you submit.
+If you need to change something, reopen it (see below), make the change and
+finalise it again.
+
+### Exporting
+
+On the main menu tap **Export Game** and pick the game. Only finalised games
+are listed.
+
+Anyone can open it, including players, and download:
+
+- **Download USEBIO**: the results as a standard **USEBIO XML** file, to send
+  to the EBU or import into a scoring program.
+- **Download PBN**: the deals entered for the boards (see
+  [Entering the deals](#entering-the-deals)), as a PBN file.
+
+Both need the club name and EBU number set in **Settings → EBU**. On a
+director's device the page warns you if they are missing.
+
+On a director's device the page also shows:
+
+- **Tournament Level**: the EBU tournament level of the event, which sets how
+  the EBU charges it and which Master Points and NGS updates it awards. The
+  USEBIO file and the uploads use the level saved here.
+- **Upload to BridgeWebs**: publish the results to the club's BridgeWebs
+  website. Shown only when BridgeWebs is set up in Settings.
+- **Submit to EBU**: submit the results to the EBU. Shown only when the EBU is
+  set up in Settings. The app checks the file and the players with the EBU
+  first, and shows any notes (such as another event already submitted for that
+  date, or a surname that doesn't match the EBU's records) before you submit.
+- **Reopen game**: undo finalising. After a confirmation the game returns to
+  Manage Games and can be changed again. It leaves Export Game until you
+  finalise it again.
 
 The USEBIO file (which is also what goes to BridgeWebs and the EBU) matches the
-kind of event you ran: an ordinary pairs game exports as a pairs event, while **Swiss Pairs** and **Swiss Teams** export in their own
-format — round by round, with each match and its Victory Points — so a Swiss
-event imports correctly rather than looking like a plain pairs game.
+kind of event you ran: an ordinary pairs game exports as a pairs event, while
+**Swiss Pairs** and **Swiss Teams** export in their own format (round by round,
+with each match and its Victory Points), so a Swiss event imports correctly
+rather than looking like a plain pairs game.
 
 If the cards for a board have been entered (see **Entering the deals**), those
 hands are included in the exported file alongside that board's results.
@@ -763,8 +778,9 @@ hands are included in the exported file alongside that board's results.
   movement, and the leaderboard shows both per-section and combined standings.
 - **Share access** so a co-director can help — they manage from their own phone
   after claiming your share code.
-- **Export at the end** — remember to download or publish the results (**Export
-  & Publish**) before deleting the game.
+- **Finalise and export at the end**: finalise the game, then download or
+  publish the results from **Export Game** on the main menu. A finalised game
+  must be reopened before it can be deleted.
 
 For the shared-screen timer and leaderboard, see the
 [Room Display Guide](room-display-guide.md). For the Bridge Box's WiFi, club

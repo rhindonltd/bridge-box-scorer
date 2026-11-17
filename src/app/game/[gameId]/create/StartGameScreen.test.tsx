@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockMutateGame = vi.fn();
+const mockReplace = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace }),
+}));
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({
     game: { gameId: "g1" },
@@ -170,6 +174,8 @@ describe("StartGameScreen", () => {
 
     await waitFor(() => expect(mockStartGame).toHaveBeenCalledWith("g1"));
     await waitFor(() => expect(mockMutateGame).toHaveBeenCalled());
+    // Setup is finished: back to the main menu.
+    expect(mockReplace).toHaveBeenCalledWith("/");
   });
 
   it("alerts when starting the game fails", async () => {

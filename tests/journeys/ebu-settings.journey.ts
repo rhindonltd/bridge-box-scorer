@@ -1,6 +1,7 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import { startEbuMock, type EbuMock } from "../fixtures/ebu-mock";
 import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
+import { finaliseGame } from "../fixtures/game-setup";
 import { fetchAdminToken, unlockSettings } from "../fixtures/settings";
 import { newParticipant } from "./support";
 
@@ -248,11 +249,13 @@ test.describe.serial("EBU settings", () => {
         play: "all",
         eventName: `EBU Settings ${Date.now()}`,
       });
-      const director = await openDirector(
-        browser,
-        game,
-        `/game/${game.gameId}/manage/upload-ebu`,
-      );
+      const director = await openDirector(browser, game);
+      // Uploads only open once the director has finalised the game.
+      await finaliseGame(director, game.gameId);
+      await director.goto(`/game/${game.gameId}/export/upload-ebu`);
+      await expect(
+        director.getByRole("button", { name: "Submit to EBU" }),
+      ).toBeVisible({ timeout: 15000 });
       const settings = await settingsPage(browser, request);
 
       /** Submit the game and return the credentials the EBU saw. */

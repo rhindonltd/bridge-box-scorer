@@ -28,7 +28,10 @@ import { newParticipant } from "./support";
 async function openSocket(): Promise<Socket> {
   const socket = ioClient(E2E_BASE_URL);
   await new Promise<void>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("socket connect timeout")), 10_000);
+    const t = setTimeout(
+      () => reject(new Error("socket connect timeout")),
+      10_000,
+    );
     socket.on("connect", () => {
       clearTimeout(t);
       resolve();
@@ -90,7 +93,11 @@ test.describe("Authorization: director socket events", () => {
 
       // A missing token is also rejected (payload validation fires first,
       // before the auth check — still a non-success ack).
-      const missing = await emit(socket, "traveller:overrideResult", overridePayload);
+      const missing = await emit(
+        socket,
+        "traveller:overrideResult",
+        overridePayload,
+      );
       expect(missing.success).toBe(false);
 
       // Positive control: the real director token passes the auth check. (This
@@ -297,10 +304,9 @@ async function assertDirectorAndAdminRoutes(
 ): Promise<void> {
   // Director-token validate: a valid token for this game -> 200 { valid:true };
   // no token and a bogus token -> 401 (the guard runs before the handler).
-  const validOk = await request.get(
-    `/api/games/${gameId}/director/validate`,
-    { headers: { "x-director-token": directorToken } },
-  );
+  const validOk = await request.get(`/api/games/${gameId}/director/validate`, {
+    headers: { "x-director-token": directorToken },
+  });
   expect(validOk.status()).toBe(200);
   expect((await validOk.json()).result).toEqual({ valid: true });
 
@@ -315,23 +321,19 @@ async function assertDirectorAndAdminRoutes(
   );
   expect(validBadToken.status()).toBe(401);
 
-  // Director route (USEBIO GET) without a token header -> 401.
+  // The USEBIO / PBN downloads are open to anyone, but only once the director
+  // has finalised the game: before that they are refused (403), token or not.
   const usebioNoToken = await request.get(`/api/games/${gameId}/usebio`);
-  expect(usebioNoToken.status()).toBe(401);
-
-  // Director route with a bogus token -> 401.
-  const usebioBadToken = await request.get(`/api/games/${gameId}/usebio`, {
-    headers: { "x-director-token": "garbage" },
-  });
-  expect(usebioBadToken.status()).toBe(401);
-
-  // PBN export is also a director-authed GET: no token and a bogus token -> 401.
+  expect(usebioNoToken.status()).toBe(403);
   const pbnNoToken = await request.get(`/api/games/${gameId}/pbn`);
-  expect(pbnNoToken.status()).toBe(401);
-  const pbnBadToken = await request.get(`/api/games/${gameId}/pbn`, {
+  expect(pbnNoToken.status()).toBe(403);
+  // Finalising is director-only: no token and a bogus token -> 401.
+  const finaliseNoToken = await request.post(`/api/games/${gameId}/finalise`);
+  expect(finaliseNoToken.status()).toBe(401);
+  const finaliseBadToken = await request.post(`/api/games/${gameId}/finalise`, {
     headers: { "x-director-token": "garbage" },
   });
-  expect(pbnBadToken.status()).toBe(401);
+  expect(finaliseBadToken.status()).toBe(401);
 
   // BridgeWebs upload is a director-authed POST: no token and a bogus token ->
   // 401 (auth runs before any BridgeWebs call, so this never hits the network).

@@ -2,7 +2,7 @@
 
 import { GameStateGuard } from "@/app/game/[gameId]/manage/GameStateGuard";
 import { useGameStarted } from "@/hooks/game-started";
-import { useResultsComplete } from "@/hooks/results-complete";
+import { useRequiredGame } from "@/context/GameContext";
 
 /**
  * Feature-specific guards that map live game state onto GameStateGuard. Each
@@ -32,12 +32,19 @@ export function StartedGuard({
   );
 }
 
-/** Only allow the page before the game has started. */
+/**
+ * Only allow the page before the game has started. Redirects to the manage menu
+ * by default; the setup flow passes `/` so that starting the game always lands
+ * on the main menu (the Start Game screen navigates there, and this guard would
+ * otherwise race it to the manage menu when GAME_UPDATED arrives first).
+ */
 export function NotStartedGuard({
   gameId,
+  redirectTo,
   children,
 }: {
   gameId: string;
+  redirectTo?: string;
   children: React.ReactNode;
 }) {
   const { started, isLoading } = useGameStarted(gameId);
@@ -46,28 +53,31 @@ export function NotStartedGuard({
     <GameStateGuard
       allowed={!started}
       loading={isLoading}
-      redirectTo={manageHref(gameId)}
+      redirectTo={redirectTo ?? manageHref(gameId)}
     >
       {children}
     </GameStateGuard>
   );
 }
 
-/** Only allow the page once every playable board has a final result. */
-export function ResultsCompleteGuard({
+/**
+ * Keeps a finalised game out of the manage screens. A finalised game is
+ * read-only and lives under Export Game, so anyone who lands on a manage URL
+ * (an old link, the back button) is sent to its export page.
+ */
+export function NotFinalisedGuard({
   gameId,
   children,
 }: {
   gameId: string;
   children: React.ReactNode;
 }) {
-  const { allResultsIn, isLoading } = useResultsComplete(gameId);
-
+  const { game } = useRequiredGame();
   return (
     <GameStateGuard
-      allowed={allResultsIn}
-      loading={isLoading}
-      redirectTo={manageHref(gameId)}
+      allowed={!game.finalisedAt}
+      loading={false}
+      redirectTo={`/game/${gameId}/export`}
     >
       {children}
     </GameStateGuard>

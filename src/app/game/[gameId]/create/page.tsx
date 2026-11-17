@@ -8,7 +8,9 @@ export default function SetUpGameRoute() {
   const params = useParams<{ gameId: string }>();
 
   return (
-    <NotStartedGuard gameId={params.gameId}>
+    // A started game has finished setup: go to the main menu, where the Start
+    // Game screen also sends the director.
+    <NotStartedGuard gameId={params.gameId} redirectTo="/">
       <SetupGamePage />
     </NotStartedGuard>
   );

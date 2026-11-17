@@ -75,6 +75,55 @@ export async function startGame(gameId: string): Promise<void> {
 }
 
 /**
+ * Finalise a game (director-only). The server re-checks that every result is in
+ * and throws with its message when not. A finalised game is read-only.
+ */
+export async function finaliseGame(gameId: string): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}/finalise`, {
+    method: "POST",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to finalise game");
+  }
+}
+
+/**
+ * Save the EBU tournament level used for the game's USEBIO file (director-only;
+ * still allowed once the game is finalised). Throws with the server's message.
+ */
+export async function saveTournamentLevel(
+  gameId: string,
+  tournamentLevel: string,
+): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}/tournament-level`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "x-director-token": getDirectorToken(gameId) ?? "",
+    },
+    body: JSON.stringify({ tournamentLevel }),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to save the tournament level");
+  }
+}
+
+/** Reopen a finalised game so it can be changed again (director-only). */
+export async function reopenGame(gameId: string): Promise<void> {
+  const res = await fetch(`/api/games/${gameId}/finalise`, {
+    method: "DELETE",
+    headers: { "x-director-token": getDirectorToken(gameId) ?? "" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error ?? "Failed to reopen game");
+  }
+}
+
+/**
  * Set whether a multi-section game also shows a combined overall ranking across
  * all sections (director-only). The fresh game row is broadcast to every
  * device, and any open leaderboard display gains/drops the combined view live.

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { withGameRoute } from "@/lib/api/gameRoute";
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { createSection } from "@/db/games/actions/create-section";
@@ -37,7 +37,7 @@ const bodySchema = z.object({
  * POST /api/games/[gameId]/sections — add a section (director-only).
  * Broadcasts the updated section list game-wide.
  */
-export const POST = withDirectorRoute(
+export const POST = withDirectorEditRoute(
   async ({ gameId, body }) => {
     const { section, label, tables } = body;
 

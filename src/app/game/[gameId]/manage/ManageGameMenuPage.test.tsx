@@ -30,7 +30,7 @@ const handlers = {
   onReviewMismatchesClick: vi.fn(),
   onPairsClick: vi.fn(),
   onTeamsClick: vi.fn(),
-  onExportClick: vi.fn(),
+  onFinaliseClick: vi.fn(),
   onDeleteGameClick: vi.fn(),
 };
 
@@ -43,7 +43,7 @@ const flags = {
   showReviewMismatches: false,
   showPairs: false,
   showTeams: false,
-  showExport: false,
+  showFinalise: false,
 };
 
 describe("ManageGameMenuPage", () => {
@@ -88,7 +88,7 @@ describe("ManageGameMenuPage", () => {
           showSetUpGame={true}
           showTravellers={false}
           showMovement={false}
-          showExport={false}
+          showFinalise={false}
         />,
       );
     });
@@ -98,7 +98,7 @@ describe("ManageGameMenuPage", () => {
       expect(handlers.onSetUpGameClick).toHaveBeenCalled();
     });
 
-    it("hides Travellers, Movement and Export & Publish", () => {
+    it("hides Travellers, Movement and Finalise Game", () => {
       expect(
         screen.queryByRole("button", { name: "Travellers" }),
       ).not.toBeInTheDocument();
@@ -106,7 +106,7 @@ describe("ManageGameMenuPage", () => {
         screen.queryByRole("button", { name: "Movement" }),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByRole("button", { name: "Export & Publish" }),
+        screen.queryByRole("button", { name: "Finalise Game" }),
       ).not.toBeInTheDocument();
     });
   });
@@ -120,7 +120,7 @@ describe("ManageGameMenuPage", () => {
           showSetUpGame={false}
           showTravellers={true}
           showMovement={true}
-          showExport={false}
+          showFinalise={false}
         />,
       );
     });
@@ -223,19 +223,21 @@ describe("ManageGameMenuPage", () => {
     });
   });
 
-  describe("Export & Publish", () => {
-    it("is shown and wired when showExport is true", () => {
-      render(<ManageGameMenuPage {...handlers} {...flags} showExport={true} />);
-      fireEvent.click(screen.getByRole("button", { name: "Export & Publish" }));
-      expect(handlers.onExportClick).toHaveBeenCalled();
+  describe("Finalise Game", () => {
+    it("is shown and wired when showFinalise is true", () => {
+      render(
+        <ManageGameMenuPage {...handlers} {...flags} showFinalise={true} />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Finalise Game" }));
+      expect(handlers.onFinaliseClick).toHaveBeenCalled();
     });
 
-    it("is hidden when showExport is false", () => {
+    it("is hidden when showFinalise is false", () => {
       render(
-        <ManageGameMenuPage {...handlers} {...flags} showExport={false} />,
+        <ManageGameMenuPage {...handlers} {...flags} showFinalise={false} />,
       );
       expect(
-        screen.queryByRole("button", { name: "Export & Publish" }),
+        screen.queryByRole("button", { name: "Finalise Game" }),
       ).not.toBeInTheDocument();
     });
   });

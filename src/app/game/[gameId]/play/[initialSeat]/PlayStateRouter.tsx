@@ -150,7 +150,7 @@ export function PlayStateRouter({
                 board: data.board,
                 entry: { specialOutcome: data.contract },
               });
-              handlers.submitResult(data.board, data.contract);
+              handlers.submitResult(data.board, data.contract, null);
             } else {
               const parsed = parseContract(data.contract);
               const lead: Card | null = data.lead;
@@ -174,7 +174,7 @@ export function PlayStateRouter({
                 parsed.declarer,
                 data.result,
               );
-              handlers.submitResult(data.board, fullResult);
+              handlers.submitResult(data.board, fullResult, data.lead ?? null);
             }
           }}
         />
@@ -188,6 +188,7 @@ export function PlayStateRouter({
         <WaitingForConfirmation
           boardNumber={boardNumber}
           result={playState.result}
+          lead={playState.lead}
           onBack={handlers.withdrawSubmission}
           headerRight={headerRight}
         />
@@ -199,8 +200,10 @@ export function PlayStateRouter({
         <ResultMismatch
           nsBoardNumber={playState.nsBoardNumber}
           nsResult={playState.nsResult}
+          nsLead={playState.nsLead}
           ewBoardNumber={playState.ewBoardNumber}
           ewResult={playState.ewResult}
+          ewLead={playState.ewLead}
           onReenter={handlers.handleReenter}
           headerRight={headerRight}
         />

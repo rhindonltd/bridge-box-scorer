@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { withDirectorRoute } from "@/lib/api/directorRoute";
+import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateSectionTables } from "@/db/games/actions/update-section-tables";
@@ -15,7 +15,7 @@ const bodySchema = z.object({ tables: z.number().int().min(1) });
  * count. The per-section shrink guard (rejecting a reduction below a seated
  * table) lives in `updateSectionTables` and surfaces as a 400.
  */
-export const PUT = withDirectorRoute(
+export const PUT = withDirectorEditRoute(
   async ({ gameId, db, section, body }) => {
     if (!section) {
       return NextResponse.json(

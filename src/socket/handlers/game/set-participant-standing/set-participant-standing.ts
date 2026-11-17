@@ -68,6 +68,7 @@ export function registerSetParticipantStandingHandler(
     io,
     SocketEvents.SET_PARTICIPANT_STANDING,
     {
+    blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, directorToken, seat, change } = payload;

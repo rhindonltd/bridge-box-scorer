@@ -16,6 +16,7 @@ export const mockGame = {
   tournamentLevel: "NORMAL_CLUB" as const,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  finalisedAt: null,
 };
 
 export const pairsGame4Tables = {

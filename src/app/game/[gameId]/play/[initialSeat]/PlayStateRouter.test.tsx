@@ -342,7 +342,7 @@ describe("PlayStateRouter", () => {
     });
     fireEvent.click(screen.getByText("complete-po"));
     expect(mockParseContract).not.toHaveBeenCalled();
-    expect(handlers.submitResult).toHaveBeenCalledWith(1, "PO");
+    expect(handlers.submitResult).toHaveBeenCalledWith(1, "PO", null);
   });
 
   it("parses and builds the code for a played contract", () => {
@@ -360,7 +360,7 @@ describe("PlayStateRouter", () => {
     });
     fireEvent.click(screen.getByText("complete-contract"));
     expect(mockParseContract).toHaveBeenCalledWith("3NTN");
-    expect(handlers.submitResult).toHaveBeenCalledWith(1, "3NT-N=");
+    expect(handlers.submitResult).toHaveBeenCalledWith(1, "3NT-N=", null);
   });
 
   it("renders WaitingForConfirmation with the current board", () => {

@@ -39,7 +39,7 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       }
       onPairsClick={() => router.push(`/game/${gameId}/manage/pairs`)}
       onTeamsClick={() => router.push(`/game/${gameId}/manage/teams`)}
-      onExportClick={() => router.push(`/game/${gameId}/manage/export`)}
+      onFinaliseClick={() => router.push(`/game/${gameId}/manage/finalise`)}
       onDeleteGameClick={() =>
         router.push(`/game/${gameId}/manage/delete-game`)
       }
@@ -53,9 +53,9 @@ export function ManageGameMenu({ gameId }: { gameId: string }) {
       // game has the Teams roster. Neither shows until the game type is known.
       showPairs={started && game?.gameType === "PAIRS"}
       showTeams={started && game?.gameType === "TEAMS"}
-      // "Export & Publish" groups the results-export / publishing actions; it is
+      // "Finalise Game" checks the results are all in and locks the game; it is
       // only meaningful once the game has started.
-      showExport={started}
+      showFinalise={started}
     />
   );
 }

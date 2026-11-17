@@ -1,12 +1,15 @@
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { BoardResult as ContractDisplay } from "@/components/traveller/BoardResult";
+import { LeadCard } from "@/components/common/LeadCard";
 import { BoardOutcome } from "@/model/score";
 
 interface Props {
   nsBoardNumber: number;
   nsResult: string;
+  nsLead?: string;
   ewBoardNumber: number;
   ewResult: string;
+  ewLead?: string;
   onReenter: () => void;
   /** Right-hand header content (the play header menu). */
   headerRight?: React.ReactNode;
@@ -15,8 +18,10 @@ interface Props {
 export function ResultMismatch({
   nsBoardNumber,
   nsResult,
+  nsLead,
   ewBoardNumber,
   ewResult,
+  ewLead,
   onReenter,
   headerRight,
 }: Props) {
@@ -44,7 +49,9 @@ export function ResultMismatch({
         <div className="text-base text-gray-700 text-center mb-6">
           {boardMismatch
             ? "The two sides entered results for different boards. Please discuss and re-enter."
-            : "The two sides entered different results. Please discuss and re-enter the correct contract."}
+            : nsResult === ewResult
+              ? "The two sides entered different opening leads. Please discuss and re-enter."
+              : "The two sides entered different results. Please discuss and re-enter the correct contract."}
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 w-full max-w-xs text-center space-y-2">
           <div className="text-sm text-gray-500">NS entered:</div>
@@ -55,6 +62,11 @@ export function ResultMismatch({
               </span>
             )}
             <ContractDisplay boardOutcome={nsResult as BoardOutcome} />
+            {nsLead && (
+              <span className="text-base text-gray-700 ml-2">
+                Lead: <LeadCard card={nsLead} />
+              </span>
+            )}
           </div>
           <div className="text-sm text-gray-500 pt-2">EW entered:</div>
           <div className="font-semibold text-gray-900 text-lg">
@@ -64,6 +76,11 @@ export function ResultMismatch({
               </span>
             )}
             <ContractDisplay boardOutcome={ewResult as BoardOutcome} />
+            {ewLead && (
+              <span className="text-base text-gray-700 ml-2">
+                Lead: <LeadCard card={ewLead} />
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -112,6 +112,7 @@ export function registerPreviewNextRoundHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.PREVIEW_NEXT_SWISS_ROUND,
     {
+    blockWhenFinalised: true,
       schema: previewPayloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, section, directorToken } = payload;
@@ -167,6 +168,7 @@ export function registerDrawNextRoundHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.DRAW_NEXT_SWISS_ROUND,
     {
+    blockWhenFinalised: true,
       schema: commitPayloadSchema,
       handler: async ({ payload, ack }) => {
         const {

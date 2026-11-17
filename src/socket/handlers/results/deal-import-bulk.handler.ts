@@ -53,6 +53,7 @@ export function registerDealImportBulkHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.DEAL_IMPORT_BULK,
     {
+    blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack, log }) => {
         const { gameId, directorToken, deals } = payload;

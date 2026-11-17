@@ -16,9 +16,8 @@ describe("game-index actions and queries", () => {
     harness.teardown();
   });
   async function seedGame(overrides: Record<string, unknown> = {}) {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
     return createBridgeGame({
       eventName: "Monday",
       gameType: "PAIRS",
@@ -30,15 +29,13 @@ describe("game-index actions and queries", () => {
     } as never);
   }
   async function reload(gameId: string) {
-    const { findGameById } = await import(
-      "@/db/game-index/queries/find-game-by-id"
-    );
+    const { findGameById } =
+      await import("@/db/game-index/queries/find-game-by-id");
     return findGameById(gameId);
   }
   it("updateCombinedRanking toggles the flag", async () => {
-    const { updateCombinedRanking } = await import(
-      "@/db/game-index/actions/update-combined-ranking"
-    );
+    const { updateCombinedRanking } =
+      await import("@/db/game-index/actions/update-combined-ranking");
     const g = await seedGame();
     await updateCombinedRanking(g.gameId, true);
     expect((await reload(g.gameId))?.combinedRanking).toBe(true);
@@ -46,21 +43,18 @@ describe("game-index actions and queries", () => {
     expect((await reload(g.gameId))?.combinedRanking).toBe(false);
   });
   it("updateTournamentLevel persists the level", async () => {
-    const { updateTournamentLevel } = await import(
-      "@/db/game-index/actions/update-tournament-level"
-    );
-    const { TournamentLevels } = await import(
-      "@/db/games/types/tournament-level"
-    );
+    const { updateTournamentLevel } =
+      await import("@/db/game-index/actions/update-tournament-level");
+    const { TournamentLevels } =
+      await import("@/db/games/types/tournament-level");
     const g = await seedGame();
     const level = TournamentLevels[TournamentLevels.length - 1];
     await updateTournamentLevel(g.gameId, level);
     expect((await reload(g.gameId))?.tournamentLevel).toBe(level);
   });
   it("isTeamsGame is true only for TEAMS games and false for unknown ids", async () => {
-    const { isTeamsGame } = await import(
-      "@/db/game-index/queries/is-teams-game"
-    );
+    const { isTeamsGame } =
+      await import("@/db/game-index/queries/is-teams-game");
     const pairs = await seedGame();
     const teams = await seedGame({ gameType: "TEAMS" });
     expect(await isTeamsGame(pairs.gameId)).toBe(false);
@@ -68,9 +62,8 @@ describe("game-index actions and queries", () => {
     expect(await isTeamsGame("missing")).toBe(false);
   });
   it("updateEventDetails writes every field and clears the movement on structural change", async () => {
-    const { updateEventDetails } = await import(
-      "@/db/game-index/actions/update-event-details"
-    );
+    const { updateEventDetails } =
+      await import("@/db/game-index/actions/update-event-details");
     const g = await seedGame();
     await updateEventDetails(g.gameId, {
       eventName: "Renamed",
@@ -94,9 +87,8 @@ describe("game-index actions and queries", () => {
     });
   });
   it("updateEventDetails with an unknown game id is a no-op and does not throw", async () => {
-    const { updateEventDetails } = await import(
-      "@/db/game-index/actions/update-event-details"
-    );
+    const { updateEventDetails } =
+      await import("@/db/game-index/actions/update-event-details");
     await expect(
       updateEventDetails("missing", {
         gameType: "TEAMS",
@@ -104,5 +96,42 @@ describe("game-index actions and queries", () => {
         scoringType: "IMP",
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("finaliseGame / reopenGame set and clear finalisedAt", async () => {
+    const { finaliseGame, reopenGame } =
+      await import("@/db/game-index/actions/set-finalised");
+    const g = await seedGame();
+    expect((await reload(g.gameId))?.finalisedAt).toBeNull();
+    await finaliseGame(g.gameId);
+    expect((await reload(g.gameId))?.finalisedAt).toEqual(expect.any(String));
+    await reopenGame(g.gameId);
+    expect((await reload(g.gameId))?.finalisedAt).toBeNull();
+  });
+
+  it("finalised games leave the open lists and appear in findFinalisedGames", async () => {
+    const { finaliseGame, reopenGame } =
+      await import("@/db/game-index/actions/set-finalised");
+    const { findAllGames } =
+      await import("@/db/game-index/queries/find-all-games");
+    const { findFinalisedGames } =
+      await import("@/db/game-index/queries/find-finalised-games");
+    const { findJoinableGames } =
+      await import("@/db/game-index/queries/find-joinable-games");
+    const future = "2999-01-01";
+    const open = await seedGame({ eventDate: future });
+    const done = await seedGame({ eventDate: future });
+    await finaliseGame(done.gameId);
+
+    const ids = (games: { gameId: string }[]) => games.map((x) => x.gameId);
+    expect(ids(await findAllGames())).toEqual([open.gameId]);
+    expect(ids(await findJoinableGames())).toEqual([open.gameId]);
+    expect(ids(await findFinalisedGames())).toEqual([done.gameId]);
+
+    await reopenGame(done.gameId);
+    expect(ids(await findAllGames()).sort()).toEqual(
+      [open.gameId, done.gameId].sort(),
+    );
+    expect(await findFinalisedGames()).toEqual([]);
   });
 });

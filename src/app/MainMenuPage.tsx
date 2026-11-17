@@ -48,6 +48,9 @@ export function MainMenuPage() {
           Manage Game
         </Link>
 
+        <Link href="/export" className={menuButtonClasses}>
+          Export Game
+        </Link>
         <Link href="/display" className={menuButtonClasses}>
           Display Game
         </Link>

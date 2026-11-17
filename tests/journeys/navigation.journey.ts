@@ -34,6 +34,7 @@ test.describe("Navigation & selection", () => {
       await expect(
         page.getByRole("link", { name: "Manage Game" }),
       ).toBeVisible();
+      await expect(page.getByRole("link", { name: "Export Game" })).toBeVisible();
       await expect(page.getByRole("link", { name: "Display Game" })).toBeVisible();
 
       // Settings cog navigates to /settings.

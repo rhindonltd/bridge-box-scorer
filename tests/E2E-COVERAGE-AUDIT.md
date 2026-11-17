@@ -211,13 +211,17 @@ below:
   by the `*-seat-swap` service integration tests, not the journey. Not covered
   end to end: the leaderboard and player-side board result screens after a
   swap, and a teams game.
-- **Export & Publish hub** (`export-hub.journey.ts`): the manage-menu button →
-  readiness checklist (results / club / BridgeWebs / EBU, each Ready, Warning,
-  Not ready or Optional and the summary line); an outstanding board listed
-  behind a tap with the pairs seated for it (the `outstanding-boards` API);
-  Continue → options, with USEBIO and the uploads waiting for the last result,
-  PBN always available, and unconfigured uploads hidden. Device settings are
-  answered in the browser so the shared server's settings don't matter.
+- **Finalise Game and Export Game** (`finalise-export.journey.ts`): Manage →
+  Finalise Game lists the outstanding board (with the pairs seated for it) and
+  offers no finalise; the export page and the USEBIO / PBN downloads stay closed
+  (director redirected to Finalise, 403 from the API). The full cycle: finalise,
+  the game leaves Manage Games and appears under main menu → Export Game, a
+  player device downloads USEBIO with no director controls shown, uploads are
+  refused without the director token, an edit is refused while finalised (409),
+  then the director reopens it and everything reverses. A player opening the
+  export page of an open game is sent to the main menu. The download and upload
+  journeys (`usebio`, `pbn`, `bridgewebs-upload`, `ebu-upload`, `ebu-settings`)
+  finalise first via the `finaliseGame` fixture.
 - **Real-time**: request-on-mount, occupancy-gated pushes, `game:join` does not
   replay, reconnect re-fetch (`request-on-mount`, `realtime-internals`,
   `reconnect`, `leaderboard-live`, `traveller-live`).

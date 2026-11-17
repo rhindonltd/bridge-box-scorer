@@ -149,6 +149,10 @@ test.describe("Expected-late seats before the start", () => {
         timeout: 15000,
       });
       await director.getByRole("button", { name: "Start game" }).click();
+      // Starting returns the director to the main menu.
+      await director.waitForURL((url) => url.pathname === "/", {
+        timeout: 15000,
+      });
 
       // Started: the Manage menu now offers Pairs, where the empty seats show
       // as Not arrived rather than being sat out.
