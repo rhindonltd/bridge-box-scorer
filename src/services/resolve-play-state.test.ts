@@ -103,6 +103,34 @@ describe("resolvePlayState", () => {
     });
   });
 
+  it("waits with no result and the lead when only a lead was recorded", async () => {
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "NS", boardNumber: 1, result: null, lead: "SA" },
+    ] as never);
+    const state = await resolvePlayState(db, "g1", "A1NS");
+    expect(state!.phase).toEqual({
+      kind: "round",
+      roundIndex: 0,
+      position: { at: "waitingConfirmation", boardNumber: 1, lead: "SA" },
+    });
+  });
+  it("carries each side's opening lead on a mismatch", async () => {
+    withSchedule([
+      round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+    ]);
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "NS", boardNumber: 1, result: "3NTN=", lead: "SA" },
+      { side: "EW", boardNumber: 1, result: "3NTN+1", lead: "HK" },
+    ] as never);
+    const state = await resolvePlayState(db, "g1", "A1NS");
+    expect(state!.phase).toMatchObject({
+      kind: "round",
+      position: { at: "mismatch", nsLead: "SA", ewLead: "HK" },
+    });
+  });
   it("is still entering when only the OTHER side has submitted", async () => {
     // The EW pair submitted board 1; this seat (NS) has not. The board is
     // PENDING_CONFIRMATION, but from NS's point of view they still need to

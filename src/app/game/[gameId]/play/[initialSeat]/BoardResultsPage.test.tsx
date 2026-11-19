@@ -3,12 +3,22 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 import type { Card, Rank } from "@/model/common";
 
+const sectionsMock = vi.hoisted(() => ({
+  sections: [] as { section: string }[],
+  combinedRanking: false,
+}));
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: sectionsMock.sections }),
+}));
 vi.mock("@/context/GameContext", () => {
   const game = {
     eventName: "Monday Pairs",
     gameId: "g1",
     gameType: "PAIRS",
     tables: 4,
+    get combinedRanking() {
+      return sectionsMock.combinedRanking;
+    },
   };
   return {
     useGame: () => ({ game, isLoading: false, mutateGame: vi.fn() }),
@@ -23,8 +33,8 @@ vi.mock("@/context/AssignmentContext", () => ({
 }));
 
 vi.mock("@/components/traveller/Traveller", () => ({
-  Traveller: ({ scoredBoard }: any) => (
-    <div data-testid="traveller">
+  Traveller: ({ scoredBoard, hideSection }: any) => (
+    <div data-testid="traveller" data-hide-section={String(hideSection)}>
       Traveller {scoredBoard?.pluginId ?? "none"}
     </div>
   ),
@@ -140,5 +150,26 @@ describe("BoardResultsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Team Result" }));
     expect(screen.getByTestId("team-result-table")).toHaveTextContent("3");
     expect(screen.queryByTestId("traveller")).not.toBeInTheDocument();
+  });
+  it("keeps the section prefix only for combined results over several sections", () => {
+    const cases: [number, boolean, string][] = [
+      [1, true, "true"],
+      [2, false, "true"],
+      [2, true, "false"],
+    ];
+    for (const [count, combined, expected] of cases) {
+      sectionsMock.sections = Array.from({ length: count }, (_, n) => ({
+        section: String.fromCharCode(65 + n),
+      }));
+      sectionsMock.combinedRanking = combined;
+      const { unmount } = render(<BoardResultsPage {...baseProps} />);
+      expect(screen.getByTestId("traveller")).toHaveAttribute(
+        "data-hide-section",
+        expected,
+      );
+      unmount();
+    }
+    sectionsMock.sections = [];
+    sectionsMock.combinedRanking = false;
   });
 });

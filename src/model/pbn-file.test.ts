@@ -236,3 +236,46 @@ describe("parsePbnFile", () => {
     });
   });
 });
+
+describe("parsePbnFile edge cases", () => {
+  const deal = toPbn(dealFor(1), "N");
+
+  it("treats a whitespace-only line as a game separator", () => {
+    const text = `[Board "1"]\n[Deal "${deal}"]\n  \t\n[Board "2"]\n[Deal "${deal}"]\n`;
+    const { boards, errors } = parsePbnFile(text);
+    expect(errors).toEqual([]);
+    expect(boards.map((b) => b.boardNumber)).toEqual([1, 2]);
+  });
+
+  it("ignores an unterminated brace comment through to the end", () => {
+    const text = `[Board "1"]\n[Deal "${deal}"]\n{ never closed\n[Board "2"]\n`;
+    const { boards, errors } = parsePbnFile(text);
+    expect(errors).toEqual([]);
+    expect(boards.map((b) => b.boardNumber)).toEqual([1]);
+  });
+
+  it("skips a stray [ that is not a valid tag pair", () => {
+    const text = `[ not a tag\n[Board "3"]\n[Deal "${deal}"]\n`;
+    const { boards, errors } = parsePbnFile(text);
+    expect(errors).toEqual([]);
+    expect(boards.map((b) => b.boardNumber)).toEqual([3]);
+  });
+
+  it("rejects a zero board number", () => {
+    const { boards, errors } = parsePbnFile(
+      `[Board "1"]\n[Deal "${deal}"]\n\n[Board "0"]\n[Deal "${deal}"]\n`,
+    );
+    expect(boards.map((b) => b.boardNumber)).toEqual([1]);
+    expect(errors).toEqual([
+      { gameIndex: 2, message: 'Invalid board number "0"' },
+    ]);
+  });
+
+  it.each(["", "?"])("reports an unknown deal %j", (value) => {
+    const { boards, errors } = parsePbnFile(`[Board "1"]\n[Deal "${value}"]\n`);
+    expect(boards).toEqual([]);
+    expect(errors).toEqual([
+      { gameIndex: 1, boardNumber: 1, message: "No deal given" },
+    ]);
+  });
+});

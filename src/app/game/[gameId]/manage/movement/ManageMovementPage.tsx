@@ -90,6 +90,7 @@ export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps
     <div className="flex shrink-0 justify-center border-b border-gray-200 bg-gray-50 px-4 py-3">
       <SectionPills
         sections={sections}
+        /* v8 ignore next -- unreachable: the selector renders only with 2+ sections, so activeSection (defaulting to sections[0]) is never null */
         selected={activeSection ?? ""}
         onSelect={setSelectedSection}
       />

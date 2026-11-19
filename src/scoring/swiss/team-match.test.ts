@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   boardResult,
+  scoreOfRow,
   compareByRoundSectionTable,
   teamIdFor,
   groupTeamMatches as groupTeamMatchesImpl,
@@ -553,11 +554,19 @@ describe("tripleTeamStakes", () => {
 
 describe("compareByRoundSectionTable", () => {
   it("orders by round, then section letter, then table", () => {
-    const k = (round: number, section: string, table: number) => ({ round, section, table });
-    expect(compareByRoundSectionTable(k(1, "A", 1), k(2, "A", 1))).toBeLessThan(0);
+    const k = (round: number, section: string, table: number) => ({
+      round,
+      section,
+      table,
+    });
+    expect(compareByRoundSectionTable(k(1, "A", 1), k(2, "A", 1))).toBeLessThan(
+      0,
+    );
     expect(compareByRoundSectionTable(k(1, "A", 5), k(1, "B", 1))).toBe(-1);
     expect(compareByRoundSectionTable(k(1, "B", 1), k(1, "A", 5))).toBe(1);
-    expect(compareByRoundSectionTable(k(1, "A", 1), k(1, "A", 3))).toBeLessThan(0);
+    expect(compareByRoundSectionTable(k(1, "A", 1), k(1, "A", 3))).toBeLessThan(
+      0,
+    );
     expect(compareByRoundSectionTable(k(1, "A", 2), k(1, "A", 2))).toBe(0);
   });
 });
@@ -571,7 +580,17 @@ describe("groupTeamMatches — unparseable structure", () => {
     ];
     const structure: TeamMatchStructureRow[] = [
       ...teamMatchStructureFromRows(rows),
-      { section: "A", roundNumber: 1, kind: "TEAMS", home: "BAD", opponent: "A2NS", groupId: null, vpPool: 20, boardStart: 1, boardEnd: 1 },
+      {
+        section: "A",
+        roundNumber: 1,
+        kind: "TEAMS",
+        home: "BAD",
+        opponent: "A2NS",
+        groupId: null,
+        vpPool: 20,
+        boardStart: 1,
+        boardEnd: 1,
+      },
     ];
     expect(groupTeamMatchesImpl(rows, structure)).toHaveLength(1);
   });
@@ -585,21 +604,38 @@ describe("§3.3.7 removed boards — degenerate tokens", () => {
     });
 
   it("counts a removed home row with no token as a 0 IMP swing", () => {
-    const [match] = groupTeamMatches([removed("A1NS", "A2EW", null), row(1, 1, "A2NS", "A1EW", null)]);
-    expect(teamMatchBoardImps(match).perBoard).toEqual([{ boardNumber: 1, imps: 0 }]);
+    const [match] = groupTeamMatches([
+      removed("A1NS", "A2EW", null),
+      row(1, 1, "A2NS", "A1EW", null),
+    ]);
+    expect(teamMatchBoardImps(match).perBoard).toEqual([
+      { boardNumber: 1, imps: 0 },
+    ]);
   });
 
   // Mirrors the IMP case above: the board still counts, as a tie, rather than
   // dropping out of the match as "not comparable".
   it("counts a removed home row with no token as a tie in board-a-match", () => {
-    const [match] = groupTeamMatches([removed("A1NS", "A2EW", null), row(1, 1, "A2NS", "A1EW", null)]);
-    expect(teamMatchBoardWins(match).perBoard).toEqual([{ boardNumber: 1, result: 0.5 }]);
+    const [match] = groupTeamMatches([
+      removed("A1NS", "A2EW", null),
+      row(1, 1, "A2NS", "A1EW", null),
+    ]);
+    expect(teamMatchBoardWins(match).perBoard).toEqual([
+      { boardNumber: 1, result: 0.5 },
+    ]);
   });
 
   it("counts a removed opponent row with no token as a 0 swing / a tie", () => {
-    const [match] = groupTeamMatches([row(1, 1, "A1NS", "A2EW", null), removed("A2NS", "A1EW", null)]);
-    expect(teamMatchBoardImps(match).perBoard).toEqual([{ boardNumber: 1, imps: 0 }]);
-    expect(teamMatchBoardWins(match).perBoard).toEqual([{ boardNumber: 1, result: 0.5 }]);
+    const [match] = groupTeamMatches([
+      row(1, 1, "A1NS", "A2EW", null),
+      removed("A2NS", "A1EW", null),
+    ]);
+    expect(teamMatchBoardImps(match).perBoard).toEqual([
+      { boardNumber: 1, imps: 0 },
+    ]);
+    expect(teamMatchBoardWins(match).perBoard).toEqual([
+      { boardNumber: 1, result: 0.5 },
+    ]);
   });
 
   it.each([
@@ -607,16 +643,19 @@ describe("§3.3.7 removed boards — degenerate tokens", () => {
     ["TRM:NS_FAULT", 1, 3],
     ["TRM:BOTH_FAULT", 0.5, 0],
     ["TRM:NEITHER_FAULT", 0.5, 0],
-  ])("inverts a removal token (%s) carried only by the opponent room", (token, win, imps) => {
-    // The opponent room's NS seat is the OPPONENT team, so fault flips.
-    const [match] = groupTeamMatches([
-      row(1, 1, "A1NS", "A2EW", null),
-      removed("A2NS", "A1EW", token),
-    ]);
-    expect(teamMatchBoardWins(match).perBoard[0].result).toBe(win);
-    // `+ 0` normalises a negated zero (-0) so Object.is comparison holds.
-    expect(teamMatchBoardImps(match).perBoard[0].imps! + 0).toBe(imps);
-  });
+  ])(
+    "inverts a removal token (%s) carried only by the opponent room",
+    (token, win, imps) => {
+      // The opponent room's NS seat is the OPPONENT team, so fault flips.
+      const [match] = groupTeamMatches([
+        row(1, 1, "A1NS", "A2EW", null),
+        removed("A2NS", "A1EW", token),
+      ]);
+      expect(teamMatchBoardWins(match).perBoard[0].result).toBe(win);
+      // `+ 0` normalises a negated zero (-0) so Object.is comparison holds.
+      expect(teamMatchBoardImps(match).perBoard[0].imps! + 0).toBe(imps);
+    },
+  );
 });
 
 describe("groupTeamTriples — structure-only triples", () => {
@@ -638,14 +677,19 @@ describe("groupTeamTriples — structure-only triples", () => {
     ruling: null,
     ...over,
   });
-  const trio = (g: string, a: number, b: number, c: number, over: Partial<TeamMatchStructureRow> = {}) => [
-    tri(g, a, b, over),
-    tri(g, a, c, over),
-    tri(g, b, c, over),
-  ];
+  const trio = (
+    g: string,
+    a: number,
+    b: number,
+    c: number,
+    over: Partial<TeamMatchStructureRow> = {},
+  ) => [tri(g, a, b, over), tri(g, a, c, over), tri(g, b, c, over)];
 
   it("falls back to the structure round when a comparison has no board rows yet", () => {
-    const triples = groupTeamTriplesImpl([], trio("g1", 1, 2, 3, { roundNumber: 4 }));
+    const triples = groupTeamTriplesImpl(
+      [],
+      trio("g1", 1, 2, 3, { roundNumber: 4 }),
+    );
     expect(triples).toHaveLength(1);
     expect(triples[0].rounds).toEqual([4]);
     expect(triples[0].comparisons.every((c) => c.round === 4)).toBe(true);
@@ -669,9 +713,32 @@ describe("groupTeamTriples — structure-only triples", () => {
       row(2, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
       row(1, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
     ];
-    const triples = groupTeamTriplesImpl(rows, trio("g1", 1, 2, 3, { vpPool: 20 }));
+    const triples = groupTeamTriplesImpl(
+      rows,
+      trio("g1", 1, 2, 3, { vpPool: 20 }),
+    );
     const stakes = tripleTeamStakes(triples[0]);
-    const home = stakes.find((s) => s.teamId === "A1NS" && s.comparison.opponentTeamId === "A2NS");
+    const home = stakes.find(
+      (s) => s.teamId === "A1NS" && s.comparison.opponentTeamId === "A2NS",
+    );
     expect(home!.round).toBe(1);
+  });
+});
+
+describe("scoreOfRow", () => {
+  it("negates the score for a table played the wrong way round", () => {
+    const plain = row(1, 1, "A1NS", "A2EW", "3NTN=" as BoardOutcome);
+    const swapped = { ...plain, seatsSwapped: true };
+    const score = scoreOfRow(plain);
+    expect(score).toBeGreaterThan(0);
+    expect(scoreOfRow(swapped)).toBe(-(score as number));
+  });
+
+  it("is null when the row is missing, unplayed or has no numeric score", () => {
+    expect(scoreOfRow(undefined)).toBeNull();
+    expect(scoreOfRow(row(1, 1, "A1NS", "A2EW", null))).toBeNull();
+    expect(
+      scoreOfRow(row(1, 1, "A1NS", "A2EW", "NP" as BoardOutcome)),
+    ).toBeNull();
   });
 });

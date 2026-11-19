@@ -148,4 +148,55 @@ describe("findGameRoster (design §11)", () => {
     expect(sub.pair).toBe(sub.substitution!.pair);
     expect(roster.find((r) => r.seat === "A1NS")!.absence).toBeUndefined();
   });
+  it("carries a seat's movement id when its occupancy is stamped with one", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { players } = await import("@/db/games/tables/players");
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+    const p = (f: string) =>
+      db
+        .insert(players)
+        .values({ firstName: f, lastName: "X" })
+        .returning()
+        .get();
+    db.insert(seatOccupancy)
+      .values({
+        seat: "A1NS",
+        anchorId: "A5",
+        player1: p("Anch1").id,
+        player2: p("Anch2").id,
+        secretKey: "anchored",
+      })
+      .run();
+    db.insert(seatOccupancy)
+      .values({
+        seat: "A2NS",
+        player1: p("Plain1").id,
+        player2: p("Plain2").id,
+        secretKey: "plain",
+      })
+      .run();
+    const { findGameRoster } = await import("./find-game-roster");
+    const roster = await findGameRoster(db);
+    expect(roster.find((r) => r.seat === "A1NS")).toMatchObject({
+      anchorId: "A5",
+    });
+    expect(roster.find((r) => r.seat === "A2NS")).not.toHaveProperty(
+      "anchorId",
+    );
+  });
+  it("lists an unfilled expected-late seat with no movement id when no round-1 board names it", async () => {
+    const db = (await harness.getDb()) as Db;
+    const { expectedLateSeats } =
+      await import("@/db/games/tables/expected-late-seats");
+    db.insert(expectedLateSeats).values({ seat: "A4EW" }).run();
+    const { findGameRoster } = await import("./find-game-roster");
+    const roster = await findGameRoster(db);
+    expect(roster).toHaveLength(1);
+    expect(roster[0]).toMatchObject({
+      seat: "A4EW",
+      pair: null,
+      status: "NOT_ARRIVED",
+    });
+    expect(roster[0]).not.toHaveProperty("anchorId");
+  });
 });

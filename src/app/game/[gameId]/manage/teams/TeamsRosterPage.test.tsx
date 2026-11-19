@@ -169,4 +169,137 @@ describe("TeamsRosterPage", () => {
     );
     expect(screen.getByTestId("move-A1EW")).toBeInTheDocument();
   });
+  it.each([
+    ["WITHDRAWN", 3, "Withdrew in round 3"],
+    ["LATE", 2, "Arrived in round 2"],
+    ["WITHOUT_STANDING", null, "Plays but is not ranked"],
+  ] as const)(
+    "summarises a %s team in its collapsed row",
+    (status, round, text) => {
+      renderPage([team({ status, round })]);
+      expect(screen.getByText(text)).toBeInTheDocument();
+    },
+  );
+  it.each(["WITHDRAWN", "LATE", "ACTIVE"] as const)(
+    "shows no summary line for a %s team with no round",
+    (status) => {
+      renderPage([team({ status, round: null })]);
+      expect(screen.queryByText(/in round/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/not ranked/)).not.toBeInTheDocument();
+    },
+  );
+  it("collapses an open team when it is tapped again", () => {
+    renderPage([team()]);
+    const header = screen.getByRole("button", { name: /Smith/ });
+    fireEvent.click(header);
+    expect(header).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(header);
+    expect(header).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText(/pairs used/)).not.toBeInTheDocument();
+  });
+  it("opening another team closes the first", () => {
+    renderPage([team(), team({ teamId: "A2NS", number: "2", name: "Brown" })]);
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Brown/ }));
+    expect(screen.getByRole("button", { name: /Smith/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: /Brown/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+  it("notes that a substitute has played once more than two pairs are used", () => {
+    renderPage([team({ pairsUsed: 3 })]);
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    expect(
+      screen.getByText(/A substitute has played for this team/),
+    ).toBeInTheDocument();
+  });
+  it("says substitutes are arranged by players when none has played", () => {
+    renderPage([team()]);
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    expect(
+      screen.getByText(/Substitutes are arranged by the players/),
+    ).toBeInTheDocument();
+  });
+  it("uses the singular for one board and omits counts when unknown", () => {
+    renderPage([
+      team({
+        pairsUsed: 3,
+        seats: [
+          {
+            seat: "A1NS",
+            label: "Home",
+            occupants: [
+              { pair: "Ann Smith & Bob Smith", boardCount: 1 },
+              { pair: "Eve Sub & Fay Sub", boardCount: null },
+            ],
+          },
+          { seat: "A1EW", label: "Away", occupants: [] },
+        ],
+      }),
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    expect(screen.getByText("(1 board)")).toBeInTheDocument();
+    expect(screen.queryByText(/\(null/)).not.toBeInTheDocument();
+  });
+  it("shows an unfilled seat and offers no device move for it", () => {
+    renderPage([
+      team({
+        seats: [
+          { seat: "A1NS", label: "Home", occupants: [] },
+          {
+            seat: "A1EW",
+            label: "Away",
+            occupants: [{ pair: "Cy Jones & Di Jones", boardCount: null }],
+          },
+        ],
+      }),
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    expect(screen.getByText("Seat not filled")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Move home pair/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Move away pair/ }),
+    ).toBeInTheDocument();
+  });
+  it("omits device moves when the host supplies no panel", () => {
+    render(
+      <TeamsRosterPage
+        onBack={vi.fn()}
+        roster={[team()]}
+        onChangeStanding={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Smith/ }));
+    expect(screen.queryByText(/to a new device/)).not.toBeInTheDocument();
+  });
+  it("sorts teams numerically within a section and sections by letter", () => {
+    renderPage([
+      team({ teamId: "B1NS", section: "B", number: "1", name: "Green" }),
+      team({ teamId: "A10NS", number: "10", name: "Ten" }),
+      team({ teamId: "A2NS", number: "2", name: "Two" }),
+    ]);
+    const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
+    expect(tabs.indexOf("A")).toBeLessThan(tabs.indexOf("B"));
+    const names = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((h) => h.textContent);
+    expect(names).toEqual(["Team 2", "Team 10", "Team 1"]);
+  });
+  it("renders content supplied for the header", () => {
+    render(
+      <TeamsRosterPage
+        onBack={vi.fn()}
+        headerRight={<span>switch</span>}
+        roster={[]}
+        onChangeStanding={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Teams" })).toBeInTheDocument();
+  });
 });

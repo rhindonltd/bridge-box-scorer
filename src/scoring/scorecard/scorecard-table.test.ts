@@ -207,3 +207,49 @@ describe("buildScorecardVpTable", () => {
     });
   });
 });
+
+describe("buildScorecardTable with figures missing from a board", () => {
+  const bare = (): ScorecardBoard => ({
+    roundNumber: 1,
+    boardNumber: 1,
+    side: "NS",
+    opponentId: "A2EW",
+    outcome: "3NTN=",
+    score: 400,
+  });
+  const last = (t: ReturnType<typeof buildScorecardTable>) =>
+    t.rows.map((r) => r.cells[r.cells.length - 1]);
+
+  it("treats missing matchpoints as 0/0 (50%) in both MP views", () => {
+    const card = mpCard([bare()]);
+    expect(last(buildScorecardTable(card, "percentage"))).toEqual([
+      expect.objectContaining({ value: 50 }),
+      expect.objectContaining({ value: 50 }),
+    ]);
+    expect(last(buildScorecardTable(card, "matchpoints"))).toEqual([
+      expect.objectContaining({ value: "0/0" }),
+      expect.objectContaining({ value: "0/0" }),
+    ]);
+  });
+
+  it("treats missing IMPs as 0, per board and in the total", () => {
+    const card: PairScorecard = { ...mpCard([bare()]), scoring: "IMP" };
+    expect(last(buildScorecardTable(card, "imps"))).toEqual([
+      expect.objectContaining({ value: "0" }),
+      expect.objectContaining({ value: "0" }),
+    ]);
+  });
+
+  it("treats missing cross-IMPs as 0, per board and in the total", () => {
+    const card: PairScorecard = { ...mpCard([bare()]), scoring: "XIMP" };
+    expect(last(buildScorecardTable(card, "cross-imps"))).toEqual([
+      expect.objectContaining({ value: 0 }),
+      expect.objectContaining({ value: 0 }),
+    ]);
+  });
+
+  it("leaves the score column heading blank for a view the card does not offer", () => {
+    const table = buildScorecardTable(mpCard([board()]), "imps");
+    expect(table.columns[table.columns.length - 1].label).toBe("");
+  });
+});

@@ -18,6 +18,9 @@ import {
   updateEventDetails,
   verifySeatHeld,
   watchSeat,
+  finaliseGame,
+  reopenGame,
+  saveTournamentLevel,
 } from "./game-service";
 import { SocketEvents } from "@/socket/socket-events";
 
@@ -678,6 +681,73 @@ describe("game-service director HTTP calls", () => {
     });
   }
 
+  const finaliseCases: {
+    name: string;
+    call: () => Promise<unknown>;
+    url: string;
+    method: string;
+    defaultMessage: string;
+  }[] = [
+    {
+      name: "finaliseGame",
+      call: () => finaliseGame("g1"),
+      url: "/api/games/g1/finalise",
+      method: "POST",
+      defaultMessage: "Failed to finalise game",
+    },
+    {
+      name: "reopenGame",
+      call: () => reopenGame("g1"),
+      url: "/api/games/g1/finalise",
+      method: "DELETE",
+      defaultMessage: "Failed to reopen game",
+    },
+    {
+      name: "saveTournamentLevel",
+      call: () => saveTournamentLevel("g1", "L2"),
+      url: "/api/games/g1/tournament-level",
+      method: "PUT",
+      defaultMessage: "Failed to save the tournament level",
+    },
+  ];
+  for (const c of finaliseCases) {
+    describe(c.name, () => {
+      it("sends the request with the director token", async () => {
+        await c.call();
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toBe(c.url);
+        expect(init.method).toBe(c.method);
+        expect(init.headers["x-director-token"]).toBe("stored-token");
+      });
+      it("sends an empty token when none is stored", async () => {
+        vi.mocked(getDirectorToken).mockReturnValueOnce(null as any);
+        await c.call();
+        expect(fetchMock.mock.calls[0][1].headers["x-director-token"]).toBe("");
+      });
+      it("throws the server's error message", async () => {
+        fetchMock.mockResolvedValue({
+          ok: false,
+          json: async () => ({ error: "server says no" }),
+        });
+        await expect(c.call()).rejects.toThrow("server says no");
+      });
+      it("falls back to a default message", async () => {
+        fetchMock.mockResolvedValue({
+          ok: false,
+          json: async () => {
+            throw new Error("not json");
+          },
+        });
+        await expect(c.call()).rejects.toThrow(c.defaultMessage);
+      });
+    });
+  }
+  it("saveTournamentLevel sends the level as JSON", async () => {
+    await saveTournamentLevel("g1", "L2");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      tournamentLevel: "L2",
+    });
+  });
   it("setSubstitutionOptions includes mainOccupancyId when given", async () => {
     await setSubstitutionOptions("g1", "A1NS", {
       split: false,

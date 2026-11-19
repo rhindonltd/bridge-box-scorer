@@ -155,6 +155,13 @@ describe("ImportDealsPage", () => {
     expect(props.onImport.mock.calls[0][0]).toHaveLength(1);
   });
 
+  it("labels an error by game number when the board number is invalid", () => {
+    setup();
+    paste(`${game(1)}\n[Board "xyz"]\n[Deal "${DEAL}"]\n`);
+    expect(screen.getByTestId("import-preview")).toHaveTextContent(
+      /Game 2: Invalid board number "xyz"/,
+    );
+  });
   it("keeps import disabled when nothing in the file is usable", () => {
     setup({ eventBoards: [1, 2] });
     paste(pbn(9));

@@ -129,4 +129,32 @@ describe("FinaliseGameScreen", () => {
     await waitFor(() => expect(alertSpy).toHaveBeenCalledWith("nope"));
     expect(mockReplace).not.toHaveBeenCalled();
   });
+  it("groups problems with no section together, without a heading", () => {
+    mockCheck = {
+      canFinalise: false,
+      problems: [
+        { code: "X", message: "one" },
+        { code: "Y", message: "two" },
+      ],
+      isLoading: false,
+    };
+    render(<FinaliseGameScreen />);
+    expect(screen.getByText("one")).toBeVisible();
+    expect(screen.getByText("two")).toBeVisible();
+    expect(screen.queryByRole("heading", { level: 2 })).not.toBeInTheDocument();
+  });
+  it("uses the section letter when a section has no label", () => {
+    mockSections = [{ section: "A", label: "Red" }];
+    mockCheck = {
+      canFinalise: false,
+      problems: [
+        { code: "X", message: "a", section: "A" },
+        { code: "X", message: "c", section: "C" },
+      ],
+      isLoading: false,
+    };
+    render(<FinaliseGameScreen />);
+    expect(screen.getByRole("heading", { name: "Red" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "C" })).toBeVisible();
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { SWRConfig } from "swr";
 import type { ReactNode } from "react";
 
@@ -9,6 +9,11 @@ vi.mock("@/hooks/socket-event", () => ({
     handlers[event] = handler;
   },
 }));
+const globalMutateSpy = vi.hoisted(() => vi.fn());
+vi.mock("swr", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("swr")>();
+  return { ...actual, mutate: globalMutateSpy };
+});
 const mockFetcher = vi.fn();
 vi.mock("@/lib/fetcher", () => ({
   fetcher: (...a: unknown[]) => mockFetcher(...a),
@@ -56,6 +61,15 @@ describe("useFinaliseCheck", () => {
         "game:boardResultUpdated",
         "connect",
       ]),
+    );
+  });
+  it("revalidates the check when a socket event fires", async () => {
+    mockFetcher.mockResolvedValue({ canFinalise: false, problems: [] });
+    renderHook(() => useFinaliseCheck("g1"), { wrapper });
+    await waitFor(() => expect(mockFetcher).toHaveBeenCalled());
+    act(() => handlers["game:boardConfirmed"]());
+    expect(globalMutateSpy).toHaveBeenCalledWith(
+      "/api/games/g1/finalise-check",
     );
   });
 });

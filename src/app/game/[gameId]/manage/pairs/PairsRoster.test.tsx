@@ -229,6 +229,18 @@ describe("PairsRoster", () => {
       });
     });
 
+    it("treats a spec with no stationary list as empty", async () => {
+      sectionsData = [
+        { section: "A", selectedMovement: { source: "SWISS", swiss: spec } },
+      ];
+      render(<PairsRoster gameId="g1" />);
+      expect(lastProps.stationary.isStationary(entry)).toBe(false);
+      await lastProps.stationary.toggle(entry);
+      expect(mockSetSwiss).toHaveBeenCalledWith("g1", "A", {
+        ...spec,
+        stationaryPairs: [6],
+      });
+    });
     it("saves nothing for a pair with no movement id", async () => {
       render(<PairsRoster gameId="g1" />);
       await lastProps.stationary.toggle({ seat: "A1NS" });

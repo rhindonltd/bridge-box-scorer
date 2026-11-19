@@ -10,6 +10,10 @@ vi.mock("@/context/AssignmentContext", () => ({
 // PlayHeaderMenu now renders the director play→manage switch, which uses the
 // router; stub it so no real navigation is attempted.
 const mockPush = vi.fn();
+const mockSections = vi.hoisted(() => ({ list: [] as { section: string }[] }));
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: mockSections.list }),
+}));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
@@ -17,8 +21,16 @@ vi.mock("next/navigation", () => ({
 // Stub the Pair details dialog so we assert only the menu wiring, not its
 // internals.
 vi.mock("./PairDetailsDialog", () => ({
-  PairDetailsDialog: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="pair-details-dialog" /> : null,
+  PairDetailsDialog: ({
+    open,
+    section,
+  }: {
+    open: boolean;
+    section?: string | null;
+  }) =>
+    open ? (
+      <div data-testid="pair-details-dialog" data-section={section ?? ""} />
+    ) : null,
 }));
 
 import { PlayHeaderMenu } from "./PlayHeaderMenu";
@@ -27,6 +39,7 @@ import { GameContext } from "@/context/GameContext";
 describe("PlayHeaderMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSections.list = [];
     localStorage.clear();
     mockUseAssignment.mockReturnValue({
       assignment: { type: "PAIR", id: "3" },
@@ -247,5 +260,27 @@ describe("PlayHeaderMenu", () => {
 
     // Dialog still opens; the null pairId branch was exercised on render.
     expect(screen.getByTestId("pair-details-dialog")).toBeInTheDocument();
+  });
+  async function openPairDetails(seat: string) {
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat={seat} />);
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Pair details" }));
+    return screen.getByTestId("pair-details-dialog");
+  }
+  it("passes the seat's section to Pair details in a multi-section game", async () => {
+    mockSections.list = [{ section: "A" }, { section: "B" }];
+    const dialog = await openPairDetails("B2EW");
+    expect(dialog).toHaveAttribute("data-section", "B");
+  });
+  it("passes no section for a single-section game", async () => {
+    mockSections.list = [{ section: "A" }];
+    const dialog = await openPairDetails("A1NS");
+    expect(dialog).toHaveAttribute("data-section", "");
+  });
+  it("passes no section when the seat cannot be parsed", async () => {
+    mockSections.list = [{ section: "A" }, { section: "B" }];
+    const dialog = await openPairDetails("not-a-seat");
+    expect(dialog).toHaveAttribute("data-section", "");
   });
 });

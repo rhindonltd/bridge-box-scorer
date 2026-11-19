@@ -10,8 +10,9 @@ vi.mock("@/context/GameContext", () => ({
 
 // Section display names come from the game's sections; none are renamed here, so
 // each tab falls back to its section letter.
+let mockGameSections: { section: string; label: string }[] = [];
 vi.mock("@/hooks/sections", () => ({
-  useSections: () => ({ sections: [] }),
+  useSections: () => ({ sections: mockGameSections }),
 }));
 // The page reads the ?mode= query param via useSearchParams to fix the MP/%
 // view. These tests don't set a mode, so return an empty params object.
@@ -101,6 +102,7 @@ describe("DisplayLeaderboardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+    mockGameSections = [];
     // Default: narrow screen -> single column, so the existing tests are
     // unaffected. Two-column tests opt in with stubMatchMedia(true).
     stubMatchMedia(false);
@@ -348,5 +350,19 @@ describe("DisplayLeaderboardPage", () => {
       "data-view-id",
       "percentage",
     );
+  });
+  it("labels section tabs with the game's section names", () => {
+    mockGameSections = [
+      { section: "A", label: "Red" },
+      { section: "B", label: "Blue" },
+    ];
+    mockContext.mockReturnValue({
+      leaderboard: combined(),
+      sections: [sectionLb("A"), sectionLb("B")],
+      isLoading: false,
+    });
+    render(<DisplayLeaderboardPage />);
+    expect(screen.getByText("Red")).toBeInTheDocument();
+    expect(screen.getByText("Blue")).toBeInTheDocument();
   });
 });

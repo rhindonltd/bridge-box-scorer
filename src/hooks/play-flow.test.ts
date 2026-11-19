@@ -261,6 +261,20 @@ describe("usePlayFlow", () => {
     );
   });
 
+  it("includes the opening lead when one is given", () => {
+    withEnteringRound([round(1, [1, 2])]);
+    const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+    act(() => result.current.handleEnterRound());
+    act(() => result.current.submitResult(1, "3NTN=", "SA"));
+    expect(socketEmit).toHaveBeenCalledWith(
+      SocketEvents.SUBMIT_RESULT,
+      expect.objectContaining({ lead: "SA" }),
+    );
+    expect(result.current.playState).toMatchObject({
+      state: "waiting",
+      lead: "SA",
+    });
+  });
   it("emits an empty token when no player token is stored", () => {
     mockGetPlayerToken.mockReturnValue(null);
     withEnteringRound([round(1, [1, 2])]);
@@ -612,6 +626,56 @@ describe("usePlayFlow", () => {
       expect(result.current.playState.state).toBe("waiting");
     });
 
+    it("sends an empty token when no player token is stored", async () => {
+      mockEmitWithAck.mockResolvedValue({});
+      withEnteringRound([round(1, [1, 2])]);
+      const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+      mockGetPlayerToken.mockReturnValue(null);
+      await act(async () => {
+        await result.current.withdrawSubmission();
+      });
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.WITHDRAW_SUBMISSION,
+        expect.objectContaining({ token: "" }),
+      );
+    });
+    it("is a no-op when the schedule has since been lost", async () => {
+      withEnteringRound([round(1, [1, 2])]);
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        phase: { kind: "complete" },
+      });
+      rerender();
+      await act(async () => {
+        await result.current.withdrawSubmission();
+      });
+      expect(mockEmitWithAck).not.toHaveBeenCalled();
+      expect(result.current.playState.state).toBe("waiting");
+    });
+    it("is a no-op when the waiting round is no longer in the schedule", async () => {
+      withEnteringRound([round(1, [1, 2])]);
+      const { result, rerender } = renderHook(() => usePlayFlow("g1", "A1NS"));
+      act(() => result.current.handleEnterRound());
+      act(() => result.current.submitResult(1, "3NTN="));
+      withResolved({
+        assignmentId: "A1",
+        side: "NS",
+        rounds: [],
+        phase: { kind: "complete" },
+      });
+      rerender();
+      await act(async () => {
+        await result.current.withdrawSubmission();
+      });
+      expect(mockEmitWithAck).not.toHaveBeenCalled();
+      expect(result.current.playState.state).toBe("waiting");
+    });
     it("is a no-op outside the waiting state", async () => {
       withEnteringRound([round(1, [1, 2])]);
       const { result } = renderHook(() => usePlayFlow("g1", "A1NS"));
