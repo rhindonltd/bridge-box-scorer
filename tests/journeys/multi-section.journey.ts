@@ -47,10 +47,10 @@ test.describe("Multi-section setup CRUD", () => {
 
       // Both sections now appear as pills.
       await expect(
-        directorPage.getByRole("tab", { name: /Section A/ }),
+        directorPage.getByRole("tab", { name: "A", exact: true }),
       ).toBeVisible({ timeout: 15000 });
       await expect(
-        directorPage.getByRole("tab", { name: /Section B/ }),
+        directorPage.getByRole("tab", { name: "B", exact: true }),
       ).toBeVisible();
 
       // Rename / delete live in the selected section's header on the Tables
@@ -62,7 +62,7 @@ test.describe("Multi-section setup CRUD", () => {
       await labelField.fill("Afternoon");
       await labelField.blur();
       await expect(
-        directorPage.getByRole("tab", { name: /Section B — Afternoon/ }),
+        directorPage.getByRole("tab", { name: "Afternoon", exact: true }),
       ).toBeVisible({ timeout: 15000 });
 
       // Delete section B (accept the confirm dialog); the section pills go
@@ -71,10 +71,9 @@ test.describe("Multi-section setup CRUD", () => {
       await directorPage
         .getByRole("button", { name: "Delete section" })
         .click();
-      await expect(directorPage.getByRole("tab", { name: /Section B/ })).toHaveCount(
-        0,
-        { timeout: 15000 },
-      );
+      await expect(
+        directorPage.getByRole("tablist", { name: "Section" }),
+      ).toHaveCount(0, { timeout: 15000 });
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();
@@ -104,16 +103,16 @@ test.describe("Multi-section play and displays", () => {
       await confirmBoardPassOut(nsA, ewA, gameId, 1, 1, "A");
       await confirmBoardPassOut(nsB, ewB, gameId, 1, 1, "B");
 
-      // Leaderboard display: multi-section shows Combined + Section A/B tabs.
+      // Leaderboard display: multi-section shows Combined + a tab per section (A/B).
       await displayPage.goto(`/game/${gameId}/display/leaderboard`);
       await expect(
         displayPage.getByRole("button", { name: "Combined" }),
       ).toBeVisible({ timeout: 15000 });
       await expect(
-        displayPage.getByRole("button", { name: "Section A" }),
+        displayPage.getByRole("button", { name: "A", exact: true }),
       ).toBeVisible();
       await expect(
-        displayPage.getByRole("button", { name: "Section B" }),
+        displayPage.getByRole("button", { name: "B", exact: true }),
       ).toBeVisible();
 
       // Combined view shows standings rows (both sections' pairs).
@@ -125,13 +124,13 @@ test.describe("Multi-section play and displays", () => {
       ).toBeVisible({ timeout: 15000 });
 
       // Section A tab shows its own standings.
-      await displayPage.getByRole("button", { name: "Section A" }).click();
+      await displayPage.getByRole("button", { name: "A", exact: true }).click();
       await expect(
         displayPage.getByTestId("leaderboard-row").first(),
       ).toBeVisible({ timeout: 15000 });
 
       // Section B tab shows its own standings.
-      await displayPage.getByRole("button", { name: "Section B" }).click();
+      await displayPage.getByRole("button", { name: "B", exact: true }).click();
       await expect(
         displayPage.getByTestId("leaderboard-row").first(),
       ).toBeVisible({ timeout: 15000 });

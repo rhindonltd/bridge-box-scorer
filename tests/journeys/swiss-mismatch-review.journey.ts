@@ -61,10 +61,9 @@ async function roundTwoVp(page: Page, gameId: string) {
       .goto(`/game/${gameId}/display/leaderboard`, { waitUntil: "commit" })
       .catch(() => {});
     await expect(page).toHaveURL(/\/display\/leaderboard$/, { timeout: 2000 });
-    await expect(page.getByTestId("leaderboard-row")).toHaveCount(
-      2 * TABLES,
-      { timeout: 5000 },
-    );
+    await expect(page.getByTestId("leaderboard-row")).toHaveCount(2 * TABLES, {
+      timeout: 5000,
+    });
   }).toPass({ timeout: 30000 });
   const table = tableWithHeader(await readScoreTables(page), "PAIR");
   const names = column(table, "PAIR");
@@ -94,7 +93,7 @@ async function correctRoundOneTable(
 function candidateCards(page: Page) {
   return page
     .locator("div.rounded-xl.border-2")
-    .filter({ hasText: /^Section A, round \d+, table \d+/ });
+    .filter({ hasText: /^A, round \d+, table \d+/ });
 }
 
 test.describe("Swiss mismatch review", () => {
@@ -124,7 +123,9 @@ test.describe("Swiss mismatch review", () => {
       // offers the screen for a started Swiss game.
       await gotoStable(director, `/game/${gameId}/manage`);
       await director.getByRole("button", { name: "Review Mismatches" }).click();
-      await director.waitForURL(new RegExp(`/game/${gameId}/manage/mismatches$`));
+      await director.waitForURL(
+        new RegExp(`/game/${gameId}/manage/mismatches$`),
+      );
       await expect(director.getByText(/No mismatches to review/)).toBeVisible({
         timeout: 15000,
       });
@@ -155,7 +156,7 @@ test.describe("Swiss mismatch review", () => {
         );
       expect(parsed, `unexpected card text: ${text}`).not.toBeNull();
       const [, pair, opponent, actualOppVp, , correctOppVp, , gap] = parsed!;
-      expect(text).toMatch(/^Section A, round 2, table \d+/);
+      expect(text).toMatch(/^A, round 2, table \d+/);
       expect(Number(gap)).toBeGreaterThan(5);
       expect(Number(gap)).toBeCloseTo(
         Math.abs(Number(actualOppVp) - Number(correctOppVp)),
@@ -165,7 +166,9 @@ test.describe("Swiss mismatch review", () => {
       // Apply it as not the pair's fault. §3.5.2: a pair that met a stronger
       // opponent through no fault of its own is compensated up to 5 + ¾ of its
       // actual round VP — 10 → 12.5.
-      await first.getByRole("button", { name: "Apply — not their fault" }).click();
+      await first
+        .getByRole("button", { name: "Apply — not their fault" })
+        .click();
       await expect(cards).toHaveCount(count - 1, { timeout: 15000 });
 
       const mismatched = pairName(Number(pair));

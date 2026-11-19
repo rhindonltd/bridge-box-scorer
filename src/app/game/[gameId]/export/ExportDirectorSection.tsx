@@ -10,6 +10,7 @@ import type { BridgewebsStatus } from "@/db/system/queries/bridgewebs-credential
 import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
 import { errorMessage } from "@/lib/error-message";
 import { fetcher } from "@/lib/fetcher";
+import { clearNavIntent, setNavIntent } from "@/lib/nav-intent";
 import { reopenGame, saveTournamentLevel } from "@/lib/game-service";
 import { DEFAULT_TOURNAMENT_LEVEL } from "@/model/tournament-level";
 import { swrKeys } from "@/swr/swr-keys";
@@ -62,12 +63,16 @@ export function ExportDirectorSection({ gameId }: { gameId: string }) {
   async function handleReopen() {
     setReopening(true);
     setReopenError(null);
+    // The reopened game is broadcast before the reply, and the export guard
+    // would then redirect elsewhere; send it to the main menu too.
+    setNavIntent("/");
     try {
       await reopenGame(gameId);
       // The game is open again and back in Manage Games.
       router.replace("/");
       void mutateGame();
     } catch (err) {
+      clearNavIntent();
       setReopenError(errorMessage(err, "Failed to reopen the game"));
       setReopening(false);
     }

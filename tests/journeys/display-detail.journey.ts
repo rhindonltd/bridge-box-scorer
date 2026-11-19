@@ -48,7 +48,7 @@ test.describe("Leaderboard & traveller display detail", () => {
         displayPage.getByRole("button", { name: "Combined" }),
       ).toHaveCount(0);
       await expect(
-        displayPage.getByRole("button", { name: "Section A" }),
+        displayPage.getByRole("button", { name: "A", exact: true }),
       ).toHaveCount(0);
     } finally {
       await deleteGame(directorPage, gameId);
@@ -73,8 +73,14 @@ test.describe("Leaderboard & traveller display detail", () => {
       // Multi-section: Combined is the default (pressed) tab, and each section
       // has its own tab.
       const combined = displayPage.getByRole("button", { name: "Combined" });
-      const sectionA = displayPage.getByRole("button", { name: "Section A" });
-      const sectionB = displayPage.getByRole("button", { name: "Section B" });
+      const sectionA = displayPage.getByRole("button", {
+        name: "A",
+        exact: true,
+      });
+      const sectionB = displayPage.getByRole("button", {
+        name: "B",
+        exact: true,
+      });
       await expect(combined).toBeVisible({ timeout: 15000 });
       await expect(sectionA).toBeVisible();
       await expect(sectionB).toBeVisible();
@@ -119,7 +125,7 @@ test.describe("Leaderboard & traveller display detail", () => {
 
       // Board Results passes the pair's assignment id as highlightAssignmentId,
       // so the pair's own traveller row carries data-highlighted="true" and its
-      // cells show that assignment id.
+      // first cell shows that pair.
       const scheduleRes = await request.get(
         `/api/games/${gameId}/play-state/A1NS`,
       );
@@ -127,11 +133,14 @@ test.describe("Leaderboard & traveller display detail", () => {
       const assignmentId: string = (await scheduleRes.json()).result
         .assignmentId;
 
-      const highlightedRow = nsPage.locator(
-        '[data-highlighted="true"]',
-      );
+      const highlightedRow = nsPage.locator('[data-highlighted="true"]');
       await expect(highlightedRow.first()).toBeVisible({ timeout: 15000 });
-      await expect(highlightedRow.first()).toContainText(assignmentId);
+      // A single-section game shows pair ids without the section letter
+      // ("A4" -> "4"), so match the bare id as the row's first cell.
+      const bareId = assignmentId.replace(/^[A-Za-z]+(?=\d)/, "");
+      await expect(highlightedRow.first().locator("td").first()).toHaveText(
+        bareId,
+      );
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

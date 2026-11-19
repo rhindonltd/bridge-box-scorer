@@ -98,9 +98,9 @@ async function openTimerFromMenu(page: Page, gameId: string): Promise<void> {
     }
     await expect(timer).toBeVisible({ timeout: 5000 });
   }).toPass({ timeout: 30000 });
-  await expect(
-    page.getByRole("button", { name: "Set Up Game" }),
-  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Set Up Game" })).toHaveCount(
+    0,
+  );
   await timer.click();
   await page.waitForURL(new RegExp(`/game/${gameId}/manage/timer$`));
   await expect(page.getByText("Timer Controls")).toBeVisible({
@@ -524,9 +524,9 @@ test.describe("Timer config (multi-section): per-section picker & autosave", () 
       // Open the standalone timer manager (game not started -> config view).
       await page.goto(`/game/${gid}/manage/timer`);
 
-      // The section picker (role=tab) shows Section A and Section B.
-      const tabA = page.getByRole("tab", { name: /Section A/ });
-      const tabB = page.getByRole("tab", { name: /Section B/ });
+      // The section picker (role=tab) shows sections A and B.
+      const tabA = page.getByRole("tab", { name: "A", exact: true });
+      const tabB = page.getByRole("tab", { name: "B", exact: true });
       await expect(tabA).toBeVisible({ timeout: 15000 });
       await expect(tabB).toBeVisible();
 
@@ -590,7 +590,7 @@ test.describe("Timer display (multi-section)", () => {
       // view. This game has no configured timer, so the view shows the
       // "Connecting…" placeholder (proving the chooser resolved to a section).
       await displayPage
-        .getByRole("button", { name: /Section A/ })
+        .getByRole("button", { name: "A", exact: true })
         .first()
         .click();
       await expect(displayPage.getByText("Choose a section")).toBeHidden({
