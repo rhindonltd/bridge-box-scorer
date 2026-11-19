@@ -113,13 +113,46 @@ describe("MovementTable", () => {
           tableNumber: 5,
           rounds: [
             // Complete -> green.
-            { roundNumber: 1, ns: "A", ew: "B", boardStart: 1, boardEnd: 2, played: 2, total: 2 },
+            {
+              roundNumber: 1,
+              ns: "A",
+              ew: "B",
+              boardStart: 1,
+              boardEnd: 2,
+              played: 2,
+              total: 2,
+            },
             // Gap -> red (takes precedence over completeness).
-            { roundNumber: 2, ns: "C", ew: "D", boardStart: 3, boardEnd: 4, played: 1, total: 2, hasPreviousGap: true },
+            {
+              roundNumber: 2,
+              ns: "C",
+              ew: "D",
+              boardStart: 3,
+              boardEnd: 4,
+              played: 1,
+              total: 2,
+              hasPreviousGap: true,
+            },
             // In progress -> yellow.
-            { roundNumber: 3, ns: "E", ew: "F", boardStart: 5, boardEnd: 6, played: 1, total: 2 },
+            {
+              roundNumber: 3,
+              ns: "E",
+              ew: "F",
+              boardStart: 5,
+              boardEnd: 6,
+              played: 1,
+              total: 2,
+            },
             // Nothing played and no boards -> no colour.
-            { roundNumber: 4, ns: "G", ew: "H", boardStart: 7, boardEnd: 8, played: 0, total: 0 },
+            {
+              roundNumber: 4,
+              ns: "G",
+              ew: "H",
+              boardStart: 7,
+              boardEnd: 8,
+              played: 0,
+              total: 0,
+            },
           ],
         }}
       />,
@@ -137,5 +170,18 @@ describe("MovementTable", () => {
     expect(container.querySelector("table")).toBeInTheDocument();
     expect(container.querySelector("thead")).toBeInTheDocument();
     expect(container.querySelector("tbody")).toBeInTheDocument();
+  });
+  it("leaves the pair cells blank when a round has no pair assigned", () => {
+    render(
+      <MovementTable
+        table={{
+          tableNumber: 1,
+          rounds: [{ roundNumber: 1, boardStart: 1, boardEnd: 1 }],
+        }}
+      />,
+    );
+    const cells = screen.getAllByRole("cell");
+    expect(cells[1]).toHaveTextContent("");
+    expect(cells[2]).toHaveTextContent("");
   });
 });

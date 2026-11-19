@@ -4,9 +4,10 @@ import type { BridgeGame } from "@/db/game-index/schema";
 
 let currentData: BridgeGame[] | undefined = [];
 let currentLoading = false;
+const mockMutate = vi.hoisted(() => vi.fn());
 vi.mock("swr", () => ({
   default: () => ({ data: currentData, isLoading: currentLoading }),
-  useSWRConfig: () => ({ mutate: vi.fn() }),
+  useSWRConfig: () => ({ mutate: mockMutate }),
 }));
 vi.mock("@/lib/fetcher", () => ({ unwrapFetcher: () => vi.fn() }));
 
@@ -54,6 +55,11 @@ describe("ExportSelectGamePage", () => {
     expect(screen.getByTestId("back")).toHaveTextContent("/");
   });
 
+  it("treats not-yet-loaded data as an empty list", () => {
+    currentData = undefined;
+    render(<ExportSelectGamePage onGameSelected={vi.fn()} />);
+    expect(screen.getByTestId("count")).toHaveTextContent("0");
+  });
   it("explains an empty list", () => {
     render(<ExportSelectGamePage onGameSelected={vi.fn()} />);
     expect(screen.getByTestId("empty")).toHaveTextContent(
@@ -76,6 +82,10 @@ describe("ExportSelectGamePage", () => {
     expect(events).toEqual(
       expect.arrayContaining(["connect", "joinable-games"]),
     );
+    const handlers = socket.on.mock.calls.map((c) => c[1] as () => void);
+    handlers.forEach((h) => h());
+    expect(mockMutate).toHaveBeenCalledTimes(2);
+    expect(mockMutate).toHaveBeenCalledWith("/api/games/finalised");
     unmount();
     expect(socket.off).toHaveBeenCalledTimes(2);
   });

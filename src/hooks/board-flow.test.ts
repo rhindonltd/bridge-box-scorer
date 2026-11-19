@@ -251,3 +251,61 @@ describe("useBoardFlow", () => {
     expect(result.current.step).toBe(3);
   });
 });
+
+describe("useBoardFlow draft resume", () => {
+  const entry = {
+    level: 4 as const,
+    suit: "S" as const,
+    declarer: "N" as const,
+    resultMode: "made" as const,
+    resultValue: 0,
+  };
+
+  it("resumes on the result step with the draft pre-filled", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: false,
+        ...multiBoard,
+        draft: { board: 2, entry },
+      }),
+    );
+    expect(result.current.step).toBe(5);
+    expect(result.current.selectedBoard).toBe(2);
+    expect(result.current.level).toBe(4);
+    expect(result.current.suit).toBe("S");
+  });
+
+  it("resumes on the level step for a special outcome draft", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: false,
+        ...multiBoard,
+        draft: { board: 3, entry: { specialOutcome: "PO" } },
+      }),
+    );
+    expect(result.current.step).toBe(1);
+    expect(result.current.selectedBoard).toBe(3);
+    expect(result.current.specialOutcome).toBe("PO");
+  });
+
+  it("ignores a draft whose board has since been played", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({
+        leadCardRequired: false,
+        roundBoards: [1, 2, 3],
+        playedBoards: [2],
+        draft: { board: 2, entry },
+      }),
+    );
+    expect(result.current.step).toBe(0);
+    expect(result.current.selectedBoard).toBeNull();
+    expect(result.current.level).toBeNull();
+  });
+
+  it("ignores a null draft", () => {
+    const { result } = renderHook(() =>
+      useBoardFlow({ leadCardRequired: false, ...multiBoard, draft: null }),
+    );
+    expect(result.current.step).toBe(0);
+  });
+});

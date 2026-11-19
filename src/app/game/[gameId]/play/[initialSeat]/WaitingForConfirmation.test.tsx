@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { WaitingForConfirmation } from "@/app/game/[gameId]/play/[initialSeat]/WaitingForConfirmation";
 
+let capturedBack: (() => void) | undefined;
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
@@ -16,18 +23,21 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
     backAction?: () => void;
     hideBack?: boolean;
     children: React.ReactNode;
-  }) => (
-    <div>
-      {!hideBack && backAction && (
-        <button data-testid="back" onClick={backAction}>
-          back
-        </button>
-      )}
-      <div data-testid="header">{headerTitle}</div>
-      <div data-testid="header-right">{headerRight}</div>
-      {children}
-    </div>
-  ),
+  }) => {
+    capturedBack = backAction;
+    return (
+      <div>
+        {!hideBack && backAction && (
+          <button data-testid="back" onClick={backAction}>
+            back
+          </button>
+        )}
+        <div data-testid="header">{headerTitle}</div>
+        <div data-testid="header-right">{headerRight}</div>
+        {children}
+      </div>
+    );
+  },
 }));
 
 describe("WaitingForConfirmation", () => {
@@ -91,6 +101,40 @@ describe("WaitingForConfirmation", () => {
     );
   });
 
+  it("shows the entered opening lead alongside the result", () => {
+    render(<WaitingForConfirmation boardNumber={7} result="3NTN=" lead="SA" />);
+    expect(screen.getByTestId("waiting-entered-lead")).toHaveTextContent(
+      "Lead: ♠A",
+    );
+  });
+  it("shows no lead line when no lead was entered", () => {
+    render(<WaitingForConfirmation boardNumber={7} result="3NTN=" />);
+    expect(
+      screen.queryByTestId("waiting-entered-lead"),
+    ).not.toBeInTheDocument();
+  });
+  it("falls back to a generic message when going back fails without a message", async () => {
+    const onBack = vi.fn().mockRejectedValue("nope");
+    render(<WaitingForConfirmation boardNumber={7} onBack={onBack} />);
+    fireEvent.click(screen.getByTestId("back"));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn't go back. Please try again.",
+    );
+  });
+  it("ignores a second back request while the first is still in flight", async () => {
+    let resolve!: () => void;
+    const onBack = vi.fn(() => new Promise<void>((r) => (resolve = r)));
+    render(<WaitingForConfirmation boardNumber={7} onBack={onBack} />);
+    await act(async () => {
+      capturedBack?.();
+    });
+    // The re-render has marked it busy; the fresh handler must ignore a repeat.
+    await act(async () => {
+      capturedBack?.();
+    });
+    expect(onBack).toHaveBeenCalledTimes(1);
+    resolve();
+  });
   it("renders the headerRight slot content", () => {
     render(
       <WaitingForConfirmation

@@ -234,6 +234,85 @@ describe("PairsRosterPage standing controls", () => {
   });
 });
 
+describe("PairsRosterPage Swiss standing editor", () => {
+  function renderSwissPage(roster: RosterEntry[], over = {}) {
+    const h = { ...actions(), ...over };
+    render(<PairsRosterPage onBack={vi.fn()} roster={roster} isSwiss {...h} />);
+    return h;
+  }
+  it("offers no standing controls on a seat nobody has arrived at", () => {
+    renderSwissPage([
+      { seat: "A4EW", pair: null, status: "NOT_ARRIVED", anchorId: "A4" },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: /Seat not filled/ }));
+    expect(
+      screen.queryByRole("button", { name: "Change standing" }),
+    ).not.toBeInTheDocument();
+  });
+  it("labels the standing editor by movement id when the seat has no pair name", () => {
+    renderSwissPage([
+      { seat: "A4EW", pair: null, status: "ACTIVE", anchorId: "A7" },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: /Seat not filled/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Change standing" }));
+    expect(screen.getByText("Standing for 7")).toBeInTheDocument();
+  });
+  it("opens the editor on the pair's current non-active standing and cancels", () => {
+    renderSwissPage([{ ...active, status: "WITHOUT_STANDING" }]);
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Change standing" }));
+    expect(screen.getByLabelText("No standing")).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(
+      screen.getByRole("button", { name: "Change standing" }),
+    ).toBeInTheDocument();
+  });
+  it("keeps the editor open and shows the server's reason when saving fails", async () => {
+    const h = renderSwissPage([active], {
+      onChangeStanding: vi.fn().mockRejectedValue(new Error("Round closed")),
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Change standing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Round closed");
+    expect(h.onChangeStanding).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Save" })).toBeInTheDocument();
+  });
+  it.each([
+    ["an error with no message", new Error("")],
+    ["a non-Error rejection", "boom"],
+  ])(
+    "shows a generic message when saving fails with %s",
+    async (_n, reason) => {
+      renderSwissPage([active], {
+        onChangeStanding: vi.fn().mockRejectedValue(reason),
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Change standing" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Could not save. Please try again.",
+      );
+    },
+  );
+  it("shows a generic message when the stationary save rejects without a reason", async () => {
+    const toggle = vi.fn().mockRejectedValue("boom");
+    render(
+      <PairsRosterPage
+        onBack={vi.fn()}
+        roster={[{ ...active, anchorId: "A5" }]}
+        isSwiss
+        stationary={{ isStationary: () => false, toggle }}
+        {...actions()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Ann Active/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Could not save. Please try again.",
+    );
+  });
+});
 describe("PairsRosterPage", () => {
   it("is titled Pairs and lists every pair with its status", () => {
     renderPage([active, withdrawn]);

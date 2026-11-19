@@ -10,6 +10,9 @@ describe("swrKeys", () => {
     expect(swrKeys.joinableGames()).toBe("/api/games/joinable");
   });
 
+  it("finalisedGames returns static path", () => {
+    expect(swrKeys.finalisedGames()).toBe("/api/games/finalised");
+  });
   it("game returns correct API path", () => {
     expect(swrKeys.game("abc")).toBe("/api/games/abc");
   });
@@ -95,6 +98,7 @@ describe("swrKeys", () => {
     expect(swrKeys.substitutions("g1")).toBe("/api/games/g1/substitutions");
     expect(swrKeys.absences("g1")).toBe("/api/games/g1/absences");
     expect(swrKeys.roster("g1")).toBe("/api/games/g1/pairs");
+    expect(swrKeys.teamsRoster("g1")).toBe("/api/games/g1/teams");
     expect(swrKeys.ebu()).toBe("/api/system/ebu");
     expect(swrKeys.cloudSync()).toBe("/api/system/cloud-sync");
     expect(swrKeys.cloudSyncStatus()).toBe("/api/system/cloud-sync/status");

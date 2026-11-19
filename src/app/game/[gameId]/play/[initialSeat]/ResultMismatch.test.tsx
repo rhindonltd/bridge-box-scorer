@@ -72,6 +72,36 @@ describe("ResultMismatch", () => {
     expect(screen.getByText(/Board 6:/)).toBeInTheDocument();
   });
 
+  it("explains different opening leads when the results are the same", () => {
+    render(
+      <ResultMismatch
+        nsBoardNumber={5}
+        nsResult="3NTN="
+        nsLead="SA"
+        ewBoardNumber={5}
+        ewResult="3NTN="
+        ewLead="HK"
+        onReenter={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/different opening leads/)).toBeInTheDocument();
+    const leads = screen.getAllByTestId("lead-card");
+    expect(leads).toHaveLength(2);
+    expect(leads[0]).toHaveTextContent("♠A");
+    expect(leads[1]).toHaveTextContent("♥K");
+  });
+  it("shows no lead when none was entered", () => {
+    render(
+      <ResultMismatch
+        nsBoardNumber={5}
+        nsResult="3NTN="
+        ewBoardNumber={5}
+        ewResult="3NTN+1"
+        onReenter={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("lead-card")).not.toBeInTheDocument();
+  });
   it("renders the headerRight slot content", () => {
     render(
       <ResultMismatch

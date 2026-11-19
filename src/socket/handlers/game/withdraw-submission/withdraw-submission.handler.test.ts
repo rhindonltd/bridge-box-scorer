@@ -79,6 +79,18 @@ describe("registerWithdrawSubmissionHandler", () => {
     expect(deleteSideSubmission).not.toHaveBeenCalled();
   });
 
+  it("reports an error when the game no longer exists", async () => {
+    vi.mocked(getDb).mockResolvedValue(null as never);
+    const socket = makeSocket();
+    registerWithdrawSubmissionHandler(socket, makeIo());
+    const cb = vi.fn();
+    await getHandler(socket)(payload, cb);
+    expect(deleteSideSubmission).not.toHaveBeenCalled();
+    expect(cb).toHaveBeenCalledWith({
+      success: false,
+      error: "Game not found",
+    });
+  });
   it("refuses once the board is confirmed", async () => {
     vi.mocked(getBoardStatus).mockResolvedValue("CONFIRMED");
     const socket = makeSocket();

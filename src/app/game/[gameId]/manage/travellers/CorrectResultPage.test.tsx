@@ -11,8 +11,9 @@ vi.mock("swr", () => ({
 }));
 
 vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
+let sectionsData: { section: string }[] = [{ section: "A" }];
 vi.mock("@/hooks/sections", () => ({
-  useSections: () => ({ sections: [{ section: "A" }] }),
+  useSections: () => ({ sections: sectionsData }),
 }));
 vi.mock("@/swr/swr-keys", () => ({
   swrKeys: { boards: (id: string) => `/api/games/${id}/boards` },
@@ -72,15 +73,18 @@ let selectedInstanceExtras: Record<string, unknown> = {};
 vi.mock("./Traveller", () => ({
   Traveller: ({
     boardNumber,
+    hideSection,
     onLineSelected,
     onBack,
   }: {
     boardNumber: number;
+    hideSection?: boolean;
     onLineSelected: (i: unknown) => void;
     onBack: () => void;
   }) => (
     <div>
       <span data-testid="traveller-board">{boardNumber}</span>
+      <span data-testid="hide-section">{String(hideSection)}</span>
       <button
         onClick={() =>
           onLineSelected({
@@ -133,6 +137,7 @@ describe("CorrectResultPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gameOverrides = {};
+    sectionsData = [{ section: "A" }];
     selectedInstanceExtras = {};
     swrState = { data: { boards: [1, 2, 3] }, isLoading: false };
     mockEmitWithAck.mockResolvedValue(undefined);
@@ -439,7 +444,9 @@ describe("CorrectResultPage", () => {
       direction: "HIGHER",
       fault: "NOT",
     });
-    expect(await screen.findByText("Failed to mark mismatch")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Failed to mark mismatch"),
+    ).toBeInTheDocument();
   });
   it("derives the wizard's ruling options from the game", async () => {
     gameOverrides = {
@@ -447,7 +454,9 @@ describe("CorrectResultPage", () => {
       scoringType: "BAM",
       eventFormat: "SWISS",
     };
-    const { unmount } = render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    const { unmount } = render(
+      <CorrectResultPage onResultCorrected={vi.fn()} />,
+    );
     await goToWizard();
     expect(wizardProps).toMatchObject({
       allowTeamsRulings: true,
@@ -470,5 +479,20 @@ describe("CorrectResultPage", () => {
       allowPairsVoid: true,
       teamsMismatch: false,
     });
+  });
+
+  it("shows the section column only for combined results across sections", () => {
+    sectionsData = [{ section: "A" }, { section: "B" }];
+    gameOverrides = { combinedRanking: true };
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    fireEvent.click(screen.getByText("pick-board"));
+    expect(screen.getByTestId("hide-section")).toHaveTextContent("false");
+  });
+  it("hides the section column for several sections ranked separately", () => {
+    sectionsData = [{ section: "A" }, { section: "B" }];
+    gameOverrides = { combinedRanking: false };
+    render(<CorrectResultPage onResultCorrected={vi.fn()} />);
+    fireEvent.click(screen.getByText("pick-board"));
+    expect(screen.getByTestId("hide-section")).toHaveTextContent("true");
   });
 });

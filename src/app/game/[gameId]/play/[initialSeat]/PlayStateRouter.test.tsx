@@ -75,6 +75,7 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ContractWizard", () => ({
       board: number;
       contract: string;
       result: number;
+      lead?: string | null;
     }) => void;
   }) => (
     <div data-testid="contract-wizard">
@@ -88,6 +89,13 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ContractWizard", () => ({
         onClick={() => onComplete({ board: 1, contract: "3NTN", result: 0 })}
       >
         complete-contract
+      </button>
+      <button
+        onClick={() =>
+          onComplete({ board: 1, contract: "3NTN", result: -2, lead: "SA" })
+        }
+      >
+        complete-contract-lead
       </button>
     </div>
   ),
@@ -499,5 +507,70 @@ describe("PlayStateRouter", () => {
     expect(screen.getByText("Deal*")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Results"));
     expect(screen.getByTestId("show-deal")).toHaveTextContent("false");
+  });
+  it("drops the saved draft once play moves on from the entry/waiting states", () => {
+    const handlers = makeHandlers();
+    const props = {
+      schedule,
+      gameId: "g1",
+      seat: "1NS",
+      gameType: "PAIRS" as const,
+      scoringType: "MP" as const,
+      leadCardRequired: false,
+      handlers,
+    };
+    const { rerender } = render(
+      <PlayStateRouter
+        {...props}
+        playState={{ state: "enterContract", roundIndex: 0, boardIndex: 0 }}
+      />,
+    );
+    fireEvent.click(screen.getByText("complete-po"));
+    // Staying in "waiting" keeps the draft (no reset path taken).
+    rerender(
+      <PlayStateRouter
+        {...props}
+        playState={{ state: "waiting", roundIndex: 0, boardIndex: 0 }}
+      />,
+    );
+    // Moving on to a mismatch clears it; returning to the wizard shows no draft.
+    rerender(
+      <PlayStateRouter
+        {...props}
+        playState={{
+          state: "mismatch",
+          roundIndex: 0,
+          boardIndex: 0,
+          nsBoardNumber: 1,
+          nsResult: "PO",
+          ewBoardNumber: 1,
+          ewResult: "NP",
+        }}
+      />,
+    );
+    expect(screen.getByTestId("mismatch")).toBeInTheDocument();
+    rerender(
+      <PlayStateRouter
+        {...props}
+        playState={{ state: "enterContract", roundIndex: 0, boardIndex: 0 }}
+      />,
+    );
+    expect(screen.getByTestId("contract-wizard")).toBeInTheDocument();
+  });
+  it("carries a played contract's lead into the submission", () => {
+    mockParseContract.mockReturnValue({
+      level: 3,
+      suit: "NT",
+      doubling: "",
+      declarer: "N",
+    });
+    mockBuildCode.mockReturnValue("3NT-N=");
+    const handlers = renderRouter({
+      state: "enterContract",
+      roundIndex: 0,
+      boardIndex: 0,
+    });
+    fireEvent.click(screen.getByText("complete-contract-lead"));
+    expect(handlers.submitResult).toHaveBeenCalledWith(1, "3NT-N=", "SA");
   });
 });

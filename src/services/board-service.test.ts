@@ -27,11 +27,14 @@ vi.mock("@/db/games/queries/absences", () => ({
   readAbsences: vi.fn(async () => new Map()),
 }));
 
+vi.mock("@/db/games/queries/find-teams", () => ({
+  findTeams: vi.fn(async () => []),
+}));
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
 import type { Player } from "@/db/games/tables/players";
 import type { PairPlayers } from "@/db/games/queries/assignment-players";
-import { getBoardInstances } from "./board-service";
+import { buildTeamTravellerMatches, getBoardInstances } from "./board-service";
 
 /** A player row for the name-lookup map. */
 const player = (id: number, firstName: string, lastName: string): Player => ({
@@ -297,5 +300,61 @@ describe("board-service", () => {
         expect(result[0].participants.ew).not.toBe("PHANTOM");
       }
     });
+  });
+});
+
+describe("buildTeamTravellerMatches seat swaps", () => {
+  const tr = (ns: string, ew: string, swapped: boolean) => ({
+    section: "A",
+    roundNumber: 1,
+    tableNumber: Number(ns.slice(1, 2)),
+    boardNumber: 1,
+    ns,
+    ew,
+    confirmedResult: "3NTN=",
+    directorOverrideResult: null,
+    status: "CONFIRMED",
+    matchId: 1,
+    seatsSwapped: swapped,
+  });
+
+  it("negates the score of a table marked played the wrong way round", async () => {
+    const rows = [tr("A1NS", "A2EW", true), tr("A2NS", "A1EW", false)];
+    const matchRows = [
+      { id: 1, kind: "TEAMS", home: "A1NS", opponent: "A2NS" },
+    ];
+    const results = [rows, matchRows];
+    const db = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(async () => results.shift()),
+        })),
+      })),
+    };
+    const out = await buildTeamTravellerMatches(db as any, 1);
+    expect(out).toHaveLength(1);
+    // Home credited -score, opponent +score: the home margin is negative.
+    expect(out[0].margin).not.toBeNull();
+    expect(out[0].margin as number).toBeLessThan(0);
+  });
+
+  it("leaves the margin null when a room has no numeric score", async () => {
+    const rows = [
+      { ...tr("A1NS", "A2EW", false), confirmedResult: "NP" },
+      tr("A2NS", "A1EW", false),
+    ];
+    const matchRows = [
+      { id: 1, kind: "TEAMS", home: "A1NS", opponent: "A2NS" },
+    ];
+    const results = [rows, matchRows];
+    const db = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(async () => results.shift()),
+        })),
+      })),
+    };
+    const out = await buildTeamTravellerMatches(db as any, 1);
+    expect(out[0].margin).toBeNull();
   });
 });

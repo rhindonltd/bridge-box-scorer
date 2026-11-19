@@ -142,4 +142,17 @@ describe("PairDetailsDialog", () => {
     await user.keyboard("{Escape}");
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+  it("shows the section line when a section is given", () => {
+    render(
+      <PairDetailsDialog
+        open
+        onOpenChange={vi.fn()}
+        pair={nsPair}
+        pairId="B3NS"
+        section="B"
+      />,
+    );
+    expect(screen.getByText("Section: B")).toBeInTheDocument();
+    expect(screen.getByText("Pair: 3NS")).toBeInTheDocument();
+  });
 });

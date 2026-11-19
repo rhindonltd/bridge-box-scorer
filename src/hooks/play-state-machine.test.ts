@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   playReducer,
+  playStateFromResolved,
+  type ResolvedPlayStateResponse,
   type PlayState,
   type Schedule,
 } from "./play-state-machine";
@@ -225,5 +227,130 @@ describe("play reducer — null-schedule guards", () => {
     };
     const next = playReducer(prev, { type: "dealsContinue" }, null);
     expect(next).toBe(prev);
+  });
+});
+
+describe("opening-lead and result carry-through", () => {
+  const rounds = [round(1, [1, 2])];
+  function resolvedAt(
+    position: Extract<
+      ResolvedPlayStateResponse["phase"],
+      { kind: "round" }
+    >["position"],
+  ): ResolvedPlayStateResponse {
+    return {
+      assignmentId: "A1",
+      side: "NS",
+      rounds,
+      phase: { kind: "round", roundIndex: 0, position },
+    } as ResolvedPlayStateResponse;
+  }
+  it("resumes waiting with the submitted result and lead", () => {
+    expect(
+      playStateFromResolved(
+        resolvedAt({
+          at: "waitingConfirmation",
+          boardNumber: 2,
+          result: "3NTN=",
+          lead: "SA",
+        }),
+      ),
+    ).toEqual({
+      state: "waiting",
+      roundIndex: 0,
+      boardIndex: 1,
+      result: "3NTN=",
+      lead: "SA",
+    });
+  });
+  it("resumes waiting without a result or lead when none were recorded", () => {
+    expect(
+      playStateFromResolved(
+        resolvedAt({ at: "waitingConfirmation", boardNumber: 1 }),
+      ),
+    ).toEqual({ state: "waiting", roundIndex: 0, boardIndex: 0 });
+  });
+  it("resumes a mismatch with both sides' leads", () => {
+    expect(
+      playStateFromResolved(
+        resolvedAt({
+          at: "mismatch",
+          boardNumber: 1,
+          nsBoardNumber: 1,
+          nsResult: "3NTN=",
+          nsLead: "SA",
+          ewBoardNumber: 1,
+          ewResult: "3NTN+1",
+          ewLead: "HK",
+        }),
+      ),
+    ).toMatchObject({ state: "mismatch", nsLead: "SA", ewLead: "HK" });
+  });
+  it("resumes a mismatch without leads when none were recorded", () => {
+    const state = playStateFromResolved(
+      resolvedAt({
+        at: "mismatch",
+        boardNumber: 1,
+        nsBoardNumber: 1,
+        nsResult: "3NTN=",
+        ewBoardNumber: 1,
+        ewResult: "3NTN+1",
+      }),
+    );
+    expect(state).not.toHaveProperty("nsLead");
+    expect(state).not.toHaveProperty("ewLead");
+  });
+  it("submit carries the result and lead into waiting", () => {
+    const prev: PlayState = {
+      state: "enterContract",
+      roundIndex: 0,
+      boardIndex: 0,
+    };
+    expect(
+      playReducer(
+        prev,
+        { type: "submit", boardNumber: 1, result: "3NTN=", lead: "SA" },
+        schedule(rounds),
+      ),
+    ).toEqual({
+      state: "waiting",
+      roundIndex: 0,
+      boardIndex: 0,
+      result: "3NTN=",
+      lead: "SA",
+    });
+  });
+  it("submit without a result or lead omits them", () => {
+    const prev: PlayState = {
+      state: "enterContract",
+      roundIndex: 0,
+      boardIndex: 0,
+    };
+    expect(
+      playReducer(prev, { type: "submit", boardNumber: 1 }, schedule(rounds)),
+    ).toEqual({ state: "waiting", roundIndex: 0, boardIndex: 0 });
+  });
+  it("boardMismatch carries both sides' leads", () => {
+    const prev: PlayState = { state: "waiting", roundIndex: 0, boardIndex: 0 };
+    const next = playReducer(
+      prev,
+      {
+        type: "boardMismatch",
+        roundNumber: 1,
+        tableNumber: 1,
+        nsBoardNumber: 1,
+        nsResult: "3NTN=",
+        nsLead: "SA",
+        ewBoardNumber: 1,
+        ewResult: "3NTN+1",
+        ewLead: "HK",
+      },
+      schedule(rounds),
+    );
+    expect(next).toMatchObject({
+      state: "mismatch",
+      nsLead: "SA",
+      ewLead: "HK",
+    });
   });
 });
