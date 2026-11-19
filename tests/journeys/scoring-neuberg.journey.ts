@@ -5,6 +5,7 @@ import {
   parseScore,
   readScoreTables,
   tableWithHeader,
+  cellIsPair,
 } from "../fixtures/score-tables";
 import {
   closeDevices,
@@ -169,7 +170,7 @@ test.describe("Matchpoints and Neuberg equalisation", () => {
       const pctView = tableWithHeader(await readScoreTables(ns), "NS %");
       expect(pctView.rows).toHaveLength(2); // two results, not three
       const pct = (nsSeat: string) => {
-        const row = pctView.rows.find((r) => r[0].includes(nsSeat))!;
+        const row = pctView.rows.find((r) => cellIsPair(r[0], nsSeat))!;
         return { nsPct: parseScore(row[4]), ewPct: parseScore(row[5]) };
       };
       expect(pct("A2NS")).toEqual({ nsPct: 100, ewPct: 0 });
@@ -186,7 +187,7 @@ test.describe("Matchpoints and Neuberg equalisation", () => {
         "EW MP",
       ]);
       const line = (nsSeat: string) => {
-        const row = traveller.rows.find((r) => r[0].includes(nsSeat))!;
+        const row = traveller.rows.find((r) => cellIsPair(r[0], nsSeat))!;
         return {
           score: parseScore(row[3]),
           nsMp: parseScore(row[4]),

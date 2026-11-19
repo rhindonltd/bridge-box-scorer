@@ -43,7 +43,9 @@ test.describe("Sections setup", () => {
       await expect(
         page.getByRole("button", { name: /Split into sections/ }),
       ).toBeVisible({ timeout: 15000 });
-      await expect(page.getByRole("tab", { name: "Section A" })).toHaveCount(0);
+      await expect(
+        page.getByRole("tab", { name: "A", exact: true }),
+      ).toHaveCount(0);
       await expect(page.getByTestId("movement-card").first()).toBeVisible();
     } finally {
       await deleteGame(page, gameId);
@@ -68,10 +70,10 @@ test.describe("Sections setup", () => {
       // Add a second section via the pill + naming modal -> a Section B pill.
       await addSection(page);
       await expect(
-        page.getByRole("tab", { name: /Section A/ }),
+        page.getByRole("tab", { name: "A", exact: true }),
       ).toBeVisible({ timeout: 15000 });
       await expect(
-        page.getByRole("tab", { name: /Section B/ }),
+        page.getByRole("tab", { name: "B", exact: true }),
       ).toBeVisible();
 
       // Rename / delete happen in the section header on the Tables screen.
@@ -82,7 +84,7 @@ test.describe("Sections setup", () => {
       await label.fill("Evening");
       await label.blur();
       await expect(
-        page.getByRole("tab", { name: /Section B — Evening/ }),
+        page.getByRole("tab", { name: "Evening", exact: true }),
       ).toBeVisible({ timeout: 15000 });
 
       // Delete controls are present while there is more than one section.
@@ -92,9 +94,12 @@ test.describe("Sections setup", () => {
       // Delete section B (accept the confirm dialog) -> back to single section.
       page.once("dialog", (d) => d.accept());
       await deleteButton.click();
-      await expect(page.getByRole("tab", { name: /Section B/ })).toHaveCount(0, {
-        timeout: 15000,
-      });
+      await expect(page.getByRole("tablist", { name: "Section" })).toHaveCount(
+        0,
+        {
+          timeout: 15000,
+        },
+      );
     } finally {
       await deleteGame(page, gameId);
       await page.context().close();
@@ -130,9 +135,9 @@ test.describe("Sections setup", () => {
 
       // Switch to section B and confirm its own recommendations are offered.
       await selectSection(page, "B");
-      await expect(
-        page.getByTestId("movement-card").first(),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(page.getByTestId("movement-card").first()).toBeVisible({
+        timeout: 15000,
+      });
     } finally {
       await deleteGame(page, gameId);
       await page.context().close();

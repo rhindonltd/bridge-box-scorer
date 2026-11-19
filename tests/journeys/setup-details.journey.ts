@@ -205,7 +205,7 @@ test.describe("Splitting into sections with pairs already seated", () => {
         .getByRole("button", { name: "Split", exact: true })
         .click();
       await expect(
-        director.getByRole("tab", { name: /Section B/ }),
+        director.getByRole("tab", { name: "B", exact: true }),
       ).toBeVisible({
         timeout: 15000,
       });

@@ -8,6 +8,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { GameStateGuard } from "./GameStateGuard";
+import { setNavIntent, takeNavIntent } from "@/lib/nav-intent";
 
 function renderGuard(props: { allowed: boolean; loading: boolean }) {
   return render(
@@ -43,5 +44,12 @@ describe("GameStateGuard", () => {
 
     expect(screen.queryByTestId("child")).not.toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it("follows a screen's recorded destination instead of its own", async () => {
+    setNavIntent("/");
+    renderGuard({ allowed: false, loading: false });
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    expect(takeNavIntent()).toBeNull();
   });
 });

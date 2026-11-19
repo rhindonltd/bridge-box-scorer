@@ -119,3 +119,13 @@ export function expectRankingConsistent(
 export function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
+
+/**
+ * Whether a pair-id cell shows `pairId`. Single-section events (and sections
+ * ranked separately) show ids without their section letter ("A2NS" → "2NS"),
+ * so both forms match.
+ */
+export function cellIsPair(cell: string, pairId: string): boolean {
+  const bare = (id: string) => id.replace(/^[A-Za-z]+(?=\d)/, "");
+  return cell === pairId || cell === bare(pairId);
+}

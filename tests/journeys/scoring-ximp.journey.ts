@@ -13,6 +13,7 @@ import {
   readScoreTables,
   tableWithHeader,
   type ScoreTableData,
+  cellIsPair,
 } from "../fixtures/score-tables";
 import {
   closeDevices,
@@ -157,7 +158,7 @@ test.describe("Pairs Cross-IMPs", () => {
       //   140 -> (IMP(230)  + IMP(20))   / 2 = ( 6 + 1) / 2 = +3.5
       // East/West get the mirror image on every line.
       const read = (nsSeat: string) => {
-        const row = traveller.rows.find((r) => r[0].includes(nsSeat))!;
+        const row = traveller.rows.find((r) => cellIsPair(r[0], nsSeat))!;
         return {
           score: parseScore(row[3]),
           nsImp: parseScore(row[4]),

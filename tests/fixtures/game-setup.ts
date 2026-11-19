@@ -59,12 +59,12 @@ export async function addSection(page: Page): Promise<void> {
   ).toHaveCount(0, { timeout: 15000 });
 }
 
-/** Switch to a section via its pill (e.g. "Section B"). */
+/** Switch to a section via its pill, which shows the section's name (its letter until renamed). */
 export async function selectSection(
   page: Page,
   section: string,
 ): Promise<void> {
-  await page.getByRole("tab", { name: new RegExp(`Section ${section}`) }).click();
+  await page.getByRole("tab", { name: section, exact: true }).click();
 }
 
 async function readTableCount(page: Page): Promise<number> {
@@ -182,9 +182,9 @@ async function confirmSwissForm(page: Page): Promise<void> {
   );
   await confirm.click();
   expect((await saved).ok()).toBe(true);
-  await expect(
-    page.getByRole("button", { name: "Saving…" }),
-  ).toHaveCount(0, { timeout: 15000 });
+  await expect(page.getByRole("button", { name: "Saving…" })).toHaveCount(0, {
+    timeout: 15000,
+  });
 }
 
 /**

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Spinner } from "@/components/common/Spinner";
 import { useRouter } from "next/navigation";
+import { takeNavIntent } from "@/lib/nav-intent";
 
 interface Props {
   /**
@@ -40,7 +41,9 @@ export function GameStateGuard({
 
   useEffect(() => {
     if (!loading && !allowed) {
-      router.replace(redirectTo);
+      // A screen that is already navigating away (after finalise / reopen)
+      // takes precedence over this guard's default destination.
+      router.replace(takeNavIntent() ?? redirectTo);
     }
   }, [loading, allowed, redirectTo, router]);
 

@@ -9,6 +9,7 @@ import { useFinaliseCheck } from "@/hooks/finalise-check";
 import { useSections } from "@/hooks/sections";
 import { finaliseGame } from "@/lib/game-service";
 import { errorMessage } from "@/lib/error-message";
+import { clearNavIntent, setNavIntent } from "@/lib/nav-intent";
 import type { FinaliseProblem } from "@/model/finalise-validator";
 
 /** Group problems by their section, preserving first-seen order. */
@@ -56,12 +57,16 @@ export function FinaliseGameScreen() {
     /* v8 ignore next -- re-entrancy guard: the buttons are disabled while finalising */
     if (!canFinalise || finalising) return;
     setFinalising(true);
+    // The finalised game is broadcast before the reply, and the manage guard
+    // would then redirect to the export page; send it to the main menu too.
+    setNavIntent("/");
     try {
       await finaliseGame(game.gameId);
       // Finalised games leave the manage list: go back to the main menu.
       router.replace("/");
       void mutateGame();
     } catch (err) {
+      clearNavIntent();
       alert(errorMessage(err, "Failed to finalise game"));
       setConfirming(false);
     } finally {
