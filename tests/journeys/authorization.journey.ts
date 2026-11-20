@@ -252,14 +252,14 @@ test.describe("Authorization: intentionally-open events (by design)", () => {
 
       // A bad code is rejected (no auth required to try) — 400 client error.
       const badRes = await request.post("/api/director-codes/claim", {
-        data: { code: "ZZZZZZ" },
+        data: { code: "ZZZZZZ", gameId },
       });
       expect(badRes.ok()).toBe(false);
       expect(badRes.status()).toBe(400);
 
       // The real code is claimed with NO prior auth, minting a director token.
       const claimRes = await request.post("/api/director-codes/claim", {
-        data: { code },
+        data: { code, gameId },
       });
       expect(claimRes.ok()).toBe(true);
       const claim = (await claimRes.json()).result as {

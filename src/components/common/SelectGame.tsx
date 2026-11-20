@@ -17,6 +17,10 @@ interface Props {
   backHref?: string;
   /** Shown when the list is empty. Defaults to the "no games created" text. */
   emptyMessage?: string;
+  /** Content shown above the list (e.g. a "Create Game" button). */
+  topContent?: React.ReactNode;
+  /** A heading for the list, shown when it has games. */
+  listHeading?: string;
 }
 
 export function SelectGame({
@@ -26,10 +30,13 @@ export function SelectGame({
   onGameSelected,
   backHref,
   emptyMessage = "No games have been created yet.",
+  topContent,
+  listHeading,
 }: Props) {
   return (
     <PageLayout headerTitle={headerTitle} backHref={backHref}>
       <div className="flex min-h-full flex-col">
+        {topContent && <div className="px-4 pt-4">{topContent}</div>}
         {isLoading && (
           <div className="flex justify-center py-12">
             <Spinner />
@@ -44,6 +51,11 @@ export function SelectGame({
 
         {!isLoading && games.length > 0 && (
           <div className="flex flex-col gap-2 p-4">
+            {listHeading && (
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                {listHeading}
+              </h2>
+            )}
             {games.map((game) => (
               <button
                 key={game.gameId}

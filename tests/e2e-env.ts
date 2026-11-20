@@ -52,6 +52,9 @@ export const E2E_SERVER_ENV = {
   DATABASE_GAMES_URL: E2E_GAMES_DIR,
   PORT: String(E2E_PORT),
   CLOUD_SYNC_STATUS_PATH: E2E_CLOUD_SYNC_STATUS_FILE,
+  // Every simulated device connects from this machine; let each one name
+  // itself (see src/lib/net/client-address.ts). Never set on a real box.
+  BRIDGEBOX_TRUST_TEST_DEVICE_HEADER: "1",
 } as const;
 
 /** Path to a game's SQLite file in the E2E data directory. */

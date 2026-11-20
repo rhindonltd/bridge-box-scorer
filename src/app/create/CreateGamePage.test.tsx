@@ -40,7 +40,9 @@ function todayDateOnly(): string {
 // are present (tapping it while blank highlights the empty field and stays
 // put), so fill them unless the caller already did (e.g. via the BridgeWebs
 // picker, which supplies the event name itself).
-function goToOptionsStep({ fillDetails = true }: { fillDetails?: boolean } = {}) {
+function goToOptionsStep({
+  fillDetails = true,
+}: { fillDetails?: boolean } = {}) {
   if (fillDetails) {
     const eventName = screen.getByLabelText("Event Name");
     if ((eventName as HTMLInputElement).value.trim() === "") {

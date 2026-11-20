@@ -15,7 +15,7 @@ import { gotoStable } from "./support";
  * game can start short. Seeded with `prestart` (seated, movement chosen, not
  * started); manual equivalents are docs/e2e/11 (EL-*) and 01.
  */
-test.describe("Edit Event Details", () => {
+test.describe("Game Details", () => {
   test("renaming saves; changing the scoring asks first and clears the movement", async ({
     browser,
     request,
@@ -42,9 +42,14 @@ test.describe("Edit Event Details", () => {
         };
       expect((await gameRow()).selectedMovement).toBeTruthy();
 
-      // The setup flow's back arrow leads out to Edit Event Details.
-      await director.getByRole("button", { name: "Go back" }).click();
-      await expect(director.getByText("Edit Event Details")).toBeVisible({
+      // The setup menu's Game Details button opens the details.
+      const openDetails = async () => {
+        await director.getByRole("button", { name: "Game Details" }).click();
+      };
+      await openDetails();
+      await expect(
+        director.getByText("Game Details", { exact: true }),
+      ).toBeVisible({
         timeout: 15000,
       });
 
@@ -56,7 +61,7 @@ test.describe("Edit Event Details", () => {
       expect((await gameRow()).selectedMovement).toBeTruthy();
 
       // Changing the scoring clears the movement, so it is confirmed first.
-      await director.getByRole("button", { name: "Go back" }).click();
+      await openDetails();
       await director.getByLabel("Scoring").selectOption("XIMP");
       let message = "";
       director.once("dialog", (d) => {

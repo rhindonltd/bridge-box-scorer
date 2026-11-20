@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
+import { createGame } from "../fixtures/game-create";
+import { deriveAdminKey } from "../fixtures/settings";
 import {
   newParticipant,
   setUpStartedTwoTableGame,
@@ -20,7 +22,10 @@ import {
  *   2. Device B — which is NOT a director for the game — goes to /manage,
  *      selects the game (which prompts for the code), claims it, and lands on
  *      the manage menu with director-only actions.
- *   3. A wrong code shows the "Invalid code" error.
+ *   3. A wrong code is rejected.
+ *   4. If the director's device is lost, the Bridge Box admin key works in
+ *      place of a share code, both for a running game (Manage Game) and for
+ *      one still being set up (Create Game).
  */
 
 test.describe("Share director access round-trip", () => {
@@ -106,9 +111,9 @@ test.describe("Share director access round-trip", () => {
 
       // Scope to the claim view's error paragraph (Next's route announcer also
       // has role=alert, so match the visible error text directly).
-      await expect(deviceB.getByText("Invalid code")).toBeVisible({
-        timeout: 15000,
-      });
+      await expect(
+        deviceB.getByText("That isn't a valid share code or the admin key."),
+      ).toBeVisible({ timeout: 15000 });
       // Still on the claim screen, not navigated into manage.
       await expect(deviceB).toHaveURL(/\/manage$/);
     } finally {
@@ -223,6 +228,79 @@ test.describe("Share director access round-trip", () => {
       await directorPage.context().close();
       await deviceB.context().close();
       await deviceC.context().close();
+    }
+  });
+
+  test("the admin key makes another device director of a running game", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const adminKey = deriveAdminKey();
+    test.skip(!adminKey, "No admin key label file on this machine.");
+    const eventName = `Admin Key Manage ${Date.now()}`;
+    const { directorPage, gameId } = await setUpStartedTwoTableGame(
+      browser,
+      eventName,
+      { recordOpeningLead: false },
+    );
+    // Device B stands in for a replacement device: the director's own device
+    // is unavailable, so nobody can issue a share code.
+    const deviceB = await newParticipant(browser);
+    try {
+      await deviceB.goto("/manage");
+      await deviceB
+        .getByRole("button", { name: new RegExp(eventName) })
+        .click();
+      const input = deviceB.locator("#share-code");
+      await expect(input).toBeVisible({ timeout: 15000 });
+      await input.fill(adminKey!);
+      await deviceB.getByRole("button", { name: "Claim Access" }).click();
+      await deviceB.waitForURL(new RegExp(`/game/${gameId}/manage$`), {
+        timeout: 15000,
+      });
+      await expect(
+        deviceB.getByRole("button", { name: "Delete Game" }),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await deviceB.context().close();
+    }
+  });
+
+  test("the admin key makes another device director of a game still being set up", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const adminKey = deriveAdminKey();
+    test.skip(!adminKey, "No admin key label file on this machine.");
+    const eventName = `Admin Key Create ${Date.now()}`;
+    const directorPage = await newParticipant(browser);
+    const { gameId } = await createGame(directorPage, {
+      eventName,
+      recordOpeningLead: false,
+    });
+    const deviceB = await newParticipant(browser);
+    try {
+      await deviceB.goto("/create");
+      await deviceB
+        .getByRole("button", { name: new RegExp(eventName) })
+        .click();
+      const input = deviceB.locator("#share-code");
+      await expect(input).toBeVisible({ timeout: 15000 });
+      await input.fill(adminKey!);
+      await deviceB.getByRole("button", { name: "Claim Access" }).click();
+      // Lands on the game's setup screens, as its director.
+      await deviceB.waitForURL(new RegExp(`/game/${gameId}/create`), {
+        timeout: 15000,
+      });
+      await expect(
+        deviceB.getByRole("button", { name: "Start Game", exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(directorPage, gameId);
+      await directorPage.context().close();
+      await deviceB.context().close();
     }
   });
 });

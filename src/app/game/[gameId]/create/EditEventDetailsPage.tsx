@@ -129,7 +129,7 @@ export function EditEventDetailsPage({ onDone }: Props) {
 
   return (
     <GamePageLayout
-      headerTitle="Edit Event Details"
+      headerTitle="Game Details"
       backAction={onDone}
       actions={
         <button

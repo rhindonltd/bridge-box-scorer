@@ -62,16 +62,15 @@ describe("ClaimDirectorCode", () => {
     expect(mockClaimDirectorCode).not.toHaveBeenCalled();
   });
 
-  it("claims the code (trimmed + uppercased) and reports success", async () => {
+  it("claims the code for this game, trimmed but in its own case, and reports success", async () => {
     mockClaimDirectorCode.mockResolvedValue("g1");
     const props = renderComponent();
 
     fireEvent.change(screen.getByLabelText("code"), {
-      target: { value: " abc123 " },
+      target: { value: " Admin-Key " },
     });
     fireEvent.click(screen.getByText("submit"));
-
-    expect(mockClaimDirectorCode).toHaveBeenCalledWith("ABC123");
+    expect(mockClaimDirectorCode).toHaveBeenCalledWith("Admin-Key", "g1");
     expect(screen.getByTestId("loading")).toHaveTextContent("true");
 
     await waitFor(() => expect(props.onSuccess).toHaveBeenCalled());

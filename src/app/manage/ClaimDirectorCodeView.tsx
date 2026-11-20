@@ -31,7 +31,8 @@ export function ClaimDirectorCodeView({
           <button
             type="submit"
             form="claim-director-code"
-            disabled={loading || code.length < 6}
+            // A share code is 6 characters; an admin key is at least 4.
+            disabled={loading || code.trim().length < 4}
             className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {loading ? "Claiming..." : "Claim Access"}
@@ -52,7 +53,8 @@ export function ClaimDirectorCodeView({
           Become Director
         </h1>
         <p className="text-base text-gray-600 mb-8 text-center">
-          Please enter the share code
+          Enter a share code from another director, or this Bridge Box&rsquo;s
+          admin key.
         </p>
 
         <form
@@ -65,18 +67,18 @@ export function ClaimDirectorCodeView({
         >
           <div>
             <label htmlFor="share-code" className="sr-only">
-              Share Code
+              Share code or admin key
             </label>
             <input
               id="share-code"
               type="text"
               value={code}
-              onChange={(e) => onCodeChange(e.target.value.toUpperCase())}
-              placeholder="Enter code"
-              maxLength={6}
+              onChange={(e) => onCodeChange(e.target.value)}
+              placeholder="Share code or admin key"
+              maxLength={64}
               autoFocus
               autoComplete="off"
-              className="w-full text-center text-2xl font-mono font-bold tracking-[0.3em] p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase"
+              className="w-full text-center text-2xl font-mono font-bold tracking-[0.3em] p-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-base placeholder:font-sans placeholder:tracking-normal placeholder:font-normal"
             />
           </div>
 

@@ -12,11 +12,18 @@ vi.mock("@/lib/director-token", () => ({
   verifyDirectorTokenWithServer: (...args: unknown[]) => mockVerify(...args),
 }));
 
+const mockStarted = vi.hoisted(() => ({ started: true, isLoading: false }));
+vi.mock("@/hooks/game-started", () => ({
+  useGameStarted: () => mockStarted,
+}));
+
 import { DirectorGuard } from "./DirectorGuard";
 
 describe("DirectorGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStarted.started = true;
+    mockStarted.isLoading = false;
   });
 
   it("renders children only after the server confirms the director token", async () => {
@@ -83,6 +90,30 @@ describe("DirectorGuard", () => {
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/manage"));
     // The protected content must never render for an invalid token.
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument();
+  });
+
+  it("sends a game still being set up to Create Game, once that is known", async () => {
+    mockVerify.mockResolvedValue(false);
+    mockStarted.started = false;
+    mockStarted.isLoading = true;
+    const { rerender } = render(
+      <DirectorGuard gameId="g3">
+        <span data-testid="child">secret</span>
+      </DirectorGuard>,
+    );
+    // Wait for the check, then confirm nothing happens until started is known.
+    await waitFor(() => expect(mockVerify).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    mockStarted.isLoading = false;
+    rerender(
+      <DirectorGuard gameId="g3">
+        <span data-testid="child">secret</span>
+      </DirectorGuard>,
+    );
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/create"));
     expect(screen.queryByTestId("child")).not.toBeInTheDocument();
   });
 });

@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockSetAdminToken = vi.fn();
+vi.mock("@/lib/director-alerts-seen", () => ({
+  newOwnSignInId: () => "origin-1",
+}));
+vi.mock("@/lib/player-token", () => ({
+  heldSeats: () => [{ gameId: "g1", seat: "A1NS", token: "seat-tok" }],
+}));
 vi.mock("@/lib/admin-token", () => ({
   setAdminToken: (...args: unknown[]) => mockSetAdminToken(...args),
 }));
@@ -77,7 +83,11 @@ describe("AdminKeyEntry", () => {
       "/api/system/admin-key/verify",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ key: "secret" }),
+        body: JSON.stringify({
+          key: "secret",
+          seats: [{ gameId: "g1", seat: "A1NS", token: "seat-tok" }],
+          originId: "origin-1",
+        }),
       }),
     );
   });

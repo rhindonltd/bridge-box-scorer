@@ -4,6 +4,7 @@ import {
   setPlayerToken,
   getPlayerToken,
   clearPlayerToken,
+  heldSeats,
 } from "./player-token";
 
 describe("player token store", () => {
@@ -45,5 +46,12 @@ describe("player token store", () => {
 
     expect(getPlayerToken("g1")).toBeNull();
     expect(getPlayerToken("g2")?.token).toBe("tok-2");
+  });
+
+  it("lists every seat this device holds, skipping unreadable entries", () => {
+    setPlayerToken("g1", { startingPosition: "A3NS", token: "t1" });
+    localStorage.setItem("player:broken", "{not json");
+    localStorage.setItem("director:g1", "x");
+    expect(heldSeats()).toEqual([{ gameId: "g1", seat: "A3NS", token: "t1" }]);
   });
 });

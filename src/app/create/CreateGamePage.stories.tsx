@@ -15,7 +15,7 @@ const meta: Meta<typeof CreateGamePage> = {
     nextjs: {
       appDirectory: true,
       navigation: {
-        pathname: "/create",
+        pathname: "/create/new",
       },
     },
   },

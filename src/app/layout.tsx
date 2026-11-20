@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AppNavigationTracker } from "@/components/layout/AppNavigationTracker";
+import { DirectorAlerts } from "@/components/security/DirectorAlerts";
 
 // Inter, self-hosted (SIL OFL, see src/app/fonts/OFL.txt). Served from the repo
 // via next/font/local rather than next/font/google so `next build` makes no
@@ -49,6 +50,8 @@ export default function RootLayout({
         <div className="mx-auto max-w-2xl h-dvh bg-white flex flex-col overflow-hidden">
           {children}
         </div>
+        {/* Security alerts for directors, shown over every screen. */}
+        <DirectorAlerts />
       </body>
     </html>
   );

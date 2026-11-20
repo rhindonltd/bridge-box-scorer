@@ -89,7 +89,7 @@ Use **F11-A**. Manage Games → the E2E event → **Set Up Game** → **Tables**
 |---|---|---|
 | ☐ EL-1 | Tap **Table 3**; look at the **East / West** row. | Empty, with an **"Expected late"** toggle (**No / Yes**) and "Start without this pair; seat them when they arrive." |
 | ☐ EL-2 | Look at a **seated** row. | An **"Evict pair"** button; no expected-late toggle. |
-| ☐ EL-3 | Leave A3EW unmarked. Setup menu → **Start Game**. | **Ready**: one empty seat is the single permitted **sit-out**. |
+| ☐ EL-3 | Leave A3EW unmarked. Back to the **Set Up Game** menu → **Start Game**. | **Ready**: one empty seat is the single permitted **sit-out**. |
 | ☐ EL-4 | Back on **Tables**, evict **table 2's N/S** pair (Table 2 → **Evict pair** → confirm). Open **Start Game**. | **Blocked**, with both: "One or more tables have only one pair seated. Seat both pairs, mark the empty seat as expected late, or leave the whole table empty." and "More than one pair is missing. A session allows at most one sit-out — mark the other empty seats as expected late to start without them." |
 | ☐ EL-5 | Mark **both** empty seats **Expected late = Yes** (Table 3 E/W, Table 2 N/S). **Done** → **Start Game**. | **Ready**: any number of seats may be expected late. |
 | ☐ EL-6 | Set both toggles back to **No**. Seat a pair at table 2 N/S again (Join Game on a device), then evict **table 3's N/S** pair so the whole of table 3 is empty. Open **Start Game**. | **Blocked** with only "More than one pair is missing…": no half-table message, because table 3 is wholly empty. |

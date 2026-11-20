@@ -15,8 +15,21 @@ const store = createKeyedTokenStore<string>(
   (raw) => raw,
 );
 
+/**
+ * Fired on `window` whenever this device gains or loses a director token, so
+ * the director-alert listener can re-join the right rooms straight away.
+ */
+export const DIRECTOR_TOKENS_CHANGED = "bridgebox:director-tokens-changed";
+
+function announceChange(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(DIRECTOR_TOKENS_CHANGED));
+  }
+}
+
 export function setDirectorToken(gameId: string, token: string): void {
   store.set(gameId, token);
+  announceChange();
 }
 
 export function getDirectorToken(gameId: string): string | null {
@@ -25,6 +38,17 @@ export function getDirectorToken(gameId: string): string | null {
 
 export function clearDirectorToken(gameId: string): void {
   store.clear(gameId);
+  announceChange();
+}
+
+/** Every game this device holds a director token for. */
+export function heldDirectorTokens(): {
+  gameId: string;
+  directorToken: string;
+}[] {
+  return store
+    .entries()
+    .map(([gameId, directorToken]) => ({ gameId, directorToken }));
 }
 
 export function isDirectorFor(gameId: string): boolean {

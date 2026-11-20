@@ -18,8 +18,16 @@ to enter it; you won't be asked again on that device until you **Log Out**. If
 you are asked again partway through ("Session expired. Please re-enter the
 admin key."), enter the key and carry on.
 
-> The admin key protects the Bridge Box's settings; it is not a per-game
-> director code. Directors do not need it to run a game.
+> The admin key protects the Bridge Box's settings. Directors do not need it
+> to run a game, but it also lets any device become a game's director if the
+> director's own device has been lost (see the
+> [Director Guide](director-guide.md#if-the-directors-device-is-lost)). Keep it
+> somewhere a director can get at it in an emergency.
+>
+> Every unlock of Settings is reported to every director's phone or tablet,
+> and three wrong keys within 2 minutes from one device alert them too and
+> lock that device out for 5 minutes (see
+> [Security alerts](director-guide.md#security-alerts)).
 
 ---
 

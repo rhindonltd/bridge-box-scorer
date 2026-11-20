@@ -5,7 +5,10 @@ import { ScoringType } from "@/db/games/types/scoring-type";
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
+import type { CallingTable } from "@/model/director-alert";
 import { setDirectorToken, getDirectorToken } from "@/lib/director-token";
+import { heldSeats } from "@/lib/player-token";
+import { newOwnSignInId } from "@/lib/director-alerts-seen";
 import {
   setPlayerToken,
   getPlayerToken,
@@ -300,16 +303,28 @@ export async function updateEventDetails(
 }
 
 /**
- * Claim a director share code. No auth (the caller has no token yet) — the code
- * is the credential. On success the minted director token is stored locally
- * keyed by the resolved gameId, which is returned. Throws with the server's
- * error message (e.g. invalid/expired/used code) on failure.
+ * Become a director of `forGameId` by claiming a share code, or with the
+ * Bridge Box's admin key. No auth (the caller has no token yet): the code is the
+ * credential. On success the minted director token is stored locally keyed by
+ * the resolved gameId, which is returned. Throws with the server's error
+ * message (e.g. invalid/expired/used code) on failure.
  */
-export async function claimDirectorCode(code: string): Promise<string> {
+export async function claimDirectorCode(
+  code: string,
+  forGameId: string,
+): Promise<string> {
   const res = await fetch("/api/director-codes/claim", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
+    // The gameId lets the server accept the admin key for this game; the
+    // held seats let the other directors' alert say who this device is, and
+    // the origin id lets this device skip that alert itself.
+    body: JSON.stringify({
+      code,
+      gameId: forGameId,
+      seats: heldSeats(),
+      originId: newOwnSignInId(),
+    }),
   });
 
   const data = await res.json().catch(() => null);
@@ -321,7 +336,6 @@ export async function claimDirectorCode(code: string): Promise<string> {
     directorToken: string;
     gameId: string;
   };
-
   setDirectorToken(gameId, directorToken);
 
   return gameId;
@@ -565,4 +579,20 @@ export async function watchSeat(
   } catch {
     return "unknown";
   }
+}
+
+/**
+ * Ask the director to come to this seat's table. Authed by the seat's own
+ * token. Resolves with the table the director was sent to and how many times
+ * this seat has now called (calling again before a director answers bumps the
+ * same call). Throws the server's message on failure.
+ */
+export async function callDirector(
+  gameId: string,
+  seat: string,
+): Promise<{ table: CallingTable; calls: number }> {
+  return emitWithAck<{ table: CallingTable; calls: number }>(
+    SocketEvents.CALL_DIRECTOR,
+    { gameId, seat, token: getPlayerToken(gameId)?.token ?? "" },
+  );
 }

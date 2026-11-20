@@ -123,4 +123,40 @@ describe("SelectGame", () => {
     const button = screen.getByText("Game A").closest("button");
     expect(button).toHaveClass("w-full", "bg-gray-50", "border", "rounded-xl");
   });
+
+  it("shows top content and a list heading above the games", () => {
+    render(
+      <SelectGame
+        headerTitle="Title"
+        games={mockGames}
+        onGameSelected={vi.fn()}
+        topContent={<button>Create Game</button>}
+        listHeading="Not started yet"
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Create Game" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Not started yet" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the top content but no heading when the list is empty", () => {
+    render(
+      <SelectGame
+        headerTitle="Title"
+        games={[]}
+        onGameSelected={vi.fn()}
+        topContent={<button>Create Game</button>}
+        listHeading="Not started yet"
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Create Game" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Not started yet" }),
+    ).toBeNull();
+  });
 });

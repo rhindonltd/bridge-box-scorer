@@ -16,7 +16,13 @@ share a code (see [Sharing director access](#sharing-director-access)).
 
 ### Step 1: Open the create form
 
-From the home screen, tap **Create Game**.
+From the home screen, tap **Create Game**. This screen has a **Create Game**
+button at the top and, below it, the games that have been created but not
+started yet (**Not started yet**). Tap one of those to carry on setting it up;
+from a different device you are asked for a share code first (see
+[Sharing director access](#sharing-director-access)).
+
+To set up a new game, tap **Create Game** at the top.
 
 The create form is split across two pages so neither screen is crowded.
 
@@ -69,23 +75,32 @@ You are taken to the **setup** screen for the new game.
 
 ## Setting up the game
 
-Setup has three tabs. You can move between them freely, and you don't have to
-finish them in order.
+After you create a game, or pick one that is still being set up under
+**Create Game**, you land on the **Set Up Game** menu:
 
-```
-Tables  →  Movements  →  Timer
-```
+- **Game Details**: the event name, director, type, scoring and options you set
+  when creating the game.
+- **Tables**: how many tables, and who sits where.
+- **Movement**: choose the movement.
+- **Timer**: optional session timer.
+- **Start Game**: shows anything still needed, then starts the game.
+- **Delete Game** _(red)_: deletes the game after a confirmation.
 
-The back arrow (top-left) on any of these tabs takes you back to whichever
-setup tab you were on just before — so if you came to Movements from Tables,
-back returns you to Tables. A second back from there doesn't bounce you between
-the two tabs; it opens the **Edit Event Details** screen instead. And if you
-haven't moved between the tabs yet (you've only just arrived at setup), the
-back arrow opens **Edit Event Details** straight away — pre-filled with what
-you set when creating the game — the
+You can do them in any order. The back arrow (top-left) on each page returns to
+this menu, so to move from one page to another go back and tap the next button.
+The back arrow on the menu itself returns to the list of games not yet started.
+The top-right menu on Tables, Movement, Timer and Start Game only has **Share
+Director Access**.
+
+The menu's own top-right menu only has **Share Director Access**. To get back
+to the main menu, use the back arrow: from the menu to the list of games not
+yet started, then once more.
+
+**Game Details** is pre-filled with what you set when creating the game: the
 event name, director, event type, scoring, tournament level, and the Record
-Opening Lead / Allow Hand Entry switches. Adjust anything there and tap **Save**
-to return to setup, or use its back arrow to return without changes.
+Opening Lead / Allow Hand Entry switches. Adjust anything and tap **Save** to
+return to the menu, or use its back arrow to return without changes. You can come back to a game later from
+**Create Game** on the main menu, until it is started.
 
 > **Note:** changing the **event type** or **scoring** here clears the movement
 > you've already selected (the two have to match), so you'll be asked to confirm
@@ -302,7 +317,9 @@ all sections** to copy it to them all.
 ### Opening the director menu
 
 1. From the home screen, tap **Manage Game**.
-2. Tap your game in the list.
+2. Tap your game in the list. Only games that have started are listed here: a
+   game still being set up is under **Create Game**, and a finalised one under
+   **Export Game**.
 3. If you created the game on this device, you go straight to the **Manage
    Game Menu**.
 4. If you are managing from a **different** device for the first time, you are
@@ -328,7 +345,7 @@ example, to correct a board and then return to enter your own table's result.
 
 | Option                    | What it does                                                              |
 | ------------------------- | ------------------------------------------------------------------------- |
-| **Set Up Game**           | Returns to the Tables / Movements / Timer setup tabs. Shown only before the game starts. |
+| **Set Up Game**           | Returns to the Set Up Game menu (Tables, Movement, Timer, Start Game). Shown only before the game starts. |
 | **Travellers**            | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)). |
 | **Deals**                 | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)). |
 | **Movement**              | View or change the movement; in a Swiss event, draw the next round.       |
@@ -342,8 +359,7 @@ example, to correct a board and then return to enter your own table's result.
 **Delete Game** is always there. The other options (apart from **Set Up Game**)
 appear once the game has started.
 
-Before the game starts, the **timer** is set up on **Set Up Game → Timer
-tab**. Once the game is in progress, tap **Timer** on the Manage Game Menu for
+Before the game starts, the **timer** is set up on **Set Up Game → Timer**. Once the game is in progress, tap **Timer** on the Manage Game Menu for
 the live timer controls (start, pause, adjust).
 
 ### Drawing the next Swiss round
@@ -690,13 +706,66 @@ share access with a short code:
    choose **Share Director Access**. Use the back arrow afterwards to return
    to the page you were on.
 2. A short share code appears on screen.
-3. The other person opens **Manage Game**, taps the same game, and enters the
-   code on the **Claim Director Code** screen.
+3. The other person opens **Manage Game** (or **Create Game**, for a game that
+   hasn't started yet), taps the same game, and enters the code on the
+   **Become Director** screen.
 4. They now have full director access to that game from their device.
 
 Director access is stored per device and per game, so several games can be
 directed from the same device at once, and a co-director keeps access on their
 own device.
+
+### If the director's device is lost
+
+If the director's phone or tablet dies, runs flat or goes home, there may be
+no-one left who can issue a share code. Use the Bridge Box's **admin key**
+instead: on another device open **Manage Game** (or **Create Game** for a game
+not started yet), tap the game, enter the admin key on the **Become Director**
+screen and tap **Claim Access**. That device is now a director of the game.
+The admin key is case-sensitive; share codes are not.
+
+### Security alerts
+
+Every director's phone or tablet shows a **Security alert** popup, on any
+screen, when:
+
+- someone becomes a director of their game (with a share code or the admin
+  key);
+- someone unlocks this Bridge Box's **Settings** (every director is told,
+  whatever their game);
+- one phone or tablet gets the code wrong **three times within 2 minutes**,
+  on the Become Director screen or the Settings unlock. That device is then
+  refused for **5 minutes** ("Too many attempts. Try again in 5 minutes.").
+
+The alert says when it happened and, if the device has joined a table at a game
+being played, who is sitting there. For example: "Mary Smith & John Jones
+(Table 3 NS, Monday Pairs) became a director of Monday Pairs using the admin
+key." A device that hasn't joined a table shows as "A device that isn't seated
+at a game". The phone or tablet that signed in doesn't get an alert about
+itself.
+
+Each alert stays until you tap **Dismiss**. If your phone was asleep, alerts
+from the last 30 minutes are shown when it reconnects, but only those raised
+since you became a director.
+
+### Calls from players
+
+A player can ask for you from the play screen: **Menu → Call Director**, then
+confirm. Every director's phone or tablet then plays a chime and shows a
+**Director called** popup, on any screen, that leads with where to go, for
+example "Go to Table 3, Round 2". It also names the pair and the game.
+
+- The table is worked out from the pair's position this round, so it is right
+  even in a movement where pairs change table.
+- If the pair calls again before anyone has answered, the same popup updates
+  ("They have called 2 times") and the chime plays again. It doesn't add a
+  second popup.
+- Tap **Dismiss** when you have dealt with it. The first director to dismiss
+  tells the pair "The director is on the way". Other directors keep their own
+  popup until they dismiss it, so each of you decides when you are done.
+- Your phone may stay silent until you have tapped the screen once after
+  opening the page. This is a browser rule. The popup still appears.
+- Calls stop once a game is finalised.
 
 ---
 

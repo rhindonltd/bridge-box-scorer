@@ -1,5 +1,9 @@
 import { Browser, Page, expect, test } from "@playwright/test";
 import { E2E_BASE_URL } from "../e2e-env";
+import {
+  dismissDirectorAlertsIn,
+  testDeviceHeaders,
+} from "../fixtures/test-device";
 
 /**
  * Assert an inline error/status message is visible by its TEXT.
@@ -21,10 +25,21 @@ export async function expectInlineError(
  * Open a fresh browser context + page using the active journey project's
  * device config, so each simulated participant (director, display, each pair)
  * has an isolated context — separate localStorage, separate sockets — exactly
- * like separate physical devices on the club LAN.
+ * like separate physical devices on the club LAN. Director security alerts are
+ * dismissed automatically unless `keepDirectorAlerts` is set.
  */
-export async function newParticipant(browser: Browser): Promise<Page> {
-  const context = await browser.newContext(test.info().project.use);
+export async function newParticipant(
+  browser: Browser,
+  { keepDirectorAlerts = false }: { keepDirectorAlerts?: boolean } = {},
+): Promise<Page> {
+  const context = await browser.newContext({
+    ...test.info().project.use,
+    // Each simulated device counts as its own device for sign-in attempts.
+    extraHTTPHeaders: testDeviceHeaders(),
+  });
+  // Director alert popups would otherwise cover what the journey taps; the
+  // alert journeys keep them so they can check them.
+  if (!keepDirectorAlerts) dismissDirectorAlertsIn(context);
   return context.newPage();
 }
 
@@ -43,7 +58,10 @@ export async function gotoStable(page: Page, url: string): Promise<void> {
       return;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (attempt === 2 || !message.includes("interrupted by another navigation")) {
+      if (
+        attempt === 2 ||
+        !message.includes("interrupted by another navigation")
+      ) {
         throw err;
       }
       await page.waitForTimeout(400);

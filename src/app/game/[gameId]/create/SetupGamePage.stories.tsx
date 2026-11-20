@@ -9,8 +9,8 @@ import { swrKeys } from "@/swr/swr-keys";
 const GAME_ID = mockGame.gameId;
 
 // SetupGamePage is a multi-step flow (tables / movement / timer / sections /
-// start) selected via a URL search param. Its default landing step is Tables,
-// which reads the game's pairs and sections. The individual step screens
+// start) selected via a URL search param. Its default landing step is the setup
+// menu; the Tables step reads the game's pairs and sections. The individual step screens
 // (ShowTablesPage, MovementStep, StartGameScreen, TimerSetup) each have their
 // own stories, so this story exercises the flow shell at its default step with
 // real (mocked) data rather than re-mocking every step here.
@@ -59,8 +59,21 @@ const meta: Meta<typeof SetupGamePage> = {
 export default meta;
 type Story = StoryObj<typeof SetupGamePage>;
 
-/** The default setup step (Tables), with the game's pairs/sections loaded. */
-export const TablesStep: Story = {};
+const TABLES_STEP_PARAMETERS = {
+  nextjs: {
+    appDirectory: true,
+    navigation: {
+      pathname: `/game/${GAME_ID}/create`,
+      query: { step: "tables" },
+    },
+  },
+};
+
+/** The landing page: Game Details, Tables, Movement, Timer, Start Game and Delete Game. */
+export const MenuStep: Story = {};
+
+/** The Tables step, with the game's pairs/sections loaded. */
+export const TablesStep: Story = { parameters: TABLES_STEP_PARAMETERS };
 
 /**
  * Regression guard: increasing the table count must succeed rather than raise
@@ -69,6 +82,7 @@ export const TablesStep: Story = {};
  * moves to 6 (5 → +1) with no error surfaced.
  */
 export const ResizeTables: Story = {
+  parameters: TABLES_STEP_PARAMETERS,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 

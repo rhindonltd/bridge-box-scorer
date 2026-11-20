@@ -303,7 +303,7 @@ test.describe("Teams IMP -> Victory Point scale (published values)", () => {
 test.describe("Choosing a Teams scoring method when creating a game", () => {
   /** The scoring values the create form offers for a Teams game. */
   async function teamsScoringOptions(page: Page): Promise<string[]> {
-    await page.goto("/create");
+    await page.goto("/create/new");
     await page.waitForLoadState("networkidle");
     await page.getByLabel("Event Name").fill("Scoring list");
     await page.getByLabel("Director Name").fill("E2E Director");

@@ -36,9 +36,8 @@ describe("game-index db", () => {
   });
 
   it("creates a game and returns the inserted row", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
 
     const created = await createBridgeGame(newGame({ gameId: "abc123" }));
     expect(created).toMatchObject({
@@ -50,12 +49,10 @@ describe("game-index db", () => {
   });
 
   it("finds a game by id and returns null for a missing id", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
-    const { findGameById } = await import(
-      "@/db/game-index/queries/find-game-by-id"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
+    const { findGameById } =
+      await import("@/db/game-index/queries/find-game-by-id");
 
     await createBridgeGame(newGame({ gameId: "find-me" }));
 
@@ -63,13 +60,11 @@ describe("game-index db", () => {
     expect(await findGameById("nope")).toBeNull();
   });
 
-  it("lists all games newest-first", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
-    const { findAllGames } = await import(
-      "@/db/game-index/queries/find-all-games"
-    );
+  it("lists games not started yet newest-first, and none as started", async () => {
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
+    const { findAllGames, findNotStartedGames } =
+      await import("@/db/game-index/queries/find-all-games");
 
     await createBridgeGame(
       newGame({ gameId: "older", createdAt: "2024-01-01 00:00:00" }),
@@ -78,20 +73,20 @@ describe("game-index db", () => {
       newGame({ gameId: "newer", createdAt: "2024-06-01 00:00:00" }),
     );
 
-    const all = await findAllGames();
-    expect(all.map((g) => g.gameId)).toEqual(["newer", "older"]);
+    // Neither game has been started (no per-game boards), so both are listed
+    // under Create Game and neither under Manage Game.
+    const notStarted = await findNotStartedGames();
+    expect(notStarted.map((g) => g.gameId)).toEqual(["newer", "older"]);
+    expect(await findAllGames()).toEqual([]);
   });
 
   it("updates the table count for a game", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
-    const { updateTableCount } = await import(
-      "@/db/game-index/actions/update-table-count"
-    );
-    const { findGameById } = await import(
-      "@/db/game-index/queries/find-game-by-id"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
+    const { updateTableCount } =
+      await import("@/db/game-index/actions/update-table-count");
+    const { findGameById } =
+      await import("@/db/game-index/queries/find-game-by-id");
 
     await createBridgeGame(newGame({ gameId: "resize", tables: 8 }));
     await updateTableCount("resize", 12);
@@ -100,15 +95,12 @@ describe("game-index db", () => {
   });
 
   it("round-trips the selected movement (null before, typed value after)", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
-    const { setSelectedMovement } = await import(
-      "@/db/game-index/actions/set-selected-movement"
-    );
-    const { getSelectedMovement } = await import(
-      "@/db/game-index/queries/get-selected-movement"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
+    const { setSelectedMovement } =
+      await import("@/db/game-index/actions/set-selected-movement");
+    const { getSelectedMovement } =
+      await import("@/db/game-index/queries/get-selected-movement");
 
     await createBridgeGame(newGame({ gameId: "mv" }));
     expect(await getSelectedMovement("mv")).toBeNull();
@@ -125,19 +117,16 @@ describe("game-index db", () => {
   });
 
   it("returns null selected movement for an unknown game", async () => {
-    const { getSelectedMovement } = await import(
-      "@/db/game-index/queries/get-selected-movement"
-    );
+    const { getSelectedMovement } =
+      await import("@/db/game-index/queries/get-selected-movement");
     expect(await getSelectedMovement("ghost")).toBeNull();
   });
 
   it("includes only games dated today or later in joinable games", async () => {
-    const { createBridgeGame } = await import(
-      "@/db/game-index/actions/create-game"
-    );
-    const { findJoinableGames } = await import(
-      "@/db/game-index/queries/find-joinable-games"
-    );
+    const { createBridgeGame } =
+      await import("@/db/game-index/actions/create-game");
+    const { findJoinableGames } =
+      await import("@/db/game-index/queries/find-joinable-games");
 
     const dateOnly = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
