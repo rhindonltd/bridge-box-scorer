@@ -3,6 +3,7 @@ import { createServer } from "http";
 import { startSocketServer, closeSocketServer } from "@/socket/websocket"; // ensures DB is initialized
 import { closeAllDatabases } from "@/db/open-database";
 import { logger } from "@/lib/log";
+import { stampClientAddress } from "@/lib/net/client-address";
 
 // Port is configurable via env (matches what PM2 passes) and defaults to 3000.
 const port = Number(process.env.PORT) || 3000;
@@ -17,6 +18,10 @@ async function main() {
   await app.prepare();
 
   const server = createServer((req, res) => {
+    // Route handlers can't see the connection, so record which device sent
+    // the request (used to spot repeated failed sign-in attempts). Overwrites
+    // any value the device sent itself.
+    stampClientAddress(req);
     handle(req, res).catch((err) => {
       logger.error({ err, url: req.url }, "Error handling request");
       res.statusCode = 500;

@@ -33,6 +33,19 @@ vi.mock("./PairDetailsDialog", () => ({
     ) : null,
 }));
 
+const mockCall = vi.hoisted(() => ({
+  open: vi.fn(),
+  state: { step: "closed" } as { step: string },
+}));
+vi.mock("@/hooks/call-director", () => ({
+  useCallDirector: () => ({
+    state: mockCall.state,
+    open: mockCall.open,
+    close: vi.fn(),
+    confirm: vi.fn(),
+  }),
+}));
+
 import { PlayHeaderMenu } from "./PlayHeaderMenu";
 import { GameContext } from "@/context/GameContext";
 
@@ -81,6 +94,16 @@ describe("PlayHeaderMenu", () => {
     await user.click(screen.getByRole("button", { name: "Menu" }));
     await user.click(screen.getByRole("menuitem", { name: "Handover" }));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/play/A1NS/handover");
+  });
+
+  it("offers Call Director, which starts the confirm step", async () => {
+    const user = userEvent.setup();
+    render(<PlayHeaderMenu gameId="g1" seat="A1NS" />);
+
+    await user.click(screen.getByRole("button", { name: "Menu" }));
+    await user.click(screen.getByRole("menuitem", { name: "Call Director" }));
+
+    expect(mockCall.open).toHaveBeenCalled();
   });
 
   it("offers Scorecard in a pairs event (incl. Swiss Pairs) and routes to it", async () => {

@@ -19,15 +19,13 @@ async function extractGameId(page: Page): Promise<string> {
 }
 
 test.describe("Create game form", () => {
-  test("fields, event type and lead toggle behave", async ({
-    browser,
-  }) => {
+  test("fields, event type and lead toggle behave", async ({ browser }) => {
     test.setTimeout(60_000);
     const page = await newParticipant(browser);
     let gameId: string | null = null;
 
     try {
-      await page.goto("/create");
+      await page.goto("/create/new");
       // Let the on-mount BridgeWebs fetch settle before filling; its re-render
       // can otherwise drop the field values by submit time (WebKit).
       await page.waitForLoadState("networkidle");
@@ -36,7 +34,9 @@ test.describe("Create game form", () => {
       await page.getByLabel("Event Name").fill("Thursday Pairs");
       await expect(page.getByLabel("Event Name")).toHaveValue("Thursday Pairs");
       await page.getByLabel("Director Name").fill("Jane Director");
-      await expect(page.getByLabel("Director Name")).toHaveValue("Jane Director");
+      await expect(page.getByLabel("Director Name")).toHaveValue(
+        "Jane Director",
+      );
 
       // The form is a two-step wizard: details first, then options.
       await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -68,15 +68,26 @@ test.describe("Create game form", () => {
       // Submit -> navigates to the setup route. The setup page opens a live
       // (WebSocket) connection that never lets the "load" event fire, so wait
       // for the URL to change on commit rather than on load.
-      await page.getByRole("button", { name: "Create Game", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Create Game", exact: true })
+        .click();
       await page.waitForURL(/\/game\/.+\/create/, {
         timeout: 15000,
         waitUntil: "commit",
       });
       gameId = await extractGameId(page);
-      await expect(page.getByRole("button", { name: "Setup menu" })).toBeVisible({
-        timeout: 15000,
-      });
+      // Lands on the setup menu.
+      for (const name of [
+        "Tables",
+        "Movement",
+        "Timer",
+        "Start Game",
+        "Delete Game",
+      ]) {
+        await expect(
+          page.getByRole("button", { name, exact: true }),
+        ).toBeVisible({ timeout: 15000 });
+      }
     } finally {
       if (gameId) await deleteGame(page, gameId);
       await page.context().close();
@@ -90,7 +101,7 @@ test.describe("Create game form", () => {
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create");
+      await page.goto("/create/new");
       // The page fires a BridgeWebs-events fetch on mount that re-renders the
       // form; let it settle before submitting so the click isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
@@ -109,7 +120,7 @@ test.describe("Create game form", () => {
       await expect(
         page.getByRole("button", { name: "Create Game", exact: true }),
       ).toHaveCount(0);
-      await expect(page).toHaveURL(/\/create$/);
+      await expect(page).toHaveURL(/\/create\/new$/);
     } finally {
       await page.context().close();
     }
@@ -122,7 +133,7 @@ test.describe("Create game form", () => {
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create");
+      await page.goto("/create/new");
       // Let the on-mount fetch settle so the field fill isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
       await page.getByLabel("Event Name").fill("Doomed Game");
@@ -142,7 +153,9 @@ test.describe("Create game form", () => {
           : route.continue(),
       );
 
-      await page.getByRole("button", { name: "Create Game", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Create Game", exact: true })
+        .click();
 
       // The inline error shows and the button returns to "Create Game"
       // (re-enabled) once the failed create settles.

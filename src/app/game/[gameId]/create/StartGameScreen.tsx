@@ -14,6 +14,8 @@ import type { StartProblem } from "@/model/start-validator";
 type Props = {
   /** Setup navigation menu rendered in the header's right-hand slot. */
   menu?: ReactNode;
+  /** Back-arrow action (to the setup menu). No arrow is shown without it. */
+  onBack?: () => void;
 };
 
 /** Group problems by their section, preserving first-seen order. */
@@ -44,7 +46,7 @@ function groupBySection(
  * start; starting a game is director-authorised and runs the same flow the
  * Tables view used to own.
  */
-export function StartGameScreen({ menu }: Props) {
+export function StartGameScreen({ menu, onBack }: Props) {
   const router = useRouter();
   const { game, mutateGame } = useRequiredGame();
   const { canStart, problems, sitOutSeat } = useStartCheck(game.gameId);
@@ -78,7 +80,8 @@ export function StartGameScreen({ menu }: Props) {
     <GamePageLayout
       headerTitle="Start Game"
       headerRight={menu}
-      hideBack
+      backAction={onBack}
+      hideBack={!onBack}
       // The Start Game button only appears in the ready state, inside the
       // centred card (below). While there are outstanding problems the screen
       // shows just the list of issues to resolve — no (disabled) button.

@@ -112,7 +112,7 @@ describe("game-index actions and queries", () => {
   it("finalised games leave the open lists and appear in findFinalisedGames", async () => {
     const { finaliseGame, reopenGame } =
       await import("@/db/game-index/actions/set-finalised");
-    const { findAllGames } =
+    const { findAllGames, findNotStartedGames } =
       await import("@/db/game-index/queries/find-all-games");
     const { findFinalisedGames } =
       await import("@/db/game-index/queries/find-finalised-games");
@@ -124,12 +124,15 @@ describe("game-index actions and queries", () => {
     await finaliseGame(done.gameId);
 
     const ids = (games: { gameId: string }[]) => games.map((x) => x.gameId);
-    expect(ids(await findAllGames())).toEqual([open.gameId]);
+    // Neither game has been started, so both belong to "Create Game", not
+    // "Manage Game"; the finalised one is in neither.
+    expect(await findAllGames()).toEqual([]);
+    expect(ids(await findNotStartedGames())).toEqual([open.gameId]);
     expect(ids(await findJoinableGames())).toEqual([open.gameId]);
     expect(ids(await findFinalisedGames())).toEqual([done.gameId]);
 
     await reopenGame(done.gameId);
-    expect(ids(await findAllGames()).sort()).toEqual(
+    expect(ids(await findNotStartedGames()).sort()).toEqual(
       [open.gameId, done.gameId].sort(),
     );
     expect(await findFinalisedGames()).toEqual([]);

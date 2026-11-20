@@ -92,6 +92,11 @@ export type SocketEventMap = {
     seat: string;
   };
 
+  [SocketEvents.DIRECTOR_CALL_ANSWERED]: {
+    gameId: string;
+    seat: string;
+  };
+
   [SocketEvents.SEAT_EVICTED]: {
     gameId: string;
     seat: string;

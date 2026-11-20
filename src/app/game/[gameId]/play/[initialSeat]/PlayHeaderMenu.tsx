@@ -17,7 +17,9 @@ import {
   usePlayManageSwitchItem,
 } from "@/components/game/PlayManageSwitch";
 import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
+import { useCallDirector } from "@/hooks/call-director";
 import { PairDetailsDialog } from "./PairDetailsDialog";
+import { CallDirectorDialog } from "./CallDirectorDialog";
 
 interface Props {
   gameId: string;
@@ -36,8 +38,8 @@ interface Props {
  * right-hand slot and offers the actions available during play: Handover,
  * Withdraw (pairs events), "Change device" (hand this seat to another device)
  * — each its own page — and "Pair details" (this pair's number and players, a
- * dialog). Future actions such as "Call director" slot in as additional
- * {@link HeaderMenuItem}s below.
+ * dialog) — and "Call Director" (confirm, then a popup on the director's
+ * devices naming this table).
  *
  * The pair shown in "Pair details" comes from {@link useAssignment}, so it is
  * available in every play state without a per-screen lookup.
@@ -73,6 +75,7 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
   // hooks); the resulting item is only added to the menu for a director.
   const manageItem = usePlayManageSwitchItem(gameId, "toManage");
   const shareItem = useShareDirectorAccessItem(gameId);
+  const callDirector = useCallDirector(gameId, seat);
 
   const items: HeaderMenuItem[] = [
     // Screen-specific view options (e.g. Results / Deal) come first.
@@ -119,7 +122,8 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
     ...(isDirector ? [{ ...manageItem, className: "sm:hidden" }] : []),
     // Director-only: hand a co-director a share code from wherever you are.
     ...(isDirector ? [shareItem] : []),
-    // Future items (e.g. "Call director") go here.
+    // Ask the director to come to this table (confirm first).
+    { label: "Call Director", onSelect: callDirector.open },
   ];
 
   return (
@@ -127,6 +131,12 @@ export function PlayHeaderMenu({ gameId, seat, extraItems = [] }: Props) {
       {isDirector && <PlayManageSwitch gameId={gameId} direction="toManage" />}
 
       <HeaderMenu items={items} label="Menu" />
+
+      <CallDirectorDialog
+        state={callDirector.state}
+        onConfirm={callDirector.confirm}
+        onClose={callDirector.close}
+      />
 
       <PairDetailsDialog
         open={pairDetailsOpen}

@@ -61,6 +61,19 @@ export const Rooms = {
     `game:${gameId}:scorecard:${seat}`,
 };
 
+/**
+ * Rooms for director devices, used for the security alerts (someone became a
+ * director, or keeps failing to). A device joins after proving the director
+ * tokens it holds (`director:watch`): one room per game it directs, plus one
+ * shared by every director device for alerts that aren't about one game
+ * (unlocking Settings).
+ */
+export const DirectorRooms = {
+  prefix: "directors:",
+  game: (gameId: string) => `directors:game:${gameId}`,
+  all: "directors:all",
+};
+
 /** The common prefix of every scorecard room in a game (for enumerating them). */
 export function scorecardRoomPrefix(gameId: string): string {
   return `game:${gameId}:scorecard:`;

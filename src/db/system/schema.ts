@@ -5,6 +5,10 @@ export const loginSessions = sqliteTable("loginsessions", {
   token: text("token").primaryKey(),
   gameId: text("gameId"),
   role: text("role").notNull(),
+  // When the session was created (ISO timestamp). Lets a director device be
+  // shown only the security alerts raised since it became a director. Null for
+  // sessions created before this column existed.
+  createdAt: text("created_at"),
 });
 
 export type LoginSession = typeof loginSessions.$inferSelect;

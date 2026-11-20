@@ -34,8 +34,12 @@ test.describe("Navigation & selection", () => {
       await expect(
         page.getByRole("link", { name: "Manage Game" }),
       ).toBeVisible();
-      await expect(page.getByRole("link", { name: "Export Game" })).toBeVisible();
-      await expect(page.getByRole("link", { name: "Display Game" })).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Export Game" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Display Game" }),
+      ).toBeVisible();
 
       // Settings cog navigates to /settings.
       await page.getByRole("link", { name: "Settings" }).click();
@@ -45,7 +49,7 @@ test.describe("Navigation & selection", () => {
     }
   });
 
-  test("a created game appears in the join/display/manage selectors and navigates", async ({
+  test("a created game appears in the create/join/display selectors (not manage) and navigates", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -54,22 +58,66 @@ test.describe("Navigation & selection", () => {
     let gameId = "";
 
     try {
-      const created = await createGame(page, { eventName, recordOpeningLead: false });
+      const created = await createGame(page, {
+        eventName,
+        recordOpeningLead: false,
+      });
       gameId = created.gameId;
 
-      // /manage selector lists the game (all games); rows show the event name.
-      await gotoStable(page, "/manage");
-      const manageRow = page.getByRole("button", { name: new RegExp(eventName) });
-      await expect(manageRow).toBeVisible({ timeout: 15000 });
-      // As the local director, selecting goes straight to manage.
-      await manageRow.click();
-      await expect(page).toHaveURL(new RegExp(`/game/${gameId}/manage$`), {
+      // The game hasn't started, so it is listed under Create Game (below its
+      // "Create Game" button), not under Manage Game.
+      await gotoStable(page, "/create");
+      await expect(
+        page.getByRole("link", { name: "Create Game", exact: true }),
+      ).toHaveAttribute("href", "/create/new", { timeout: 15000 });
+      const createRow = page.getByRole("button", {
+        name: new RegExp(eventName),
+      });
+      await expect(createRow).toBeVisible({ timeout: 15000 });
+      // As the local director, selecting goes straight to its setup screens.
+      await createRow.click();
+      await expect(page).toHaveURL(new RegExp(`/game/${gameId}/create`), {
         timeout: 15000,
       });
+      // It opens the setup menu; each button goes to the page the setup
+      // screens' hamburger menu offers, and the back arrow returns here.
+      const timer = page.getByRole("button", { name: "Timer", exact: true });
+      await expect(timer).toBeVisible({ timeout: 15000 });
+      await expect(
+        page.getByRole("button", { name: "Delete Game", exact: true }),
+      ).toBeVisible();
+      await timer.click();
+      await expect(page).toHaveURL(/step=timer/, { timeout: 15000 });
+      await page.getByRole("button", { name: "Go back" }).click();
+      await expect(timer).toBeVisible({ timeout: 15000 });
+      // Start Game has a back arrow to the menu too.
+      await page
+        .getByRole("button", { name: "Start Game", exact: true })
+        .click();
+      await expect(page).toHaveURL(/step=start/, { timeout: 15000 });
+      await page.getByRole("button", { name: "Go back" }).click();
+      await expect(timer).toBeVisible({ timeout: 15000 });
+      // The menu's own back arrow returns to the list of games not yet started.
+      await page.getByRole("link", { name: "Go back" }).click();
+      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
+      await expect(
+        page.getByRole("button", { name: new RegExp(eventName) }),
+      ).toBeVisible({ timeout: 15000 });
+      // Wait for the Manage Game list to load before checking it's absent.
+      const manageList = page.waitForResponse((r) =>
+        r.url().endsWith("/api/games/all"),
+      );
+      await gotoStable(page, "/manage");
+      await manageList;
+      await expect(
+        page.getByRole("button", { name: new RegExp(eventName) }),
+      ).toHaveCount(0);
 
       // /display selector navigates to the display route.
       await gotoStable(page, "/display");
-      const displayRow = page.getByRole("button", { name: new RegExp(eventName) });
+      const displayRow = page.getByRole("button", {
+        name: new RegExp(eventName),
+      });
       await expect(displayRow).toBeVisible({ timeout: 15000 });
       await displayRow.click();
       await expect(page).toHaveURL(new RegExp(`/game/${gameId}/display`), {

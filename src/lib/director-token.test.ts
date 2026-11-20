@@ -5,6 +5,8 @@ import {
   clearDirectorToken,
   isDirectorFor,
   verifyDirectorTokenWithServer,
+  heldDirectorTokens,
+  DIRECTOR_TOKENS_CHANGED,
 } from "./director-token";
 
 describe("director-token", () => {
@@ -122,5 +124,41 @@ describe("director-token", () => {
       );
       expect(getDirectorToken("game-1")).toBe("maybe-valid");
     });
+  });
+
+  describe("heldDirectorTokens", () => {
+    it("lists every game this device directs, and nothing else", () => {
+      setDirectorToken("g1", "t1");
+      setDirectorToken("g2", "t2");
+      localStorage.setItem("player:g1", "{}");
+      expect(
+        heldDirectorTokens().sort((a, b) => a.gameId.localeCompare(b.gameId)),
+      ).toEqual([
+        { gameId: "g1", directorToken: "t1" },
+        { gameId: "g2", directorToken: "t2" },
+      ]);
+    });
+  });
+
+  it("announces when this device gains or loses a director token", () => {
+    const listener = vi.fn();
+    window.addEventListener(DIRECTOR_TOKENS_CHANGED, listener);
+    try {
+      setDirectorToken("g1", "t1");
+      clearDirectorToken("g1");
+      expect(listener).toHaveBeenCalledTimes(2);
+    } finally {
+      window.removeEventListener(DIRECTOR_TOKENS_CHANGED, listener);
+    }
+  });
+
+  it("doesn't try to announce a change outside a browser", () => {
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(() => setDirectorToken("g1", "t1")).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(getDirectorToken("g1")).toBe("t1");
   });
 });

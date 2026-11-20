@@ -84,6 +84,21 @@ export const SocketEvents = {
 
   // Server initiated - Global
   JOINABLE_GAMES: "joinable-games",
+  // Client-initiated: a director device proves the director tokens it holds
+  // and joins the director-alert rooms; recent alerts it may have missed come
+  // back on the acknowledgement.
+  DIRECTOR_WATCH: "director:watch",
+  // Server-initiated: an alert for directors: a security alert (someone became
+  // a director or unlocked Settings, or a device keeps failing to), or a
+  // player calling the director to their table.
+  DIRECTOR_ALERT: "director:alert",
+  // Client-initiated (a seated player): call the director to the pair's table.
+  CALL_DIRECTOR: "game:callDirector",
+  // Client-initiated (a director): answered a call by dismissing its popup.
+  DIRECTOR_ANSWER_CALL: "director:answerCall",
+  // Server-initiated, to the calling seat's room: a director has answered the
+  // call and is on the way.
+  DIRECTOR_CALL_ANSWERED: "game:directorCallAnswered",
 
   // Server initiated - Game specific
   PARTICIPANTS: "game:participants",

@@ -34,23 +34,32 @@ const baseProps = {
 };
 
 describe("ClaimDirectorCodeView", () => {
-  it("uppercases entered codes and reports changes", () => {
-    const onCodeChange = vi.fn();
-    render(<ClaimDirectorCodeView {...baseProps} onCodeChange={onCodeChange} />);
-
-    fireEvent.change(screen.getByLabelText("Share Code"), {
-      target: { value: "abc12" },
-    });
-    expect(onCodeChange).toHaveBeenCalledWith("ABC12");
+  it("asks for a share code or the admin key", () => {
+    render(<ClaimDirectorCodeView {...baseProps} />);
+    expect(
+      screen.getByText(/share code from another director, or this Bridge Box/),
+    ).toBeInTheDocument();
   });
 
-  it("disables the claim button until six characters are entered", () => {
+  it("reports changes exactly as typed (the admin key is case-sensitive)", () => {
+    const onCodeChange = vi.fn();
+    render(
+      <ClaimDirectorCodeView {...baseProps} onCodeChange={onCodeChange} />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Share code or admin key"), {
+      target: { value: "Admin-Key" },
+    });
+    expect(onCodeChange).toHaveBeenCalledWith("Admin-Key");
+  });
+
+  it("disables the claim button until at least four characters are entered", () => {
     const { rerender } = render(
-      <ClaimDirectorCodeView {...baseProps} code="ABC12" />,
+      <ClaimDirectorCodeView {...baseProps} code=" AB " />,
     );
     expect(screen.getByRole("button", { name: "Claim Access" })).toBeDisabled();
 
-    rerender(<ClaimDirectorCodeView {...baseProps} code="ABC123" />);
+    rerender(<ClaimDirectorCodeView {...baseProps} code="ABCD" />);
     expect(screen.getByRole("button", { name: "Claim Access" })).toBeEnabled();
   });
 
@@ -71,7 +80,9 @@ describe("ClaimDirectorCodeView", () => {
       />,
     );
 
-    fireEvent.submit(screen.getByLabelText("Share Code").closest("form")!);
+    fireEvent.submit(
+      screen.getByLabelText("Share code or admin key").closest("form")!,
+    );
     expect(onSubmit).toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

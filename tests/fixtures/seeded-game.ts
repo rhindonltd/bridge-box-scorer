@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { Browser, BrowserContext, Page, expect, test } from "@playwright/test";
 
 import { E2E_BASE_URL, E2E_SERVER_ENV, REPO_ROOT } from "../e2e-env";
+import { dismissDirectorAlertsIn, testDeviceHeaders } from "./test-device";
 import type {
   SeedGameOptions,
   SeedGameResult,
@@ -62,9 +63,12 @@ export async function seedGame(
 export async function newDevice(
   browser: Browser,
   localStorage: Record<string, string> = {},
+  { keepDirectorAlerts = false }: { keepDirectorAlerts?: boolean } = {},
 ): Promise<BrowserContext> {
-  return browser.newContext({
+  const context = await browser.newContext({
     ...test.info().project.use,
+    // Each simulated device counts as its own device for sign-in attempts.
+    extraHTTPHeaders: testDeviceHeaders(),
     storageState: {
       cookies: [],
       origins: [
@@ -78,6 +82,10 @@ export async function newDevice(
       ],
     },
   });
+  // Director alert popups would otherwise cover what the journey taps; the
+  // alert journeys keep them so they can check them.
+  if (!keepDirectorAlerts) dismissDirectorAlertsIn(context);
+  return context;
 }
 
 /** localStorage entry that makes a device the game's director. */

@@ -18,6 +18,7 @@ import {
   updateEventDetails,
   verifySeatHeld,
   watchSeat,
+  callDirector,
   finaliseGame,
   reopenGame,
   saveTournamentLevel,
@@ -43,6 +44,10 @@ vi.mock("./player-token", () => ({
     token: "seat-tok",
   })),
   clearPlayerToken: vi.fn(),
+  heldSeats: vi.fn(() => [{ gameId: "g1", seat: "A1NS", token: "seat-tok" }]),
+}));
+vi.mock("@/lib/director-alerts-seen", () => ({
+  newOwnSignInId: vi.fn(() => "origin-1"),
 }));
 
 import { emitWithAck, emitEvent } from "@/lib/socket";
@@ -171,7 +176,7 @@ describe("game-service", () => {
   });
 
   describe("claimDirectorCode", () => {
-    it("POSTs the code, stores the token, and returns the gameId", async () => {
+    it("POSTs the code, game, held seats and origin id, and stores the token", async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -180,20 +185,22 @@ describe("game-service", () => {
         }),
       });
       vi.stubGlobal("fetch", fetchMock);
-
       const { claimDirectorCode } = await import("./game-service");
-      const gameId = await claimDirectorCode("ABC123");
-
+      const gameId = await claimDirectorCode("Admin-Key", "g9");
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/director-codes/claim",
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ code: "ABC123" }),
+          body: JSON.stringify({
+            code: "Admin-Key",
+            gameId: "g9",
+            seats: [{ gameId: "g1", seat: "A1NS", token: "seat-tok" }],
+            originId: "origin-1",
+          }),
         }),
       );
       expect(gameId).toBe("g9");
       expect(setDirectorToken).toHaveBeenCalledWith("g9", "new-tok");
-
       vi.unstubAllGlobals();
     });
 
@@ -205,7 +212,7 @@ describe("game-service", () => {
       vi.stubGlobal("fetch", fetchMock);
 
       const { claimDirectorCode } = await import("./game-service");
-      await expect(claimDirectorCode("OLDCOD")).rejects.toThrow(
+      await expect(claimDirectorCode("OLDCOD", "g1")).rejects.toThrow(
         "Code has expired",
       );
       expect(setDirectorToken).not.toHaveBeenCalled();
@@ -520,7 +527,7 @@ describe("game-service", () => {
       vi.stubGlobal("fetch", fetchMock);
 
       const { claimDirectorCode } = await import("./game-service");
-      await expect(claimDirectorCode("ABC123")).rejects.toThrow(
+      await expect(claimDirectorCode("ABC123", "g1")).rejects.toThrow(
         "Failed to claim code",
       );
 
@@ -840,6 +847,29 @@ describe("game-service socket / token helpers", () => {
     it("is false when the request throws", async () => {
       vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
       await expect(verifySeatHeld("g1", "A1NS")).resolves.toBe(false);
+    });
+  });
+
+  describe("callDirector", () => {
+    it("emits CALL_DIRECTOR with the seat token and returns the ack", async () => {
+      const ack = { table: { tableNumber: 3 }, calls: 2 };
+      mockEmitWithAck.mockResolvedValue(ack);
+      await expect(callDirector("g1", "A1NS")).resolves.toEqual(ack);
+      expect(mockEmitWithAck).toHaveBeenCalledWith(SocketEvents.CALL_DIRECTOR, {
+        gameId: "g1",
+        seat: "A1NS",
+        token: "seat-tok",
+      });
+    });
+
+    it("sends an empty token when none is stored", async () => {
+      vi.mocked(getPlayerToken).mockReturnValueOnce(null as any);
+      mockEmitWithAck.mockResolvedValue({});
+      await callDirector("g1", "A1NS");
+      expect(mockEmitWithAck).toHaveBeenCalledWith(
+        SocketEvents.CALL_DIRECTOR,
+        expect.objectContaining({ token: "" }),
+      );
     });
   });
 

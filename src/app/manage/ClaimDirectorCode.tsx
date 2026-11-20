@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function ClaimDirectorCode({
-  gameId: _gameId,
+  gameId,
   gameName,
   onSuccess,
   onCancel,
@@ -27,7 +27,9 @@ export function ClaimDirectorCode({
     setError(null);
     setLoading(true);
 
-    claimDirectorCode(code.trim().toUpperCase())
+    // Sent as typed: share codes are matched case-insensitively by the server,
+    // and the admin key is case-sensitive.
+    claimDirectorCode(code.trim(), gameId)
       .then(() => onSuccess())
       .catch((err) =>
         setError(err instanceof Error ? err.message : "Failed to claim code"),

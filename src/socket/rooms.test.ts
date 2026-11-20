@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Rooms } from "./rooms";
+import { DirectorRooms, Rooms } from "./rooms";
 
 describe("Rooms", () => {
   describe("game", () => {
@@ -41,6 +41,16 @@ describe("Rooms", () => {
 
     it("distinguishes sections' timers within the same game", () => {
       expect(Rooms.timer("g1", "A")).not.toBe(Rooms.timer("g1", "B"));
+    });
+  });
+
+  describe("DirectorRooms", () => {
+    it("names a game's director room and the shared one", () => {
+      expect(DirectorRooms.game("g1")).toBe("directors:game:g1");
+      expect(DirectorRooms.all).toBe("directors:all");
+      expect(DirectorRooms.game("g1").startsWith(DirectorRooms.prefix)).toBe(
+        true,
+      );
     });
   });
 });

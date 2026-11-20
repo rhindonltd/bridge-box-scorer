@@ -6,6 +6,7 @@ export const swrKeys = {
 
   joinableGames: () => "/api/games/joinable",
   finalisedGames: () => "/api/games/finalised",
+  notStartedGames: () => "/api/games/not-started",
 
   game: (gameId: string) => `/api/games/${gameId}`,
 

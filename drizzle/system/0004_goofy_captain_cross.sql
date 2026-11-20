@@ -1,0 +1,1 @@
+ALTER TABLE `loginsessions` ADD `created_at` text;

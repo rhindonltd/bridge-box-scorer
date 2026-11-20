@@ -4,8 +4,7 @@ import { Page, expect } from "@playwright/test";
  * Pure-UI game setup helpers, driven through the director setup menu at
  * `/game/{id}/create`: Tables (table count + seating overview), Movement
  * (recommended movement picker), and the Start Game screen. The views are
- * reached from a hamburger menu in the header's top-right (aria-label
- * "Setup menu"), whose entries include Tables / Movement / Timer / Start Game.
+ * reached from the setup menu's Tables / Movement / Timer / Start Game buttons.
  *
  * A two-table game is the smallest field that yields a recommended movement
  * (a single table offers none), so the live-update journeys use two tables.
@@ -18,25 +17,24 @@ const DECREASE_TABLES = "Decrease Tables";
 const INCREASE_TABLES = "Increase Tables";
 
 /**
- * Open the header hamburger ("Setup menu") and switch to the named setup view
- * (Tables / Movement / Timer). Replaces the old segmented tab bar, so callers
- * that previously clicked a `tab` now go through this menu.
+ * Open the named setup view (Tables / Movement / Timer / Start Game) from the
+ * setup menu's buttons, going back to that menu first when on a step page.
  */
 export async function openSetupStep(page: Page, name: string): Promise<void> {
-  await page.getByRole("button", { name: "Setup menu" }).click();
-  // Wait for the menu item to be actionable before clicking: the menu animates
-  // open, and on the narrow mobile viewport a click fired before it settles can
-  // miss (leaving the menu open and the view unchanged, which later steps then
-  // hang on). getByRole scopes to the open menu; toBeVisible waits out the
-  // animation.
-  const item = page.getByRole("menuitem", { name });
-  await expect(item).toBeVisible({ timeout: 15000 });
-  await item.click();
-  // The menu closes once a view is chosen; wait for it to go away so a
-  // subsequent interaction isn't intercepted by the closing overlay.
-  await expect(page.getByRole("menuitem", { name })).toBeHidden({
-    timeout: 15000,
+  // The steps are buttons on the setup menu. On a step page, the back arrow
+  // returns to that menu first. Wait for whichever is showing.
+  const landing = page.getByRole("button", {
+    name: "Delete Game",
+    exact: true,
   });
+  const back = page.getByRole("button", { name: "Go back" });
+  await expect(landing.or(back)).toBeVisible({ timeout: 15000 });
+  if (!(await landing.isVisible())) {
+    await back.click();
+    await expect(landing).toBeVisible({ timeout: 15000 });
+  }
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(landing).toBeHidden({ timeout: 15000 });
 }
 
 /**

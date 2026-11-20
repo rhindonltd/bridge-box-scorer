@@ -37,6 +37,23 @@ export function createKeyedTokenStore<T>(
       if (!hasStorage()) return;
       localStorage.removeItem(storageKey(id));
     },
+    /** Every stored entry, as [id, value]. Unreadable entries are skipped. */
+    entries(): [string, T][] {
+      if (!hasStorage()) return [];
+      const out: [string, T][] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(prefix)) continue;
+        const raw = localStorage.getItem(key);
+        if (raw == null) continue;
+        try {
+          out.push([key.slice(prefix.length), deserialize(raw)]);
+        } catch {
+          // A corrupt entry is ignored rather than breaking every caller.
+        }
+      }
+      return out;
+    },
     has(id: string): boolean {
       if (!hasStorage()) return false;
       return localStorage.getItem(storageKey(id)) !== null;

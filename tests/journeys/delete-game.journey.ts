@@ -13,6 +13,76 @@ import { newParticipant } from "./support";
  */
 
 test.describe("Delete game", () => {
+  test("an out-of-date director token on a game being set up goes back to Create Game, not Manage Game", async ({
+    browser,
+  }) => {
+    test.setTimeout(60_000);
+    const page = await newParticipant(browser);
+    const eventName = `Stale Token ${Date.now()}`;
+    const { gameId, directorToken } = await createGame(page, {
+      eventName,
+      recordOpeningLead: false,
+    });
+    try {
+      // The device still holds a token, but the server no longer accepts it.
+      await page.evaluate(
+        (id) => localStorage.setItem(`director:${id}`, "out-of-date"),
+        gameId,
+      );
+      await page.goto(`/create`);
+      await page.getByRole("button", { name: new RegExp(eventName) }).click();
+
+      // The setup screens check the token with the server and send the device
+      // back to the list it came from, with the bad token cleared.
+      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
+      await expect(
+        page.getByRole("button", { name: new RegExp(eventName) }),
+      ).toBeVisible({ timeout: 15000 });
+
+      // Picking the game again now asks the device to become a director.
+      await page.getByRole("button", { name: new RegExp(eventName) }).click();
+      await expect(page.locator("#share-code")).toBeVisible({ timeout: 15000 });
+
+      // The Delete Game screen does the same if opened directly.
+      await page.goto(`/game/${gameId}/manage/delete-game`);
+      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
+    } finally {
+      await page.evaluate(
+        ({ id, token }) => localStorage.setItem(`director:${id}`, token),
+        { id: gameId, token: directorToken },
+      );
+      await deleteGame(page, gameId);
+      await page.context().close();
+    }
+  });
+
+  test("cancelling on a game still being set up returns to its setup menu, even after a reload", async ({
+    browser,
+  }) => {
+    test.setTimeout(60_000);
+    const page = await newParticipant(browser);
+    const { gameId } = await createGame(page, {
+      eventName: `Cancel Delete ${Date.now()}`,
+      recordOpeningLead: false,
+    });
+    try {
+      // A fresh load leaves no in-app history to go back to.
+      await page.goto(`/game/${gameId}/manage/delete-game`);
+      await page
+        .getByRole("button", { name: "Cancel" })
+        .click({ timeout: 15000 });
+      await expect(page).toHaveURL(new RegExp(`/game/${gameId}/create`), {
+        timeout: 15000,
+      });
+      await expect(
+        page.getByRole("button", { name: "Start Game", exact: true }),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(page, gameId);
+      await page.context().close();
+    }
+  });
+
   test("confirming deletion clears the token and navigates away", async ({
     browser,
   }) => {
@@ -44,9 +114,12 @@ test.describe("Delete game", () => {
 
     // On success the app leaves the delete screen and the director token for
     // this game is cleared.
-    await expect(page).not.toHaveURL(new RegExp(`/game/${gameId}/manage/delete-game`), {
-      timeout: 15000,
-    });
+    await expect(page).not.toHaveURL(
+      new RegExp(`/game/${gameId}/manage/delete-game`),
+      {
+        timeout: 15000,
+      },
+    );
     await expect
       .poll(
         () =>
@@ -81,7 +154,10 @@ test.describe("Delete game", () => {
         route.fulfill({
           status: 500,
           contentType: "application/json",
-          body: JSON.stringify({ success: false, error: "Failed to delete game" }),
+          body: JSON.stringify({
+            success: false,
+            error: "Failed to delete game",
+          }),
         }),
       );
 

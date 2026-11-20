@@ -39,14 +39,19 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerRight,
     actions,
+    backAction,
+    hideBack,
     children,
   }: {
     headerRight?: React.ReactNode;
     actions?: React.ReactNode;
+    backAction?: () => void;
+    hideBack?: boolean;
     children: React.ReactNode;
   }) => (
     <div>
       {headerRight}
+      {!hideBack && <button onClick={backAction}>Go back</button>}
       {children}
       <div>{actions}</div>
     </div>
@@ -60,6 +65,16 @@ describe("StartGameScreen", () => {
     vi.clearAllMocks();
     mockStartCheck = { canStart: false, problems: [], sitOutSeat: null };
     mockSections = [];
+  });
+
+  it("shows a back arrow only when given a back action", () => {
+    const onBack = vi.fn();
+    const { rerender } = render(<StartGameScreen />);
+    expect(screen.queryByRole("button", { name: "Go back" })).toBeNull();
+
+    rerender(<StartGameScreen onBack={onBack} />);
+    fireEvent.click(screen.getByRole("button", { name: "Go back" }));
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("lists issues and shows NO Start Game button when the game cannot start", () => {

@@ -29,6 +29,13 @@
       "when": 1793725009934,
       "tag": "0003_faulty_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795102347384,
+      "tag": "0004_goofy_captain_cross",
+      "breakpoints": true
     }
   ]
 }

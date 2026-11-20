@@ -12,6 +12,7 @@ import { registerSetSeatExpectedLateHandler } from "./set-seat-expected-late/set
 import { registerWatchSeatHandler } from "./watch-seat/watch-seat.handler";
 import { registerHandoverSameDeviceHandler } from "./handover-same-device/handover-same-device";
 import { registerWithdrawPairHandler } from "./withdraw-pair/withdraw-pair";
+import { registerCallDirectorHandler } from "./call-director/call-director.handler";
 
 // Director-only / one-shot mutations that are HTTP routes rather than socket
 // events:
@@ -41,4 +42,5 @@ export function registerGameHandlers(socket: Socket, io: Server) {
   registerSelectMovementHandler(socket, io);
   registerSubmitResultHandler(socket, io);
   registerWithdrawSubmissionHandler(socket, io);
+  registerCallDirectorHandler(socket, io);
 }

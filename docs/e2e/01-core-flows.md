@@ -17,7 +17,7 @@ this file uses a plain **Pairs · Matchpoints** game.
 | ☐ HOME-1 | On the home screen, confirm four buttons: **Join Game**, **Create New Game**, **Manage Games**, **Room Display**. | All four visible. | Y | |
 | ☐ HOME-2 | Confirm the **⚙ Settings cog** is top-right. | Present. | Y | |
 | ☐ HOME-3 | Tap **Join Game**, then the back arrow. | A "Select Game" list (or empty state), then home. | Y | |
-| ☐ HOME-4 | Tap **Manage Games**, then back. | List (likely empty), then home. | Y | Not empty - shows games from other dates |
+| ☐ HOME-4 | Tap **Manage Games**, then back. | List of **started** games (likely empty), then home. | Y | Not empty - shows games from other dates |
 | ☐ HOME-5 | Tap **Room Display**, then back. | "Display Game" list, then home. | Y | |
 
 ---
@@ -28,7 +28,7 @@ The create form is **two steps**: details, then options.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ CREATE-1 | From home tap **Create New Game**. | **"Create Game"**, step 1: **Event Name** + **Director Name**, **Next** at the bottom. | Y | |
+| ☐ CREATE-1 | From home tap **Create New Game**, then **Create Game** at the top of that screen. | The first screen shows a **Create Game** button and a **Not started yet** list of games created but not started. The button opens **"Create Game"**, step 1: **Event Name** + **Director Name**, **Next** at the bottom. | Y | |
 | ☐ CREATE-2 | Type Event Name `Manual Test Pairs`, Director Name `Test Director`. | Both entered. | Y | |
 | ☐ CREATE-3 | **Validation:** clear Event Name (or Director). | **Next** is disabled; a hint to enter an event name and director shows. | Y | Field outlined in Red, field not disabled but does nothing when clicked |
 | ☐ CREATE-4 | Refill both, tap **Next**. | Step 2: **Event Type**, **Scoring**, **Tournament Level**, **Record Opening Lead**, **Allow Hand Entry**. | Y | |
@@ -38,7 +38,8 @@ The create form is **two steps**: details, then options.
 | ☐ CREATE-8 | Switch **Event Type** to **Swiss Teams**. | Scoring shows fixed text **"IMP (Victory Points)"** — no dropdown. | Y | TODO: Scoring type should remain on the right (replaces dropdown).  Label text to stay bold. |
 | ☐ CREATE-9 | Switch back to **Pairs**. Set **Record Opening Lead** = **No**, **Allow Hand Entry** = **Yes**. | Toggles update. | Y | |
 | ☐ CREATE-10 | **Back-nav:** tap the back arrow. | Returns to step 1 with Event Name + Director still filled. | Y | |
-| ☐ CREATE-11 | Tap **Next**, then **Create Game**. | Lands on the **setup** screen (Tables view) for the new game. | | |
+| ☐ CREATE-11 | Tap **Next**, then **Create Game**. | Lands on the **Set Up Game** menu for the new game: **Tables**, **Movement**, **Timer**, **Start Game** and a red **Delete Game**. | | |
+| ☐ CREATE-12 | Back arrow twice to the main menu, then **Create New Game** again. | `Manual Test Pairs` is listed under **Not started yet**; tapping it opens its **Set Up Game** menu. It is **not** listed under **Manage Games**. | | |
 
 > **BridgeWebs (optional):** if the club has BridgeWebs configured with events
 > for today, a **Use BridgeWebs Event** toggle appears above Event Name. Toggle
@@ -49,8 +50,17 @@ The create form is **two steps**: details, then options.
 
 ## 3. Set up the game (DIRECTOR)
 
-Setup has three views reachable from the header **Setup menu**: **Tables**,
-**Movement**, **Timer**.
+Setup starts at the **Set Up Game** menu. Its buttons (**Tables**, **Movement**,
+**Timer**, **Start Game**, **Delete Game**) open those pages. The back arrow on each page returns to the menu; the header
+menu on those pages only has **Share Director Access**.
+
+| Check | Step | Expected | Actual | Comments |
+|---|---|---|---|---|
+| ☐ MENU-1 | Open **Set Up Game** (after creating a game, or from **Create Game → Not started yet**). | Buttons **Game Details**, **Tables**, **Movement**, **Timer**, **Start Game**, and a red **Delete Game**. | | |
+| ☐ MENU-2 | Tap each of the middle four buttons (Tables to Start Game) in turn, going back to the menu between them. | Each lands on the matching page. The header menu on each has only **Share Director Access**. | | |
+| ☐ MENU-3 | On Tables, Movement, Timer or Start Game tap the back arrow. | Returns to the **Set Up Game** menu. | | |
+| ☐ MENU-4 | On the menu, tap **Game Details**, change the name, then **Save**. | Event details open pre-filled; saving returns to the menu. | | |
+| ☐ MENU-5 | Tap **Delete Game**. | The delete confirmation. | | |
 
 ### 3a. Tables
 
@@ -108,7 +118,7 @@ Keep the DIRECTOR on **Tables** to watch seats fill live.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ START-1 | Open **Start Game** from the Setup menu. | A readiness panel. | | |
+| ☐ START-1 | Open **Start Game** from the **Set Up Game** menu. | A readiness panel. | | |
 | ☐ START-2 | Confirm it reads ready (e.g. **"Everything's ready"**). | No blocking issues listed. | | |
 | ☐ START-3 | Tap **Start Game**. | Game starts; you return to the **main menu** (Manage Games → this game opens the **Manage Game Menu**, whose back arrow returns to the main menu). Timer (if set) begins. | | |
 | ☐ START-4 | **NS & EW:** confirm they move into round play. | Players see "Table 1, Round 1". | | |

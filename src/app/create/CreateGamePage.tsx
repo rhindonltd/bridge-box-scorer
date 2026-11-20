@@ -55,14 +55,12 @@ export function CreateGamePage() {
   // Defaults to IMP Victory Points; the board-comparison alternative offered is
   // locale-specific (Point-a-Board / PAB in the UK, Board-a-Match / BAM in the
   // US), so the option list comes from the localized messages.
-  const [teamsScoring, setTeamsScoring] = useState<
-    Extract<ScoringType, "IMP" | "IMP_VP" | "BAM" | "PAB">
-  >("IMP");
+  const [teamsScoring, setTeamsScoring] =
+    useState<Extract<ScoringType, "IMP" | "IMP_VP" | "BAM" | "PAB">>("IMP");
   // Pairs scoring choice, only surfaced for a Pairs game: matchpoints (default)
   // or Cross-IMPs.
-  const [pairsScoring, setPairsScoring] = useState<
-    Extract<ScoringType, "MP" | "XIMP">
-  >("MP");
+  const [pairsScoring, setPairsScoring] =
+    useState<Extract<ScoringType, "MP" | "XIMP">>("MP");
   const [leadCardRequired, setLeadCardRequired] = useState(true);
   const [handEntryEnabled, setHandEntryEnabled] = useState(false);
   const [bridgewebsEventId, setBridgewebsEventId] = useState("");
@@ -170,8 +168,10 @@ export function CreateGamePage() {
       headerTitle="Create Game"
       centerContent={true}
       // On step 2 the back arrow returns to step 1 rather than leaving the
-      // flow; step 1 keeps the default "pop the stack" behaviour.
+      // flow; step 1 keeps the default "pop the stack" behaviour, falling back
+      // to the Create Game screen this form opens from.
       backAction={isDetailsStep ? undefined : () => setStep("details")}
+      backFallbackHref="/create"
       actions={
         isDetailsStep ? (
           <button
