@@ -1,9 +1,9 @@
 /**
- * A pair's personal scorecard: every board it has played so far, each scored
- * the same way as the player's Board Results screen (the board's raw per-board
- * score — no leaderboard-only adjustments such as Neuberg equalisation or the
- * "better than average" uplift), plus — for a Swiss Pairs event — the Victory
- * Points it earned in each round.
+ * A pair's personal scorecard: every board it has played so far, each with the
+ * figure the leaderboard counts for it (after Neuberg equalisation, the
+ * "better than average" uplift and rounding, so the total matches the
+ * leaderboard), plus — for a Swiss Pairs event — the Victory Points it earned
+ * in each round.
  *
  * Framework-free so the server (which computes it) and the client (which
  * renders it) share one shape.
@@ -29,9 +29,9 @@ export interface ScorecardBoard {
    * the points), or null when there is no raw score (not played / adjusted).
    */
   score: number | null;
-  /** MP scoring: this pair's matchpoints and the board top. */
+  /** MP scoring: this pair's matchpoints and the board top, as the standings count them. */
   matchpoints?: { value: number; max: number };
-  /** Cross-IMP scoring: this pair's cross-IMPs on the board. */
+  /** Cross-IMP scoring: this pair's cross-IMPs on the board, as the standings count them. */
   crossImps?: number;
 }
 

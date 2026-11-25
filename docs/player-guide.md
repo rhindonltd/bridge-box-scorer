@@ -193,11 +193,17 @@ Every play screen has a **menu** button in the top-right corner. Tap it for:
 - **Scorecard** (pairs events) — your pair's own results so far: each board
   you've played, who you played it against, the contract and result, your
   score, and how you did on the board, with a total at the bottom. In a
-  matchpoint event, switch between **%** and **MP**; IMP and Cross-IMP events
-  show your IMPs. In a Swiss Pairs event you also see the Victory Points you
-  won in each round. Each board is scored the same way as the board results
-  you see after it confirms, and the scorecard updates by itself as results
-  come in. Tap the back arrow to return to play.
+  matchpoint event, switch between **%** and **MP**; Cross-IMP events show
+  your cross-IMPs. In a Swiss Pairs event you also see the Victory Points you
+  won in each round. Each board shows the score the leaderboard counts for
+  it, so your total matches your place on the leaderboard. That can differ a
+  little from the board results you saw when the board was confirmed: a board
+  not every table played is scaled up to the full field, an average-plus is
+  raised to your own average on your other boards if that is higher (and an
+  average-minus lowered to it if that is lower), and matchpoints are rounded
+  to whole numbers. The
+  scorecard updates by itself as results come in. Tap the back arrow to
+  return to play.
 - **Pair details** — shows your pair number and both players' names. It sits
   under **Scorecard**, apart from the options that change or leave the game.
 - **Change device** — opens a **Change device** screen with a short code you

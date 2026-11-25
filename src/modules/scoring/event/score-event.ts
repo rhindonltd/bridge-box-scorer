@@ -158,6 +158,7 @@ function scoreBoardsToOverall(
   boardRows: ResultRow[],
   scoringType: ScoringType,
   sectionLabel: string,
+  adjusted: AdjustedBoardScore[],
 ): OverallScore {
   const boardMap = new Map<number, ResultRow[]>();
   for (const row of boardRows) {
@@ -281,10 +282,65 @@ function scoreBoardsToOverall(
       `Scoring type "${scoringType}" has no overall plugin for the board-pooled path`,
     );
   }
+  // Record each pair's figure on each board exactly as the standings sum it
+  // (after equalisation, the better-than-average uplift and rounding), so the
+  // personal scorecard shows the same numbers its total is built from (D5).
+  adjusted.push(...adjustedBoardScores(sectionLabel, scoredBoards));
+
   const overallPlugin = getOverallPlugin(overallId);
   return overallPlugin.aggregate(
     scoredBoards.map((b) => ({ lines: b.lines })),
   ) as OverallScore;
+}
+
+/**
+ * Each pair's figure on each scored board, from both sides of every line:
+ * matchpoints and the board top for MP, cross-IMPs for Cross-IMP.
+ */
+function adjustedBoardScores(
+  field: string,
+  boards: ScoredBoard[],
+): AdjustedBoardScore[] {
+  const out: AdjustedBoardScore[] = [];
+  for (const board of boards) {
+    for (const line of board.lines as (MatchpointLine | XimpLine)[]) {
+      if ("nsMatchPoints" in line) {
+        const top = line.maxMatchPoints;
+        out.push(
+          {
+            field,
+            boardNumber: board.board,
+            pairId: line.nsId,
+            value: line.nsMatchPoints,
+            top,
+          },
+          {
+            field,
+            boardNumber: board.board,
+            pairId: line.ewId,
+            value: line.ewMatchPoints,
+            top,
+          },
+        );
+      } else {
+        out.push(
+          {
+            field,
+            boardNumber: board.board,
+            pairId: line.nsId,
+            value: line.nsCrossImps,
+          },
+          {
+            field,
+            boardNumber: board.board,
+            pairId: line.ewId,
+            value: line.ewCrossImps,
+          },
+        );
+      }
+    }
+  }
+  return out;
 }
 
 /**
@@ -477,6 +533,7 @@ function computeCombined(
   expectedBoards: number | undefined,
   withdrawals: WithdrawalRecord[],
   excludedFromRanking: ReadonlySet<string>,
+  adjusted: AdjustedBoardScore[],
 ): Standings {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
   // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
@@ -525,7 +582,7 @@ function computeCombined(
   const participants = pairs;
   const overallScore = padBaselineLines(
     scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
-      scoreBoardsToOverall(boardRows, scoringType, combinedLabel),
+      scoreBoardsToOverall(boardRows, scoringType, combinedLabel, adjusted),
     participants.map((p) => p.id),
     excludedFromRanking,
   );
@@ -565,6 +622,7 @@ function computeSections(
   // competitor from the start. Disabled for the §3.5 "as-of" replay, which must
   // reproduce the exact field that drove a past Swiss draw.
   baseline = true,
+  adjusted: AdjustedBoardScore[] = [],
 ): SectionStandings[] {
   const rowsBySection = new Map<string, ResultRow[]>();
   for (const row of boardRows) {
@@ -679,7 +737,7 @@ function computeSections(
     const sectionParticipants = pairsBySection.get(section) ?? [];
     const overallScore = pad(
       scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
-        scoreBoardsToOverall(sectionRows, scoringType, section),
+        scoreBoardsToOverall(sectionRows, scoringType, section, adjusted),
       sectionParticipants.map((p) => p.id),
     );
     return {
@@ -729,8 +787,34 @@ export interface ScoreOptions {
   baseline?: boolean;
 }
 
+/**
+ * One pair's score on one board after every standings pass (Neuberg
+ * equalisation, better than average, rounding) — the figure the standings sum.
+ * Board-pooled pairs events only.
+ */
+export interface AdjustedBoardScore {
+  /**
+   * The field the board was scored in: the section, or the combined label
+   * (the game id) when every section is pooled.
+   */
+  field: string;
+  boardNumber: number;
+  /** The pair's scored id, as on the ruled board rows. */
+  pairId: string;
+  /** Matchpoints for MP; cross-IMPs for Cross-IMP. */
+  value: number;
+  /** MP only: the board top the matchpoints are out of. */
+  top?: number;
+}
+
 export interface EventScore {
   classification: EventClassification;
+  /**
+   * Board-pooled pairs only: each pair's adjusted board scores, for every
+   * field that was scored, so the scorecard shows the same figures the
+   * standings were built from. Empty for every other format.
+   */
+  adjustedBoards: AdjustedBoardScore[];
   /**
    * The combined standings. Null when not requested, or when combined ranking
    * is off for a multi-section game.
@@ -806,6 +890,7 @@ export function scoreEvent(
 
   const { rows, matches, withdrawals, excludedFromRanking } = ruled;
   const { pairs, teams } = participants;
+  const adjustedBoards: AdjustedBoardScore[] = [];
 
   const sections =
     scope === "combined"
@@ -826,6 +911,7 @@ export function scoreEvent(
           withdrawals,
           excludedFromRanking,
           baseline,
+          adjustedBoards,
         ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 
   // The director can turn off the combined overall ranking for a multi-section
@@ -854,10 +940,11 @@ export function scoreEvent(
           expectedBoards,
           withdrawals,
           excludedFromRanking,
+          adjustedBoards,
         ),
         excludedFromRanking,
       )
     : null;
 
-  return { classification, overall, sections };
+  return { classification, adjustedBoards, overall, sections };
 }

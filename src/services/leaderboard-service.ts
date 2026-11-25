@@ -19,6 +19,7 @@ import {
   scoringNeedsMatches,
   scoringNeedsTeams,
   type EventParticipants,
+  type EventScore,
   type EventSettings,
   type RuledEvent,
   type SectionStandings,
@@ -147,6 +148,20 @@ export async function buildLeaderboards(
   );
   const { overall, sections } = scoreEvent(event, ruled, participants);
   return { leaderboard: overall, sections };
+}
+
+/**
+ * Score the game exactly as {@link buildLeaderboards} does, returning the whole
+ * event score: the standings plus each pair's adjusted board scores (for the
+ * personal scorecard, which must show the figures its total is built from).
+ * Kept separate so the leaderboard payload sent to every screen stays small.
+ */
+export async function scoreGame(db: Db, gameId: string): Promise<EventScore> {
+  const { event, ruled, participants } = await readLeaderboardInputs(
+    db,
+    gameId,
+  );
+  return scoreEvent(event, ruled, participants);
 }
 
 /**

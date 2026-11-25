@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   getBoardInstances: vi.fn(),
   scoreBoard: vi.fn(),
   getCombination: vi.fn(),
-  buildLeaderboards: vi.fn(),
+  scoreGame: vi.fn(),
 }));
 
 vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
@@ -26,7 +26,7 @@ vi.mock("@/services/schedule-service", () => ({
   getSchedule: m.getSchedule,
 }));
 vi.mock("@/services/leaderboard-service", () => ({
-  buildLeaderboards: m.buildLeaderboards,
+  scoreGame: m.scoreGame,
 }));
 vi.mock("@/modules/scoring/traveller/score-traveller", () => ({
   scoreBoard: m.scoreBoard,
@@ -71,6 +71,12 @@ beforeEach(() => {
   m.getCombination.mockImplementation(() => ({ perBoard: "MP" }));
   m.getSchedule.mockResolvedValue(schedule([{ roundNumber: 1, boards: [1] }]));
   m.getBoardInstances.mockResolvedValue([instance("A1NS", "A1EW")]);
+  // No adjusted figures by default, so a board falls back to its own score.
+  m.scoreGame.mockResolvedValue({
+    adjustedBoards: [],
+    overall: null,
+    sections: [],
+  });
   m.scoreBoard.mockReturnValue({
     lines: [
       {
@@ -182,6 +188,64 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     expect(traveller.lines).toHaveLength(1);
   });
 
+  describe("adjusted board scores (D5)", () => {
+    it("shows the matchpoints and top the standings counted", async () => {
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [
+          { field: "g", boardNumber: 1, pairId: "A1NS", value: 3, top: 4 },
+          { field: "g", boardNumber: 1, pairId: "A1EW", value: 1, top: 4 },
+        ],
+        overall: null,
+        sections: [],
+      });
+      const card = await buildPairScorecard(db, "g", "A1NS");
+      expect(card!.boards[0].matchpoints).toEqual({ value: 3, max: 4 });
+      // The raw score still comes from the board itself.
+      expect(card!.boards[0].score).toBe(400);
+    });
+
+    it("defaults a missing top to 0", async () => {
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [
+          { field: "g", boardNumber: 1, pairId: "A1NS", value: 2 },
+        ],
+        overall: null,
+        sections: [],
+      });
+      const card = await buildPairScorecard(db, "g", "A1NS");
+      expect(card!.boards[0].matchpoints).toEqual({ value: 2, max: 0 });
+    });
+
+    it("shows the cross-IMPs the standings counted", async () => {
+      m.getCombination.mockReturnValue({ perBoard: "XIMP" });
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [
+          { field: "g", boardNumber: 1, pairId: "A1NS", value: 4.5 },
+        ],
+        overall: null,
+        sections: [],
+      });
+      const card = await buildPairScorecard(db, "g", "A1NS");
+      expect(card!.boards[0].crossImps).toBe(4.5);
+    });
+
+    it("reads the pair's own section when sections are ranked separately", async () => {
+      m.findGameById.mockResolvedValue(game({ combinedRanking: false }));
+      m.findSections.mockResolvedValue([{ section: "A" }, { section: "B" }]);
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [
+          // The combined field is ignored; only section A's figure counts.
+          { field: "g", boardNumber: 1, pairId: "A1NS", value: 9, top: 9 },
+          { field: "A", boardNumber: 1, pairId: "A1NS", value: 2, top: 4 },
+        ],
+        overall: null,
+        sections: [],
+      });
+      const card = await buildPairScorecard(db, "g", "A1NS");
+      expect(card!.boards[0].matchpoints).toEqual({ value: 2, max: 4 });
+    });
+  });
+
   describe("Swiss round VPs", () => {
     const swissLine = {
       pairId: "A1NS",
@@ -196,8 +260,9 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     });
 
     it("reads the combined leaderboard, sorted by round, with opponents", async () => {
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: swissBoard([{ other: 1 }, swissLine]),
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: swissBoard([{ other: 1 }, swissLine]),
         sections: [],
       });
       const card = await buildPairScorecard(db, "g", "A1NS");
@@ -212,8 +277,9 @@ describe("buildPairScorecard (mocked collaborators)", () => {
         game({ eventFormat: "SWISS", combinedRanking: false }),
       );
       m.findSections.mockResolvedValue([{ section: "A" }, { section: "B" }]);
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: swissBoard([]),
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: swissBoard([]),
         sections: [
           { section: "B", ...swissBoard([]) },
           { section: "A", ...swissBoard([swissLine]) },
@@ -224,8 +290,9 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     });
 
     it("falls back to the section board when there is no combined leaderboard", async () => {
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: null,
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: null,
         sections: [{ section: "A", ...swissBoard([swissLine]) }],
       });
       const card = await buildPairScorecard(db, "g", "A1NS");
@@ -233,8 +300,9 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     });
 
     it("is empty when there is no leaderboard at all", async () => {
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: null,
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: null,
         sections: [],
       });
       const card = await buildPairScorecard(db, "g", "A1NS");
@@ -242,8 +310,9 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     });
 
     it("is empty when the leaderboard is not a Swiss VP table", async () => {
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: { overallScore: { type: "PAIR_MP", lines: [] } },
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: { overallScore: { type: "PAIR_MP", lines: [] } },
         sections: [],
       });
       const card = await buildPairScorecard(db, "g", "A1NS");
@@ -251,14 +320,16 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     });
 
     it("is empty when the pair has no line, or its line has no VPs", async () => {
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: swissBoard([{ pairId: "other", vpByRound: {} }]),
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: swissBoard([{ pairId: "other", vpByRound: {} }]),
         sections: [],
       });
       expect((await buildPairScorecard(db, "g", "A1NS"))!.roundVps).toEqual([]);
 
-      m.buildLeaderboards.mockResolvedValue({
-        leaderboard: swissBoard([{ pairId: "A1NS" }]),
+      m.scoreGame.mockResolvedValue({
+        adjustedBoards: [],
+        overall: swissBoard([{ pairId: "A1NS" }]),
         sections: [],
       });
       expect((await buildPairScorecard(db, "g", "A1NS"))!.roundVps).toEqual([]);

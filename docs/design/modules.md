@@ -1530,8 +1530,9 @@ method internals:
 - Not done in step 2, kept for later:
   - the `methods/<method>/` folder layout (9.3). The calculators stay in
     their current files, and `scoreEvent` dispatches on the format;
-  - `adjustedBoards` and `scorePairScorecard` (D5). This is a behaviour
-    change, so it is a separate sub-step;
+  - `adjustedBoards` (D5). Done afterwards as its own step (14.1);
+    `scorePairScorecard` was not needed, as the scorecard service reads the
+    adjusted figures from `scoreEvent` directly
   - `teamMatchBreakdown`, `swissPairsRoundBreakdown` and
     `teamTravellerMatches` (9.5). The assemblers and `board-service.ts` take
     the team-match functions from the scoring entry for now;
@@ -1654,8 +1655,8 @@ scoring's entry for types only (not scoring's internal files). Differences from
   `traveller/` and `leaderboard/`. The team views' lookup table is
   `leaderboard/team-views.ts`. `TeamOverallScoreType` and
   `TeamOverallScoreOf` are in the kernel (`src/model/leaderboard.ts`).
-- `scorecardViews` and the scorecard builders moved unchanged. D5 is not done
-  yet, so the scorecard still shows the flat per-board scores.
+- `scorecardViews` and the scorecard builders moved unchanged. D5 then made
+  the scorecard show the adjusted board scores (14.1).
 
 ## 11. Further candidates
 
@@ -1810,6 +1811,18 @@ With D5, a board's figure on the scorecard can differ from the same board on
 the traveller, which stays flat as today. The scorecard's total then matches
 the leaderboard.
 
+**D5 as built.** `scoreEvent` returns `adjustedBoards`: each pair's figure on
+each board after Neuberg, better than average and rounding, tagged with the
+field it was scored in (a section, or the combined label). Only the
+board-pooled pairs method fills it. The leaderboard adapter's `scoreGame`
+returns the whole event score, so the leaderboard payload is unchanged. The
+scorecard service looks each board up in the field the pair is ranked in, and
+falls back to the board's own flat score where there is no adjusted figure (a
+Swiss Pairs event, which ranks on Victory Points, or a split handover seat
+whose boards are scored under another id). For matchpoints the Total is then
+the leaderboard percentage; for Cross-IMP it is the total over the boards
+played, which the leaderboard shows per board.
+
 Behaviour changes and tidy-ups found during the design are in
 [`modules-follow-ups.md`](modules-follow-ups.md). They are not needed for the split.
 
@@ -1856,13 +1869,13 @@ landing with its lint block switched on:
    no `legacyExport` switch. The dead pairs IMP code (D11) is removed, and
    the registries are lookup tables (D13). Left for later:
    - D5 (adjusted scores on the scorecard), as its own behaviour-changing
-     sub-step;
+     sub-step (**done**, 14.1);
    - the `methods/` folder layout and the 9.5 breakdowns;
    - the export onto `applyRulings` / `scoreEvent` (O2, O3, O4).
 3. **results-views.** **Done** (see 10.4). Scoring returns numbers only; every
    table is built in results-views, and the screens get them through
    `travellerViews`, `leaderboardViews`, the scorecard builders and
-   `teamBoardResultTable`. D5 follows as its own step.
+   `teamBoardResultTable`. D5 followed as its own step (**done**, 14.1).
 4. **swiss**, including §3.5 detection, which by then can call `scoreEvent`
    through its adapter.
 5. **movement-catalog**, including the `movements.db` move (D12).

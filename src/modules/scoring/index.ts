@@ -12,6 +12,7 @@ export {
   scoreEvent,
   scoringNeedsMatches,
   scoringNeedsTeams,
+  type AdjustedBoardScore,
   type EventParticipants,
   type EventScore,
   type EventSettings,

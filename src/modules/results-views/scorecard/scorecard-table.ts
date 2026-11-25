@@ -91,8 +91,10 @@ function totalCell(boards: ScorecardBoard[], view: ScorecardViewId): ScoreCell {
  * the pair number), opponents, contract / result, the pair's raw score on the
  * board (from its own point of view), and the chosen score view.
  *
- * The figures are each board's own score, as on the Board Results screen, so
- * the Total is the sum of the rows shown.
+ * The figures are the ones the leaderboard counts for each board, and the
+ * Total is the sum of the rows shown, so it matches the leaderboard: the same
+ * percentage for matchpoints, and for Cross-IMP the total over the boards
+ * played (the leaderboard shows it per board).
  */
 export function buildScorecardTable(
   card: PairScorecard,
