@@ -1,21 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-const mockPlugin = { id: "MP", score: vi.fn(), views: [] };
-const mockGetPerBoardPlugin = vi.fn((_pluginId: string) => mockPlugin);
-vi.mock("@/modules/scoring/plugins/registry", () => ({
-  getPerBoardPlugin: (pluginId: string) => mockGetPerBoardPlugin(pluginId),
+const mockViews = [{ id: "percentage", label: "%", toTable: vi.fn() }];
+const mockTravellerViews = vi.fn((_scored: unknown) => mockViews);
+vi.mock("@/modules/results-views/views", () => ({
+  travellerViews: (scored: unknown) => mockTravellerViews(scored),
 }));
 
 // Stub the presentational child so we assert only the Traveller's wiring.
 vi.mock("@/components/scoring/PerBoardTravellerView", () => ({
   PerBoardTravellerView: (props: {
-    plugin: { id: string };
+    views: { id: string }[];
     scored: unknown;
     highlightAssignmentId?: string;
   }) => (
     <div data-testid="per-board">
-      <span data-testid="plugin-id">{props.plugin.id}</span>
+      <span data-testid="view-ids">
+        {props.views.map((v) => v.id).join(",")}
+      </span>
       <span data-testid="scored">{JSON.stringify(props.scored)}</span>
       <span data-testid="highlight">{String(props.highlightAssignmentId)}</span>
     </div>
@@ -36,13 +38,13 @@ describe("Traveller", () => {
     vi.clearAllMocks();
   });
 
-  it("resolves the plugin from the scored board and renders the per-board view", () => {
+  it("gets the views for the scored board and renders the per-board view", () => {
     render(<Traveller scoredBoard={scoredBoard} highlightAssignmentId="A1" />);
 
-    expect(mockGetPerBoardPlugin).toHaveBeenCalledWith("MP");
-    expect(screen.getByTestId("plugin-id").textContent).toBe("MP");
+    expect(mockTravellerViews).toHaveBeenCalledWith(scoredBoard);
+    expect(screen.getByTestId("view-ids").textContent).toBe("percentage");
     expect(screen.getByTestId("scored").textContent).toBe(
-      JSON.stringify(scoredBoard.lines),
+      JSON.stringify(scoredBoard),
     );
     expect(screen.getByTestId("highlight").textContent).toBe("A1");
   });

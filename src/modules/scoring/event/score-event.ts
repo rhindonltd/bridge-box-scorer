@@ -199,9 +199,7 @@ function scoreBoardsToOverall(
   // EBU White Book §4.2.3: for matchpoints, equalise boards played a different
   // number of times (half-table, fouled/short boards) by scaling each short
   // board up to the full field via Neuberg (or the §4.2.3.3 small-sub-field
-  // rule). A no-op when every board was played the same number of times. Done
-  // before the sit-out synthesis below so the per-board top that credit is
-  // awarded against (`maxMatchPoints`) is the equalised full-field top.
+  // rule). A no-op when every board was played the same number of times.
   if (getCombination(scoringType).perBoard === "MP") {
     const equalised = equaliseMpBoards(
       scoredBoards.map((b) => ({
@@ -214,26 +212,18 @@ function scoreBoardsToOverall(
     });
   }
 
-  // Swiss sit-outs: credit each idle (bye) pair a compensatory result for the
-  // boards it missed, so a forced bye doesn't drag its standing down. This adds
-  // synthetic scored lines alongside the real ones before aggregation, keyed by
-  // the sit-out pair's participant id, and is a no-op when there are no
-  // SIT_OUT rows (i.e. for every non-Swiss / even-field game).
-  scoredBoards.push(
-    ...swissSitOutScoredBoards(boardMap, scoringType, scoredBoards),
-  );
+  // A pair that sits out a round (an odd field in a Mitchell or a stored
+  // movement) gets no line for the boards it missed: its percentage, or average
+  // cross-IMP, is over the boards it played — EBU White Book §8.80.5 ("their
+  // average … factoring their score by the number of boards played"). The
+  // SIT_OUT rows carry no result, so they are already dropped above.
 
   // EBU White Book §4.1.1.1: in the STANDINGS, an AVE+/AVE− award gives the
   // pair the greater-of-60% / lesser-of-40% vs its windowed average on the
-  // boards it actually played. This runs over the REAL boards AND the synthetic
-  // sit-out credits together, so EVERY AVE+/AVE− award — a director's
-  // artificial ruling and a synthesised credit alike — gets the uplift
-  // uniformly (the synthetic credits carry an `A<ns>/<ew>` outcome so this pass
-  // recognises them). (A withdrawn or late pair's missed boards are already
-  // rewritten as AVE± outcomes by `applyAbsences` before scoring.) A pair's windowed average is computed from
-  // its real played boards only, so adding synthetic lines does not perturb it.
-  // The per-board traveller display keeps the flat 60/40 (this touches only the
-  // copy fed to the aggregator).
+  // boards it actually played. (A withdrawn or late pair's missed boards are
+  // already rewritten as AVE± outcomes by `applyAbsences` before scoring, so
+  // they get the uplift too.) The per-board traveller display keeps the flat
+  // 60/40 (this touches only the copy fed to the aggregator).
   if (getCombination(scoringType).perBoard === "MP") {
     const adjusted = applyBetterThanAverage(
       scoredBoards.map((b) => ({
@@ -250,9 +240,7 @@ function scoreBoardsToOverall(
   // uplift, but on the IMP scale — an AVE+ board gives the pair the greater of
   // +3 and its average cross-IMP on its other boards, AVE− the lesser of −3 and
   // its average. Standings only, like the MP pass; the per-board display keeps
-  // the flat ±3. The synthetic sit-out credits are 0-net lines with no
-  // outcome, so they are neither uplifted nor counted in the
-  // windowed average (which uses real played lines only).
+  // the flat ±3.
   if (getCombination(scoringType).perBoard === "XIMP") {
     const adjusted = applyBetterThanAverageXimpBoards(
       scoredBoards.map((b) => ({
@@ -267,8 +255,8 @@ function scoreBoardsToOverall(
 
   // EBU White Book §4.2.6.1: round each board's matchpoints to the nearest
   // whole matchpoint (exact halves away from the board average) as the LAST
-  // step — after Neuberg equalisation, the better-than-average uplift, and the
-  // sit-out synthesis above, all of which must be computed at full precision.
+  // step — after Neuberg equalisation and the better-than-average uplift, both
+  // of which must be computed at full precision.
   // The overall ranking sums these rounded per-board scores, so a published
   // total equals the sum of the shown board scores.
   if (getCombination(scoringType).perBoard === "MP") {
@@ -465,115 +453,6 @@ function pairOrTeamRankValue(line: OverallScore["lines"][number]): number {
   if ("totalWon" in line) return line.totalWon;
   /* v8 ignore next -- all OverallScore line variants are covered above */
   return 0;
-}
-
-/** The 60% (average-plus) award a bye pair receives under matchpoints. */
-const SIT_OUT_MP_FRACTION = 0.6;
-
-/**
- * Build synthetic scored boards that credit Swiss sit-out (bye) pairs for the
- * boards they missed.
- *
- * A SIT_OUT board row carries the sitting-out pair on its `ns` seat (its `ew`
- * is a phantom that maps to no participant). For each such board we emit one
- * synthetic scored line that the overall aggregator sums for that pair:
- *   - Matchpoints: 60% of the board top. The per-board top for the round is the
- *     same for every table, so it is read from a real (played) board that
- *     round: `maxMatchPoints`. When no board that round has been scored yet,
- *     the top is unknown and the bye is credited nothing (it will fill in once
- *     the round's real results arrive).
- *   - IMP / Cross-IMP: these have no fixed per-board maximum, so "60% of max"
- *     is undefined; the fair, standings-protecting credit is the field average,
- *     i.e. zero net imps. The synthetic line therefore contributes 0, which
- *     still counts the board so the pair isn't under-boarded.
- *
- * The phantom opponent id is emitted on the other seat; because it matches no
- * participant, its (zero) contribution is harmless.
- */
-function swissSitOutScoredBoards(
-  boardMap: Map<number, ResultRow[]>,
-  scoringType: ScoringType,
-  playedScoredBoards: ScoredBoard[],
-): ScoredBoard[] {
-  const pluginId = getCombination(scoringType).perBoard;
-
-  // Per-round matchpoint top, keyed by board number, read from a real scored
-  // line for that board (all tables share the same top on a given board).
-  const topByBoard = new Map<number, number>();
-  if (pluginId === "MP") {
-    for (const sb of playedScoredBoards) {
-      const lines = sb.lines as { maxMatchPoints?: number }[];
-      const withTop = lines.find(
-        (l) => typeof l.maxMatchPoints === "number" && l.maxMatchPoints > 0,
-      );
-      if (withTop) topByBoard.set(sb.board, withTop.maxMatchPoints!);
-    }
-  }
-
-  const synthetic: ScoredBoard[] = [];
-
-  for (const [boardNumber, rows] of boardMap) {
-    for (const row of rows) {
-      if (row.status !== "SIT_OUT") continue;
-
-      const byePair = row.ns; // sit-out pair sits on the NS seat
-      const phantom = row.ew;
-
-      if (pluginId === "MP") {
-        const top = topByBoard.get(boardNumber);
-        if (top == null) continue; // no scored sibling board yet
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: byePair,
-              ewId: phantom,
-              score: null,
-              // AVE+ to the bye pair (NS); the phantom (EW) gets nothing. The
-              // outcome token lets §4.1.1.1 uplift the AVE+ from the pair's own
-              // average (a strong pair keeps its average, not a flat 60%).
-              outcome: syntheticAveOutcome(SIT_OUT_MP_FRACTION, 0),
-              maxMatchPoints: top,
-              nsMatchPoints: SIT_OUT_MP_FRACTION * top,
-              ewMatchPoints: 0,
-            },
-          ],
-        });
-      } else {
-        // PAIR_XIMP
-        synthetic.push({
-          pluginId,
-          board: boardNumber,
-          lines: [
-            {
-              nsId: byePair,
-              ewId: phantom,
-              score: null,
-              nsCrossImps: 0,
-              ewCrossImps: 0,
-            },
-          ],
-        });
-      }
-    }
-  }
-
-  return synthetic;
-}
-
-/**
- * The artificial-outcome token (`A<ns>/<ew>`) for a synthetic MP credit line,
- * from the two sides' fractions of the board top. This labels the line so the
- * single §4.1.1.1 `applyBetterThanAverage` pass can recognise it and apply the
- * better-than-average uplift to an exact AVE+ (60) / AVE− (40) side — while
- * leaving a PENALISED-fined side (a non-exact percentage, the director's
- * deliberate figure) and a phantom 0 side untouched. The flat matchpoints the
- * synthesiser also sets are the fallback the uplift uses when a pair has no
- * windowed average.
- */
-function syntheticAveOutcome(nsFraction: number, ewFraction: number): string {
-  return `A${Math.round(nsFraction * 100)}/${Math.round(ewFraction * 100)}`;
 }
 
 /**

@@ -217,14 +217,14 @@ describe("section-aware leaderboard (real scoring)", () => {
     expect(a.overallScore.lines).toHaveLength(4);
   });
 
-  it("credits a Swiss sit-out pair 60% of the board top under matchpoints", async () => {
+  it("gives a Mitchell sit-out pair no credit for the board it missed (§8.80.5)", async () => {
     const db = await setup();
     const { boards } = await import("@/db/games/tables/boards");
     const { computeSectionLeaderboards } =
       await import("./leaderboard-service");
 
-    // Section A: three pairs. Two tables play board 1 (giving a matchpoint top
-    // of 2, i.e. 2*(2-1) with two results), and a third pair sits out board 1.
+    // Section A: three pairs. Two tables play board 1, and a third pair sits
+    // out board 1.
     await seatPair(db, "A", 1, ["N1", "N1b"], ["E1", "E1b"]);
     await seatPair(db, "A", 2, ["N2", "N2b"], ["E2", "E2b"]);
     await seatPair(db, "A", 3, ["N3", "N3b"], ["E3", "E3b"]);
@@ -275,15 +275,13 @@ describe("section-aware leaderboard (real scoring)", () => {
       maxMP: number;
     }[];
 
+    // EBU White Book §8.80.5: a sit-out pair gets its average over the boards
+    // it played, so the missed board adds nothing. A3NS played no other board,
+    // so it is listed on the baseline (nothing scored, shown as 50%).
     const sitOut = lines.find((l) => l.pairId === "A3NS");
     expect(sitOut).toBeDefined();
-    // Board top is 2, so the bye pair is credited 60% => 1.2 of a max of 2.
-    // EBU §4.2.6.1 then rounds each board to the nearest whole matchpoint: 1.2
-    // → 1. On such a tiny field (top 2) there is no whole matchpoint that
-    // represents 60%, so the rounded AVE+ necessarily collapses to the nearest
-    // unit — a faithful consequence of the 1-MP scoring unit, not a bug.
-    expect(sitOut!.maxMP).toBeCloseTo(2, 5);
-    expect(sitOut!.totalMP).toBeCloseTo(1, 5);
+    expect(sitOut!.maxMP).toBe(0);
+    expect(sitOut!.totalMP).toBe(0);
   });
 
   it("drops a WITHOUT_STANDING pair from the ranking but keeps its results in the field (§2.4.9)", async () => {

@@ -30,7 +30,7 @@ const TEST_FILES = ["**/*.test.{ts,tsx}", "**/*.int.test.{ts,tsx}"];
  * Inside a module, files import each other with `./` or `@/modules/<name>/…`,
  * never by climbing out with `../`.
  */
-function moduleBlock(name) {
+function moduleBlock(name, { allowTypesFrom = [] } = {}) {
   return {
     files: [`src/modules/${name}/**/*.{ts,tsx}`],
     ignores: TEST_FILES,
@@ -38,6 +38,12 @@ function moduleBlock(name) {
       "no-restricted-imports": [
         "error",
         {
+          // A module listed here may be imported for its types only.
+          paths: allowTypesFrom.map((other) => ({
+            name: `@/modules/${other}`,
+            allowTypeImports: true,
+            message: `${name} may import only types from @/modules/${other}.`,
+          })),
           patterns: [
             {
               group: ["../*"],
@@ -54,9 +60,16 @@ function moduleBlock(name) {
                 "!@/modules",
                 "@/modules/*",
                 `!@/modules/${name}`,
+                ...allowTypesFrom.map((other) => `!@/modules/${other}`),
               ],
-              message: `${name} may import only the kernel (@/model) and itself. See docs/design/modules.md.`,
+              message: `${name} may import only the kernel (@/model) and itself${allowTypesFrom.length ? `, plus types from ${allowTypesFrom.map((o) => `@/modules/${o}`).join(", ")}` : ""}. See docs/design/modules.md.`,
             },
+            // Re-including another module above also re-includes its internal
+            // files, so block those separately: its entry only.
+            ...allowTypesFrom.map((other) => ({
+              group: [`@/modules/${other}/*`],
+              message: `${name} may import ${other} only through its entry (@/modules/${other}).`,
+            })),
           ],
         },
       ],
@@ -215,6 +228,8 @@ const eslintConfig = defineConfig([
   // Each pure module may import only the kernel and itself.
   moduleBlock("rulings"),
   moduleBlock("scoring"),
+  // Results views lay out scoring's numbers, so they read scoring's types.
+  moduleBlock("results-views", { allowTypesFrom: ["scoring"] }),
 
   // The core reaches a module only through its entry point
   // (`@/modules/<name>`), never its internal files. Tests may reach internals

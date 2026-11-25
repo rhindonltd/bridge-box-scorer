@@ -1,13 +1,25 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  buildTeamBoardResultTable,
-  TeamBoardResultLine,
-} from "./team-board-result-view";
+  teamBoardResult,
+  type TeamBoardResultLine,
+} from "@/modules/scoring/swiss/team-board-result";
+import { teamBoardResultTable } from "./team-board-result-table";
 import {
   formatNumberCell,
   ScoreCell,
-} from "@/modules/scoring/table/score-table";
+} from "@/modules/results-views/table/score-table";
+
+/** The table the play screens show: scoring's result laid out by results-views. */
+function buildTeamBoardResultTable(
+  instances: TeamBoardResultLine[],
+  boardNumber: number,
+  viewingSeat: string,
+) {
+  return teamBoardResultTable(
+    teamBoardResult(instances, boardNumber, viewingSeat),
+  );
+}
 
 /**
  * A team match on board 1: table 1 (home team A1) vs table 2 (team A2).

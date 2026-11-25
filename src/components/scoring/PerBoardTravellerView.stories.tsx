@@ -1,15 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 import { PerBoardTravellerView } from "./PerBoardTravellerView";
-import { getPerBoardPlugin } from "@/modules/scoring";
+import { scoreBoard, type ScoredBoard } from "@/modules/scoring";
+import { travellerViews } from "@/modules/results-views";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 
-const mpPlugin = getPerBoardPlugin("MP");
-const ximpPlugin = getPerBoardPlugin("XIMP");
-const impPlugin = getPerBoardPlugin("IMP");
+const mpScored = scoreBoard(mpBoard1, "MP");
+const ximpScored = scoreBoard(impBoard1, "XIMP");
+const impScored = scoreBoard(mpBoard1, "IMP");
 
-const meta: Meta<typeof PerBoardTravellerView> = {
+const meta: Meta<typeof PerBoardTravellerView<ScoredBoard>> = {
   title: "Components/Scoring/PerBoardTravellerView",
   component: PerBoardTravellerView,
   parameters: {
@@ -20,12 +21,12 @@ const meta: Meta<typeof PerBoardTravellerView> = {
 
 export default meta;
 
-type Story = StoryObj<typeof PerBoardTravellerView>;
+type Story = StoryObj<typeof PerBoardTravellerView<ScoredBoard>>;
 
 export const MP: Story = {
   args: {
-    plugin: mpPlugin,
-    scored: mpPlugin.score(mpBoard1),
+    views: travellerViews(mpScored),
+    scored: mpScored,
   },
 };
 
@@ -35,8 +36,8 @@ export const MP: Story = {
  */
 export const MPHighlighted: Story = {
   args: {
-    plugin: mpPlugin,
-    scored: mpPlugin.score(mpBoard1),
+    views: travellerViews(mpScored),
+    scored: mpScored,
     highlightAssignmentId: "3",
   },
   play: async ({ canvasElement }) => {
@@ -56,14 +57,14 @@ export const MPHighlighted: Story = {
 
 export const XIMP: Story = {
   args: {
-    plugin: ximpPlugin,
-    scored: ximpPlugin.score(impBoard1),
+    views: travellerViews(ximpScored),
+    scored: ximpScored,
   },
 };
 
 export const IMP: Story = {
   args: {
-    plugin: impPlugin,
-    scored: impPlugin.score(mpBoard1),
+    views: travellerViews(impScored),
+    scored: impScored,
   },
 };

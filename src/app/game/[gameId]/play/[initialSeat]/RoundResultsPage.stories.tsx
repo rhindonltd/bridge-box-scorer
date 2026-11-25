@@ -8,10 +8,8 @@ import {
   RoundResultsPage,
   RoundBoardResult,
 } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
-import {
-  buildTeamBoardResultTable,
-  TeamBoardResultLine,
-} from "@/modules/scoring";
+import { teamBoardResult, TeamBoardResultLine } from "@/modules/scoring";
+import { teamBoardResultTable } from "@/modules/results-views";
 
 const meta: Meta<typeof RoundResultsPage> = {
   title: "App/Play/Game/Assignment/RoundResultsPage",
@@ -55,10 +53,12 @@ function boardResult(
 ): RoundBoardResult {
   return {
     boardNumber,
-    table: buildTeamBoardResultTable(
-      match(boardNumber, t1Result, t2Result),
-      boardNumber,
-      "A1NS",
+    table: teamBoardResultTable(
+      teamBoardResult(
+        match(boardNumber, t1Result, t2Result),
+        boardNumber,
+        "A1NS",
+      ),
     ),
   };
 }

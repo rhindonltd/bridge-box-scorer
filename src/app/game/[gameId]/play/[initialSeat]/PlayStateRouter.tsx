@@ -17,7 +17,8 @@ import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplet
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
 import { ScoringType, GameType } from "@/model/game-types";
-import { buildTeamBoardResultTable } from "@/modules/scoring";
+import { teamBoardResult } from "@/modules/scoring";
+import { teamBoardResultTable } from "@/modules/results-views";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
@@ -357,17 +358,19 @@ function BoardResultsContent({
   const { deal, instances } = useTravellerContext();
 
   const teamResultTable = isTeams
-    ? buildTeamBoardResultTable(
-        instances.map((i) => ({
-          tableNumber: i.tableNumber,
-          ns: i.participants.ns,
-          ew: i.participants.ew,
-          result: i.currentResult as never,
-          status: i.status,
-          seatsSwapped: i.seatsSwapped,
-        })),
-        board,
-        seat,
+    ? teamBoardResultTable(
+        teamBoardResult(
+          instances.map((i) => ({
+            tableNumber: i.tableNumber,
+            ns: i.participants.ns,
+            ew: i.participants.ew,
+            result: i.currentResult as never,
+            status: i.status,
+            seatsSwapped: i.seatsSwapped,
+          })),
+          board,
+          seat,
+        ),
       )
     : null;
 

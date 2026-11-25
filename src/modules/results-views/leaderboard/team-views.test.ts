@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getTeamOverallPlugin } from "./registry";
+import { teamOverallViews } from "./team-views";
 import type { AssignedTeam, Pair } from "@/model/participants";
 
 function seatedPair(seat: string): Pair {
@@ -20,11 +20,11 @@ const teams: AssignedTeam[] = [
   },
 ];
 
-describe("getTeamOverallPlugin", () => {
+describe("teamOverallViews", () => {
   it("resolves Swiss VP to a single VP view", () => {
-    const plugin = getTeamOverallPlugin("TEAM_SWISS_VP");
-    expect(plugin.views.map((v) => v.id)).toEqual(["vp"]);
-    const table = plugin.views[0].toTable(
+    const views = teamOverallViews("TEAM_SWISS_VP");
+    expect(views.map((v) => v.id)).toEqual(["vp"]);
+    const table = views[0].toTable(
       {
         type: "TEAM_SWISS_VP",
         mode: "TEAM",
@@ -45,9 +45,9 @@ describe("getTeamOverallPlugin", () => {
   });
 
   it("resolves aggregate IMP to a single IMP view", () => {
-    const plugin = getTeamOverallPlugin("TEAM_IMP_AGG");
-    expect(plugin.views.map((v) => v.id)).toEqual(["imps"]);
-    const table = plugin.views[0].toTable(
+    const views = teamOverallViews("TEAM_IMP_AGG");
+    expect(views.map((v) => v.id)).toEqual(["imps"]);
+    const table = views[0].toTable(
       {
         type: "TEAM_IMP_AGG",
         mode: "TEAM",
@@ -71,11 +71,8 @@ describe("getTeamOverallPlugin", () => {
   it.each(["TEAM_BAM", "TEAM_PAB"] as const)(
     "%s offers percentage and points views",
     (type) => {
-      const plugin = getTeamOverallPlugin(type) as any;
-      expect(plugin.views.map((v: any) => v.id)).toEqual([
-        "percentage",
-        "points",
-      ]);
+      const views = teamOverallViews(type) as any[];
+      expect(views.map((v: any) => v.id)).toEqual(["percentage", "points"]);
       const score = {
         type,
         mode: "TEAM",
@@ -92,7 +89,7 @@ describe("getTeamOverallPlugin", () => {
           },
         ],
       };
-      for (const view of plugin.views) {
+      for (const view of views) {
         expect(view.toTable(score, teams).rows).toHaveLength(1);
       }
     },

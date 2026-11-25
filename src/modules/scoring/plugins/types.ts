@@ -1,6 +1,4 @@
-import { ScoreTable } from "@/modules/scoring/table/score-table";
 import { Traveller } from "@/model/traveller";
-import { AssignedPair } from "@/model/participants";
 import { ScoringType } from "@/model/game-types";
 
 /**
@@ -11,67 +9,29 @@ import { ScoringType } from "@/model/game-types";
 export type PerBoardPluginId = "MP" | "IMP" | "XIMP";
 export type OverallPluginId = "MP" | "XIMP";
 
-/**
- * Options passed to a view when it builds its table. Currently just the active
- * assignment id used for row highlighting, but kept as an object so views can
- * gain options without changing every signature.
- */
-export interface ViewOptions {
-  highlightAssignmentId?: string;
-  /**
-   * Drop the section prefix from pair ids in the rows (e.g. "A1EW" -> "1EW").
-   * Set when only one section is in play or results are not combined across
-   * sections, so the prefix carries no information.
-   */
-  hideSection?: boolean;
-}
-
 /* =========================================================
    PER-BOARD (traveller) plugins
 ========================================================= */
 
 /**
- * A single way of presenting a per-board scoring result (e.g. MP exposes a
- * "matchpoints" view and a "percentage" view). `toTable` is framework-free: it
- * returns a semantic {@link ScoreTable}, never React.
- */
-export interface PerBoardView<TLines> {
-  id: string;
-  label: string;
-  toTable: (scored: TLines, options?: ViewOptions) => ScoreTable;
-}
-
-/**
- * A per-board scoring plugin. `score` runs the algorithm for one board and
- * `views` describe how the result can be displayed. `TLines` is the shape of
- * the scored lines this plugin produces.
+ * A per-board scoring plugin: `score` runs the algorithm for one board.
+ * `TLines` is the shape of the scored lines this plugin produces. How the
+ * lines are shown is in results-views (`travellerViews`).
  */
 export interface PerBoardScoringPlugin<TLines = unknown> {
   id: PerBoardPluginId;
   /** Score a single board's traveller into this plugin's line shape. */
   score: (traveller: Traveller) => TLines;
-  /** Presentation views. The first entry is the default. */
-  views: PerBoardView<TLines>[];
 }
 
 /* =========================================================
    OVERALL (leaderboard) plugins
 ========================================================= */
 
-export interface OverallView<TLines> {
-  id: string;
-  label: string;
-  toTable: (
-    lines: TLines,
-    participants: AssignedPair[],
-    options?: ViewOptions,
-  ) => ScoreTable;
-}
-
 /**
- * An overall scoring plugin. `aggregate` combines the per-board scored
- * travellers (of the matching per-board plugin) into overall standings, and
- * `views` describe how the leaderboard can be displayed.
+ * An overall scoring plugin: `aggregate` combines the per-board scored
+ * travellers (of the matching per-board plugin) into overall standings. How
+ * they are shown is in results-views (`leaderboardViews`).
  *
  * `TScored` is the per-board scored-traveller shape it consumes; `TLines` is
  * the aggregated leaderboard shape it produces.
@@ -79,7 +39,6 @@ export interface OverallView<TLines> {
 export interface OverallScoringPlugin<TScored = unknown, TLines = unknown> {
   id: OverallPluginId;
   aggregate: (scoredTravellers: TScored[]) => TLines;
-  views: OverallView<TLines>[];
 }
 
 /* =========================================================
@@ -96,8 +55,8 @@ export interface ScoringCombination {
   /**
    * The overall (leaderboard) plugin for the pairs board-pooled path. Absent
    * for teams scorings (BAM/PAB and the teams IMP variants): their standings
-   * are produced by the dedicated teams scorers and displayed via the team
-   * overall registry, so the pairs overall plugin is never resolved for them.
+   * are produced by the dedicated teams scorers, so the pairs overall plugin
+   * is never resolved for them.
    */
   overall?: OverallPluginId;
 }

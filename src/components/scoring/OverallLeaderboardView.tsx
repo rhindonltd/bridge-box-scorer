@@ -2,13 +2,11 @@
 
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
-import { OverallScoringPlugin } from "@/modules/scoring";
-import { AssignedPair } from "@/model/participants";
+import type { TableView } from "@/modules/results-views";
 
-type Props = {
-  plugin: OverallScoringPlugin<unknown, unknown>;
-  lines: unknown;
-  participants: AssignedPair[];
+type Props<T> = {
+  views: TableView<T>[];
+  standings: T;
   highlightAssignmentId?: string;
   /** Spread the standings across this many side-by-side columns (default 1). */
   splitColumns?: number;
@@ -19,38 +17,44 @@ type Props = {
    */
   scroll?: boolean;
   /**
-   * Render the plugin view with this id and hide the in-screen toggle. The
-   * room display uses this to honour the MP/% choice made on the preceding
-   * screen. Ignored when no view matches.
+   * Render the view with this id and hide the in-screen toggle. The room
+   * display uses this to honour the MP/% choice made on the preceding screen.
+   * Ignored when no view matches.
    */
   selectedViewId?: string;
+  /**
+   * Whether cells may be interactive (default true). The passive room display
+   * passes false so a team name shows as static text rather than a button.
+   */
+  interactive?: boolean;
 };
 
 /**
- * Renders an overall (leaderboard) scoring result using a scoring plugin's
- * views. The single-view vs. two-view Toggle scaffolding lives in the shared
- * PluginViewSwitcher; this component just renders each view's leaderboard table.
+ * Renders a set of standings through its leaderboard views. The single-view
+ * vs. two-view Toggle scaffolding lives in the shared PluginViewSwitcher; this
+ * component just renders each view's leaderboard table.
  */
-export function OverallLeaderboardView({
-  plugin,
-  lines,
-  participants,
+export function OverallLeaderboardView<T>({
+  views,
+  standings,
   highlightAssignmentId,
   splitColumns,
   scroll,
   selectedViewId,
-}: Props) {
+  interactive,
+}: Props<T>) {
   return (
     <PluginViewSwitcher
-      views={plugin.views}
+      views={views}
       selectedViewId={selectedViewId}
       renderView={(view) => (
         <ScoreTableView
-          table={view.toTable(lines, participants, { highlightAssignmentId })}
+          table={view.toTable(standings, { highlightAssignmentId })}
           highlightAssignmentId={highlightAssignmentId}
           rowTestId="leaderboard-row"
           splitColumns={splitColumns}
           scroll={scroll}
+          interactive={interactive}
         />
       )}
     />

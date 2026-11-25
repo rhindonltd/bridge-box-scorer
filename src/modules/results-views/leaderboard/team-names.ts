@@ -3,7 +3,7 @@ import {
   ScoreCell,
   expandableCell,
   textCell,
-} from "@/modules/scoring/table/score-table";
+} from "@/modules/results-views/table/score-table";
 
 /** The four player names of a team ("First Last"), in NS-then-EW order. */
 export function teamPlayerLines(team: AssignedTeam): string[] {

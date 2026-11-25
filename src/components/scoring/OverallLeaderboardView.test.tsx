@@ -2,9 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { OverallLeaderboardView } from "./OverallLeaderboardView";
-import type { ScoreTable } from "@/modules/scoring/table/score-table";
-import type { OverallScoringPlugin } from "@/modules/scoring/plugins/types";
-import type { AssignedPair } from "@/model/participants";
+import type { ScoreTable } from "@/modules/results-views/table/score-table";
+import type { TableView } from "@/modules/results-views/view-types";
 
 function tableWith(label: string): ScoreTable {
   return {
@@ -13,8 +12,8 @@ function tableWith(label: string): ScoreTable {
   };
 }
 
-function plugin(viewCount: 1 | 2): OverallScoringPlugin<unknown, unknown> {
-  const views = [
+function views(viewCount: 1 | 2): TableView<unknown>[] {
+  return [
     { id: "v1", label: "First", toTable: vi.fn(() => tableWith("first-cell")) },
     {
       id: "v2",
@@ -22,33 +21,18 @@ function plugin(viewCount: 1 | 2): OverallScoringPlugin<unknown, unknown> {
       toTable: vi.fn(() => tableWith("second-cell")),
     },
   ].slice(0, viewCount);
-  return { id: "MP", score: vi.fn(), views } as never;
 }
 
-const participants: AssignedPair[] = [];
-
 describe("OverallLeaderboardView", () => {
-  it("renders a single-view plugin directly without a toggle", () => {
-    render(
-      <OverallLeaderboardView
-        plugin={plugin(1)}
-        lines={[]}
-        participants={participants}
-      />,
-    );
+  it("renders a single view directly without a toggle", () => {
+    render(<OverallLeaderboardView views={views(1)} standings={[]} />);
     expect(screen.getByText("first-cell")).toBeInTheDocument();
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   });
 
-  it("shows a toggle for a two-view plugin and switches the active view", () => {
-    render(
-      <OverallLeaderboardView
-        plugin={plugin(2)}
-        lines={[]}
-        participants={participants}
-      />,
-    );
+  it("shows a toggle for two views and switches the active view", () => {
+    render(<OverallLeaderboardView views={views(2)} standings={[]} />);
 
     // Default = first view (showFirst = true).
     expect(screen.getByText("first-cell")).toBeInTheDocument();

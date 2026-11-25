@@ -9,7 +9,7 @@ import {
   buildScorecardTable,
   buildScorecardVpTable,
   scorecardViews,
-} from "@/modules/scoring";
+} from "@/modules/results-views";
 
 export interface ScorecardPageProps {
   /** The pair's scorecard, or null when there is none (yet). */

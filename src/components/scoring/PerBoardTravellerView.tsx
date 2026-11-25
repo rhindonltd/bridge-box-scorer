@@ -2,30 +2,30 @@
 
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
-import { PerBoardScoringPlugin } from "@/modules/scoring";
+import type { TableView } from "@/modules/results-views";
 
-type Props = {
-  plugin: PerBoardScoringPlugin<unknown>;
-  scored: unknown;
+type Props<T> = {
+  views: TableView<T>[];
+  scored: T;
   highlightAssignmentId?: string;
   hideSection?: boolean;
 };
 
 /**
- * Renders a per-board scored traveller using a scoring plugin's views. The
- * view-selection UI (single view vs. two-view Toggle) lives in the shared
- * PluginViewSwitcher; this component just renders each view's table through the
- * shared ScoreTableView.
+ * Renders a per-board scored traveller through its views. The view-selection
+ * UI (single view vs. two-view Toggle) lives in the shared PluginViewSwitcher;
+ * this component just renders each view's table through the shared
+ * ScoreTableView.
  */
-export function PerBoardTravellerView({
-  plugin,
+export function PerBoardTravellerView<T>({
+  views,
   scored,
   highlightAssignmentId,
   hideSection,
-}: Props) {
+}: Props<T>) {
   return (
     <PluginViewSwitcher
-      views={plugin.views}
+      views={views}
       renderView={(view) => (
         <ScoreTableView
           table={view.toTable(scored, { highlightAssignmentId, hideSection })}

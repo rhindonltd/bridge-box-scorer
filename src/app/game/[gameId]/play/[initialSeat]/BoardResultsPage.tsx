@@ -1,5 +1,6 @@
 import { Traveller } from "@/components/traveller/Traveller";
-import { ScoreTable, ScoredBoard } from "@/modules/scoring";
+import { ScoreTable } from "@/modules/results-views";
+import { ScoredBoard } from "@/modules/scoring";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useAssignment } from "@/context/AssignmentContext";
 import { DealDisplay } from "@/components/deal/DealDisplay";

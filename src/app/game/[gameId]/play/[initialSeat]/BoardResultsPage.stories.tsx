@@ -4,7 +4,8 @@ import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardRe
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
-import { buildTeamBoardResultTable, scoreBoard } from "@/modules/scoring";
+import { scoreBoard, teamBoardResult } from "@/modules/scoring";
+import { teamBoardResultTable } from "@/modules/results-views";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { mockGame, teamsGame4Tables } from "@/mocks/fixtures/game";
 import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
@@ -138,13 +139,15 @@ export const TeamsBoard: Story = {
     board: 1,
     lastBoardOfRound: false,
     scoredBoard: scoreBoard(teamsBoard1, "XIMP"),
-    teamResultTable: buildTeamBoardResultTable(
-      [
-        { tableNumber: 1, ns: "A1NS", ew: "A2EW", result: "3NTN+1" as never },
-        { tableNumber: 2, ns: "A2NS", ew: "A1EW", result: "3NTN=" as never },
-      ],
-      1,
-      "A1NS",
+    teamResultTable: teamBoardResultTable(
+      teamBoardResult(
+        [
+          { tableNumber: 1, ns: "A1NS", ew: "A2EW", result: "3NTN+1" as never },
+          { tableNumber: 2, ns: "A2NS", ew: "A1EW", result: "3NTN=" as never },
+        ],
+        1,
+        "A1NS",
+      ),
     ),
   },
 };

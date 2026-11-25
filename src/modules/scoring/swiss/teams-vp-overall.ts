@@ -1,7 +1,7 @@
 import { TeamSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/modules/scoring/overall/rank";
 import { impVpWinner } from "./imp-vp-table";
-import { NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
+import { BYE_VP, NEUTRAL_VP, SwissVpBoardRow } from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
 import {
   groupTeamMatches,
@@ -16,14 +16,6 @@ import {
 } from "./team-match";
 import { voidMatchVp } from "@/modules/scoring/swiss/team-match-void-score";
 import { adjustMismatchVp } from "./mismatch-adjustment";
-
-/**
- * Victory Points awarded to a team that sits out a round (an odd-field bye).
- * An average-plus award (2 above the neutral 10) mirrors the sit-out
- * convention: a forced bye should not disadvantage — and slightly favours — the
- * sitting team, without matching a strong win.
- */
-const BYE_VP = 12;
 
 /**
  * Compute the Swiss Teams Victory-Point overall standings from a game's board

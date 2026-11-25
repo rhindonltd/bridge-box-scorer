@@ -2,7 +2,11 @@ import { BoardResult } from "@/components/traveller/BoardResult";
 import { Table } from "@/components/common/table/Table";
 import { TableRow } from "@/components/common/table/TableRow";
 import type { ColumnAlign } from "@/components/common/table/TableHead";
-import { ScoreCell, ScoreTable, formatNumberCell } from "@/modules/scoring";
+import {
+  ScoreCell,
+  ScoreTable,
+  formatNumberCell,
+} from "@/modules/results-views";
 import { ReactNode, useState } from "react";
 
 type Props = {

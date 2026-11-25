@@ -1,8 +1,6 @@
 import { OverallScoreAndParticipant } from "@/model/leaderboard";
-import { TeamOverallLeaderboardView } from "@/components/leaderboard/TeamOverallLeaderboardView";
 import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
-import { ScoreTableView } from "@/components/scoring/ScoreTableView";
-import { getOverallPlugin, buildSwissVpTable } from "@/modules/scoring";
+import { leaderboardViews } from "@/modules/results-views";
 
 type Props = {
   overallScoreAndParticipant: OverallScoreAndParticipant;
@@ -13,8 +11,7 @@ type Props = {
   highlightAssignmentId?: string;
   /**
    * Spread the standings across this many side-by-side columns (default 1).
-   * Used by the room display to fill a wide TV screen; ignored by the team
-   * match view (which is not a simple ranked list).
+   * Used by the room display to fill a wide TV screen.
    */
   splitColumns?: number;
   /**
@@ -24,10 +21,9 @@ type Props = {
    */
   scroll?: boolean;
   /**
-   * For pair plugins with more than one view (MP has %/matchpoints), render
-   * this view id and hide the in-screen toggle. The room display sets it from
-   * the MP/% choice made on the preceding screen. Ignored by single-view
-   * plugins (IMP/XIMP) and the team/Swiss variants.
+   * For matchpoint pairs (which has %/matchpoints views), render this view id
+   * and hide the in-screen toggle. The room display sets it from the MP/%
+   * choice made on the preceding screen. Ignored by the other formats.
    */
   selectedViewId?: string;
   /**
@@ -38,6 +34,11 @@ type Props = {
   interactive?: boolean;
 };
 
+/**
+ * Renders any set of standings — pairs (matchpoints, Cross-IMP, Swiss VP) or
+ * teams (Swiss VP, aggregate IMPs, Board-a-Match, Point-a-Board) — through its
+ * leaderboard views. A format with two views shows a toggle.
+ */
 export function Leaderboard({
   overallScoreAndParticipant,
   highlightAssignmentId,
@@ -46,60 +47,22 @@ export function Leaderboard({
   selectedViewId,
   interactive,
 }: Props) {
-  // TEAM standings are rendered via the team overall display registry (keyed
-  // by the score's `type` tag); handle those first so the rest narrows to PAIR
-  // (with AssignedPair[] participants).
-  switch (overallScoreAndParticipant.type) {
-    case "TEAM_SWISS_VP":
-    case "TEAM_IMP_AGG":
-    case "TEAM_BAM":
-    case "TEAM_PAB":
-      // Swiss VP / aggregate IMPs render a single per-round (or cumulative)
-      // table; Board-a-Match / Point-a-Board add a %/Points toggle. Which of
-      // those, and the table layout, is decided by the registry entry for the
-      // score's type.
-      return (
-        <TeamOverallLeaderboardView
-          score={overallScoreAndParticipant.overallScore}
-          teams={overallScoreAndParticipant.participants}
-          highlightAssignmentId={highlightAssignmentId}
-          splitColumns={splitColumns}
-          scroll={scroll}
-          interactive={interactive}
-        />
-      );
-    case "PAIR_SWISS_VP":
-      // Swiss Pairs Victory Points is a per-round table rather than a single
-      // aggregate column, so it renders through a dedicated table builder
-      // instead of the plugin registry (which is keyed by MP/IMP/XIMP).
-      return (
-        <ScoreTableView
-          table={buildSwissVpTable(
-            overallScoreAndParticipant.overallScore,
-            overallScoreAndParticipant.participants,
-          )}
-          highlightAssignmentId={highlightAssignmentId}
-          rowTestId="leaderboard-row"
-          splitColumns={splitColumns}
-          scroll={scroll}
-        />
-      );
-  }
-
-  // PAIR scoring is fully plugin-driven: resolve the overall plugin by its
-  // scoring id and render its views through the shared table view.
-  const { overallScore, participants } = overallScoreAndParticipant;
-  const plugin = getOverallPlugin(overallScore.scoring);
+  // (Read the score's own type: a two-winner direction carries no top-level
+  // `type`.) The room display's MP/% choice applies to pairs standings only: the
+  // board-comparison teams views also have a "percentage" view, and their
+  // toggle must stay on screen.
+  const isPairs =
+    overallScoreAndParticipant.overallScore.type.startsWith("PAIR_");
 
   return (
     <OverallLeaderboardView
-      plugin={plugin}
-      lines={overallScore}
-      participants={participants}
+      views={leaderboardViews(overallScoreAndParticipant)}
+      standings={overallScoreAndParticipant}
       highlightAssignmentId={highlightAssignmentId}
       splitColumns={splitColumns}
       scroll={scroll}
-      selectedViewId={selectedViewId}
+      selectedViewId={isPairs ? selectedViewId : undefined}
+      interactive={interactive}
     />
   );
 }

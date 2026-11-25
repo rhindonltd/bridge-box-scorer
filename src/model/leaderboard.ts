@@ -219,3 +219,20 @@ export interface DirectionalLeaderboard {
   ns: OverallScoreAndParticipant;
   ew: OverallScoreAndParticipant;
 }
+
+/**
+ * The team overall score `type` tags. These are the only team standings any
+ * scorer produces today (Swiss VP, aggregate IMPs, Board-a-Match,
+ * Point-a-Board); each has a display in results-views.
+ */
+export type TeamOverallScoreType =
+  "TEAM_SWISS_VP" | "TEAM_IMP_AGG" | "TEAM_BAM" | "TEAM_PAB";
+
+/** The concrete team overall score for a given `type` tag. */
+export type TeamOverallScoreOf<T extends TeamOverallScoreType> = Extract<
+  | TeamSwissVpOverallScore
+  | TeamImpAggOverallScore
+  | TeamBamOverallScore
+  | TeamPabOverallScore,
+  { type: T }
+>;

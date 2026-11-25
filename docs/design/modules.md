@@ -1440,22 +1440,23 @@ interface PerBoardStrategy<Line> {
 Kept exactly as `scoreBoardsToOverall` runs it, without the dead pairs IMP
 branches (D11):
 
-| #   | Pass                                                                      | MP         | Cross-IMP         | Source                                 |
-| --- | ------------------------------------------------------------------------- | ---------- | ----------------- | -------------------------------------- |
-| 1   | Group rows by board; drop lines with no result                            | yes        | yes               | `leaderboard-service.ts:186`–`:218`    |
-| 2   | Per-board score                                                           | `scoreMP`  | `scoreXIMP`       | `:220`                                 |
-| 3   | Neuberg equalisation (EBU §4.2.3)                                         | yes        | no                | `:229`, `neuberg-across-boards.ts:137` |
-| 4   | Sit-out credit for every `SIT_OUT` row (60% of top for MP, zero for XIMP) | yes        | yes               | `:247`, `:535`                         |
-| 5   | Better than average (EBU §4.1.1.1)                                        | yes        | yes               | `:261`, `:280`–`:303`                  |
-| 6   | Round matchpoints (EBU §4.2.6.1)                                          | yes        | no                | `:309`, `round-mp-boards.ts:72`        |
-| 7   | Aggregate and rank                                                        | MP overall | Cross-IMP overall | `:325`–`:334`                          |
+| #   | Pass                                                     | MP         | Cross-IMP         | Source                                 |
+| --- | -------------------------------------------------------- | ---------- | ----------------- | -------------------------------------- |
+| 1   | Group rows by board; drop lines with no result           | yes        | yes               | `leaderboard-service.ts:186`–`:218`    |
+| 2   | Per-board score                                          | `scoreMP`  | `scoreXIMP`       | `:220`                                 |
+| 3   | Neuberg equalisation (EBU §4.2.3)                        | yes        | no                | `:229`, `neuberg-across-boards.ts:137` |
+| 4   | ~~Sit-out credit for every `SIT_OUT` row~~ removed by F1 | no         | no                | —                                      |
+| 5   | Better than average (EBU §4.1.1.1)                       | yes        | yes               | `:261`, `:280`–`:303`                  |
+| 6   | Round matchpoints (EBU §4.2.6.1)                         | yes        | no                | `:309`, `round-mp-boards.ts:72`        |
+| 7   | Aggregate and rank                                       | MP overall | Cross-IMP overall | `:325`–`:334`                          |
 
 The USEBIO export runs 2, 3, 5, 6 and 7 for MP and 2, 5 and 7 for Cross-IMP
 (`generate-usebio.ts:1073`–`:1140`). It skips step 4 and keeps not-played
 rows in step 1, so as built it keeps its own ranking (`computeOverallRanking`)
-and calls these passes from the scoring entry (9.7). Step 4 itself looks
-wrong (it reaches Mitchell sit-outs but not Swiss byes); that is F1 in
-[`modules-follow-ups.md`](modules-follow-ups.md).
+and calls these passes from the scoring entry (9.7). Step 4 reached Mitchell
+sit-outs but not Swiss byes; F1 in [`modules-follow-ups.md`](modules-follow-ups.md)
+removed it, and Swiss Pairs byes are now credited 12 VP by the Swiss VP
+scorers instead.
 
 **Removing pairs IMP (D11).** A pairs game can only be MP or Cross-IMP
 (`src/model/event-type-choice.ts:67`), so the pairs IMP code is dead and is
@@ -1537,8 +1538,8 @@ method internals:
   - `legacyExport`. The USEBIO export keeps `computeOverallRanking` and calls
     the board-pooled passes from the scoring entry, so it needs no switch.
     Moving it onto `scoreEvent` would change its output (O2, O3, O4);
-  - the view code (tables, plugin views) is still exported from the scoring
-    entry until results-views (step 3).
+  - the view code (tables, plugin views), exported from the scoring entry
+    until results-views. Moved in step 3 (10.4).
 - The entry is `src/modules/scoring/index.ts`. Every non-test import outside
   the module goes through it. Tests may still reach internals, and
   `leaderboard-service.test.ts` still mocks scoring internals by path (the
@@ -1625,6 +1626,36 @@ plugin id or score type, with no registration step (D13).
 | `src/app/game/[gameId]/play/[initialSeat]/RoundResultsPage.tsx`                                                           | `buildTeamBoardResultTable`, `ScoreTable`                            | `teamBoardResultTable`, type                                             |
 | `src/app/game/[gameId]/play/[initialSeat]/scorecard/ScorecardPage.tsx`                                                    | `buildScorecardTable`, `buildScorecardVpTable`, `scorecardViews`     | results-views entry                                                      |
 | Stories: `BoardResultsPage`, `RoundResultsPage`, `PerBoardTravellerView`, `ScoreTableView`, `Traveller` (`*.stories.tsx`) | the same table types and builders                                    | results-views entry (stories are core, so the core rule applies to them) |
+
+### 10.4 As built (step 3)
+
+`src/modules/results-views/` holds `views.ts` and `view-types.ts`, plus
+`table/`, `traveller/`, `leaderboard/`, `scorecard/` and `team-board-result/`,
+behind `index.ts`. Its lint block lets it import the kernel, itself, and
+scoring's entry for types only (not scoring's internal files). Differences from
+10.2:
+
+- `leaderboardViews` takes the kernel's `OverallScoreAndParticipant` (what the
+  client holds) rather than scoring's `Standings`. It reads the format from
+  `overallScore.type`, because a two-winner event's NS and EW rankings carry
+  no top-level `type`.
+- The leaderboard components collapse to one path. `Leaderboard` calls
+  `leaderboardViews` for every format and renders through
+  `OverallLeaderboardView`, which now takes views and standings.
+  `TeamOverallLeaderboardView` is gone. The room display's MP/% choice is still
+  applied to pairs standings only, so the Board-a-Match and Point-a-Board
+  toggle is unchanged.
+- The teams board-result table split in two. Scoring keeps the numbers as
+  `teamBoardResult(...)`, which returns each room's result and score and the
+  net IMPs. Results-views lays them out with `teamBoardResultTable(result)`,
+  which returns null for a null result. The play screens call
+  `teamBoardResultTable(teamBoardResult(...))`.
+- The scoring plugins keep only `score` / `aggregate`; their `views` moved to
+  `traveller/` and `leaderboard/`. The team views' lookup table is
+  `leaderboard/team-views.ts`. `TeamOverallScoreType` and
+  `TeamOverallScoreOf` are in the kernel (`src/model/leaderboard.ts`).
+- `scorecardViews` and the scorecard builders moved unchanged. D5 is not done
+  yet, so the scorecard still shows the flat per-board scores.
 
 ## 11. Further candidates
 
@@ -1828,7 +1859,10 @@ landing with its lint block switched on:
      sub-step;
    - the `methods/` folder layout and the 9.5 breakdowns;
    - the export onto `applyRulings` / `scoreEvent` (O2, O3, O4).
-3. **results-views.** Mostly moving view code out of scoring.
+3. **results-views.** **Done** (see 10.4). Scoring returns numbers only; every
+   table is built in results-views, and the screens get them through
+   `travellerViews`, `leaderboardViews`, the scorecard builders and
+   `teamBoardResultTable`. D5 follows as its own step.
 4. **swiss**, including §3.5 detection, which by then can call `scoreEvent`
    through its adapter.
 5. **movement-catalog**, including the `movements.db` move (D12).

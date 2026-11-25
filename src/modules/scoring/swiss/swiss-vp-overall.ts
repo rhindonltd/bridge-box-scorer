@@ -39,3 +39,32 @@ export interface SwissVpBoardRow {
  * results yet: half of the 20-point pool, i.e. a dead-average match.
  */
 export const NEUTRAL_VP = 10;
+
+/**
+ * Victory Points awarded to a pair or team that sits out a round (an odd-field
+ * bye). An average-plus award (2 above the neutral 10, the White Book's AVE+ on
+ * a 20–0 scale): a forced bye should not disadvantage — and slightly favours —
+ * the sitting side, without matching a strong win. The same for matchpoint and
+ * cross-IMP Swiss Pairs, and for Swiss Teams.
+ */
+export const BYE_VP = 12;
+
+/** One Swiss Pairs bye: the sitting pair and the round it sat out. */
+export interface SwissPairsBye {
+  /** The bye pair's id, as its board rows carry it (the BYE match's `home`). */
+  pairId: string;
+  round: number;
+}
+
+/**
+ * The Swiss Pairs byes, from the authoritative `matches` rows (the BYE kind).
+ * A BYE match names the sitting pair (`home`) and the round; the scorers credit
+ * that pair {@link BYE_VP} for the round.
+ */
+export function swissPairsByes(
+  matchRows: readonly { kind: string; home: string; roundNumber: number }[],
+): SwissPairsBye[] {
+  return matchRows
+    .filter((m) => m.kind === "BYE")
+    .map((m) => ({ pairId: m.home, round: m.roundNumber }));
+}

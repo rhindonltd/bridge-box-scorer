@@ -3,14 +3,14 @@ import {
   multilineCell,
   numberCell,
   textCell,
-} from "@/modules/scoring/table/score-table";
+} from "@/modules/results-views/table/score-table";
 import { PairSwissVpOverallScore } from "@/model/leaderboard";
 import { AssignedPair } from "@/model/participants";
-import { pairNameLines } from "@/modules/scoring/plugins/overall/pair-names";
+import { pairNameLines } from "@/modules/results-views/leaderboard/pair-names";
 import {
   rankCell,
   roundColumnNumbers,
-} from "@/modules/scoring/plugins/overall/overall-view";
+} from "@/modules/results-views/leaderboard/overall-view";
 
 /**
  * Build the Swiss Pairs Victory-Point leaderboard table.

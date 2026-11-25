@@ -1,6 +1,6 @@
 import { PairSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/modules/scoring/overall/rank";
-import { SwissVpBoardRow } from "./swiss-vp-overall";
+import { BYE_VP, SwissVpBoardRow, swissPairsByes } from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
 import { scoreSwissVpRound, type SwissVpMatchRow } from "./swiss-vp-round";
 
@@ -24,7 +24,8 @@ import { scoreSwissVpRound, type SwissVpMatchRow } from "./swiss-vp-round";
  * {@link scoreSwissVpRound}; this function just groups rows by round, credits
  * each round's per-pair VP, and ranks. A round with no comparison yet (no scored
  * board, or a single-table field) shows the neutral 10 VP. SIT_OUT (bye) rows
- * are skipped.
+ * are skipped; the bye pair is credited {@link BYE_VP} for that round from its
+ * BYE match instead.
  */
 export function calculateSwissMpVpOverall(
   boardRows: SwissVpBoardRow[],
@@ -58,6 +59,11 @@ export function calculateSwissMpVpOverall(
     for (const [pairId, vp] of pairVp) {
       creditVp(totals, pairId, round, vp);
     }
+  }
+
+  // Credit each bye pair an average-plus result for the round it sat out.
+  for (const bye of swissPairsByes(matchRows)) {
+    creditVp(totals, bye.pairId, bye.round, BYE_VP);
   }
 
   const lines = rank(

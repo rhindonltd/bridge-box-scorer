@@ -58,19 +58,22 @@ adjusted score on one board (file 06, `RULE-B`). The pair must be scoring **abov
 
 ## SITOUT — sit-out / bye credit
 
-A pair/team sitting out (a bye) is **credited**, not blanked, so a forced bye
-doesn't drag its standing down.
+In a Swiss event a pair/team sitting out (a bye) is **credited**, not blanked,
+so a forced bye doesn't drag its standing down. In an ordinary pairs game a
+pair that sits out is scored on the boards it played (its average).
 
 **Setup:** an **odd** Swiss field. Seed `--scoring SWISS_PAIRS_MP --tables 4
 --rounds 5 --play round1` then draw with a pair benched, **or** create live with
 an odd field. For teams: `--scoring SWISS_TEAMS` odd field.
 
-| Check            | Step                                                                                                      | Expected                                                                                                                                                              |
-| ---------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ☐ SITOUT-1       | Draw a round with a **bye** pair (Swiss Pairs, MP). Open the leaderboard.                                 | The bye pair is credited **~60%** (AVE+) for the missed boards — a visible credit, not a gap.                                                                         |
-| ☐ SITOUT-2       | Repeat on an **XIMP** Swiss Pairs game.                                                                   | The bye pair is credited the **field average (0 net IMP)** for the missed boards (no fixed per-board top on IMP), so the board still counts and doesn't drag it down. |
-| ☐ SITOUT-TEAMS-1 | On **Swiss Teams** with a bye, open the leaderboard.                                                      | The bye **team** is credited **~12 VP** for the sit-out round (an average-plus VP).                                                                                   |
-| ☐ SITOUT-TEAMS-2 | On a **BAM/PAB** teams game with a bye, confirm the bye counts as a **~60% boards-won** credit, not zero. | Board-comparison bye credit.                                                                                                                                          |
+| Check            | Step                                                                                                                              | Expected                                                                                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ☐ SITOUT-1       | Draw a round with a **bye** pair (Swiss Pairs, MP). Open the leaderboard.                                                         | The bye pair is credited **12 VP** for the round it sat out (an average-plus VP) — a visible credit, not a gap.                                                                        |
+| ☐ SITOUT-2       | Repeat on an **XIMP** Swiss Pairs game.                                                                                           | The same **12 VP** for the bye round.                                                                                                                                                  |
+| ☐ SITOUT-3       | On an ordinary **Mitchell** pairs game with a half table (one pair sits out a round), score the session and open the leaderboard. | The sit-out pair is scored on the boards it played only: its percentage is its average over those boards (EBU White Book §8.80.5), not lifted by a 60% credit for the round it missed. |
+| ☐ SITOUT-4       | Finalise the Swiss Pairs game from SITOUT-1 and download the USEBIO file.                                                         | The bye pair's total includes the **12 VP** for its bye round, matching the leaderboard.                                                                                               |
+| ☐ SITOUT-TEAMS-1 | On **Swiss Teams** with a bye, open the leaderboard.                                                                              | The bye **team** is credited **~12 VP** for the sit-out round (an average-plus VP).                                                                                                    |
+| ☐ SITOUT-TEAMS-2 | On a **BAM/PAB** teams game with a bye, confirm the bye counts as a **~60% boards-won** credit, not zero.                         | Board-comparison bye credit.                                                                                                                                                           |
 
 ---
 

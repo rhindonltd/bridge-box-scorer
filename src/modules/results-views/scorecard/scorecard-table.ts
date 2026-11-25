@@ -8,7 +8,7 @@ import {
   contractCell,
   numberCell,
   textCell,
-} from "@/modules/scoring/table/score-table";
+} from "@/modules/results-views/table/score-table";
 
 /**
  * The ways a scorecard's per-board score can be shown. Matchpoint events offer

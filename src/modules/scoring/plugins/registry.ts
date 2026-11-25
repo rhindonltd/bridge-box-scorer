@@ -63,8 +63,8 @@ export function getOverallPlugin(
  * Pairs is matchpoints or Cross-IMP only, so only MP and XIMP have an overall
  * plugin. The teams scorings (the IMP variants and BAM/PAB) declare only
  * `perBoard`: they reuse the IMP per-board plugin as the raw-score traveller
- * display, and their standings come from the dedicated teams scorers shown via
- * the team overall registry.
+ * display, and their standings come from the dedicated teams scorers (shown by
+ * results-views).
  */
 const combinations: CombinationRegistry = {
   MP: { perBoard: "MP", overall: "MP" },

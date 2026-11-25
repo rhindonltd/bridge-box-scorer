@@ -3,7 +3,8 @@
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { CaptionedSpinner } from "@/components/common/Spinner";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
-import { buildTeamBoardResultTable, ScoreTable } from "@/modules/scoring";
+import { ScoreTable, teamBoardResultTable } from "@/modules/results-views";
+import { teamBoardResult } from "@/modules/scoring";
 import { useRoundResults } from "./useRoundResults";
 
 /** One board's Team Result table, or null when it cannot be built yet. */
@@ -95,16 +96,18 @@ export function RoundResultsLoader({
       ? null
       : boards.map((boardNumber) => ({
           boardNumber,
-          table: buildTeamBoardResultTable(
-            (byBoard.get(boardNumber) ?? []).map((i) => ({
-              tableNumber: i.tableNumber,
-              ns: i.participants.ns,
-              ew: i.participants.ew,
-              result: i.currentResult as never,
-              status: i.status,
-            })),
-            boardNumber,
-            seat,
+          table: teamBoardResultTable(
+            teamBoardResult(
+              (byBoard.get(boardNumber) ?? []).map((i) => ({
+                tableNumber: i.tableNumber,
+                ns: i.participants.ns,
+                ew: i.participants.ew,
+                result: i.currentResult as never,
+                status: i.status,
+              })),
+              boardNumber,
+              seat,
+            ),
           ),
         }));
 

@@ -203,9 +203,16 @@ const mockTraveller = vi.fn(() => ({
   instances: [] as any[],
 }));
 const mockBuildTeamTable = vi.fn();
-vi.mock("@/modules/scoring/swiss/team-board-result-view", () => ({
-  buildTeamBoardResultTable: (...a: unknown[]) => mockBuildTeamTable(...a),
+vi.mock("@/modules/scoring/swiss/team-board-result", () => ({
+  teamBoardResult: (...a: unknown[]) => mockBuildTeamTable(...a),
 }));
+// The table layout passes the (stubbed) result straight through.
+vi.mock(
+  "@/modules/results-views/team-board-result/team-board-result-table",
+  () => ({
+    teamBoardResultTable: (result: unknown) => result,
+  }),
+);
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage", () => ({
   RoundResultsLoader: ({ boards, onContinue, headerRight }: any) => (
     <div data-testid="round-results">

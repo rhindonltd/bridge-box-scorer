@@ -1,4 +1,5 @@
-import { getPerBoardPlugin, ScoredBoard } from "@/modules/scoring";
+import type { ScoredBoard } from "@/modules/scoring";
+import { travellerViews } from "@/modules/results-views";
 import { PerBoardTravellerView } from "@/components/scoring/PerBoardTravellerView";
 
 type Props = {
@@ -13,20 +14,18 @@ type Props = {
 };
 
 /**
- * Renders a scored board using the per-board scoring plugin that produced it.
- * Plugin resolution replaces the previous per-scoring-type switch.
+ * Renders a scored board with the traveller views for the scoring that
+ * produced it.
  */
 export function Traveller({
   scoredBoard,
   highlightAssignmentId,
   hideSection,
 }: Props) {
-  const plugin = getPerBoardPlugin(scoredBoard.pluginId);
-
   return (
     <PerBoardTravellerView
-      plugin={plugin}
-      scored={scoredBoard.lines}
+      views={travellerViews(scoredBoard)}
+      scored={scoredBoard}
       highlightAssignmentId={highlightAssignmentId}
       hideSection={hideSection}
     />
