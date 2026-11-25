@@ -68,7 +68,10 @@ step-by-step instructions.
   sits it out. The app shows a sit-out screen and directs the pair where to go
   next. In Swiss Pairs, an odd number of pairs means one pair sits out (a
   **bye**) each round; no pair is given more than one bye, and a pair on a bye
-  is credited an above-average score so the break doesn't hurt their standing.
+  is credited an above-average score (12 of the round's 20 Victory Points) so
+  the break doesn't hurt their standing. In other pairs events a pair that sits
+  out is scored only on the boards it played, so its percentage (or average
+  cross-IMPs) is its average over those boards.
 
 ## Contestant standing
 

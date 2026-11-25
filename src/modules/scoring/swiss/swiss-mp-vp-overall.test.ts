@@ -162,7 +162,7 @@ describe("calculateSwissMpVpOverall", () => {
     expect(ew.vpByRound[1]).toBe(10);
   });
 
-  it("ignores sit-out (bye) rows", () => {
+  it("credits a bye pair 12 VP for its round instead of scoring its rows", () => {
     const rows: SwissVpBoardRow[] = [
       row({
         tableNumber: 3,
@@ -177,7 +177,11 @@ describe("calculateSwissMpVpOverall", () => {
     ];
 
     const result = calculateSwissMpVpOverall(rows);
-    expect(result.lines.find((l) => l.pairId === "A5NS")).toBeUndefined();
+    // The bye pair's board rows are not scored (its "3NTN=" is ignored); it is
+    // credited the average-plus bye award for the round instead.
+    const bye = result.lines.find((l) => l.pairId === "A5NS")!;
+    expect(bye.vpByRound).toEqual({ 1: 12 });
+    expect(bye.totalVP).toBe(12);
   });
 
   // --- "2 half matches" (odd-field) rounds -----------------------------------

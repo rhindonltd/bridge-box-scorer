@@ -56,7 +56,12 @@ export {
   type SwissRoundMode,
   type SwissVpMatchRow,
 } from "./swiss/swiss-vp-round";
-export type { SwissVpBoardRow } from "./swiss/swiss-vp-overall";
+export {
+  BYE_VP,
+  swissPairsByes,
+  type SwissPairsBye,
+  type SwissVpBoardRow,
+} from "./swiss/swiss-vp-overall";
 export { segmentsForPair } from "./swiss/swiss-half-match";
 export { impVpWinner } from "./swiss/imp-vp-table";
 export { voidMatchVp } from "./swiss/team-match-void-score";

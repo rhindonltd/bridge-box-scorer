@@ -217,7 +217,7 @@ describe("calculateSwissXimpVpOverall", () => {
     );
   });
 
-  it("ignores sit-out (bye) rows", () => {
+  it("credits a bye pair 12 VP for its round instead of scoring its rows", () => {
     const rows: SwissVpBoardRow[] = [
       row({
         tableNumber: 3,
@@ -228,7 +228,13 @@ describe("calculateSwissXimpVpOverall", () => {
       }),
     ];
     const result = calculateSwissXimpVpOverall(rows);
-    expect(result.lines).toHaveLength(0);
+    // Only the bye pair is listed (the phantom never is), on the bye award.
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0]).toMatchObject({
+      pairId: "A5NS",
+      totalVP: 12,
+      vpByRound: { 1: 12 },
+    });
   });
 
   it("uses the director override result over the confirmed result", () => {

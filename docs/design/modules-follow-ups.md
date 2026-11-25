@@ -9,14 +9,14 @@ They can be done before, during or after the split, each with its own tests.
 
 ## Decided
 
-| #   | Change                                                                                                                                                                            | Notes               |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| F1  | The 60% sit-out credit applies to Swiss only. Remove it from ordinary pairs games, and give Swiss Pairs byes a credit, which they appear not to get today.                        | see below; check C1 |
-| F2  | Not-played boards are left out of the USEBIO export.                                                                                                                              |                     |
-| F3  | The USEBIO export pools sections exactly when the director chose combined ranking at setup (`combinedRanking`), as the leaderboard already does.                                  | check C2            |
-| F4  | Remove `WithdrawalRecord.unplayedBoards` and mark the matching part of the handover design superseded.                                                                            | see below           |
-| F5  | Fix the `TripleComparison` comment (`src/movement/swiss-teams/swiss-teams-pairing.ts:117`): long triples use board sets A, B and C too, not "R1"/"R2" (`TripleBoardSet`, `:129`). |                     |
-| F6  | `mitchellSpecSchema` (`src/model/selected-movement.ts:36`) keeps the Mitchell variant fields `blackpool`, `doubleHesitation`, `revengeRounds` and `modified`.                     | see below           |
+| #   | Change                                                                                                                                                                            | Notes     |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| F1  | **Done.** The 60% sit-out credit applies to Swiss only. Remove it from ordinary pairs games, and give Swiss Pairs byes a credit, which they appear not to get today.              | see below |
+| F2  | Not-played boards are left out of the USEBIO export.                                                                                                                              |           |
+| F3  | The USEBIO export pools sections exactly when the director chose combined ranking at setup (`combinedRanking`), as the leaderboard already does.                                  | check C2  |
+| F4  | Remove `WithdrawalRecord.unplayedBoards` and mark the matching part of the handover design superseded.                                                                            | see below |
+| F5  | Fix the `TripleComparison` comment (`src/movement/swiss-teams/swiss-teams-pairing.ts:117`): long triples use board sets A, B and C too, not "R1"/"R2" (`TripleBoardSet`, `:129`). |           |
+| F6  | `mitchellSpecSchema` (`src/model/selected-movement.ts:36`) keeps the Mitchell variant fields `blackpool`, `doubleHesitation`, `revengeRounds` and `modified`.                     | see below |
 
 ### F1: sit-out credit
 
@@ -41,6 +41,29 @@ pairs games, and score the Swiss Pairs bye from its `BYE` match.
 
 The USEBIO export gives no sit-out credit at all, so after F1 it agrees with
 the leaderboard for ordinary pairs games.
+
+**As done.** The reading above was right: before F1 a Swiss Pairs bye had no
+line for its round, and a Mitchell sit-out was credited 60% of the board top
+(the replaced unit and integration tests asserted exactly that, which settles
+C1).
+
+- Ordinary pairs games: the synthetic sit-out lines are gone
+  (`swissSitOutScoredBoards` removed from
+  `src/modules/scoring/event/score-event.ts`). A sit-out pair is ranked on the
+  boards it played, which is EBU White Book §8.80.5 ("their average … factoring
+  their score by the number of boards played"). That holds for Cross-IMP too,
+  which ranks on average cross-IMPs per board.
+- Swiss Pairs: the White Book sets no bye award (it suggests two half-matches
+  instead), so the club choice is a flat **12 VP**, the same as the Swiss Teams
+  bye. `BYE_VP` and `swissPairsByes` (`src/modules/scoring/swiss/swiss-vp-overall.ts`)
+  read the BYE match. Both Swiss Pairs scorers and the Swiss Pairs USEBIO
+  export (`assemble-swiss-pairs.ts`) credit it, so the file matches the
+  leaderboard. A bye emits no USEBIO `MATCH`, as it has no opponent.
+- e2e checks SITOUT-1 to SITOUT-4 (`docs/e2e/07-special-scoring.md`) describe
+  the new behaviour.
+- A Swiss game drawn before this change and replayed for §3.5 detection now
+  includes the bye credit in the replayed standings. If a past draw depended on
+  the bye pair's standing, the detector may flag that round.
 
 ### F4: `unplayedBoards`
 
@@ -104,5 +127,6 @@ separate choice.
 ## Checks
 
 - **C1.** Confirm with a test that a Swiss Pairs bye gets no credit today and
-  a Mitchell sit-out gets 60% (F1).
+  a Mitchell sit-out gets 60% (F1). **Done:** confirmed by the tests F1
+  replaced.
 - **C2.** How USEBIO expresses a ranking across sections (F3).

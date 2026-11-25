@@ -6,8 +6,10 @@ import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
+  BYE_VP,
   rank,
   scoreSwissVpRound,
+  swissPairsByes,
   type SwissRoundMode,
   type SwissVpMatchRow,
 } from "@/modules/scoring";
@@ -157,6 +159,10 @@ function buildMatches(
       });
     }
   }
+
+  // A bye pair gets the same average-plus VP as on the leaderboard. A bye has
+  // no opponent, so it adds to the pair's total but emits no MATCH.
+  for (const bye of swissPairsByes(matchRows)) addVp(bye.pairId, BYE_VP);
 
   return { matches, totals };
 }

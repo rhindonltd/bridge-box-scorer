@@ -714,12 +714,11 @@ describe("Teams VP routing", () => {
   });
 });
 
-describe("Swiss sit-out synthetic scoring", () => {
+describe("sit-outs in a board-pooled pairs game", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(findPairs).mockResolvedValue([]);
-    // A non-Swiss-VP MP game so scoreBoardsToOverall (and its sit-out helper)
-    // runs. (swissVpMode null -> falls through to the board-pooled overall.)
+    // A Mitchell-style (non-Swiss) MP game, so scoreBoardsToOverall runs.
     vi.mocked(findGameById).mockResolvedValue({
       gameId: "game-1",
       gameType: "PAIRS",
@@ -727,122 +726,57 @@ describe("Swiss sit-out synthetic scoring", () => {
     } as BridgeGame);
   });
 
-  it("credits a bye pair 60% of the board top under matchpoints", async () => {
-    vi.mocked(getCombination).mockReturnValue({
-      perBoard: "MP",
-      overall: "MP",
-    });
-    // A real played board (board 1) gives a maxMatchPoints top of 2; a SIT_OUT
-    // row on the same board credits the bye pair 60% of that top.
-    vi.mocked(scoreBoard).mockReturnValue({
-      pluginId: "MP",
-      board: 1,
-      lines: [
-        {
-          nsId: "1",
-          ewId: "2",
-          nsMatchPoints: 2,
-          ewMatchPoints: 0,
-          maxMatchPoints: 2,
-        },
-      ],
-    } as any);
-    const aggregate = mockOverallPlugin({ type: "PAIR_MP", lines: [] });
+  // EBU White Book §8.80.5: a pair that sits out gets its average over the
+  // boards it played, so its missed boards add no line at all.
+  it.each([
+    { perBoard: "MP" as const, type: "PAIR_MP" as const },
+    { perBoard: "XIMP" as const, type: "PAIR_XIMP" as const },
+  ])(
+    "gives a sit-out pair no line for its missed board ($perBoard)",
+    async ({ perBoard, type }) => {
+      vi.mocked(getCombination).mockReturnValue({
+        perBoard,
+        overall: perBoard,
+      });
+      vi.mocked(scoreBoard).mockReturnValue({
+        pluginId: perBoard,
+        board: 1,
+        lines: [{ nsId: "1", ewId: "2", score: 400 }],
+      } as any);
+      const aggregate = mockOverallPlugin({ type, lines: [] });
 
-    await computeLeaderboard(
-      dbWithBoards([
-        {
-          boardNumber: 1,
-          ns: "1",
-          ew: "2",
-          section: "A",
-          status: "CONFIRMED",
-          confirmedResult: "3NTN=",
-          directorOverrideResult: null,
-        },
-        {
-          boardNumber: 1,
-          ns: "5",
-          ew: "PHANTOM",
-          section: "A",
-          status: "SIT_OUT",
-          confirmedResult: null,
-          directorOverrideResult: null,
-        },
-      ]),
-      "game-1",
-    );
+      await computeLeaderboard(
+        dbWithBoards([
+          {
+            boardNumber: 1,
+            ns: "1",
+            ew: "2",
+            section: "A",
+            status: "CONFIRMED",
+            confirmedResult: "3NTN=",
+            directorOverrideResult: null,
+          },
+          {
+            boardNumber: 1,
+            ns: "5",
+            ew: "PHANTOM",
+            section: "A",
+            status: "SIT_OUT",
+            confirmedResult: null,
+            directorOverrideResult: null,
+          },
+        ]),
+        "game-1",
+      );
 
-    // The aggregator receives the real board line plus one synthetic sit-out
-    // line crediting pair 5 with 0.6 * 2 = 1.2 matchpoints, which EBU §4.2.6.1
-    // per-board rounding then rounds to the nearest whole matchpoint → 1 (1.2
-    // is below the board average of 1, nearest integer).
-    const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
-    const allLines = passed.flatMap((b) => b.lines);
-    expect(allLines.some((l) => l.nsId === "5" && l.nsMatchPoints === 1)).toBe(
-      true,
-    );
-  });
-
-  it("skips the bye credit when no sibling board has been scored yet", async () => {
-    vi.mocked(getCombination).mockReturnValue({
-      perBoard: "MP",
-      overall: "MP",
-    });
-    // No played board on board 7 -> top unknown -> the bye is credited nothing.
-    const aggregate = mockOverallPlugin({ type: "PAIR_MP", lines: [] });
-
-    await computeLeaderboard(
-      dbWithBoards([
-        {
-          boardNumber: 7,
-          ns: "5",
-          ew: "PHANTOM",
-          section: "A",
-          status: "SIT_OUT",
-          confirmedResult: null,
-          directorOverrideResult: null,
-        },
-      ]),
-      "game-1",
-    );
-
-    const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
-    expect(passed.flatMap((b) => b.lines)).toHaveLength(0);
-    expect(scoreBoard).not.toHaveBeenCalled();
-  });
-
-  it("credits a bye pair zero cross-imps under Cross-IMP scoring", async () => {
-    vi.mocked(getCombination).mockReturnValue({
-      perBoard: "XIMP",
-      overall: "XIMP",
-    });
-    const aggregate = mockOverallPlugin({ type: "PAIR_XIMP", lines: [] });
-
-    await computeLeaderboard(
-      dbWithBoards([
-        {
-          boardNumber: 1,
-          ns: "5",
-          ew: "PHANTOM",
-          section: "A",
-          status: "SIT_OUT",
-          confirmedResult: null,
-          directorOverrideResult: null,
-        },
-      ]),
-      "game-1",
-    );
-
-    const allLines = (aggregate.mock.calls[0][0] as { lines: any[] }[]).flatMap(
-      (b) => b.lines,
-    );
-    expect(
-      allLines.some(
-        (l) => l.nsId === "5" && l.nsCrossImps === 0 && l.ewCrossImps === 0,
-      ),
-    ).toBe(true);
-  });
+      const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
+      const allLines = passed.flatMap((b) => b.lines);
+      expect(allLines).toHaveLength(1);
+      expect(allLines.some((l) => l.nsId === "5" || l.ewId === "5")).toBe(
+        false,
+      );
+    },
+  );
 });
 
 describe("buildLeaderboards", () => {

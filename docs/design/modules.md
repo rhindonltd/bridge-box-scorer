@@ -1440,22 +1440,23 @@ interface PerBoardStrategy<Line> {
 Kept exactly as `scoreBoardsToOverall` runs it, without the dead pairs IMP
 branches (D11):
 
-| #   | Pass                                                                      | MP         | Cross-IMP         | Source                                 |
-| --- | ------------------------------------------------------------------------- | ---------- | ----------------- | -------------------------------------- |
-| 1   | Group rows by board; drop lines with no result                            | yes        | yes               | `leaderboard-service.ts:186`–`:218`    |
-| 2   | Per-board score                                                           | `scoreMP`  | `scoreXIMP`       | `:220`                                 |
-| 3   | Neuberg equalisation (EBU §4.2.3)                                         | yes        | no                | `:229`, `neuberg-across-boards.ts:137` |
-| 4   | Sit-out credit for every `SIT_OUT` row (60% of top for MP, zero for XIMP) | yes        | yes               | `:247`, `:535`                         |
-| 5   | Better than average (EBU §4.1.1.1)                                        | yes        | yes               | `:261`, `:280`–`:303`                  |
-| 6   | Round matchpoints (EBU §4.2.6.1)                                          | yes        | no                | `:309`, `round-mp-boards.ts:72`        |
-| 7   | Aggregate and rank                                                        | MP overall | Cross-IMP overall | `:325`–`:334`                          |
+| #   | Pass                                                     | MP         | Cross-IMP         | Source                                 |
+| --- | -------------------------------------------------------- | ---------- | ----------------- | -------------------------------------- |
+| 1   | Group rows by board; drop lines with no result           | yes        | yes               | `leaderboard-service.ts:186`–`:218`    |
+| 2   | Per-board score                                          | `scoreMP`  | `scoreXIMP`       | `:220`                                 |
+| 3   | Neuberg equalisation (EBU §4.2.3)                        | yes        | no                | `:229`, `neuberg-across-boards.ts:137` |
+| 4   | ~~Sit-out credit for every `SIT_OUT` row~~ removed by F1 | no         | no                | —                                      |
+| 5   | Better than average (EBU §4.1.1.1)                       | yes        | yes               | `:261`, `:280`–`:303`                  |
+| 6   | Round matchpoints (EBU §4.2.6.1)                         | yes        | no                | `:309`, `round-mp-boards.ts:72`        |
+| 7   | Aggregate and rank                                       | MP overall | Cross-IMP overall | `:325`–`:334`                          |
 
 The USEBIO export runs 2, 3, 5, 6 and 7 for MP and 2, 5 and 7 for Cross-IMP
 (`generate-usebio.ts:1073`–`:1140`). It skips step 4 and keeps not-played
 rows in step 1, so as built it keeps its own ranking (`computeOverallRanking`)
-and calls these passes from the scoring entry (9.7). Step 4 itself looks
-wrong (it reaches Mitchell sit-outs but not Swiss byes); that is F1 in
-[`modules-follow-ups.md`](modules-follow-ups.md).
+and calls these passes from the scoring entry (9.7). Step 4 reached Mitchell
+sit-outs but not Swiss byes; F1 in [`modules-follow-ups.md`](modules-follow-ups.md)
+removed it, and Swiss Pairs byes are now credited 12 VP by the Swiss VP
+scorers instead.
 
 **Removing pairs IMP (D11).** A pairs game can only be MP or Cross-IMP
 (`src/model/event-type-choice.ts:67`), so the pairs IMP code is dead and is

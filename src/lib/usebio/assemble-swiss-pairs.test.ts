@@ -199,6 +199,23 @@ describe("assembleSwissPairs", () => {
     expect(data.matches).toHaveLength(0);
   });
 
+  it("credits a bye pair 12 VP in its total, as the leaderboard does", () => {
+    const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy"), pair("A2NS", "Ed")];
+    const boards = [
+      board(1, 1, 1, "A1NS", "A1EW", "3NTN="),
+      {
+        ...board(1, 2, 1, "A2NS", "PHANTOM", null),
+        status: "SIT_OUT",
+      } as Board,
+    ];
+
+    const data = assembleSwissPairs(game, club, pairs, boards);
+    // The bye has no opponent, so it is not a MATCH, but it counts in the total.
+    expect(data.matches).toHaveLength(1);
+    const bye = data.ranking.find((r) => r.number === "A2NS")!;
+    expect(bye.totalVP).toBe(12);
+  });
+
   it("defaults a blank event section name to 'A'", () => {
     const blankSection = { ...game, sectionName: "" } as BridgeGame;
     const pairs = [pair("A1NS", "Al"), pair("A1EW", "Cy")];
