@@ -205,8 +205,14 @@ describe("SwissTeamsDrawControl", () => {
         byeTeamId: 5,
         named: {
           matches: [
-            { a: { teamId: 1, name: "Sharks" }, b: { teamId: 2, name: "Dragons" } },
-            { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
+            {
+              a: { teamId: 1, name: "Sharks" },
+              b: { teamId: 2, name: "Dragons" },
+            },
+            {
+              a: { teamId: 3, name: "Owls" },
+              b: { teamId: 4, name: "Eagles" },
+            },
           ],
           bye: { teamId: 5, name: "Robins" },
           triple: null,
@@ -248,8 +254,12 @@ describe("SwissTeamsDrawControl", () => {
     );
   });
   it("keeps the review open and shows the error when the commit fails", async () => {
-    vi.mocked(previewNextSwissTeamsRound).mockResolvedValue(previewAck() as never);
-    vi.mocked(commitNextSwissTeamsRound).mockRejectedValue(new Error("round changed"));
+    vi.mocked(previewNextSwissTeamsRound).mockResolvedValue(
+      previewAck() as never,
+    );
+    vi.mocked(commitNextSwissTeamsRound).mockRejectedValue(
+      new Error("round changed"),
+    );
     render(<SwissTeamsDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
     fireEvent.click(await screen.findByTestId("draw-confirm"));
@@ -257,11 +267,15 @@ describe("SwissTeamsDrawControl", () => {
     expect(screen.getByTestId("draw-confirm")).toBeInTheDocument();
   });
   it("shows a generic message when the commit rejects with a non-Error", async () => {
-    vi.mocked(previewNextSwissTeamsRound).mockResolvedValue(previewAck() as never);
+    vi.mocked(previewNextSwissTeamsRound).mockResolvedValue(
+      previewAck() as never,
+    );
     vi.mocked(commitNextSwissTeamsRound).mockRejectedValue("boom");
     render(<SwissTeamsDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
     fireEvent.click(await screen.findByTestId("draw-confirm"));
-    expect(await screen.findByText("Could not save the draw.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Could not save the draw."),
+    ).toBeInTheDocument();
   });
 });

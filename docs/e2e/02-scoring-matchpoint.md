@@ -28,16 +28,16 @@ inspect the same screens.
 
 **Fixture:** `--scoring MP` (standard 3-table Mitchell, all boards played).
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ MP-1 | Open **Room Display → the game → Leaderboard**. For an MP pairs game you're first asked **"Show standings as"**. | A **Percentage** / **Matchpoints** choice appears. |
-| ☐ MP-2 | Choose **Percentage**. | A standings table where each pair's score is a **percentage** (e.g. "62.5%"). |
-| ☐ MP-3 | Confirm the field is split into **two rankings**: a **North/South** list and an **East/West** list (tabs or two panels). | Two separate rankings, each with its own 1st place. |
-| ☐ MP-4 | Confirm each ranking is ordered **best percentage first** and positions are sensible (1, 2, 3…). | Correct descending order; ties share a rank. |
-| ☐ MP-5 | Switch **"Show standings as"** to **Matchpoints**. | The same ranking, now showing raw **matchpoints** (e.g. "18 / 24") instead of a percentage. |
-| ☐ MP-6 | On a **player device** that played, confirm its own pair is **highlighted** in the correct direction's list. | Pair highlighted in NS or EW as appropriate. |
-| ☐ MP-7 | Open a **traveller** (Manage Game Menu → Travellers → a board). | Each line shows the pairs, the contract, the score, and that board's **matchpoints / top** per pair. |
-| ☐ MP-8 | Pick a board where two pairs got the **same** score. | They share the **same** matchpoints on that board (a tie splits the matchpoints). |
+| Check  | Step                                                                                                                     | Expected                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| ☐ MP-1 | Open **Room Display → the game → Leaderboard**. For an MP pairs game you're first asked **"Show standings as"**.         | A **Percentage** / **Matchpoints** choice appears.                                                   |
+| ☐ MP-2 | Choose **Percentage**.                                                                                                   | A standings table where each pair's score is a **percentage** (e.g. "62.5%").                        |
+| ☐ MP-3 | Confirm the field is split into **two rankings**: a **North/South** list and an **East/West** list (tabs or two panels). | Two separate rankings, each with its own 1st place.                                                  |
+| ☐ MP-4 | Confirm each ranking is ordered **best percentage first** and positions are sensible (1, 2, 3…).                         | Correct descending order; ties share a rank.                                                         |
+| ☐ MP-5 | Switch **"Show standings as"** to **Matchpoints**.                                                                       | The same ranking, now showing raw **matchpoints** (e.g. "18 / 24") instead of a percentage.          |
+| ☐ MP-6 | On a **player device** that played, confirm its own pair is **highlighted** in the correct direction's list.             | Pair highlighted in NS or EW as appropriate.                                                         |
+| ☐ MP-7 | Open a **traveller** (Manage Game Menu → Travellers → a board).                                                          | Each line shows the pairs, the contract, the score, and that board's **matchpoints / top** per pair. |
+| ☐ MP-8 | Pick a board where two pairs got the **same** score.                                                                     | They share the **same** matchpoints on that board (a tie splits the matchpoints).                    |
 
 ---
 
@@ -45,11 +45,11 @@ inspect the same screens.
 
 **Fixture:** `--scoring MP_HOWELL` (Howell from the movement library).
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ MP-9 | Open the **Leaderboard** and choose **Percentage**. | A **single** ranking — no NS/EW split. |
-| ☐ MP-10 | Confirm every pair appears **once** in that one field, ordered best-first. | One pooled list; each pair once. |
-| ☐ MP-11 | Confirm there is exactly **one** 1st place (one winner). | Single winner (unless a genuine tie for 1st). |
+| Check   | Step                                                                       | Expected                                      |
+| ------- | -------------------------------------------------------------------------- | --------------------------------------------- |
+| ☐ MP-9  | Open the **Leaderboard** and choose **Percentage**.                        | A **single** ranking — no NS/EW split.        |
+| ☐ MP-10 | Confirm every pair appears **once** in that one field, ordered best-first. | One pooled list; each pair once.              |
+| ☐ MP-11 | Confirm there is exactly **one** 1st place (one winner).                   | Single winner (unless a genuine tie for 1st). |
 
 ---
 
@@ -58,10 +58,10 @@ inspect the same screens.
 **Fixture:** `--scoring MP --play partial` (room to add a result), **or** a live
 game from file 01.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ MP-12 | With the Leaderboard open on one device, enter/confirm (or director-override) another board result elsewhere. | The leaderboard **recomputes and updates live** within a couple of seconds — no refresh. |
-| ☐ MP-13 | Confirm the changed pair's percentage and rank move in the direction you'd expect (a good result raises them). | Ranking shifts correctly. |
+| Check   | Step                                                                                                           | Expected                                                                                 |
+| ------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| ☐ MP-12 | With the Leaderboard open on one device, enter/confirm (or director-override) another board result elsewhere.  | The leaderboard **recomputes and updates live** within a couple of seconds — no refresh. |
+| ☐ MP-13 | Confirm the changed pair's percentage and rank move in the direction you'd expect (a good result raises them). | Ranking shifts correctly.                                                                |
 
 > **Short-board / half-table equalisation (Neuberg)** and the **AVE+/AVE−
 > better-than-average uplift** are matchpoint subtleties with their own cases in

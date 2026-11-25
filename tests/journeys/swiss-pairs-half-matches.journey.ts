@@ -36,7 +36,9 @@ const DATA_DIR = () => E2E_GAMES_DIR;
 
 /** Open the game's SQLite file read-only. */
 function openDb(gameId: string): Database.Database {
-  return new Database(path.join(DATA_DIR(), `${gameId}.db`), { readonly: true });
+  return new Database(path.join(DATA_DIR(), `${gameId}.db`), {
+    readonly: true,
+  });
 }
 
 /** Read each seat's secret token from the game's SQLite file (seat -> token). */
@@ -177,9 +179,15 @@ async function confirmRound(
 
     for (const row of rows) {
       const ns = await submit(row.ns, row);
-      expect(ns.success, `NS submit failed (${row.ns}): ${ns.error}`).toBeTruthy();
+      expect(
+        ns.success,
+        `NS submit failed (${row.ns}): ${ns.error}`,
+      ).toBeTruthy();
       const ew = await submit(row.ew, row);
-      expect(ew.success, `EW submit failed (${row.ew}): ${ew.error}`).toBeTruthy();
+      expect(
+        ew.success,
+        `EW submit failed (${row.ew}): ${ew.error}`,
+      ).toBeTruthy();
     }
   } finally {
     socket.disconnect();
@@ -187,7 +195,10 @@ async function confirmRound(
 }
 
 /** Draw the next round from the Movement screen and accept the preview. */
-async function drawNextRound(directorPage: Page, gameId: string): Promise<void> {
+async function drawNextRound(
+  directorPage: Page,
+  gameId: string,
+): Promise<void> {
   await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
   const button = directorPage.getByTestId("draw-next-round");
   await expect(button).toBeEnabled({ timeout: 15000 });
@@ -250,9 +261,10 @@ test.describe("Swiss Pairs 2 half matches (odd field)", () => {
       await expect(
         directorPage.getByTestId("leaderboard-standings"),
       ).toBeVisible({ timeout: 15000 });
-      await expect(
-        directorPage.getByTestId("leaderboard-row"),
-      ).toHaveCount(oddSeats.length, { timeout: 15000 });
+      await expect(directorPage.getByTestId("leaderboard-row")).toHaveCount(
+        oddSeats.length,
+        { timeout: 15000 },
+      );
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

@@ -86,7 +86,9 @@ describe("ReviewMismatchesPage", () => {
   it("shows the empty state when there are no candidates", async () => {
     mockFetch.mockResolvedValue([]);
     render(<ReviewMismatchesPage gameId="g1" />);
-    expect(await screen.findByText(/No mismatches to review/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No mismatches to review/),
+    ).toBeInTheDocument();
   });
 
   it("renders pair and team candidates across sections", async () => {
@@ -168,12 +170,16 @@ describe("ReviewMismatchesPage", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Apply — not their fault" }),
     );
-    expect(await screen.findByText("Failed to apply ruling")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Failed to apply ruling"),
+    ).toBeInTheDocument();
   });
 
   it("dismisses a candidate without emitting", async () => {
     render(<ReviewMismatchesPage gameId="g1" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Not a mismatch" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Not a mismatch" }),
+    );
     expect(screen.getByText(/No mismatches to review/)).toBeInTheDocument();
     expect(mockEmit).not.toHaveBeenCalled();
   });

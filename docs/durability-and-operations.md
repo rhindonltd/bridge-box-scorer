@@ -67,7 +67,12 @@ minutes to catch the "process alive but HTTP dead" case that PM2's crash-restart
 does not cover. The JSON body also reports the running version/commit:
 
 ```json
-{ "status": "ok", "version": "0.1.0", "commit": null, "checks": { "game-index": "ok", "players": "ok", "system": "ok" } }
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "commit": null,
+  "checks": { "game-index": "ok", "players": "ok", "system": "ok" }
+}
 ```
 
 ## Logging

@@ -32,9 +32,8 @@ describe("getOutstandingBoards", () => {
     first2: string,
   ): Promise<void> {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
     const p1 = await createPlayer(harness.gameId, {
       firstName: first1,
       lastName: "North",
@@ -59,9 +58,8 @@ describe("getOutstandingBoards", () => {
 
   it("returns an empty list when nothing is outstanding", async () => {
     await seedBoards([makeBoard({ boardNumber: 1, status: "CONFIRMED" })]);
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
     expect(await getOutstandingBoards(db)).toEqual([]);
   });
@@ -71,9 +69,8 @@ describe("getOutstandingBoards", () => {
     await seatPair("A1EW", "Carol", "Dan");
     await seedBoards([makeBoard({ boardNumber: 1, status: "NOT_PLAYED" })]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
 
     expect(await getOutstandingBoards(db)).toEqual([
@@ -99,9 +96,8 @@ describe("getOutstandingBoards", () => {
       makeBoard({ boardNumber: 5, status: "PENDING_CONFIRMATION" }),
     ]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
 
     const result = await getOutstandingBoards(db);
@@ -117,9 +113,8 @@ describe("getOutstandingBoards", () => {
       ),
     );
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
 
     const result = await getOutstandingBoards(db, 2);
@@ -133,9 +128,8 @@ describe("getOutstandingBoards", () => {
       makeBoard({ boardNumber: 1, status: "NOT_PLAYED", seatsSwapped: true }),
     ]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
     const [board] = await getOutstandingBoards(db);
 
@@ -147,9 +141,8 @@ describe("getOutstandingBoards", () => {
     await seatPair("A1NS", "Alice", "Bob");
     await seedBoards([makeBoard({ boardNumber: 1, status: "NOT_PLAYED" })]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
 
     const [board] = await getOutstandingBoards(db);
@@ -160,9 +153,8 @@ describe("getOutstandingBoards", () => {
   it("leaves an unseated NS side null", async () => {
     await seatPair("A1EW", "Carol", "Dan");
     await seedBoards([makeBoard({ boardNumber: 1, status: "NOT_PLAYED" })]);
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const db = (await harness.getDb()) as Db;
     const [board] = await getOutstandingBoards(db);
     expect(board.nsPair).toBeNull();
@@ -177,8 +169,11 @@ describe("getOutstandingBoards", () => {
     const { players } = await import("@/db/games/tables/players");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const mk = (first: string, last: string) =>
-      db.insert(players).values({ firstName: first, lastName: last }).returning().get()
-        .id;
+      db
+        .insert(players)
+        .values({ firstName: first, lastName: last })
+        .returning()
+        .get().id;
     // Earlier occupant (NOT the arrival anchor).
     db.insert(seatOccupancy)
       .values({
@@ -215,9 +210,8 @@ describe("getOutstandingBoards", () => {
     await seatMergedHandoverA1NS(db, "anchor");
     await seedBoards([makeBoard({ boardNumber: 2, status: "NOT_PLAYED" })]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const [board] = await getOutstandingBoards(db);
     // Main = the arrival anchor (the arriving pair) by default.
     expect(board.nsPair).toBe("Arr North & Arr South");
@@ -229,9 +223,8 @@ describe("getOutstandingBoards", () => {
     await seatMergedHandoverA1NS(db, "earlier");
     await seedBoards([makeBoard({ boardNumber: 2, status: "NOT_PLAYED" })]);
 
-    const { getOutstandingBoards } = await import(
-      "@/db/games/queries/get-outstanding-boards"
-    );
+    const { getOutstandingBoards } =
+      await import("@/db/games/queries/get-outstanding-boards");
     const [board] = await getOutstandingBoards(db);
     // Director made the EARLIER pair the main pair → the board is named after it.
     expect(board.nsPair).toBe("Early North & Early South");

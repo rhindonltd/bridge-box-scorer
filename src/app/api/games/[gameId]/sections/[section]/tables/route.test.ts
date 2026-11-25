@@ -15,7 +15,12 @@ vi.mock("@/socket/broadcast/section-broadcast", () => ({
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { getDb } from "@/db/games";
@@ -50,7 +55,13 @@ describe("PUT /api/games/[gameId]/sections/[section]/tables", () => {
     vi.mocked(getDb).mockResolvedValue({} as never);
     vi.mocked(validateDirectorToken).mockReturnValue(true);
     vi.mocked(findSections).mockResolvedValue([
-      { section: "A", label: "A", tables: 4, ordinal: 0, selectedMovement: null },
+      {
+        section: "A",
+        label: "A",
+        tables: 4,
+        ordinal: 0,
+        selectedMovement: null,
+      },
     ] as never);
   });
 

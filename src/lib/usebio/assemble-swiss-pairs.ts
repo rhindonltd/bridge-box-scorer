@@ -5,12 +5,12 @@ import { Club } from "@/db/system/schema";
 import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { rank } from "@/scoring/overall/rank";
 import {
+  rank,
   scoreSwissVpRound,
   type SwissRoundMode,
   type SwissVpMatchRow,
-} from "@/scoring/swiss/swiss-vp-round";
+} from "@/modules/scoring";
 import { buildTravellerLine } from "./traveller-line";
 import {
   UsebioClub,

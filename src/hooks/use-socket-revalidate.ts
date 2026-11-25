@@ -43,12 +43,14 @@ export function useSocketRevalidate(
       typeof t === "string" ? { event: t } : t,
     );
 
-    const handlers = normalised.map(({ event, when }): [string, (p: unknown) => void] => {
-      const handler = (payload: unknown) => {
-        if (!when || when(payload)) revalidate();
-      };
-      return [event, handler];
-    });
+    const handlers = normalised.map(
+      ({ event, when }): [string, (p: unknown) => void] => {
+        const handler = (payload: unknown) => {
+          if (!when || when(payload)) revalidate();
+        };
+        return [event, handler];
+      },
+    );
 
     for (const [event, handler] of handlers) {
       socket.on(event, handler);

@@ -49,7 +49,9 @@ describe("GameHeaderBar", () => {
       sectionName: "",
     });
 
-    render(<GameHeaderBar headerTitle="Play" headerRight={<span>Pair 5</span>} />);
+    render(
+      <GameHeaderBar headerTitle="Play" headerRight={<span>Pair 5</span>} />,
+    );
     expect(screen.getByText("Spring Pairs")).toBeInTheDocument();
     expect(screen.getByText("Pair 5")).toBeInTheDocument();
   });
@@ -95,10 +97,15 @@ describe("GameHeaderBar", () => {
     mockPathname.mockReturnValue("/game/g1/manage/travellers");
 
     render(
-      <GameHeaderBar headerTitle="Travellers" headerRight={<span>Custom</span>} />,
+      <GameHeaderBar
+        headerTitle="Travellers"
+        headerRight={<span>Custom</span>}
+      />,
     );
 
     expect(screen.getByText("Custom")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Join" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
   });
 });

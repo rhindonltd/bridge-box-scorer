@@ -151,7 +151,11 @@ export function useBreakEditor(timeline: BreakTimeline) {
    */
   const signatureParts = breaks.map((b) =>
     b.mode === "duration"
-      ? { afterRound: b.afterRound, mode: b.mode, durationMinutes: b.durationMinutes }
+      ? {
+          afterRound: b.afterRound,
+          mode: b.mode,
+          durationMinutes: b.durationMinutes,
+        }
       : { afterRound: b.afterRound, mode: b.mode, resumeAt: b.resumeAt },
   );
 

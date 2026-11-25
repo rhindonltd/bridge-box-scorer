@@ -5,15 +5,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // while the atomic-write mechanics are covered in wifi-config.test.ts.
 const { writeWifiConfig } = vi.hoisted(() => ({ writeWifiConfig: vi.fn() }));
 vi.mock("@/lib/system/wifi-config", async (importActual) => {
-  const actual = await importActual<typeof import("@/lib/system/wifi-config")>();
+  const actual =
+    await importActual<typeof import("@/lib/system/wifi-config")>();
   return { ...actual, writeWifiConfig };
 });
-vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/db/system/queries/admin-key", () => ({
+  validateAdminToken: vi.fn(),
+}));
 
 const { isWifiManagementAvailable } = vi.hoisted(() => ({
   isWifiManagementAvailable: vi.fn(),
 }));
-vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
+vi.mock("@/lib/system/wifi-availability", () => ({
+  isWifiManagementAvailable,
+}));
 
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { POST } from "./route";

@@ -25,9 +25,7 @@ describe("rotateParticipantSecret", () => {
 
   async function seatPair(seat: string, secretKey: string, standing?: string) {
     const { getDb } = await import("@/db/games");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { createPlayer } = await import("@/db/games/actions/create-player");
     const db = await getDb(harness.gameId);
     if (!db) throw new Error("expected game db");
@@ -57,9 +55,7 @@ describe("rotateParticipantSecret", () => {
 
   async function secretOf(occupancyId: number): Promise<string> {
     const { getDb } = await import("@/db/games");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { eq } = await import("drizzle-orm");
     const db = await getDb(harness.gameId);
     if (!db) throw new Error("expected game db");
@@ -72,9 +68,8 @@ describe("rotateParticipantSecret", () => {
   }
 
   it("returns false when the game db does not exist", async () => {
-    const { rotateParticipantSecret } = await import(
-      "./rotate-participant-secret"
-    );
+    const { rotateParticipantSecret } =
+      await import("./rotate-participant-secret");
     expect(
       await rotateParticipantSecret("nonexistent-game", "A1NS", "new-secret"),
     ).toBe(false);
@@ -83,9 +78,8 @@ describe("rotateParticipantSecret", () => {
   it("rotates the seat's secret and returns true for a single occupancy", async () => {
     const row = await seatPair("A1NS", "old-secret");
 
-    const { rotateParticipantSecret } = await import(
-      "./rotate-participant-secret"
-    );
+    const { rotateParticipantSecret } =
+      await import("./rotate-participant-secret");
     expect(
       await rotateParticipantSecret(harness.gameId, "A1NS", "new-secret"),
     ).toBe(true);
@@ -93,9 +87,8 @@ describe("rotateParticipantSecret", () => {
   });
 
   it("returns false when no pair is seated at the seat", async () => {
-    const { rotateParticipantSecret } = await import(
-      "./rotate-participant-secret"
-    );
+    const { rotateParticipantSecret } =
+      await import("./rotate-participant-secret");
     expect(
       await rotateParticipantSecret(harness.gameId, "A1NS", "new-secret"),
     ).toBe(false);
@@ -105,9 +98,8 @@ describe("rotateParticipantSecret", () => {
     const real = await seatPair("A1NS", "real-old");
     const sub = await seatPair("A1NS", "sub-secret", "WITHOUT_STANDING");
 
-    const { rotateParticipantSecret } = await import(
-      "./rotate-participant-secret"
-    );
+    const { rotateParticipantSecret } =
+      await import("./rotate-participant-secret");
     expect(
       await rotateParticipantSecret(harness.gameId, "A1NS", "real-new"),
     ).toBe(true);

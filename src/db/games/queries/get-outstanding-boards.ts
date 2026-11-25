@@ -11,7 +11,7 @@ import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { primaryOf } from "@/db/games/queries/seat-occupancy";
-import { applySeatSwaps } from "@/model/seat-swap";
+import { applySeatSwaps } from "@/modules/rulings";
 
 /** The default cap on how many outstanding boards the detail list returns. */
 export const OUTSTANDING_DETAIL_LIMIT = 5;

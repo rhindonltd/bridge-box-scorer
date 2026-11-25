@@ -2,7 +2,7 @@
 
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
-import { OverallScoringPlugin } from "@/scoring/plugins/types";
+import { OverallScoringPlugin } from "@/modules/scoring";
 import { AssignedPair } from "@/model/participants";
 
 type Props = {

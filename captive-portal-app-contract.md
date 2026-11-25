@@ -12,7 +12,7 @@
 > is the app answering those probe requests the way each OS expects.
 >
 > **:443 caveat.** The NAT rule redirects :443 as well as :80, but the app on :3000 serves **plain
-> HTTP**, so an *HTTPS* probe (e.g. `https://captive.apple.com/...`) hits a plaintext port and its TLS
+> HTTP**, so an _HTTPS_ probe (e.g. `https://captive.apple.com/...`) hits a plaintext port and its TLS
 > handshake fails — the app can't return a usable response to an HTTPS probe. This is fine in
 > practice: OS captive **detection** probes are plain **HTTP :80** (that's the point of the probe —
 > it must be interceptable), so the handlers below only need to answer HTTP. The :443 redirect mainly
@@ -23,6 +23,7 @@
 
 On joining WiFi, modern OSes fetch a known "is there internet / is this a captive portal?" URL and
 judge the network by the HTTP response:
+
 - **Expected success response → "online"** (no portal, device stays connected silently).
 - **Redirect to another host → "captive portal"** (device shows the sign-in sheet, lets the user in).
 - **Wrong/ambiguous response, refused, or timeout → "no internet"** → Fire OS may **drop the
@@ -40,6 +41,7 @@ path is a known probe path (match either, since the DNS hijack means the Host ar
 locally). Match case-insensitively; match the path exactly or by suffix.
 
 ### Known probe hosts (match `Host` header)
+
 - `connectivitycheck.gstatic.com`, `connectivitycheck.android.com`, `clients3.google.com`,
   `www.google.com` (Android/Chrome/Fire OS all use Google-style checks)
 - `captive.apple.com` (iOS/macOS)
@@ -51,14 +53,15 @@ locally). Match case-insensitively; match the path exactly or by suffix.
   path as a probe.
 
 ### Known probe paths (match path, any host)
-| OS / client | Path | Normal "online" response it expects |
-|---|---|---|
-| Android / Fire OS | `/generate_204`, `/gen_204` | **HTTP 204**, empty body |
-| Fire OS (Kindle) | `/kindle-wifi/wifistub.html` | 200 with the specific stub HTML (see note) |
-| iOS / macOS | `/hotspot-detect.html`, `/library/test/success.html` | 200 body `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>` |
-| Windows | `/connecttest.txt` | 200 body exactly `Microsoft Connect Test` |
-| Windows (legacy) | `/ncsi.txt` | 200 body exactly `Microsoft NCSI` |
-| Firefox | `/canonical.html`, `/success.txt` | 200 body `success` |
+
+| OS / client       | Path                                                 | Normal "online" response it expects                                             |
+| ----------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Android / Fire OS | `/generate_204`, `/gen_204`                          | **HTTP 204**, empty body                                                        |
+| Fire OS (Kindle)  | `/kindle-wifi/wifistub.html`                         | 200 with the specific stub HTML (see note)                                      |
+| iOS / macOS       | `/hotspot-detect.html`, `/library/test/success.html` | 200 body `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>` |
+| Windows           | `/connecttest.txt`                                   | 200 body exactly `Microsoft Connect Test`                                       |
+| Windows (legacy)  | `/ncsi.txt`                                          | 200 body exactly `Microsoft NCSI`                                               |
+| Firefox           | `/canonical.html`, `/success.txt`                    | 200 body `success`                                                              |
 
 ## Required behaviour (strategy: "accept silently — NO sign-in sheet")
 
@@ -90,12 +93,12 @@ expects**, so the OS concludes "internet is fine" and suppresses the portal shee
   (`/generate_204` / `/gen_204`, and any Fire-specific `/kindle-wifi/wifistub.html`) MUST be answered
   with its exact expected success response and verified on real hardware. If a specific OS version
   genuinely refuses to settle on silent-accept in testing, the per-OS escape hatch is a 302-to-app for
-  *that* OS only — but that reintroduces the sheet for it, so treat it as a last resort and record
+  _that_ OS only — but that reintroduces the sheet for it, so treat it as a last resort and record
   which device needed it.
 
 - **Everything else (non-probe requests to unknown hosts/paths):** the DNS hijack routes all hostnames
-  here; serve the app's normal UI (or 302 unknown *non-probe* paths to `/`) so "open any address"
-  lands on the app. Make sure the probe paths above are matched *before* any catch-all redirect/404,
+  here; serve the app's normal UI (or 302 unknown _non-probe_ paths to `/`) so "open any address"
+  lands on the app. Make sure the probe paths above are matched _before_ any catch-all redirect/404,
   so a probe never accidentally gets 302'd (which would pop the sheet).
 
 ## Implementation notes (Next.js)
@@ -118,6 +121,7 @@ For each device, join the hotspot and confirm: (a) it does NOT show "no internet
 and (b) the user reaches the scoring app (via the auto sheet, or by opening a browser). Capture on
 the box with `sudo tcpdump -i <AP_IFACE> -n port 80` and/or the app's access logs to see the exact
 probe host/path each device uses and the response it got — then tune per-OS if needed.
+
 - **Amazon Fire tablet** is the priority device (the reason for this work).
 - Also verify Android phone, iPhone, Windows laptop.
 

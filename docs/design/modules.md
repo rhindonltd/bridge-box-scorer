@@ -1075,7 +1075,7 @@ partial copy for the traveller display is in `getBoardInstances`
 | `resolveAbsentRow`, `isAbsentRow`                                                                                                                                                        | `src/model/absence.ts:89`, `:124`                | yes                                     |
 | `resolveStandings`                                                                                                                                                                       | `src/db/games/queries/ranking-exclusions.ts:173` | yes, in a query file                    |
 | the standings derivation inside `readParticipantStandings`                                                                                                                               | `ranking-exclusions.ts:85`                       | the derivation is pure; the read is not |
-| `applyTeamWithdrawalRulings`                                                                                                                                                             | `src/scoring/swiss/team-withdrawal.ts:47`        | yes                                     |
+| ~~`applyTeamWithdrawalRulings`~~ stays in scoring (8.5)                                                                                                                                  | `src/scoring/swiss/team-withdrawal.ts:47`        | yes                                     |
 | EMPTY-absence exclusion and empty expected-late seat injection                                                                                                                           | `leaderboard-service.ts:1018`–`:1052`            | yes, inline                             |
 | the "as of round R" filter                                                                                                                                                               | `leaderboard-service.ts:1280`–`:1285`            | yes, inline                             |
 
@@ -1182,16 +1182,19 @@ How the USEBIO export differs today (O2 and O3 in [`modules-follow-ups.md`](modu
   `:268`–`:281`).
 - For `SWISS_PAIRS_VP` it applies step 2 (`:178`).
 
-`applyRulings` takes a temporary `legacyExport` option that reproduces the
-export's behaviour while the code moves, so moving it changes no output. It
-is removed when those follow-ups are settled.
+As built (step 2), the export does not use `applyRulings`. It calls the rulings
+functions it uses today (`applySeatSwaps`, `applyAbsences`,
+`resolveStandings`, `pairsStandingsForRanking`,
+`buildOccupantScoredIdResolver`) from the rulings entry, so its output is
+unchanged without a `legacyExport` switch. It moves onto `applyRulings` when O2
+and O3 are settled.
 
 ### 8.4 Check: callers
 
 | Caller                                                                   | Uses today                                                                                                                                                                                                                                   | After                                                                                        |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `src/services/leaderboard-service.ts`                                    | `buildOccupantScoredIdResolver` `:981`, `applySeatSwaps` `:995`, `applyAbsences` `:1006`, `pairsStandingsForRanking` / `resolveStandings` `:1012`, late-seat loop `:1039`, `applyTeamWithdrawalRulings` `:685`, `:833`, as-of filter `:1280` | `applyRulings`                                                                               |
-| `src/services/usebio-service.ts`                                         | `resolveStandings` `:95`, `:202`; `applyTeamWithdrawalRulings` `:110`; `applySeatSwaps` `:178`, `:269`; `pairsStandingsForRanking` `:203`; `applyAbsences` `:268`; `buildOccupantScoredIdResolver` `:281`                                    | `applyRulings` (with the export option, 8.3)                                                 |
+| `src/services/usebio-service.ts`                                         | `resolveStandings` `:95`, `:202`; `applyTeamWithdrawalRulings` `:110`; `applySeatSwaps` `:178`, `:269`; `pairsStandingsForRanking` `:203`; `applyAbsences` `:268`; `buildOccupantScoredIdResolver` `:281`                                    | the same functions from the rulings entry, until O2/O3 (8.3)                                 |
 | `src/services/board-service.ts`                                          | `applySeatSwaps` `:46`, `resolveAbsentRow` `:81`                                                                                                                                                                                             | `ruledBoardInstances`; name lookup stays                                                     |
 | `src/services/scorecard-service.ts`                                      | `getBoardInstances` `:66`                                                                                                                                                                                                                    | unchanged call into the adapter, which now uses `ruledBoardInstances`                        |
 | `src/db/games/queries/ranking-exclusions.ts`                             | defines `resolveStandings` and the standings derivation                                                                                                                                                                                      | keeps `readParticipantStandings` as a read; logic moves in                                   |
@@ -1206,6 +1209,40 @@ modules (for example `handover-seat.ts`, `record-withdrawal.ts`,
 `find-pairs.ts`, `PairsRoster.tsx`) use their reads, write actions or the
 absence types, not the pure rulings functions. They are not affected beyond
 taking the types from the kernel.
+
+### 8.5 As built (step 2)
+
+`src/modules/rulings/` holds `apply-rulings.ts`, `board-instances.ts`,
+`seat-swap.ts`, `absence.ts`, `apply-absences.ts`, `standings.ts` and
+`occupants.ts`, behind `index.ts`. Differences from 8.2:
+
+- `RulingsInput` takes `classification: EventClassification` rather than
+  `format`, because the PAIRS absence rule also depends on `swissVpMode` (a
+  Swiss movement with no VP mode is scored board-pooled and takes absences).
+  `appliesPairsAbsences(classification)` exposes that rule so the adapter only
+  reads absences when they are used.
+- `DirectorDecisions` has no standings field. `applyRulings` derives the
+  standings from the occupancies with `participantStandings`, the pure part of
+  `readParticipantStandings`, which now just reads and calls it.
+- `applyRulings` and `RuledEvent` are generic over the row types, so a
+  database row passes through with its extra columns. `RuledEvent` and
+  `RuledInstance` are in the kernel (`src/model/ruled-event.ts`).
+- `applyTeamWithdrawalRulings` stays in scoring, inside the teams-VP path. It
+  needs `groupTeamMatches` and `teamMatchBoardImps`, which are scoring
+  internals, and rulings may import only the kernel. Scoring applies it from
+  `RuledEvent.withdrawals`.
+- The occupant picks that rulings needs (`arrivalAnchorOf`, `mergedLineOf`,
+  `seatIsOneLine`, `occupancyCoversBoard`) moved in with the resolver. The core
+  uses them from the entry. `rankedOf`, `primaryOccupancyIds` and
+  `oneLineSecondaryByAnchorId` serve names and `findPairs`, so they stay in
+  `seat-occupancy.ts`.
+- The absence types and `normaliseAbsenceTreatment` stay in the kernel
+  (`src/model/absence.ts`); only the row logic moved.
+- Q15: `readAbsences` is a pure function of the occupancies and the
+  expected-late rows, but it still runs in the core. `DirectorDecisions` takes
+  the absences it returns.
+- The traveller/standings agreement is pinned by
+  `src/modules/rulings/apply-rulings.test.ts`.
 
 ## 9. scoring
 
@@ -1242,11 +1279,7 @@ export interface ScoreOptions {
   scope?: "both" | "combined" | "sections";
   /** Add a zero line for every seated competitor with no result. Default true; false for the §3.5 replay. */
   baseline?: boolean;
-  /**
-   * Temporary: reproduce today's USEBIO export exactly, so the move changes
-   * no output. Removed when the export follow-ups are settled.
-   */
-  legacyExport?: boolean;
+  // A temporary `legacyExport` option was planned here; it was not needed (9.7).
 }
 
 /** Same shape as LeaderboardResult (leaderboard-service.ts:76), renamed. */
@@ -1419,7 +1452,8 @@ branches (D11):
 
 The USEBIO export runs 2, 3, 5, 6 and 7 for MP and 2, 5 and 7 for Cross-IMP
 (`generate-usebio.ts:1073`–`:1140`). It skips step 4 and keeps not-played
-rows in step 1. That is what `legacyExport` reproduces. Step 4 itself looks
+rows in step 1, so as built it keeps its own ranking (`computeOverallRanking`)
+and calls these passes from the scoring entry (9.7). Step 4 itself looks
 wrong (it reaches Mitchell sit-outs but not Swiss byes); that is F1 in
 [`modules-follow-ups.md`](modules-follow-ups.md).
 
@@ -1440,7 +1474,9 @@ The per-board IMP strategy stays: the teams formats use it to show raw scores
 on a teams traveller (`src/scoring/plugins/registry.ts:74`–`:78`). Coverage
 will show anything else that becomes unreachable. One path to check first:
 a teams game whose movement is not Swiss Teams or Round Robin would be
-classified as board-pooled pairs and reach the IMP error (Q20).
+classified as board-pooled pairs and reach the IMP error (Q20). That error is
+not new: the IMP scoring types had no pairs overall plugin before D11 either,
+so the D11 removal does not change what such a game does.
 
 ### 9.5 What the export and traveller need beyond standings
 
@@ -1458,20 +1494,55 @@ method internals:
 
 ### 9.6 Check: callers
 
-| Caller                                                                                                                                                           | Uses today                                                                                                                                                                                                        | After                                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `src/services/leaderboard-service.ts`                                                                                                                            | `scoreBoard`, Neuberg, better than average (MP, IMP, Cross-IMP), rounding, line types, `getCombination`, `getOverallPlugin`, `rank`, `applyRankingExclusion`, Swiss VP and teams calculators, plugin registration | adapter: reads inputs, calls `applyRulings` then `scoreEvent`                                          |
-| `src/services/scorecard-service.ts`                                                                                                                              | `scoreBoard`, `getCombination`, line types, `buildLeaderboards`                                                                                                                                                   | `scorePairScorecard`, with adjusted scores (D5)                                                        |
-| `src/services/board-service.ts`                                                                                                                                  | `boardResult`, `TeamMatchRow`, `outcomeToScore`, `computeImps`                                                                                                                                                    | `teamTravellerMatches`                                                                                 |
-| `src/services/usebio-service.ts`                                                                                                                                 | `applyTeamWithdrawalRulings`                                                                                                                                                                                      | moves to rulings (8.4)                                                                                 |
-| `src/services/detect-swiss-mismatch-service.ts`                                                                                                                  | detectors                                                                                                                                                                                                         | move to swiss (7.5)                                                                                    |
-| `src/services/draw-swiss-teams-round-service.ts`                                                                                                                 | `TeamTripleKind`                                                                                                                                                                                                  | kernel (7.5)                                                                                           |
-| `src/lib/usebio/generate-usebio.ts`                                                                                                                              | `outcomeToScore`, `scoreMP`/`IMP`/`XIMP`, Neuberg, better than average, rounding                                                                                                                                  | `scoreEvent` with `legacyExport`, and `scoreBoard` for traveller lines (`computeBoardScores`, `:1015`) |
-| `src/lib/usebio/traveller-line.ts`                                                                                                                               | `outcomeToScore`                                                                                                                                                                                                  | scoring entry (`outcomeToScore` exported)                                                              |
-| `src/lib/usebio/assemble-*.ts`                                                                                                                                   | team-match and Swiss VP functions                                                                                                                                                                                 | breakdowns (9.5)                                                                                       |
-| `src/app/game/[gameId]/play/[initialSeat]/useScoredBoard.ts`                                                                                                     | `scoreBoard`, `ScoredBoard`                                                                                                                                                                                       | scoring entry (browser-safe)                                                                           |
-| `src/model/absence.ts`, `pairs-match-void.ts`, `teams-match-void.ts`                                                                                             | constants, `PairVoidFault`, `impVpWinner`                                                                                                                                                                         | kernel (5.6)                                                                                           |
-| `src/components/leaderboard/Leaderboard.tsx`, `TeamOverallLeaderboardView.tsx`, `src/components/scoring/*`, `src/components/traveller/Traveller.tsx`, play pages | plugin views and table types                                                                                                                                                                                      | results-views (10.3)                                                                                   |
+| Caller                                                                                                                                                           | Uses today                                                                                                                                                                                                        | After                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `src/services/leaderboard-service.ts`                                                                                                                            | `scoreBoard`, Neuberg, better than average (MP, IMP, Cross-IMP), rounding, line types, `getCombination`, `getOverallPlugin`, `rank`, `applyRankingExclusion`, Swiss VP and teams calculators, plugin registration | adapter: reads inputs, calls `applyRulings` then `scoreEvent`                          |
+| `src/services/scorecard-service.ts`                                                                                                                              | `scoreBoard`, `getCombination`, line types, `buildLeaderboards`                                                                                                                                                   | `scorePairScorecard`, with adjusted scores (D5)                                        |
+| `src/services/board-service.ts`                                                                                                                                  | `boardResult`, `TeamMatchRow`, `outcomeToScore`, `computeImps`                                                                                                                                                    | `teamTravellerMatches`                                                                 |
+| `src/services/usebio-service.ts`                                                                                                                                 | `applyTeamWithdrawalRulings`                                                                                                                                                                                      | stays in scoring, from the scoring entry (8.5)                                         |
+| `src/services/detect-swiss-mismatch-service.ts`                                                                                                                  | detectors                                                                                                                                                                                                         | move to swiss (7.5)                                                                    |
+| `src/services/draw-swiss-teams-round-service.ts`                                                                                                                 | `TeamTripleKind`                                                                                                                                                                                                  | kernel (7.5)                                                                           |
+| `src/lib/usebio/generate-usebio.ts`                                                                                                                              | `outcomeToScore`, `scoreMP`/`IMP`/`XIMP`, Neuberg, better than average, rounding                                                                                                                                  | the same passes from the scoring entry, for now (9.7); `scoreEvent` after O2/O3 and O4 |
+| `src/lib/usebio/traveller-line.ts`                                                                                                                               | `outcomeToScore`                                                                                                                                                                                                  | scoring entry (`outcomeToScore` exported)                                              |
+| `src/lib/usebio/assemble-*.ts`                                                                                                                                   | team-match and Swiss VP functions                                                                                                                                                                                 | breakdowns (9.5)                                                                       |
+| `src/app/game/[gameId]/play/[initialSeat]/useScoredBoard.ts`                                                                                                     | `scoreBoard`, `ScoredBoard`                                                                                                                                                                                       | scoring entry (browser-safe)                                                           |
+| `src/model/absence.ts`, `pairs-match-void.ts`, `teams-match-void.ts`                                                                                             | constants, `PairVoidFault`, `impVpWinner`                                                                                                                                                                         | kernel (5.6)                                                                           |
+| `src/components/leaderboard/Leaderboard.tsx`, `TeamOverallLeaderboardView.tsx`, `src/components/scoring/*`, `src/components/traveller/Traveller.tsx`, play pages | plugin views and table types                                                                                                                                                                                      | results-views (10.3)                                                                   |
+
+### 9.7 As built (step 2)
+
+- `scoreSwissVp`, `scoreBoardsToOverall`, the sit-out credit, baseline
+  padding, the direction split, the exclusion pass, `computeCombined` and
+  `computeSections` moved unchanged from `leaderboard-service.ts` into
+  `src/modules/scoring/event/score-event.ts`, typed on the kernel `ResultRow` /
+  `MatchRow` instead of the database rows. `scoreEvent` is the new entry over
+  them. `leaderboard-service.ts` is now a 219-line adapter (it was 1,312
+  lines): it reads, calls `applyRulings`, then `scoreEvent`.
+- The scope option replaces the three entry points: `"both"` (the default)
+  honours `combinedRanking` as `buildLeaderboards` did, `"combined"` always
+  computes the combined standings as `computeLeaderboard` did, and
+  `"sections"` computes only the sections. The §3.5 replay passes
+  `{ scope: "sections", baseline: false }` and gets its round filter from
+  `applyRulings({ asOfRoundExclusive })`.
+- `scoringNeedsMatches` and `scoringNeedsTeams` let the adapter skip the
+  match and teams reads exactly as before.
+- Not done in step 2, kept for later:
+  - the `methods/<method>/` folder layout (9.3). The calculators stay in
+    their current files, and `scoreEvent` dispatches on the format;
+  - `adjustedBoards` and `scorePairScorecard` (D5). This is a behaviour
+    change, so it is a separate sub-step;
+  - `teamMatchBreakdown`, `swissPairsRoundBreakdown` and
+    `teamTravellerMatches` (9.5). The assemblers and `board-service.ts` take
+    the team-match functions from the scoring entry for now;
+  - `legacyExport`. The USEBIO export keeps `computeOverallRanking` and calls
+    the board-pooled passes from the scoring entry, so it needs no switch.
+    Moving it onto `scoreEvent` would change its output (O2, O3, O4);
+  - the view code (tables, plugin views) is still exported from the scoring
+    entry until results-views (step 3).
+- The entry is `src/modules/scoring/index.ts`. Every non-test import outside
+  the module goes through it. Tests may still reach internals, and
+  `leaderboard-service.test.ts` still mocks scoring internals by path (the
+  mocks apply wherever the module is loaded from).
 
 ## 10. results-views
 
@@ -1715,14 +1786,15 @@ Behaviour changes and tidy-ups found during the design are in
 
 - **Q15.** Whether `readAbsences` (`absences.ts:15`) is a pure function of
   occupancies and the expected-late table, so rulings can derive absences
-  itself.
+  itself. **Answered:** it is, but it stays in the core for now (8.5).
 - **Q16.** The exact pure/I-O split inside `getSwissBoardHistory`,
   `getSwissTeamsPriorHistory`, the draw services' input building and the
   detection loop. I read their signatures and callers, not every line.
 - **Q17.** `scripts/dump-db-movements.mjs` was not read.
 - **Q20.** That a teams game can only choose Swiss Teams or Round Robin. If
   so, the pairs IMP error path is unreachable (D11), and the stored team
-  movements (`TSMovements.txt`, `getTeamMovement`) may be unused.
+  movements (`TSMovements.txt`, `getTeamMovement`) may be unused. Still open;
+  D11 did not change that path (9.4).
 
 ## 15. Suggested order (outline only)
 
@@ -1745,9 +1817,17 @@ landing with its lint block switched on:
    - moving the `teamIds` / `expandTeamMatches` tests out of
      `swiss-teams-pairing.test.ts` into a kernel test file.
 2. **Rulings**, then **scoring**, with the leaderboard and export adapters.
-   Do these as a pair, because `scoreEvent` takes `RuledEvent`. Use the
-   temporary `legacyExport` options so output is unchanged. Remove the dead
-   pairs IMP code (D11) and the registries (D13) as part of the move.
+   **Done** (see 8.5 and 9.7). `src/modules/rulings` and `src/modules/scoring`
+   each have an entry and a lint block (kernel and itself only), and the core
+   rule stops any non-test file outside `src/modules` importing a module's
+   internals. The leaderboard goes through `applyRulings` and `scoreEvent`.
+   The export uses the rulings and scoring functions from the entries, with
+   no `legacyExport` switch. The dead pairs IMP code (D11) is removed, and
+   the registries are lookup tables (D13). Left for later:
+   - D5 (adjusted scores on the scorecard), as its own behaviour-changing
+     sub-step;
+   - the `methods/` folder layout and the 9.5 breakdowns;
+   - the export onto `applyRulings` / `scoreEvent` (O2, O3, O4).
 3. **results-views.** Mostly moving view code out of scoring.
 4. **swiss**, including §3.5 detection, which by then can call `scoreEvent`
    through its adapter.

@@ -42,9 +42,8 @@ export async function confirmEntireGame(
   for (const boardNumber of boardNumbers) {
     const res = await request.get(`/api/games/${gameId}/boards/${boardNumber}`);
     expect(res.ok()).toBeTruthy();
-    const rows: Array<Instance & { status: string | null }> = (
-      await res.json()
-    ).result.instances;
+    const rows: Array<Instance & { status: string | null }> = (await res.json())
+      .result.instances;
     for (const row of rows) {
       if (row.status === "SIT_OUT") continue;
       instances.push({
@@ -114,7 +113,9 @@ function readSeatSecrets(gameId: string): Map<string, string> {
   const db = new Database(dbFile, { readonly: true });
   try {
     const rows = db
-      .prepare("SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC")
+      .prepare(
+        "SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
+      )
       .all() as Array<{ seat: string; secret: string }>;
 
     const map = new Map<string, string>();

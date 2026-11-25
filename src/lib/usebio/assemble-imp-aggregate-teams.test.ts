@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { assembleImpAggregateTeams as assembleImpAggregateTeamsImpl } from "./assemble-imp-aggregate-teams";
-import { teamMatchStructureFromRows } from "@/scoring/swiss/team-match-test-structure";
+import { teamMatchStructureFromRows } from "@/modules/scoring/swiss/team-match-test-structure";
 import type { Board } from "@/db/games/tables/boards";
 import type { AssignedTeam, Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";

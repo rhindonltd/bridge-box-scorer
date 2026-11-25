@@ -69,9 +69,7 @@ describe("matches table — parity with board-derivation", () => {
 
   it("static Mitchell pairs: one PAIRS match per table-round, not scored as a unit", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
     const { materializeSections, tablesToMaterializableMovement } =
       await import("@/services/materialize-movement");
     const { generateMitchell } = await import("@/movement/mitchell/mitchell");
@@ -96,15 +94,11 @@ describe("matches table — parity with board-derivation", () => {
 
   it("Swiss Pairs ordinary round: one PAIRS /20 match per table, scored as a unit", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
-    const { getSwissCommittedRound } = await import(
-      "@/db/games/queries/swiss-committed-seating"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
+    const { getSwissCommittedRound } =
+      await import("@/db/games/queries/swiss-committed-seating");
 
     const TABLES = 2;
     await createSection(harness.gameId, { section: "A", tables: TABLES });
@@ -150,12 +144,9 @@ describe("matches table — parity with board-derivation", () => {
 
   it("Swiss Pairs sit-out: a BYE match with a null opponent", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
 
     const TABLES = 3;
     await createSection(harness.gameId, { section: "A", tables: TABLES });
@@ -185,13 +176,11 @@ describe("matches table — parity with board-derivation", () => {
 
   it("Swiss Teams ordinary round: two rooms collapse into one TEAMS match", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { groupTeamMatches } = await import("@/scoring/swiss/team-match");
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { groupTeamMatches } =
+      await import("@/modules/scoring/swiss/team-match");
 
     await createSection(harness.gameId, { section: "A", tables: 4 });
     // Four teams, two matches (1v2, 3v4), round 1, 3 boards per round.
@@ -235,26 +224,20 @@ describe("matches table — parity with board-derivation", () => {
 
   it("Swiss Teams SHORT triple: three TRIPLE comparisons sharing a groupId", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { groupTeamTriples } = await import("@/scoring/swiss/team-match");
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { groupTeamTriples } =
+      await import("@/modules/scoring/swiss/team-match");
 
     await createSection(harness.gameId, { section: "A", tables: 3 });
     // Three teams, no ordinary match, a SHORT triple over 4 boards/round.
-    await materializeSwissTeamsRound(
-      harness.gameId,
-      "A",
-      1,
-      4,
-      5,
-      [],
-      null,
-      { a: 1, b: 2, c: 3, kind: "SHORT" },
-    );
+    await materializeSwissTeamsRound(harness.gameId, "A", 1, 4, 5, [], null, {
+      a: 1,
+      b: 2,
+      c: 3,
+      kind: "SHORT",
+    });
 
     await assertEveryBoardLinked(db);
 
@@ -288,13 +271,11 @@ describe("matches table — parity with board-derivation", () => {
 
   it("Swiss Teams bye: a BYE match for the sitting team", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { teamByeRounds } = await import("@/scoring/swiss/team-match");
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { teamByeRounds } =
+      await import("@/modules/scoring/swiss/team-match");
 
     await createSection(harness.gameId, { section: "A", tables: 3 });
     // Three teams: match 1v2, team 3 byes.

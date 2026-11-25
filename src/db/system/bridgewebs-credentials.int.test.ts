@@ -30,12 +30,10 @@ describe("bridgewebs credentials store", () => {
   });
 
   it("saves and reads back decrypted credentials", async () => {
-    const { saveBridgewebsCredentials } = await import(
-      "@/db/system/actions/save-bridgewebs-credentials"
-    );
-    const { getBridgewebsCredentials } = await import(
-      "@/db/system/queries/bridgewebs-credentials"
-    );
+    const { saveBridgewebsCredentials } =
+      await import("@/db/system/actions/save-bridgewebs-credentials");
+    const { getBridgewebsCredentials } =
+      await import("@/db/system/queries/bridgewebs-credentials");
 
     expect(await getBridgewebsCredentials()).toBeNull();
 
@@ -60,12 +58,10 @@ describe("bridgewebs credentials store", () => {
   });
 
   it("reports status without exposing the password", async () => {
-    const { saveBridgewebsCredentials } = await import(
-      "@/db/system/actions/save-bridgewebs-credentials"
-    );
-    const { getBridgewebsStatus } = await import(
-      "@/db/system/queries/bridgewebs-credentials"
-    );
+    const { saveBridgewebsCredentials } =
+      await import("@/db/system/actions/save-bridgewebs-credentials");
+    const { getBridgewebsStatus } =
+      await import("@/db/system/queries/bridgewebs-credentials");
 
     expect(await getBridgewebsStatus()).toEqual({
       configured: false,
@@ -80,12 +76,10 @@ describe("bridgewebs credentials store", () => {
   });
 
   it("saveBridgewebsClub updates the club code without touching the password", async () => {
-    const { saveBridgewebsCredentials, saveBridgewebsClub } = await import(
-      "@/db/system/actions/save-bridgewebs-credentials"
-    );
-    const { getBridgewebsCredentials } = await import(
-      "@/db/system/queries/bridgewebs-credentials"
-    );
+    const { saveBridgewebsCredentials, saveBridgewebsClub } =
+      await import("@/db/system/actions/save-bridgewebs-credentials");
+    const { getBridgewebsCredentials } =
+      await import("@/db/system/queries/bridgewebs-credentials");
 
     await saveBridgewebsCredentials("myclub", "s3cret");
     await saveBridgewebsClub("renamedclub");
@@ -97,12 +91,10 @@ describe("bridgewebs credentials store", () => {
   });
 
   it("treats a club code with no stored password as not configured", async () => {
-    const { saveBridgewebsClub } = await import(
-      "@/db/system/actions/save-bridgewebs-credentials"
-    );
-    const { getBridgewebsCredentials, getBridgewebsStatus } = await import(
-      "@/db/system/queries/bridgewebs-credentials"
-    );
+    const { saveBridgewebsClub } =
+      await import("@/db/system/actions/save-bridgewebs-credentials");
+    const { getBridgewebsCredentials, getBridgewebsStatus } =
+      await import("@/db/system/queries/bridgewebs-credentials");
 
     await saveBridgewebsClub("myclub");
 

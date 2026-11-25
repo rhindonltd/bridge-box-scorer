@@ -5,8 +5,9 @@ import { Club } from "@/db/system/schema";
 import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { impVpWinner } from "@/scoring/swiss/imp-vp-table";
 import {
+  rank,
+  impVpWinner,
   groupTeamMatches,
   groupTeamTriples,
   matchVoidCause,
@@ -16,11 +17,10 @@ import {
   type TeamMatch,
   type TeamMatchRow,
   type TeamMatchStructureRow,
-} from "@/scoring/swiss/team-match";
-import { voidMatchVp } from "@/scoring/swiss/team-match-void-score";
-import { rank } from "@/scoring/overall/rank";
+  voidMatchVp,
+} from "@/modules/scoring";
 import { buildTravellerLine } from "./traveller-line";
-import { applySeatSwap } from "@/model/seat-swap";
+import { applySeatSwap } from "@/modules/rulings";
 import {
   buildTeamPairing,
   type TeamOccupancy,

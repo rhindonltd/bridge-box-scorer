@@ -3,7 +3,7 @@
 Status: **COMPLETE — all slices landed** (identity-layer refactor, per-board
 scoring attribution including the general §4.1.1.1 AVE-valuation refactor,
 occupant-aware auth, and the director handover UX; see §4a, §6 and §8).
-Supersedes the earlier *sidecar* version of this document. Covers EBU White Book
+Supersedes the earlier _sidecar_ version of this document. Covers EBU White Book
 §2.3.3 / §2.4.7 — the mid-session **stand-by → real-pair handover** that
 `docs/design/withdrawals-late-arrivals.md` §9 deliberately deferred.
 
@@ -68,25 +68,25 @@ A **seat** is just a slot in a movement (`A3NS`). It is no longer an identity �
 it carries no players, no standing, no secret. The real entity is a **seat
 occupancy**:
 
-> *A seat occupancy records that a particular pair occupied a particular seat,
-> over a particular set of boards, with a particular standing.*
+> _A seat occupancy records that a particular pair occupied a particular seat,
+> over a particular set of boards, with a particular standing._
 
 ```ts
 // seat_occupancy  (per-game `games` db)   — THE primary participant entity
-id:                   int   // surrogate PK (autoincrement)
-seat:                 text  // PHYSICAL chair, section-qualified: "A3NS"
-anchorId:             text  // the board id (boards.ns/ew) for this seat; see §2.2
-                            //   null until materialisation stamps it
-boards:               text  // JSON array of the board numbers this occupant played
-                            //   null / absent = "all of this seat's boards"
-                            //   (the whole-event common case)
-player1:              int   // FK players.id
-player2:              int   // FK players.id   (nullable: half table / phantom)
-secretKey:            text  // device auth for THIS occupant of THIS seat
-standing:             text  // "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE"
-withdrawnInRound:     int   | null
-withdrawalTreatment:  text  | null   // "REMOVE" | "PENALISED"
-withdrawalFinePercent:int   | null
+id: int; // surrogate PK (autoincrement)
+seat: text; // PHYSICAL chair, section-qualified: "A3NS"
+anchorId: text; // the board id (boards.ns/ew) for this seat; see §2.2
+//   null until materialisation stamps it
+boards: text; // JSON array of the board numbers this occupant played
+//   null / absent = "all of this seat's boards"
+//   (the whole-event common case)
+player1: int; // FK players.id
+player2: int; // FK players.id   (nullable: half table / phantom)
+secretKey: text; // device auth for THIS occupant of THIS seat
+standing: text; // "ACTIVE" | "WITHDRAWN" | "WITHOUT_STANDING" | "LATE"
+withdrawnInRound: int | null;
+withdrawalTreatment: text | null; // "REMOVE" | "PENALISED"
+withdrawalFinePercent: int | null;
 // unique(player1, player2) — one person occupies a single position.
 // invariant: the `boards` sets of the occupancies for one seat are disjoint,
 //            so every board resolves to exactly one occupant.
@@ -97,7 +97,7 @@ monotonic with play order — a stand-in can play boards 25–27 and then wrap t
 1–3 within one physical stretch at the table. A `boardStart..boardEnd` span
 cannot express that, so each occupancy stores the **set of board numbers** it
 covers. This also matches how the rest of the withdrawal / late code already
-reasons about played-vs-unplayed (from a *set* of board rows), so it stays
+reasons about played-vs-unplayed (from a _set_ of board rows), so it stays
 consistent with the existing scoring passes.
 
 The crucial simplification stands: **the common case is exactly one occupancy
@@ -132,7 +132,7 @@ when the pair switches sides round to round:
 - **Arrow-switch Mitchell** and **file-based / SPEC pairs & teams**: `A1`, `A6`…
 - **Swiss Pairs**: the stable pair number (`A1`, `A5`…), anchored to where the
   pair sat down in round 1 (NS pairs `1..tables`, EW pairs `tables+1..2·tables`).
-  The physical round-1 chair (`A1NS`) is a *separate* fact.
+  The physical round-1 chair (`A1NS`) is a _separate_ fact.
 
 So a seat has two identities that coincide only in the fixed-direction Mitchell
 case: the **physical chair** the director seats and the device authenticates on
@@ -185,18 +185,19 @@ the coupling map, ordered by impact. The unifying change is the same everywhere:
 For the ordinary single-occupancy game every one of these is behaviourally
 identical to today.
 
-| # | Reader | File(s) | Change |
-|---|---|---|---|
-| 1 | Standing resolution | `ranking-exclusions.ts` (`readParticipantStandings`, `resolveStandings`, `readRankingExclusions`, `readWithdrawals`) | key standing on **(seat, board set)** not seat. For single-occupancy seats this is unchanged. For a handover, the sub's boards resolve `WITHOUT_STANDING`, the real pair's boards resolve its own standing. |
-| 2 | Board-pooled scoring | `leaderboard-service.ts` (`scoreBoardsToOverall`, `toParticipant`, `swissSitOutScoredBoards`, `withdrawalCreditBoards`, `computeCombined`/`computeSections`, `splitByDirection`; Swiss VP + teams scorers) | lines keyed by seat id become keyed by **occupancy**. A sub-covered board is credited to opponents only via a synthetic per-board id (`A3NS#<occId>`) that has no ranked occupancy, so it drops from ranking naturally; the real pair's gap boards feed the existing `withdrawalCreditBoards` AVE− pass. |
-| 3 | Board → names | `assignment-players.ts` (`buildAssignmentPlayerLookup`) → folded into occupancy; `schedule-service.ts` (`getSchedule`, `findAssignment`, `findPairBoards`, `tablePlayersFor`); `board-service.ts` (`getBoardInstances` `pairNameMap`, `buildTeamTravellerMatches`) | board-aware name lookup: seat + board → occupancy players. `schedule-service` already walks round-by-round so it is naturally occupancy-ready. |
-| 4 | Auth / seat ownership | `find-participant-secret.ts`, `participant-auth.ts` (`validatePlayerToken`, `assertPlayer`), `submit-result.handler.ts`, deal-submit / leave-table / seat-transfer handlers, `rotate-participant-secret.ts` | secret moves onto the occupancy. Resolve "the occupant of board N at seat S" to authorise. Seat-transfer claim rotates **that occupancy's** secret. |
-| 5 | USEBIO export | `usebio-service.ts` (`generateMpPairsUsebio`, assemble-* modules) | pair numbers derive from the seat / anchor id as today; a without-standing occupancy is omitted from the ranking exactly like any excluded id, mirroring the live board. |
-| 6 | National-id dedupe | `find-seated-national-ids.ts`, create-participant dedupe | read ids from occupancies (all of them, including subs) instead of participants. |
-| 7 | Teams | `find-teams.ts` (`deriveTeamId`), teams scorers in `leaderboard-service.ts` | team id stays home-NS seat; a team is still grouped by section|table from occupancies. Team standing remains whole-team (pairs-only handover in v1). |
-| 8 | Occupancy-agnostic (just "the set of seated pairs") | `find-pairs.ts` `findPairs`, `highest-occupied-table.ts`, `participant-broadcast.ts`, `start-game-service.ts` seat grouping, `expected-late-seats.ts` | read occupancies instead of participants; for ordinary games the set is identical. |
+| #   | Reader                                              | File(s)                                                                                                                                                                                                                                                            | Change                                                                                                                                                                                                                                                                                                   |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Standing resolution                                 | `ranking-exclusions.ts` (`readParticipantStandings`, `resolveStandings`, `readRankingExclusions`, `readWithdrawals`)                                                                                                                                               | key standing on **(seat, board set)** not seat. For single-occupancy seats this is unchanged. For a handover, the sub's boards resolve `WITHOUT_STANDING`, the real pair's boards resolve its own standing.                                                                                              |
+| 2   | Board-pooled scoring                                | `leaderboard-service.ts` (`scoreBoardsToOverall`, `toParticipant`, `swissSitOutScoredBoards`, `withdrawalCreditBoards`, `computeCombined`/`computeSections`, `splitByDirection`; Swiss VP + teams scorers)                                                         | lines keyed by seat id become keyed by **occupancy**. A sub-covered board is credited to opponents only via a synthetic per-board id (`A3NS#<occId>`) that has no ranked occupancy, so it drops from ranking naturally; the real pair's gap boards feed the existing `withdrawalCreditBoards` AVE− pass. |
+| 3   | Board → names                                       | `assignment-players.ts` (`buildAssignmentPlayerLookup`) → folded into occupancy; `schedule-service.ts` (`getSchedule`, `findAssignment`, `findPairBoards`, `tablePlayersFor`); `board-service.ts` (`getBoardInstances` `pairNameMap`, `buildTeamTravellerMatches`) | board-aware name lookup: seat + board → occupancy players. `schedule-service` already walks round-by-round so it is naturally occupancy-ready.                                                                                                                                                           |
+| 4   | Auth / seat ownership                               | `find-participant-secret.ts`, `participant-auth.ts` (`validatePlayerToken`, `assertPlayer`), `submit-result.handler.ts`, deal-submit / leave-table / seat-transfer handlers, `rotate-participant-secret.ts`                                                        | secret moves onto the occupancy. Resolve "the occupant of board N at seat S" to authorise. Seat-transfer claim rotates **that occupancy's** secret.                                                                                                                                                      |
+| 5   | USEBIO export                                       | `usebio-service.ts` (`generateMpPairsUsebio`, assemble-* modules)                                                                                                                                                                                                  | pair numbers derive from the seat / anchor id as today; a without-standing occupancy is omitted from the ranking exactly like any excluded id, mirroring the live board.                                                                                                                                 |
+| 6   | National-id dedupe                                  | `find-seated-national-ids.ts`, create-participant dedupe                                                                                                                                                                                                           | read ids from occupancies (all of them, including subs) instead of participants.                                                                                                                                                                                                                         |
+| 7   | Teams                                               | `find-teams.ts` (`deriveTeamId`), teams scorers in `leaderboard-service.ts`                                                                                                                                                                                        | team id stays home-NS seat; a team is still grouped by section                                                                                                                                                                                                                                           | table from occupancies. Team standing remains whole-team (pairs-only handover in v1). |
+| 8   | Occupancy-agnostic (just "the set of seated pairs") | `find-pairs.ts` `findPairs`, `highest-occupied-table.ts`, `participant-broadcast.ts`, `start-game-service.ts` seat grouping, `expected-late-seats.ts`                                                                                                              | read occupancies instead of participants; for ordinary games the set is identical.                                                                                                                                                                                                                       |
 
 Supporting pieces that also move:
+
 - **Writers**: `create-pair-with-players.ts` (insert players + **one whole-event
   occupancy** instead of a participants row), create-participant handler
   (mint `secretKey` onto the occupancy), `withdraw-participant.ts`.
@@ -329,6 +330,7 @@ step was needed since there is no production data to carry over.
 ---
 
 ## 6. Director UX (as built — slices 4 & 5)
+
 > **Superseded:** the director-driven "Hand over to real pair" action described
 > below (and the director-authed `game:handoverSeat` event) has been **removed**.
 > Handover is player self-serve: Menu → Handover on the seat's device, either on
@@ -336,7 +338,6 @@ step was needed since there is no production data to carry over.
 > arriving pair's device. The director only chooses split / eligibility
 > afterwards on the Pairs screen. The `handoverSeat` DB action is unchanged and
 > is what both player paths call. The text below is kept for the engine rules.
-
 
 On the Tables screen (post-start), a seated pair's per-table dialog
 (`DirectorTableModal`) gains a **"Hand over to real pair"** action beside
@@ -395,7 +396,7 @@ cross-seat dedupe that excludes the same-seat stand-in is future work.
 - **B. Pairs only in v1.** Teams handover is deferred — a team sub is one pair of
   a four and needs separate modelling. Matches the expected-late scope.
 - **E. `highestBoard` is derived from the `boards` rows, not stored.** `boards =
-  null` means the migration never needs the number, and reads resolve "all of
+null` means the migration never needs the number, and reads resolve "all of
   this seat's boards" from the materialised board rows. No schema column added.
 
 **Resolved since (slices 3–5):**
@@ -438,7 +439,7 @@ Each slice is independently testable; the suite must stay green after each.
    `buildAssignmentPlayerLookup` now keys on `anchorId ?? seat`, and
    `board-service` resolves traveller names through it; `schedule-service`
    resolves a seat's board rows via its `anchorId`. Still inert (one occupancy),
-   still green. The remaining per-*board* resolution (vs per-seat) only matters
+   still green. The remaining per-_board_ resolution (vs per-seat) only matters
    once a seat has two occupancies — that is slice 3.
 3. **Per-board scoring attribution. ✅ DONE.** The scored-field id carries a
    parser-level `#<occId>` suffix for a non-primary occupant (§4a); board rows
@@ -459,7 +460,7 @@ Each slice is independently testable; the suite must stay green after each.
    `rotateParticipantSecret` resolve the seat's PRIMARY (current, active)
    occupant via `primaryOf` rather than an arbitrary / all rows: the lookup
    returns the active pair's secret and the rotation targets that occupancy's
-   `id` alone. Per-*board* auth proved unnecessary — the stand-in and the real
+   `id` alone. Per-_board_ auth proved unnecessary — the stand-in and the real
    pair never occupy the seat at the same instant (the handover demotes the sub
    and seats the real pair in one step), so "current occupant" is a single
    unambiguous answer. The submit-result/auth signatures are unchanged

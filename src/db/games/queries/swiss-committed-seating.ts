@@ -61,7 +61,10 @@ export async function getSwissCommittedRound(
       and(eq(matches.section, section), eq(matches.roundNumber, roundNumber)),
     );
 
-  const seatingByTable = new Map<number, SwissCommittedRound["tables"][number]>();
+  const seatingByTable = new Map<
+    number,
+    SwissCommittedRound["tables"][number]
+  >();
   const opponentByPair = new Map<SwissPairId, SwissPairId>();
   let sitOutPairId: SwissPairId | null = null;
   const excludedPairs = new Set<SwissPairId>();
@@ -79,7 +82,9 @@ export async function getSwissCommittedRound(
     }
 
     const oppId =
-      m.opponent != null ? swissPairIdFromParticipant(m.opponent, tables) : null;
+      m.opponent != null
+        ? swissPairIdFromParticipant(m.opponent, tables)
+        : null;
 
     if (m.kind === "HALF_MATCH") {
       // Every pair in a 2-half-matches group (the anchor via its two real

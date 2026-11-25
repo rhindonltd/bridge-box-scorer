@@ -229,7 +229,11 @@ describe("DealEntry", () => {
       W: ["CA"],
     };
     render(
-      <DealEntry boardNumber={1} onSubmit={vi.fn()} initialDeal={initialDeal} />,
+      <DealEntry
+        boardNumber={1}
+        onSubmit={vi.fn()}
+        initialDeal={initialDeal}
+      />,
     );
     fireEvent.click(screen.getByTestId("entry-dir-W"));
     fireEvent.click(screen.getByTestId("entry-suit-C"));

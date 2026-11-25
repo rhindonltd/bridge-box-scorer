@@ -13,11 +13,7 @@ import { type SectionLetter } from "@/model/participants";
  * — callers get that for free (the completion check ORs in `ruling != null`).
  */
 export type CompleteStatus =
-  | "CONFIRMED"
-  | "OVERRIDDEN"
-  | "CANCELLED"
-  | "REMOVED_TEAMS"
-  | "SIT_OUT";
+  "CONFIRMED" | "OVERRIDDEN" | "CANCELLED" | "REMOVED_TEAMS" | "SIT_OUT";
 
 interface RoundCompletionOptions {
   /**
@@ -71,7 +67,9 @@ export async function isSwissRoundComplete(
   // A null status is neither ignored nor complete: it stays in the playable
   // set and (unless its match carries a ruling) keeps the round incomplete,
   // matching the original per-service equality checks.
-  const playable = rows.filter((r) => r.status == null || !ignore.has(r.status));
+  const playable = rows.filter(
+    (r) => r.status == null || !ignore.has(r.status),
+  );
   if (playable.length === 0) return false;
 
   return playable.every(

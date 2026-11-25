@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { assembleSwissTeams as assembleSwissTeamsImpl } from "./assemble-swiss-teams";
-import { teamMatchStructureFromRows } from "@/scoring/swiss/team-match-test-structure";
+import { teamMatchStructureFromRows } from "@/modules/scoring/swiss/team-match-test-structure";
 import type { Board } from "@/db/games/tables/boards";
 import type { AssignedTeam, Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";
@@ -362,8 +362,8 @@ describe("assembleSwissTeams", () => {
   });
 });
 
-import { voidMatchVp } from "@/scoring/swiss/team-match-void-score";
-import type { TeamMatchStructureRow } from "@/scoring/swiss/team-match";
+import { voidMatchVp } from "@/modules/scoring/swiss/team-match-void-score";
+import type { TeamMatchStructureRow } from "@/modules/scoring/swiss/team-match";
 
 describe("assembleSwissTeams — triple edge cases", () => {
   it("handles single-room boards and off-roster teams inside a triple", () => {

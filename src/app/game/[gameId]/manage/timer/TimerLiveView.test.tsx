@@ -55,9 +55,7 @@ describe("TimerLiveView", () => {
 
     // Config editing is not available on the live screen.
     expect(screen.queryByLabelText("Total Rounds")).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Apply Changes" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Pause" }));
     expect(props.onPause).toHaveBeenCalled();

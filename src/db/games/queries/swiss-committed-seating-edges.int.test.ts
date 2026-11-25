@@ -29,9 +29,8 @@ describe("getSwissCommittedRound — edge cases", () => {
     boardEnd: 1,
   } as const;
   it("returns an empty seating for a round with no ordinary pairs matches", async () => {
-    const { getSwissCommittedRound } = await import(
-      "@/db/games/queries/swiss-committed-seating"
-    );
+    const { getSwissCommittedRound } =
+      await import("@/db/games/queries/swiss-committed-seating");
     const round = await getSwissCommittedRound(db, "A", 4, 1);
     expect(round.tables).toEqual([]);
     expect(round.sitOutPairId).toBeNull();
@@ -41,7 +40,13 @@ describe("getSwissCommittedRound — edge cases", () => {
     db.insert(matches)
       .values([
         { ...base, id: 1, kind: "BYE", home: "APHANTOM", opponent: null },
-        { ...base, id: 2, kind: "HALF_MATCH", home: "APHANTOM", opponent: null },
+        {
+          ...base,
+          id: 2,
+          kind: "HALF_MATCH",
+          home: "APHANTOM",
+          opponent: null,
+        },
         { ...base, id: 3, kind: "PAIRS", home: "A1", opponent: "A2" },
         { ...base, id: 4, kind: "PAIRS", home: "A3", opponent: "A4" },
         { ...base, id: 5, kind: "PAIRS", home: "APHANTOM", opponent: "A5" },
@@ -54,9 +59,8 @@ describe("getSwissCommittedRound — edge cases", () => {
     db.insert(boards)
       .values(makeBoard({ matchId: 3, tableNumber: 5, ns: "A1", ew: "A2" }))
       .run();
-    const { getSwissCommittedRound } = await import(
-      "@/db/games/queries/swiss-committed-seating"
-    );
+    const { getSwissCommittedRound } =
+      await import("@/db/games/queries/swiss-committed-seating");
     const round = await getSwissCommittedRound(db, "A", 4, 1);
     expect(round.sitOutPairId).toBeNull();
     expect([...round.excludedPairs]).toEqual([2]);

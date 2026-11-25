@@ -66,9 +66,7 @@ export function generateHesitationMitchell(
   stations.push({ table: pivot, direction: "NS" });
 
   // Round-1 identity: EW at table t = pair t + tables; pivot NS = pair `pivot`.
-  const pairForStation = (
-    s: Station,
-  ): Omit<SeatOccupant, "originStation"> =>
+  const pairForStation = (s: Station): Omit<SeatOccupant, "originStation"> =>
     s.direction === "EW"
       ? { pair: s.table + tables, origin: "EW" }
       : { pair: s.table, origin: "NS" };

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/db/system/queries/admin-key", () => ({
+  validateAdminToken: vi.fn(),
+}));
 
 import { validateAdminToken } from "@/db/system/queries/admin-key";
 import { GET } from "./route";

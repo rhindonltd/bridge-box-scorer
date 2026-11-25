@@ -54,10 +54,34 @@ const basePreview: SwissPreviewAck = {
     stationary: [],
   },
   standings: [
-    { id: 1, name: "Alice North / Bob South", total: 32.5, rank: 1, tied: false },
-    { id: 3, name: "Carol East / Dave West", total: 28.0, rank: 2, tied: false },
-    { id: 2, name: "Erin North / Frank South", total: 21.75, rank: 3, tied: false },
-    { id: 4, name: "Gina East / Hugo West", total: 18.25, rank: 4, tied: false },
+    {
+      id: 1,
+      name: "Alice North / Bob South",
+      total: 32.5,
+      rank: 1,
+      tied: false,
+    },
+    {
+      id: 3,
+      name: "Carol East / Dave West",
+      total: 28.0,
+      rank: 2,
+      tied: false,
+    },
+    {
+      id: 2,
+      name: "Erin North / Frank South",
+      total: 21.75,
+      rank: 3,
+      tied: false,
+    },
+    {
+      id: 4,
+      name: "Gina East / Hugo West",
+      total: 18.25,
+      rank: 4,
+      tied: false,
+    },
   ],
   hadUnavoidableRepeat: false,
   hadStationaryConflict: false,
@@ -97,7 +121,10 @@ export const WithRepeatAdvisory: Story = {
   args: {
     preview: {
       ...basePreview,
-      advisoryInputs: { ...basePreview.advisoryInputs, playedOpponents: ["1-3"] },
+      advisoryInputs: {
+        ...basePreview.advisoryInputs,
+        playedOpponents: ["1-3"],
+      },
       hadUnavoidableRepeat: true,
     },
   },
@@ -173,7 +200,10 @@ export const WithBye: Story = {
         tables: [basePreview.named.tables[0]],
         bye: {
           pairId: 2,
-          players: { player1: p("Erin", "North"), player2: p("Frank", "South") },
+          players: {
+            player1: p("Erin", "North"),
+            player2: p("Frank", "South"),
+          },
         },
         halfMatch: null,
       },
@@ -207,15 +237,24 @@ export const WithHalfMatch: Story = {
           anchorDirection: "NS",
           anchor: {
             pairId: 1,
-            players: { player1: p("Alice", "North"), player2: p("Bob", "South") },
+            players: {
+              player1: p("Alice", "North"),
+              player2: p("Bob", "South"),
+            },
           },
           halfOneOpponent: {
             pairId: 2,
-            players: { player1: p("Erin", "North"), player2: p("Frank", "South") },
+            players: {
+              player1: p("Erin", "North"),
+              player2: p("Frank", "South"),
+            },
           },
           halfTwoOpponent: {
             pairId: 3,
-            players: { player1: p("Carol", "East"), player2: p("Dave", "West") },
+            players: {
+              player1: p("Carol", "East"),
+              player2: p("Dave", "West"),
+            },
           },
         },
       },

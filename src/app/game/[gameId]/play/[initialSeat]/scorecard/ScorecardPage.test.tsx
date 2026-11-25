@@ -116,16 +116,16 @@ describe("ScorecardPage", () => {
     expect(within(rows()[2]).getByText("8/16")).toBeInTheDocument();
   });
 
-  it("shows a single IMP view with no toggle", () => {
+  it("shows a single Cross-IMP view with no toggle", () => {
     render(
       <ScorecardPage
         card={{
           ...mpCard,
-          scoring: "IMP",
+          scoring: "XIMP",
           boards: mpCard.boards.map((b, i) => ({
             ...b,
             matchpoints: undefined,
-            imps: i === 0 ? 5 : -2,
+            crossImps: i === 0 ? 5 : -2,
           })),
         }}
         loading={false}
@@ -136,8 +136,7 @@ describe("ScorecardPage", () => {
     expect(
       screen.queryByRole("button", { name: "MP" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("IMPs")).toBeInTheDocument();
-    expect(within(rows()[2]).getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("X-IMPs")).toBeInTheDocument();
   });
 
   it("adds a Victory points table for a Swiss event", () => {

@@ -14,17 +14,17 @@ see `docs/swiss-pairs-half-matches-design.md`. This document is **Teams only**.
 ## 1. Background: what a triple is (teams)
 
 When a Swiss **Teams** event has an **odd number of teams**, one team would
-otherwise sit out each round (a *bye*). A **triple** (a.k.a. triangle) avoids a
+otherwise sit out each round (a _bye_). A **triple** (a.k.a. triangle) avoids a
 full sit-out by having **three teams play a three-way** instead: over the triple
 each of the three meets both of the others, and the three-way is scored so all
 three get a real result rather than an average.
 
 There are **two kinds of triple**, chosen per round by the director at setup:
 
-| Triple type  | Time it takes    | Boards per mini-match   | How it works                                                                 |
-| ------------ | ---------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| Triple type  | Time it takes    | Boards per mini-match   | How it works                                                                                                                                                                                                                    |
+| ------------ | ---------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Short triple | One normal round | Half the round's boards | Within one round the three play a round-robin of three head-to-head half-matches (x-y, y-z, z-x), each on its own half-sized board set (A, B, C); the travelling (away) pairs switch tables at the round's midpoint. See §4/§5. |
-| Long triple  | Two full rounds  | Full boards             | The three play a round-robin of three full head-to-head matches spread across two full playing periods.        |
+| Long triple  | Two full rounds  | Full boards             | The three play a round-robin of three full head-to-head matches spread across two full playing periods.                                                                                                                         |
 
 A team is two pairs at a home table, so both the short and the long triple work
 by the away (EW) pairs travelling while home (NS) pairs stay — the long triple
@@ -99,10 +99,10 @@ oddRoundPlan: ( "BYE"
 Example (7 rounds):
 `["BYE","SHORT",{LONG,1},{LONG,1},"SHORT","BYE","SHORT"]` — rounds 3–4 are long
 triple group 1. Two back-to-back long triples are unambiguous:
-`[{LONG,1},{LONG,1},{LONG,2},{LONG,2}, ...]` — rounds 1–2 are group 1, 3–4 group
-2.
+`[{LONG,1},{LONG,1},{LONG,2},{LONG,2}, ...]` — rounds 1–2 are group 1, 3–4 group 2.
 
 Validation:
+
 - A `{LONG, g}` entry must appear in **exactly two** positions, and they must be
   **adjacent** (rounds R and R+1). Group ids are otherwise arbitrary labels
   (unique per long triple); they only need to pair the two halves.
@@ -120,7 +120,7 @@ Today every round plays a fixed `boardsPerRound` on fresh, growing board numbers
 
 - **Short triple — THREE half-sized board sets A, B, C (RESOLVED, Q12).** The
   round's `boardsPerRound` splits into two halves of `halfSize =
-  floor(boardsPerRound / 2)` exactly as Swiss Pairs (`swissHalfMatchBoardSplit`
+floor(boardsPerRound / 2)` exactly as Swiss Pairs (`swissHalfMatchBoardSplit`
   in `src/services/materialize-swiss-round.ts` — the odd board is dropped, e.g.
   a 7-board round → halves of 3). **Sets A and B are the round's two halves**,
   the same boards the **rest of the room** plays as its normal round. The triple
@@ -144,18 +144,19 @@ Today every round plays a fixed `boardsPerRound` on fresh, growing board numbers
 
   | Table (home NS) | Away EW | Board set |
   | --------------- | ------- | --------- |
-  | x | y | A |
-  | y | z | B |
-  | z | x | C |
-  | x | z | C |
-  | y | x | A |
-  | z | y | B |
+  | x               | y       | A         |
+  | y               | z       | B         |
+  | z               | x       | C         |
+  | x               | z       | C         |
+  | y               | x       | A         |
+  | z               | y       | B         |
 
   Set A compares `x-NS v y-EW` with `y-NS v x-EW` → the **x v y** half-match.
   Set B → **y v z**. Set C → **z v x**. The away pairs switch at the round's
   midpoint (half 1 = the first three rows, half 2 = the last three). All three
   teams play all their boards; **no unplayed-board compensation for teams**
   (contrast Swiss Pairs, where two pairs genuinely sit out a half).
+
 - **Long triple — the SAME three-set A/B/C layout, over FULL board sets, spread
   across two round slots.** A long triple is a short triple scaled up: the three
   head-to-head comparisons (x-y on A, y-z on B, z-x on C) are each a proper
@@ -211,7 +212,7 @@ the Swiss **Pairs** "2 half matches" pattern applied to teams:
   R+1's range, C a full fresh set beyond the room's range, see §4). Each
   comparison therefore IMPs cleanly on its own full set, scored on the normal
   **20-VP** full scale (`impVpWinner(|margin|, fullBoards, 20)`, loser `20 −
-  winner`). The six rows of §4 are played with half 1 in round R and half 2 in
+winner`). The six rows of §4 are played with half 1 in round R and half 2 in
   round R+1 (§6), so the three teams get through all of A, B, C across the two
   round slots. (There is NO cross-round pairing of a single comparison: a
   comparison's two rooms are always on the SAME set, never one room in R and the
@@ -352,7 +353,7 @@ event with one long triple has 7 playing periods, the long triple using two.
    (long); board allocation (`materialize-swiss-teams-round.ts`).
 5. Scoring — a short triple is three head-to-head half-matches (x-y/A, y-z/B,
    z-x/C), each scored on the **10-VP half scale** (`impVpWinner(|margin|,
-   halfBoards, 10)`), a team's two halves summed to /20 — the Swiss Pairs
+halfBoards, 10)`), a team's two halves summed to /20 — the Swiss Pairs
    2-half-matches crediting, head-to-head per half, both halves played (no
    compensation). A long triple is the same three comparisons over full boards
    across two rounds (20-VP scale, both rooms combined), neutral 10/10 until the
@@ -513,7 +514,7 @@ The heart of the change; no DB/UI yet. Pure functions + unit tests.
 ### Step 4 — Reconstruction + scoring (delete cross-IMP; head-to-head halves)
 
 - `team-match.ts`: **delete** `triangleTeamImps`, `triangleTeamWins`,
-  `triangleCrossVp`-style cross-IMP; keep/adapt triple *detection*
+  `triangleCrossVp`-style cross-IMP; keep/adapt triple _detection_
   (`groupTeamTriples` / 3-cycle keys) only as far as needed to identify a
   triple's rows, then score each of the three head-to-head comparisons with the
   existing two-team machinery (`teamMatchBoardImps` / `teamMatchBoardWins`) on

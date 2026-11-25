@@ -161,7 +161,6 @@ describe("useTimerDerived", () => {
   });
 });
 
-
 describe("useTimerDerived - breaks and warning", () => {
   it("returns the configured warning threshold", () => {
     const state = makeState({ warningSeconds: 30 });

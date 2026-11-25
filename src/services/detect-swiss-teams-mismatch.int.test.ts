@@ -37,12 +37,10 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
   /** 6-team Swiss Teams section with round 1 = {1,2},{3,4},{5,6}. */
   async function setup() {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
     await createGameDb(gameId, 6);
     await setSectionMovement(gameId, "A", {
       source: "SWISS_TEAMS",
@@ -84,9 +82,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
   }
 
   async function materializeRound2(matches: { a: number; b: number }[]) {
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
     await materializeSwissTeamsRound(gameId, "A", 2, 1, 5, matches);
   }
 
@@ -108,9 +105,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     await setRoundTable(2, 5, "3NTN=");
     await setRoundTable(2, 6, "3NTN=");
 
-    const { detectSectionMismatches } = await import(
-      "@/services/detect-swiss-mismatch-service"
-    );
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
     const candidates = await detectSectionMismatches(gameId, "A");
 
     expect(candidates.length).toBeGreaterThan(0);
@@ -143,9 +139,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     ]);
     for (let t = 1; t <= 6; t++) await setRoundTable(2, t, "3NTN=");
 
-    const { detectSectionMismatches } = await import(
-      "@/services/detect-swiss-mismatch-service"
-    );
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
     expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
   });
 
@@ -154,9 +149,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     // table as three head-to-head comparisons (x-y, y-z, z-x), each with its own
     // board span — the structure the triple-internal §3.5 detector consumes.
     await setup();
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
     // 4 boards/round so a SHORT triple can split into half-sized board sets.
     await materializeSwissTeamsRound(
       gameId,
@@ -169,9 +163,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
       { a: 1, b: 2, c: 3, kind: "SHORT" },
     );
 
-    const { getSwissTeamsCommittedRound } = await import(
-      "@/db/games/queries/swiss-teams-committed"
-    );
+    const { getSwissTeamsCommittedRound } =
+      await import("@/db/games/queries/swiss-teams-committed");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
     const committed = await getSwissTeamsCommittedRound(db, "A", 2);
@@ -185,9 +178,7 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     const triple = committed.triples[0];
     expect(triple.members).toEqual([1, 2, 3]);
     expect(triple.comparisons).toHaveLength(3);
-    const pairs = new Set(
-      triple.comparisons.map((c) => `${c.low}-${c.high}`),
-    );
+    const pairs = new Set(triple.comparisons.map((c) => `${c.low}-${c.high}`));
     expect(pairs).toEqual(new Set(["1-2", "1-3", "2-3"]));
     // Each comparison carries a real (non-empty) board span.
     for (const c of triple.comparisons) {
@@ -200,9 +191,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
   });
   it("returns nothing while only round 1 has been played", async () => {
     await setup();
-    const { detectSectionMismatches } = await import(
-      "@/services/detect-swiss-mismatch-service"
-    );
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
     expect(await detectSectionMismatches(gameId, "A")).toEqual([]);
   });
   it("skips a round that has no tables and no triple", async () => {
@@ -210,18 +200,18 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     await scoreRound1Spread();
     // Round 2 is empty; round 3 is committed, so the highest round is 3.
     await materializeRound2([]);
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
     await materializeSwissTeamsRound(gameId, "A", 3, 1, 5, [
       { a: 1, b: 2 },
       { a: 3, b: 4 },
       { a: 5, b: 6 },
     ]);
-    const { detectSectionMismatches } = await import(
-      "@/services/detect-swiss-mismatch-service"
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
+    expect(Array.isArray(await detectSectionMismatches(gameId, "A"))).toBe(
+      true,
     );
-    expect(Array.isArray(await detectSectionMismatches(gameId, "A"))).toBe(true);
   });
   it("ignores rulings it cannot decode but honours valid ones", async () => {
     await setup();
@@ -232,9 +222,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
       { a: 4, b: 5 },
     ]);
     for (let t = 1; t <= 6; t++) await setRoundTable(2, t, "3NTN=");
-    const { detectSectionMismatches } = await import(
-      "@/services/detect-swiss-mismatch-service"
-    );
+    const { detectSectionMismatches } =
+      await import("@/services/detect-swiss-mismatch-service");
     const before = await detectSectionMismatches(gameId, "A");
     const t1 = before.find((c) => c.mismatchedId === 1)!;
     expect(t1).toBeDefined();
@@ -265,10 +254,12 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     expect(after.length).toBe(before.length - 1);
   });
   describe("triples", () => {
-    async function commitTriple(round: number, members: [number, number, number]) {
-      const { materializeSwissTeamsRound } = await import(
-        "@/services/materialize-swiss-teams-round"
-      );
+    async function commitTriple(
+      round: number,
+      members: [number, number, number],
+    ) {
+      const { materializeSwissTeamsRound } =
+        await import("@/services/materialize-swiss-teams-round");
       await materializeSwissTeamsRound(
         gameId,
         "A",
@@ -286,9 +277,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
       // The correct trio is the bottom of the standings; commit one that
       // includes the leaders instead.
       await commitTriple(2, [1, 2, 6]);
-      const { detectSectionMismatches } = await import(
-        "@/services/detect-swiss-mismatch-service"
-      );
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
       const found = await detectSectionMismatches(gameId, "A");
       const inTriple = found.filter((c) => c.roundNumber === 2);
       expect(inTriple.length).toBeGreaterThan(0);
@@ -301,18 +291,16 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
     it("assesses a round that is all triple, with no ordinary tables", async () => {
       await setup();
       await scoreRound1Spread();
-      const { materializeSwissTeamsRound } = await import(
-        "@/services/materialize-swiss-teams-round"
-      );
+      const { materializeSwissTeamsRound } =
+        await import("@/services/materialize-swiss-teams-round");
       await materializeSwissTeamsRound(gameId, "A", 2, 4, 5, [], null, {
         a: 1,
         b: 2,
         c: 6,
         kind: "SHORT",
       });
-      const { detectSectionMismatches } = await import(
-        "@/services/detect-swiss-mismatch-service"
-      );
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
       const found = await detectSectionMismatches(gameId, "A");
       expect(found.every((c) => c.roundNumber === 2)).toBe(true);
     });
@@ -321,9 +309,8 @@ describe("detectSectionMismatches (Swiss TEAMS §3.5 detection)", () => {
       await scoreRound1Spread();
       await commitTriple(2, [1, 2, 6]);
       await commitTriple(3, [1, 2, 6]);
-      const { detectSectionMismatches } = await import(
-        "@/services/detect-swiss-mismatch-service"
-      );
+      const { detectSectionMismatches } =
+        await import("@/services/detect-swiss-mismatch-service");
       const found = await detectSectionMismatches(gameId, "A");
       expect(found.filter((c) => c.roundNumber === 3)).toEqual([]);
     });

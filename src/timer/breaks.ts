@@ -5,8 +5,7 @@ import { BreakConfig, TimerState } from "@/timer/timer-state";
  * `move` phase or a `break` that replaces it.
  */
 export type GapPhase =
-  | { kind: "move" }
-  | { kind: "break"; config: BreakConfig };
+  { kind: "move" } | { kind: "break"; config: BreakConfig };
 
 /**
  * Return the break configured after the given round, if any. When multiple
@@ -120,7 +119,9 @@ export function projectPlayEndByRound(
   for (let round = state.round; round < state.totalRounds; round++) {
     const gap = gapPhaseAfterRound(state, round);
     cursor +=
-      gap.kind === "break" ? resolveBreakDurationMs(gap.config, cursor) : moveMs;
+      gap.kind === "break"
+        ? resolveBreakDurationMs(gap.config, cursor)
+        : moveMs;
     cursor += playMs;
     result.set(round + 1, cursor);
   }
@@ -182,5 +183,8 @@ export function validateStateBreaks(
   now: number,
 ): BreakProblem[] {
   const projected = projectPlayEndByRound(state, now);
-  return validateBreaks(state, (afterRound) => projected.get(afterRound) ?? now);
+  return validateBreaks(
+    state,
+    (afterRound) => projected.get(afterRound) ?? now,
+  );
 }

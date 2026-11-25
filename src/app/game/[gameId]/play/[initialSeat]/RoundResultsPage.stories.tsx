@@ -11,7 +11,7 @@ import {
 import {
   buildTeamBoardResultTable,
   TeamBoardResultLine,
-} from "@/scoring/swiss/team-board-result-view";
+} from "@/modules/scoring";
 
 const meta: Meta<typeof RoundResultsPage> = {
   title: "App/Play/Game/Assignment/RoundResultsPage",

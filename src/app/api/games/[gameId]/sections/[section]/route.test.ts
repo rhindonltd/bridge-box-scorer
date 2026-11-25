@@ -15,7 +15,12 @@ vi.mock("@/socket/broadcast/section-broadcast", () => ({
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { getDb } from "@/db/games";
@@ -128,7 +133,10 @@ describe("DELETE /api/games/[gameId]/sections/[section]", () => {
 
   it("returns 401 without a valid token", async () => {
     vi.mocked(validateDirectorToken).mockReturnValue(false);
-    const res = await DELETE(req("DELETE", "g1", "B", undefined, null), params("g1"));
+    const res = await DELETE(
+      req("DELETE", "g1", "B", undefined, null),
+      params("g1"),
+    );
     expect(res.status).toBe(401);
     expect(deleteSection).not.toHaveBeenCalled();
   });

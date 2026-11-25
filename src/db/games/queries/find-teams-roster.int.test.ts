@@ -24,9 +24,8 @@ describe("games db: findTeamsRoster", () => {
 
   async function seatPair(seat: string, first: string, lastName = "One") {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
 
     const p1 = await createPlayer(harness.gameId, {
       firstName: first,
@@ -47,9 +46,8 @@ describe("games db: findTeamsRoster", () => {
   }
 
   async function roster() {
-    const { findTeamsRoster } = await import(
-      "@/db/games/queries/find-teams-roster"
-    );
+    const { findTeamsRoster } =
+      await import("@/db/games/queries/find-teams-roster");
     const db = (await harness.getDb()) as Db;
     return findTeamsRoster(db);
   }
@@ -95,9 +93,8 @@ describe("games db: findTeamsRoster", () => {
     await seatPair("A1NS", "Home");
     await seatPair("A1EW", "Away");
 
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     await withdrawParticipant(harness.gameId, "A1NS", {
       standing: "WITHDRAWN",
       withdrawnInRound: 3,

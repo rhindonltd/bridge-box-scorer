@@ -190,19 +190,22 @@ describe("set-board-result", () => {
       expect(ruling(1)).toBe("MM:NS:LOWER:NOT;MM:EW:LOWER:OWN");
     });
     it("markMismatch rejects a token that is not a mismatch ruling", async () => {
-      await expect(
-        actions.markMismatch(db, room1, "VOID:X"),
-      ).rejects.toThrow("Not a mismatch ruling: VOID:X");
+      await expect(actions.markMismatch(db, room1, "VOID:X")).rejects.toThrow(
+        "Not a mismatch ruling: VOID:X",
+      );
       // Wrong shape is passed through the inverter untouched, then rejected.
-      await expect(
-        actions.markMismatch(db, room2, "MM:NS"),
-      ).rejects.toThrow("Not a mismatch ruling: MM:NS");
+      await expect(actions.markMismatch(db, room2, "MM:NS")).rejects.toThrow(
+        "Not a mismatch ruling: MM:NS",
+      );
       await expect(
         actions.markMismatch(db, room2, "XX:NS:HIGHER:NOT"),
       ).rejects.toThrow("Not a mismatch ruling");
     });
     it("treats the acted room as home when the match home is not a seat id", async () => {
-      db.update(matches).set({ home: "garbage" }).where(eq(matches.id, 1)).run();
+      db.update(matches)
+        .set({ home: "garbage" })
+        .where(eq(matches.id, 1))
+        .run();
       // Even from the opponent room, nothing is inverted.
       await actions.voidTeamsMatch(db, room2, "VOID:SHORT_OFFENDER_NS");
       expect(ruling(1)).toBe("VOID:SHORT_OFFENDER_NS");

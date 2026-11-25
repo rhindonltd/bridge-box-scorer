@@ -89,8 +89,8 @@ export function circulateMovingPairs(
     originStation: idx,
   }));
 
-  const occupantByStationRound: SeatOccupant[][] = stations.map(() =>
-    new Array<SeatOccupant>(rounds),
+  const occupantByStationRound: SeatOccupant[][] = stations.map(
+    () => new Array<SeatOccupant>(rounds),
   );
 
   for (let stationIdx = 0; stationIdx < ringLength; stationIdx++) {
@@ -98,7 +98,7 @@ export function circulateMovingPairs(
       // The pair now at `stationIdx` started `roundIdx` stations earlier in the
       // ring (it has advanced `roundIdx` steps to get here).
       const originStation =
-        ((stationIdx - roundIdx) % ringLength + ringLength) % ringLength;
+        (((stationIdx - roundIdx) % ringLength) + ringLength) % ringLength;
       occupantByStationRound[stationIdx][roundIdx] =
         startingOccupant[originStation];
     }
@@ -116,10 +116,10 @@ export function circulateMovingPairs(
  * (table, round) cells are switched (all non-pivot tables for the final N
  * rounds, in the standard scheme).
  */
-export function arrowSwitchSeat(seat: {
+export function arrowSwitchSeat(seat: { ns: SeatOccupant; ew: SeatOccupant }): {
   ns: SeatOccupant;
   ew: SeatOccupant;
-}): { ns: SeatOccupant; ew: SeatOccupant } {
+} {
   return { ns: seat.ew, ew: seat.ns };
 }
 
@@ -161,7 +161,6 @@ export function layoutToTables(
 
   return { tables: result };
 }
-
 
 /**
  * Build the complete per-(table, round) seat map for a pivot-based movement.
@@ -258,7 +257,11 @@ export function buildPivotLayout(params: {
   return { tables, rounds, seatByTableRound };
 }
 
-function seatKey(table: number, direction: Direction, roundIdx: number): string {
+function seatKey(
+  table: number,
+  direction: Direction,
+  roundIdx: number,
+): string {
   return `${table}:${direction}:${roundIdx}`;
 }
 

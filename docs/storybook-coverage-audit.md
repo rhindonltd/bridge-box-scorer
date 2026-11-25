@@ -14,17 +14,18 @@
 
 ## Final state (authoritative)
 
-| Metric | At audit | Now |
-|---|---:|---:|
-| Routes with UI | 26 | 26 |
-| `page.tsx` inline-logic convention violations | 6 | **0** |
-| Route `*Page`/`*Flow` components without a co-located story | 11 | **4** (all documented, see below) |
-| Genuine zero-coverage components (no story, no test) | 7 | **0** |
-| Storybook request mocking (MSW) | none | wired (`msw` + `msw-storybook-addon`) |
-| Storybook a11y enforcement | off (`todo`, report-only) | **`error` globally** (CI-gating) |
-| a11y bugs found + fixed via enforcement | — | **8** shared-component fixes |
+| Metric                                                      |                  At audit |                                   Now |
+| ----------------------------------------------------------- | ------------------------: | ------------------------------------: |
+| Routes with UI                                              |                        26 |                                    26 |
+| `page.tsx` inline-logic convention violations               |                         6 |                                 **0** |
+| Route `*Page`/`*Flow` components without a co-located story |                        11 |     **4** (all documented, see below) |
+| Genuine zero-coverage components (no story, no test)        |                         7 |                                 **0** |
+| Storybook request mocking (MSW)                             |                      none | wired (`msw` + `msw-storybook-addon`) |
+| Storybook a11y enforcement                                  | off (`todo`, report-only) |      **`error` globally** (CI-gating) |
+| a11y bugs found + fixed via enforcement                     |                         — |          **8** shared-component fixes |
 
 What changed, in brief:
+
 - **Convention violations eliminated.** The three inline settings forms (`club`,
   `bridgewebs`, `admin-key`), the `settings` menu, the `wifi` container, and the play route's
   `PlayStateRouter` were all extracted into testable/storyable `*Page` components; each
@@ -42,6 +43,7 @@ What changed, in brief:
 
 **The 4 remaining components without a co-located story** (allowlisted with rationale in
 `scripts/check-page-stories.mjs`):
+
 - `TimerPage` (display) and `ManageTimerPage` — thin containers whose visual surface is a
   well-storied presentational child (`DisplayTimerPage`; `TimerConfigView`/`TimerLiveView`).
 - `PlayPage` — thin `usePlayFlow` container; its screens are storied and its state→screen
@@ -76,15 +78,15 @@ current.
 
 ## Summary (at audit time — see Final state above for current)
 
-| Metric | Count |
-|---|---:|
-| Routes audited | 27 |
-| Routes with UI (excludes 1 redirect-only) | 26 |
-| **Covered** | 0 |
-| **Partial** | 20 |
-| **Missing** | 6 |
-| **N/A** (redirect-only) | 1 |
-| `page.tsx` convention violations | 6 |
+| Metric                                    | Count |
+| ----------------------------------------- | ----: |
+| Routes audited                            |    27 |
+| Routes with UI (excludes 1 redirect-only) |    26 |
+| **Covered**                               |     0 |
+| **Partial**                               |    20 |
+| **Missing**                               |     6 |
+| **N/A** (redirect-only)                   |     1 |
+| `page.tsx` convention violations          |     6 |
 
 ### The single most important finding (at audit time — since addressed)
 
@@ -118,35 +120,35 @@ is storied; the container the route mounts is not.
 Risk tier: **P1** correctness-critical (score entry / director actions that mutate
 results), **P2** game setup & live display, **P3** device settings & utilities.
 
-| Route | Coverage subject | Story | UI test | Class | Risk | Notes |
-|---|---|---|---|---|---|---|
-| `/game/[gameId]/play/[initialSeat]` | inline `PlayStateRouter` (in `page.tsx`) | child screens only | child screens only | **Partial** | P1 | **Convention violation.** Big inline router mapping 11 states → screens. Most child screens covered; router/orchestration itself unstoried & untested. See gaps. |
-| `/game/[gameId]/manage/travellers` | `CorrectResultPage` | Default-only | strong (state machine, overrides, errors) | **Partial** | P1 | Director result correction. Story renders one state; no visual variants for traveller/wizard/error steps. |
-| `/game/[gameId]/manage/deals` | `EnterDealsWizard` | none | strong (pick board, save, error) | **Partial** | P1 | Director deal override. No story at all. |
-| `/create` | `CreateGamePage` | Default-only | strong (submit, toggle, BridgeWebs picker, error) | **Partial** | P2 | Story shows one empty form; no BridgeWebs-picker or error-state variants. |
-| `/game/[gameId]/create` | `SetupGamePage` | Default-only | present | **Partial** | P2 | Story is a single render. |
-| `/game/[gameId]/manage` | `ManageGameMenu` (container) | on child `ManageGameMenuPage` (4 states) | strong (routing + visibility flags) | **Partial** | P2 | Container itself unstoried; presentational child well-storied. |
-| `/game/[gameId]/manage/movement` | `ManageMovementPage` | Default-only (shell) | present | **Partial** | P2 | Story exercises layout shell only. |
-| `/game/[gameId]/manage/share-access` | `ShareDirectorAccessPage` | none | strong (countdown, expiry, regen, errors) | **Partial** | P2 | No story; rich timer behaviour untested visually. |
-| `/game/[gameId]/manage/timer` | `ManageTimerPage` (container) | on children `TimerConfigView`/`TimerLiveView` | present (started/config split) | **Partial** | P2 | Container unstoried; children well-storied. |
-| `/game/[gameId]/export/download-usebio` | `DownloadUsebioPage` | Default-only | strong | **Partial** | P2 | Single-state story. |
-| `/game/[gameId]/export/upload-bridgewebs` | `UploadBridgewebsPage` | none | strong (configured/not, success/error/network) | **Partial** | P2 | No story. |
-| `/game/[gameId]/manage/delete-game` | `DeleteGamePage` | Default-only | strong | **Partial** | P2 | Single-state story. |
-| `/join` | `JoinGamePage` | none | present (header + navigate) | **Partial** | P2 | No story; thin wrapper over `SelectGamePage`. |
-| `/manage` | `ManageSelectGameFlow` | none | present | **Partial** | P2 | No story. |
-| `/display` | `SelectGamePage` _(shared)_ | Default-only | present | **Partial** | P2 | **Shared component** — covered once, reused by `/display`, `/join`, `/manage`. Story single-state. |
-| `/` | `MainMenuPage` | Default-only | present | **Partial** | P2 | Single-state story. |
-| `/game/[gameId]/display` | `DisplayMenuPage` | Default-only | present | **Partial** | P2 | Single-state story. |
-| `/game/[gameId]/display/timer` | `TimerPage` (container) | on child `DisplayTimerPage` (11 states) | strong (connecting, tick, section chooser) | **Partial** | P2 | Container unstoried; child extremely well-storied. |
-| `/game/[gameId]/display/leaderboard` | `DisplayLeaderboardPage` | present | present | **Partial** | P2 | Both present; treat as best-covered display route (confirm story depth when upgrading). |
-| `/game/[gameId]/export/download-pbn` | `DownloadPbnPage` | none | none | **Missing** | P2 | **Real logic uncovered:** club-configured branch, download/blob flow, disabled state, error paths. Notable hole. |
-| `/game/[gameId]/join` | `JoinGameAsPlayer` | none | none | **Missing** | P2 | Thin wrapper → `SelectSeatPage`. Low own-logic, but zero coverage; verify `SelectSeatPage` separately. |
-| `/settings/club` | inline form (`page.tsx`) | none | none | **Missing** | P3 | **Convention violation.** Full form (SWR load, save, 401 clear, validation) inline. |
-| `/settings/bridgewebs` | inline form (`page.tsx`) | none | none | **Missing** | P3 | **Convention violation.** Full form inline (club/password, first-config rule, 401). |
-| `/settings/admin-key` | inline form (`page.tsx`) | none | none | **Missing** | P3 | **Convention violation.** Full form inline (length + match validation, save). |
-| `/settings` | inline menu + `LogoutButton` (`page.tsx`) | none for menu | none for menu | **Missing** | P3 | **Convention violation.** Menu links inline. `LogoutButton` also unstoried/untested. |
-| `/settings/wifi` | `WifiSettingsForm` + `WifiUnavailablePage` | form only | form only | **Partial** | P3 | **Convention violation.** `WifiSettingsForm` covered; `WifiUnavailablePage` has neither; `page.tsx` capability branch untested. |
-| `/game/[gameId]/play` | — (redirect only) | — | — | **N/A** | — | Server redirect to `/join`. No UI subject. |
+| Route                                     | Coverage subject                           | Story                                         | UI test                                           | Class       | Risk | Notes                                                                                                                                                            |
+| ----------------------------------------- | ------------------------------------------ | --------------------------------------------- | ------------------------------------------------- | ----------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/game/[gameId]/play/[initialSeat]`       | inline `PlayStateRouter` (in `page.tsx`)   | child screens only                            | child screens only                                | **Partial** | P1   | **Convention violation.** Big inline router mapping 11 states → screens. Most child screens covered; router/orchestration itself unstoried & untested. See gaps. |
+| `/game/[gameId]/manage/travellers`        | `CorrectResultPage`                        | Default-only                                  | strong (state machine, overrides, errors)         | **Partial** | P1   | Director result correction. Story renders one state; no visual variants for traveller/wizard/error steps.                                                        |
+| `/game/[gameId]/manage/deals`             | `EnterDealsWizard`                         | none                                          | strong (pick board, save, error)                  | **Partial** | P1   | Director deal override. No story at all.                                                                                                                         |
+| `/create`                                 | `CreateGamePage`                           | Default-only                                  | strong (submit, toggle, BridgeWebs picker, error) | **Partial** | P2   | Story shows one empty form; no BridgeWebs-picker or error-state variants.                                                                                        |
+| `/game/[gameId]/create`                   | `SetupGamePage`                            | Default-only                                  | present                                           | **Partial** | P2   | Story is a single render.                                                                                                                                        |
+| `/game/[gameId]/manage`                   | `ManageGameMenu` (container)               | on child `ManageGameMenuPage` (4 states)      | strong (routing + visibility flags)               | **Partial** | P2   | Container itself unstoried; presentational child well-storied.                                                                                                   |
+| `/game/[gameId]/manage/movement`          | `ManageMovementPage`                       | Default-only (shell)                          | present                                           | **Partial** | P2   | Story exercises layout shell only.                                                                                                                               |
+| `/game/[gameId]/manage/share-access`      | `ShareDirectorAccessPage`                  | none                                          | strong (countdown, expiry, regen, errors)         | **Partial** | P2   | No story; rich timer behaviour untested visually.                                                                                                                |
+| `/game/[gameId]/manage/timer`             | `ManageTimerPage` (container)              | on children `TimerConfigView`/`TimerLiveView` | present (started/config split)                    | **Partial** | P2   | Container unstoried; children well-storied.                                                                                                                      |
+| `/game/[gameId]/export/download-usebio`   | `DownloadUsebioPage`                       | Default-only                                  | strong                                            | **Partial** | P2   | Single-state story.                                                                                                                                              |
+| `/game/[gameId]/export/upload-bridgewebs` | `UploadBridgewebsPage`                     | none                                          | strong (configured/not, success/error/network)    | **Partial** | P2   | No story.                                                                                                                                                        |
+| `/game/[gameId]/manage/delete-game`       | `DeleteGamePage`                           | Default-only                                  | strong                                            | **Partial** | P2   | Single-state story.                                                                                                                                              |
+| `/join`                                   | `JoinGamePage`                             | none                                          | present (header + navigate)                       | **Partial** | P2   | No story; thin wrapper over `SelectGamePage`.                                                                                                                    |
+| `/manage`                                 | `ManageSelectGameFlow`                     | none                                          | present                                           | **Partial** | P2   | No story.                                                                                                                                                        |
+| `/display`                                | `SelectGamePage` _(shared)_                | Default-only                                  | present                                           | **Partial** | P2   | **Shared component** — covered once, reused by `/display`, `/join`, `/manage`. Story single-state.                                                               |
+| `/`                                       | `MainMenuPage`                             | Default-only                                  | present                                           | **Partial** | P2   | Single-state story.                                                                                                                                              |
+| `/game/[gameId]/display`                  | `DisplayMenuPage`                          | Default-only                                  | present                                           | **Partial** | P2   | Single-state story.                                                                                                                                              |
+| `/game/[gameId]/display/timer`            | `TimerPage` (container)                    | on child `DisplayTimerPage` (11 states)       | strong (connecting, tick, section chooser)        | **Partial** | P2   | Container unstoried; child extremely well-storied.                                                                                                               |
+| `/game/[gameId]/display/leaderboard`      | `DisplayLeaderboardPage`                   | present                                       | present                                           | **Partial** | P2   | Both present; treat as best-covered display route (confirm story depth when upgrading).                                                                          |
+| `/game/[gameId]/export/download-pbn`      | `DownloadPbnPage`                          | none                                          | none                                              | **Missing** | P2   | **Real logic uncovered:** club-configured branch, download/blob flow, disabled state, error paths. Notable hole.                                                 |
+| `/game/[gameId]/join`                     | `JoinGameAsPlayer`                         | none                                          | none                                              | **Missing** | P2   | Thin wrapper → `SelectSeatPage`. Low own-logic, but zero coverage; verify `SelectSeatPage` separately.                                                           |
+| `/settings/club`                          | inline form (`page.tsx`)                   | none                                          | none                                              | **Missing** | P3   | **Convention violation.** Full form (SWR load, save, 401 clear, validation) inline.                                                                              |
+| `/settings/bridgewebs`                    | inline form (`page.tsx`)                   | none                                          | none                                              | **Missing** | P3   | **Convention violation.** Full form inline (club/password, first-config rule, 401).                                                                              |
+| `/settings/admin-key`                     | inline form (`page.tsx`)                   | none                                          | none                                              | **Missing** | P3   | **Convention violation.** Full form inline (length + match validation, save).                                                                                    |
+| `/settings`                               | inline menu + `LogoutButton` (`page.tsx`)  | none for menu                                 | none for menu                                     | **Missing** | P3   | **Convention violation.** Menu links inline. `LogoutButton` also unstoried/untested.                                                                             |
+| `/settings/wifi`                          | `WifiSettingsForm` + `WifiUnavailablePage` | form only                                     | form only                                         | **Partial** | P3   | **Convention violation.** `WifiSettingsForm` covered; `WifiUnavailablePage` has neither; `page.tsx` capability branch untested.                                  |
+| `/game/[gameId]/play`                     | — (redirect only)                          | —                                             | —                                                 | **N/A**     | —    | Server redirect to `/join`. No UI subject.                                                                                                                       |
 
 ---
 
@@ -155,6 +157,7 @@ results), **P2** game setup & live display, **P3** device settings & utilities.
 ### P1 — correctness-critical
 
 **`/game/[gameId]/play/[initialSeat]` — the live play flow**
+
 - The route file holds a large inline `PlayStateRouter` that maps 11 play states to
   screens, plus two data-loading wrappers (`BoardResultsLoader`, `BoardResultsContent`).
   Because this lives in `page.tsx`, the routing/orchestration logic has no direct story or
@@ -172,12 +175,14 @@ results), **P2** game setup & live display, **P3** device settings & utilities.
   - `WaitingToStartPage` — test only, **no story.**
 
 **`/game/[gameId]/manage/travellers` — `CorrectResultPage`**
+
 - Strong unit test (board select → traveller → wizard, adjusted/played/special overrides,
   error + default-error branches).
 - Story is `Default` only — no visual variants for the traveller step, the director
   contract wizard step, the saving spinner, or the error banner.
 
 **`/game/[gameId]/manage/deals` — `EnterDealsWizard`**
+
 - Strong unit test (board list, prefill, `DEAL_OVERRIDE` emit with director token, error
   → back to select).
 - **No story.**
@@ -231,14 +236,14 @@ The intended convention: `page.tsx` is a thin route wrapper that delegates to a 
 `*Flow` component. These routes break it and should have their UI/logic extracted into a
 testable, storyable component:
 
-| Route | What lives inline in `page.tsx` | Suggested extraction |
-|---|---|---|
-| `/game/[gameId]/play/[initialSeat]` | `PlayStateRouter` (11-state switch) + `BoardResultsLoader` + `BoardResultsContent` | Extract `PlayStateRouter` and the loaders into their own components so the state→screen mapping is unit-testable and storyable. |
-| `/settings/club` | Entire club-info form + SWR + save/401 logic | Extract `ClubSettingsPage`. |
-| `/settings/bridgewebs` | Entire BridgeWebs form + SWR + save/401 logic | Extract `BridgewebsSettingsPage`. |
-| `/settings/admin-key` | Entire admin-key form + validation + save | Extract `UpdateAdminKeyPage`. |
-| `/settings` | Menu links + `LogoutButton` composition | Extract `SettingsMenuPage`. |
-| `/settings/wifi` | SWR capability check, network sort, branch between `WifiSettingsForm` / `WifiUnavailablePage` | Extract the selection/branch logic into a `WifiSettingsPage` container. |
+| Route                               | What lives inline in `page.tsx`                                                               | Suggested extraction                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/game/[gameId]/play/[initialSeat]` | `PlayStateRouter` (11-state switch) + `BoardResultsLoader` + `BoardResultsContent`            | Extract `PlayStateRouter` and the loaders into their own components so the state→screen mapping is unit-testable and storyable. |
+| `/settings/club`                    | Entire club-info form + SWR + save/401 logic                                                  | Extract `ClubSettingsPage`.                                                                                                     |
+| `/settings/bridgewebs`              | Entire BridgeWebs form + SWR + save/401 logic                                                 | Extract `BridgewebsSettingsPage`.                                                                                               |
+| `/settings/admin-key`               | Entire admin-key form + validation + save                                                     | Extract `UpdateAdminKeyPage`.                                                                                                   |
+| `/settings`                         | Menu links + `LogoutButton` composition                                                       | Extract `SettingsMenuPage`.                                                                                                     |
+| `/settings/wifi`                    | SWR capability check, network sort, branch between `WifiSettingsForm` / `WifiUnavailablePage` | Extract the selection/branch logic into a `WifiSettingsPage` container.                                                         |
 
 > Note: routes classified as "glue" (a router callback or a state guard wrapping a clean
 > delegation, e.g. `/display`, `/game/[gameId]/manage/*`) are **not** counted as violations
@@ -399,6 +404,7 @@ Ordered by risk/impact (P1 first). Each item names the subject, the specific gap
     `aria-label`. (Fixes `PageLayout` long-content.)
   - `PlayerSearchView` clear button (an `<X>` icon) had no accessible name (`button-name`) →
     added `aria-label="Clear selected player"`.
+
 - **Step 7 (done):** extracted the play route's inline orchestration — the last convention
   violation. `play/[initialSeat]/page.tsx` is now a lightweight wrapper delegating to a new
   `PlayPage` container (seat/game resolution + `usePlayFlow` + the waiting/loading guards),
@@ -443,7 +449,7 @@ Ordered by risk/impact (P1 first). Each item names the subject, the specific gap
     render + a11y checks). Meant to run as its own CI job, not in `npm test`.
   - `npm run check:page-stories` → `scripts/check-page-stories.mjs`: fails if a route-level
     `*Page`/`*Flow` component under `src/app` has no co-located `*.stories.tsx`. Uses a
-    shrinking `KNOWN_MISSING` allowlist to baseline today's gaps, and also fails on a *stale*
+    shrinking `KNOWN_MISSING` allowlist to baseline today's gaps, and also fails on a _stale_
     allowlist entry (one that now has a story), so the list can only shrink. Verified both
     failure modes (new uncovered component; stale entry) plus the passing case.
   - No CI provider exists in the repo, so `README.md` documents both scripts and includes a

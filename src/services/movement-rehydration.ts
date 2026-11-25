@@ -75,9 +75,7 @@ export interface RehydratedMovement {
 /**
  * Convert a generated Tables into the rehydrated movement shape.
  */
-export function tablesToPairMovement(
-  tables: Tables,
-): RehydratedTable[] {
+export function tablesToPairMovement(tables: Tables): RehydratedTable[] {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
     rounds: table.rounds.map((round) => ({

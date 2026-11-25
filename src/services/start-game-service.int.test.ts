@@ -66,7 +66,13 @@ function seatedPairs(
 }
 
 function section(letter: string, tables: number) {
-  return { section: letter, label: letter, tables, selectedMovement: null, ordinal: 0 };
+  return {
+    section: letter,
+    label: letter,
+    tables,
+    selectedMovement: null,
+    ordinal: 0,
+  };
 }
 
 const mitchell = (tables: number) => ({
@@ -79,7 +85,11 @@ const swiss = (tables: number, rounds = 5, boardsPerRound = 3) => ({
   swiss: { tables, rounds, boardsPerRound },
 });
 
-const roundRobinTeams = (teams: number, rounds: number, boardsPerRound = 3) => ({
+const roundRobinTeams = (
+  teams: number,
+  rounds: number,
+  boardsPerRound = 3,
+) => ({
   source: "ROUND_ROBIN_TEAMS" as const,
   roundRobinTeams: { teams, rounds, boardsPerRound },
 });

@@ -36,12 +36,12 @@ describe("db-rows fixtures", () => {
     });
 
     it("applies overrides", () => {
-      expect(makeParticipant({ initialSeat: "A2EW", player1: 3 })).toMatchObject(
-        {
-          initialSeat: "A2EW",
-          player1: 3,
-        },
-      );
+      expect(
+        makeParticipant({ initialSeat: "A2EW", player1: 3 }),
+      ).toMatchObject({
+        initialSeat: "A2EW",
+        player1: 3,
+      });
     });
   });
 

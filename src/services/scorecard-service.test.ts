@@ -28,10 +28,10 @@ vi.mock("@/services/schedule-service", () => ({
 vi.mock("@/services/leaderboard-service", () => ({
   buildLeaderboards: m.buildLeaderboards,
 }));
-vi.mock("@/scoring/traveller/score-traveller", () => ({
+vi.mock("@/modules/scoring/traveller/score-traveller", () => ({
   scoreBoard: m.scoreBoard,
 }));
-vi.mock("@/scoring/plugins/registry", () => ({
+vi.mock("@/modules/scoring/plugins/registry", () => ({
   getCombination: m.getCombination,
 }));
 
@@ -140,28 +140,6 @@ describe("buildPairScorecard (mocked collaborators)", () => {
     expect(Object.is(card!.boards[0].score, 0)).toBe(true);
     expect(card!.boards[0].side).toBe("EW");
     expect(card!.boards[0].matchpoints).toEqual({ value: 3, max: 4 });
-  });
-
-  it("carries IMPs for NS and EW, defaulting to 0", async () => {
-    m.getCombination.mockReturnValue({ perBoard: "IMP" });
-    m.scoreBoard.mockReturnValue({
-      lines: [{ nsId: "A1NS", ewId: "A1EW", score: 10, nsImps: 5, ewImps: -5 }],
-    });
-    const ns = await buildPairScorecard(db, "g", "A1NS");
-    expect(ns!.boards[0].imps).toBe(5);
-
-    m.getSchedule.mockResolvedValue({
-      assignmentId: "A1EW",
-      rounds: [{ roundNumber: 1, boards: [1] }],
-    });
-    const ew = await buildPairScorecard(db, "g", "A1EW");
-    expect(ew!.boards[0].imps).toBe(-5);
-
-    m.scoreBoard.mockReturnValue({
-      lines: [{ nsId: "A1NS", ewId: "A1EW", score: 10 }],
-    });
-    const none = await buildPairScorecard(db, "g", "A1EW");
-    expect(none!.boards[0].imps).toBe(0);
   });
 
   it("carries cross-IMPs for NS and EW, defaulting to 0", async () => {

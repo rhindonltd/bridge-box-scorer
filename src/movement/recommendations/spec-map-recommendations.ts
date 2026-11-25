@@ -158,7 +158,8 @@ function fromSpecDescriptor(
     // The seeded spec stores board-set indices; the highest board number in
     // play scales with the recommendation's boards-per-round. The spec's own
     // `boards` is at its default boards-per-round, so derive from the set count.
-    boardsInPlay: (spec.boards / spec.boardsPerRound) * descriptor.boardsPerRound,
+    boardsInPlay:
+      (spec.boards / spec.boardsPerRound) * descriptor.boardsPerRound,
     copies: descriptor.copies,
     pros: descriptor.pros,
     cons: descriptor.cons,

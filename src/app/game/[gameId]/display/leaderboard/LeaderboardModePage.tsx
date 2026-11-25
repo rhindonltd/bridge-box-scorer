@@ -31,17 +31,11 @@ export function LeaderboardModePage({
       centerContent={true}
     >
       <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
-        <button
-          onClick={() => onSelect("percentage")}
-          className={buttonClass}
-        >
+        <button onClick={() => onSelect("percentage")} className={buttonClass}>
           Percentage
         </button>
 
-        <button
-          onClick={() => onSelect("matchpoints")}
-          className={buttonClass}
-        >
+        <button onClick={() => onSelect("matchpoints")} className={buttonClass}>
           Matchpoints
         </button>
       </div>

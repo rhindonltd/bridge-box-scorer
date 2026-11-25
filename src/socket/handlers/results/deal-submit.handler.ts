@@ -50,7 +50,7 @@ export function registerDealSubmitHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.DEAL_SUBMIT,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack, log }) => {
         const { gameId, seat, token, boardNumber, deal } = payload;

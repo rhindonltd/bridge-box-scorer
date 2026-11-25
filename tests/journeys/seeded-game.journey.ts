@@ -98,7 +98,11 @@ test.describe("Seeded games", () => {
 
   test("an impossible scenario fails with the seeder's own message", async () => {
     await expect(
-      seedGame({ scoring: "MP", play: "all", scenario: { withdraw: ["A1NS"] } }),
+      seedGame({
+        scoring: "MP",
+        play: "all",
+        scenario: { withdraw: ["A1NS"] },
+      }),
     ).rejects.toThrow(/--play all leaves none/);
   });
 });

@@ -7,7 +7,11 @@ describe("StepDeclarer", () => {
   it("reports the chosen declarer with no doubling for an NT contract", () => {
     const onDeclarerSelected = vi.fn();
     render(
-      <StepDeclarer level={3} suit="NT" onDeclarerSelected={onDeclarerSelected} />,
+      <StepDeclarer
+        level={3}
+        suit="NT"
+        onDeclarerSelected={onDeclarerSelected}
+      />,
     );
 
     // NT rendering path: "3NTN".
@@ -18,7 +22,11 @@ describe("StepDeclarer", () => {
   it("reports the chosen declarer for a suit contract with doubling", () => {
     const onDeclarerSelected = vi.fn();
     render(
-      <StepDeclarer level={4} suit="H" onDeclarerSelected={onDeclarerSelected} />,
+      <StepDeclarer
+        level={4}
+        suit="H"
+        onDeclarerSelected={onDeclarerSelected}
+      />,
     );
 
     // Select the doubled option first.
@@ -35,7 +43,11 @@ describe("StepDeclarer", () => {
   it("supports the redoubled option", () => {
     const onDeclarerSelected = vi.fn();
     render(
-      <StepDeclarer level={2} suit="S" onDeclarerSelected={onDeclarerSelected} />,
+      <StepDeclarer
+        level={2}
+        suit="S"
+        onDeclarerSelected={onDeclarerSelected}
+      />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "XX" }));

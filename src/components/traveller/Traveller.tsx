@@ -1,6 +1,5 @@
-import { ScoredBoard } from "@/scoring/traveller/score-traveller";
+import { getPerBoardPlugin, ScoredBoard } from "@/modules/scoring";
 import { PerBoardTravellerView } from "@/components/scoring/PerBoardTravellerView";
-import { getPerBoardPlugin } from "@/scoring/plugins/registry";
 
 type Props = {
   scoredBoard: ScoredBoard;

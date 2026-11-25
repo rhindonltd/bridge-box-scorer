@@ -1,9 +1,6 @@
 import { PairSeat, SectionLetter } from "@/model/participants";
 import { ExpectedSeats } from "@/model/expected-seats";
-import {
-  validateStart,
-  StartValidationResult,
-} from "@/model/start-validator";
+import { validateStart, StartValidationResult } from "@/model/start-validator";
 
 /**
  * Input for validating a single section: its letter, the seats its movement

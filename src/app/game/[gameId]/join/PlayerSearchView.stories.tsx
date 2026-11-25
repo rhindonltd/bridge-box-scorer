@@ -68,9 +68,7 @@ export const WithResultsAndGuest: Story = {
     label: "Player 1",
     value: null,
     query: "Smith",
-    results: [
-      { firstName: "Alice", lastName: "Smith", nationalId: "123456" },
-    ],
+    results: [{ firstName: "Alice", lastName: "Smith", nationalId: "123456" }],
     guestOption: { firstName: "Smith", lastName: "", nationalId: null },
     loading: false,
   },

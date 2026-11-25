@@ -66,7 +66,9 @@ function mockDbFromSteps(steps: SelectStep[]): Db {
       if (step == null) return { from: () => Promise.resolve([]) };
       if (step.kind === "get") {
         return {
-          from: () => ({ where: () => ({ get: () => Promise.resolve(step.value) }) }),
+          from: () => ({
+            where: () => ({ get: () => Promise.resolve(step.value) }),
+          }),
         };
       }
       if (step.kind === "where") {
@@ -100,9 +102,30 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "CONFIRMED" },
-            { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
-            { roundNumber: 2, tableNumber: 2, boardNumber: 3, ns: "1NS", ew: "2EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "CONFIRMED",
+            },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 2,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
+            {
+              roundNumber: 2,
+              tableNumber: 2,
+              boardNumber: 3,
+              ns: "1NS",
+              ew: "2EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         {
@@ -124,8 +147,11 @@ describe("schedule-service", () => {
         {
           kind: "from",
           value: [
-            { roundNumber: 1 }, { roundNumber: 1 }, { roundNumber: 2 },
-            { roundNumber: 2 }, { roundNumber: 3 },
+            { roundNumber: 1 },
+            { roundNumber: 1 },
+            { roundNumber: 2 },
+            { roundNumber: 2 },
+            { roundNumber: 3 },
           ],
         },
       ]);
@@ -153,9 +179,30 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
-            { roundNumber: 2, tableNumber: 3, boardNumber: 3, ns: "1NS", ew: "9EW", status: "SIT_OUT" },
-            { roundNumber: 2, tableNumber: 3, boardNumber: 4, ns: "1NS", ew: "9EW", status: "SIT_OUT" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
+            {
+              roundNumber: 2,
+              tableNumber: 3,
+              boardNumber: 3,
+              ns: "1NS",
+              ew: "9EW",
+              status: "SIT_OUT",
+            },
+            {
+              roundNumber: 2,
+              tableNumber: 3,
+              boardNumber: 4,
+              ns: "1NS",
+              ew: "9EW",
+              status: "SIT_OUT",
+            },
           ],
         },
         {
@@ -188,7 +235,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         { kind: "from", value: [] },
@@ -205,7 +259,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         { kind: "from", value: [] },
@@ -223,7 +284,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         {
@@ -248,8 +316,22 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "ABSENT" },
-            { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "1NS", ew: "1EW", status: "ABSENT" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "ABSENT",
+            },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 2,
+              ns: "1NS",
+              ew: "1EW",
+              status: "ABSENT",
+            },
           ],
         },
         { kind: "from", value: [] },
@@ -265,7 +347,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "APHANTOM", status: "HALF_AVERAGE" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "APHANTOM",
+              status: "HALF_AVERAGE",
+            },
           ],
         },
         { kind: "from", value: [] },
@@ -282,7 +371,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         {
@@ -311,7 +407,14 @@ describe("schedule-service", () => {
         {
           kind: "where",
           value: [
-            { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "1NS", ew: "1EW", status: "NOT_PLAYED" },
+            {
+              roundNumber: 1,
+              tableNumber: 1,
+              boardNumber: 1,
+              ns: "1NS",
+              ew: "1EW",
+              status: "NOT_PLAYED",
+            },
           ],
         },
         {
@@ -404,10 +507,38 @@ describe("schedule-service", () => {
 
     it("gives the anchor two segments (one per opponent) across the midpoint", async () => {
       const rows: Row[] = [
-        { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 3, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 4, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 1,
+          ns: "A1NS",
+          ew: "A2NS",
+          status: "CONFIRMED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 2,
+          ns: "A1NS",
+          ew: "A2NS",
+          status: "CONFIRMED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 3,
+          ns: "A1NS",
+          ew: "A1EW",
+          status: "NOT_PLAYED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 4,
+          ns: "A1NS",
+          ew: "A1EW",
+          status: "NOT_PLAYED",
+        },
       ];
       const db = makeDb("A1NS", rows);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
@@ -418,17 +549,51 @@ describe("schedule-service", () => {
       expect(round.sitOut).toBeFalsy();
       expect(round.halfMatch?.role).toBe("anchor");
       expect(round.halfMatch?.segments).toHaveLength(2);
-      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "first", boards: [1, 2] });
-      expect(round.halfMatch?.segments[1]).toMatchObject({ half: "second", boards: [3, 4] });
+      expect(round.halfMatch?.segments[0]).toMatchObject({
+        half: "first",
+        boards: [1, 2],
+      });
+      expect(round.halfMatch?.segments[1]).toMatchObject({
+        half: "second",
+        boards: [3, 4],
+      });
       expect(round.boards).toEqual([1, 2, 3, 4]);
     });
 
     it("gives a first-half non-anchor one segment and excludes its compensated boards", async () => {
       const rows: Row[] = [
-        { roundNumber: 1, tableNumber: 1, boardNumber: 1, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 2, ns: "A1NS", ew: "A2NS", status: "CONFIRMED" },
-        { roundNumber: 1, tableNumber: 7, boardNumber: 3, ns: "A2NS", ew: "PHANTOM", status: "HALF_AVERAGE" },
-        { roundNumber: 1, tableNumber: 7, boardNumber: 4, ns: "A2NS", ew: "PHANTOM", status: "HALF_AVERAGE" },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 1,
+          ns: "A1NS",
+          ew: "A2NS",
+          status: "CONFIRMED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 2,
+          ns: "A1NS",
+          ew: "A2NS",
+          status: "CONFIRMED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 7,
+          boardNumber: 3,
+          ns: "A2NS",
+          ew: "PHANTOM",
+          status: "HALF_AVERAGE",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 7,
+          boardNumber: 4,
+          ns: "A2NS",
+          ew: "PHANTOM",
+          status: "HALF_AVERAGE",
+        },
       ];
       const db = makeDb("A2NS", rows);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
@@ -438,16 +603,47 @@ describe("schedule-service", () => {
 
       expect(round.halfMatch?.role).toBe("firstHalf");
       expect(round.halfMatch?.segments).toHaveLength(1);
-      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "first", boards: [1, 2] });
+      expect(round.halfMatch?.segments[0]).toMatchObject({
+        half: "first",
+        boards: [1, 2],
+      });
       expect(round.boards).toEqual([1, 2]);
     });
 
     it("gives a second-half non-anchor one segment with the second-half marker", async () => {
       const rows: Row[] = [
-        { roundNumber: 1, tableNumber: 8, boardNumber: 1, ns: "A1EW", ew: "PHANTOM", status: "HALF_AVERAGE" },
-        { roundNumber: 1, tableNumber: 8, boardNumber: 2, ns: "A1EW", ew: "PHANTOM", status: "HALF_AVERAGE" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 3, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" },
-        { roundNumber: 1, tableNumber: 1, boardNumber: 4, ns: "A1NS", ew: "A1EW", status: "NOT_PLAYED" },
+        {
+          roundNumber: 1,
+          tableNumber: 8,
+          boardNumber: 1,
+          ns: "A1EW",
+          ew: "PHANTOM",
+          status: "HALF_AVERAGE",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 8,
+          boardNumber: 2,
+          ns: "A1EW",
+          ew: "PHANTOM",
+          status: "HALF_AVERAGE",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 3,
+          ns: "A1NS",
+          ew: "A1EW",
+          status: "NOT_PLAYED",
+        },
+        {
+          roundNumber: 1,
+          tableNumber: 1,
+          boardNumber: 4,
+          ns: "A1NS",
+          ew: "A1EW",
+          status: "NOT_PLAYED",
+        },
       ];
       const db = makeDb("A1EW", rows);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
@@ -456,7 +652,10 @@ describe("schedule-service", () => {
       const round = result!.rounds[0];
 
       expect(round.halfMatch?.role).toBe("secondHalf");
-      expect(round.halfMatch?.segments[0]).toMatchObject({ half: "second", boards: [3, 4] });
+      expect(round.halfMatch?.segments[0]).toMatchObject({
+        half: "second",
+        boards: [3, 4],
+      });
       expect(round.boards).toEqual([3, 4]);
       expect(round.side).toBe("EW");
     });

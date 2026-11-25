@@ -1,5 +1,8 @@
 import { ReactNode } from "react";
-import { TableHead, type ColumnAlign } from "@/components/common/table/TableHead";
+import {
+  TableHead,
+  type ColumnAlign,
+} from "@/components/common/table/TableHead";
 import { TableBody } from "@/components/common/table/TableBody";
 
 type Props = {
@@ -34,9 +37,7 @@ export function Table({ columns, body, aligns, scroll = true }: Props) {
         non-scrolling wrapper instead of the ancestor that actually scrolls.
       */}
       <div
-        className={
-          scroll ? "flex-1 min-h-0 overflow-auto" : "overflow-visible"
-        }
+        className={scroll ? "flex-1 min-h-0 overflow-auto" : "overflow-visible"}
       >
         <table className="min-w-full shadow-sm rounded-lg border border-gray-200 divide-y divide-gray-200 text-sm">
           <TableHead columns={columns} aligns={aligns} />

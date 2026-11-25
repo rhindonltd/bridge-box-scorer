@@ -54,7 +54,11 @@ export function GameProvider({
 
   const gameFetcher = unwrapFetcher<BridgeGame>("game");
 
-  const { data: game, isLoading, mutate } = useSWR<BridgeGame>(key, gameFetcher, {
+  const {
+    data: game,
+    isLoading,
+    mutate,
+  } = useSWR<BridgeGame>(key, gameFetcher, {
     fallbackData: initialGame,
     // The server layout already provides a fresh snapshot and Socket.IO pushes
     // live updates, so there is no need to refetch on mount.

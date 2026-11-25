@@ -25,7 +25,8 @@ describe("players db", () => {
   });
 
   it("inserts players on first sync and finds one by EBU number", async () => {
-    const { syncPlayers } = await import("@/db/players/actions/sync-ebu-players");
+    const { syncPlayers } =
+      await import("@/db/players/actions/sync-ebu-players");
     const { findPlayer } = await import("@/db/players/queries/find-player");
 
     await syncPlayers([player(1, "Alice", "Adams"), player(2, "Bob", "Brown")]);
@@ -41,7 +42,8 @@ describe("players db", () => {
   });
 
   it("updates a changed name on re-sync without duplicating the row", async () => {
-    const { syncPlayers } = await import("@/db/players/actions/sync-ebu-players");
+    const { syncPlayers } =
+      await import("@/db/players/actions/sync-ebu-players");
     const { findPlayer } = await import("@/db/players/queries/find-player");
 
     await syncPlayers([player(1, "Alice", "Adams")]);
@@ -53,7 +55,8 @@ describe("players db", () => {
   });
 
   it("prunes players absent from a subsequent sync", async () => {
-    const { syncPlayers } = await import("@/db/players/actions/sync-ebu-players");
+    const { syncPlayers } =
+      await import("@/db/players/actions/sync-ebu-players");
     const { findPlayer } = await import("@/db/players/queries/find-player");
 
     await syncPlayers([player(1, "Alice", "Adams"), player(2, "Bob", "Brown")]);

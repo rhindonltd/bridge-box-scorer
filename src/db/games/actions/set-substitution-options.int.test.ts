@@ -108,7 +108,8 @@ describe("setSubstitutionOptions", () => {
     await handedOverSeat(db);
 
     const before = await occupanciesForSeat(db);
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     const ok = await setSubstitutionOptions(gameId, "A1NS", {
       split: true,
       eligibility: before.map((o: any) => ({ id: o.id, eligible: true })),
@@ -131,7 +132,8 @@ describe("setSubstitutionOptions", () => {
     const earlier = before.find((o: any) => o.isArrivalAnchor === 0)!;
     const anchor = before.find((o: any) => o.isArrivalAnchor === 1)!;
 
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     await setSubstitutionOptions(gameId, "A1NS", {
       split: false,
       eligibility: [
@@ -157,7 +159,8 @@ describe("setSubstitutionOptions", () => {
     const earlier = before.find((o: any) => o.isArrivalAnchor === 0)!;
     const anchor = before.find((o: any) => o.isArrivalAnchor === 1)!;
 
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     await setSubstitutionOptions(gameId, "A1NS", {
       split: true,
       eligibility: [
@@ -184,7 +187,8 @@ describe("setSubstitutionOptions", () => {
     const before = await occupanciesForSeat(db);
     const anchor = before.find((o: any) => o.isArrivalAnchor === 1)!;
 
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     await setSubstitutionOptions(gameId, "A1NS", {
       split: false,
       eligibility: [
@@ -207,7 +211,8 @@ describe("setSubstitutionOptions", () => {
     const earlier = before.find((o: any) => o.isArrivalAnchor === 0)!;
     const anchor = before.find((o: any) => o.isArrivalAnchor === 1)!;
 
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     await setSubstitutionOptions(gameId, "A1NS", {
       split: false,
       eligibility: [
@@ -236,7 +241,8 @@ describe("setSubstitutionOptions", () => {
     const earlier = before.find((o: any) => o.isArrivalAnchor === 0)!;
     const anchor = before.find((o: any) => o.isArrivalAnchor === 1)!;
 
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     // First make the earlier pair main while merged.
     await setSubstitutionOptions(gameId, "A1NS", {
       split: false,
@@ -262,7 +268,8 @@ describe("setSubstitutionOptions", () => {
 
   it("returns false when the game has no database", async () => {
     await setup();
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     expect(
       await setSubstitutionOptions("no-such-game", "A1NS", {
         split: false,
@@ -272,7 +279,8 @@ describe("setSubstitutionOptions", () => {
   });
   it("returns false when no pair is seated there", async () => {
     await setup();
-    const { setSubstitutionOptions } = await import("./set-substitution-options");
+    const { setSubstitutionOptions } =
+      await import("./set-substitution-options");
     expect(
       await setSubstitutionOptions(gameId, "A1NS", {
         split: false,

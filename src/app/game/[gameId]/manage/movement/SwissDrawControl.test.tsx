@@ -256,7 +256,9 @@ describe("SwissDrawControl", () => {
   });
   it("keeps the review open and shows the error when the commit fails", async () => {
     vi.mocked(previewNextSwissRound).mockResolvedValue(previewAck() as never);
-    vi.mocked(commitNextSwissRound).mockRejectedValue(new Error("round changed"));
+    vi.mocked(commitNextSwissRound).mockRejectedValue(
+      new Error("round changed"),
+    );
     render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
     fireEvent.click(await screen.findByTestId("draw-confirm"));
@@ -269,6 +271,8 @@ describe("SwissDrawControl", () => {
     render(<SwissDrawControl gameId="g1" section="A" allResultsIn />);
     fireEvent.click(screen.getByTestId("draw-next-round"));
     fireEvent.click(await screen.findByTestId("draw-confirm"));
-    expect(await screen.findByText("Could not save the draw.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Could not save the draw."),
+    ).toBeInTheDocument();
   });
 });

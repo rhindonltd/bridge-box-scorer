@@ -8,7 +8,10 @@ import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { buildConfiguredTimerState } from "@/timer/timer-state";
 import { clearEngine } from "@/timer/game-store";
 import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
-import { breakConfigSchema, toBreakConfigs } from "@/socket/handlers/timer/payload";
+import {
+  breakConfigSchema,
+  toBreakConfigs,
+} from "@/socket/handlers/timer/payload";
 import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { isSwissMovement } from "@/model/event-format";

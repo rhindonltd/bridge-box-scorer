@@ -88,9 +88,8 @@ describe("leaderboard credits a played-reversed board to the opposite side", () 
     tableNumber: number,
     swapped: boolean,
   ): Promise<void> {
-    const { setBoardSeatsSwapped } = await import(
-      "@/db/games/actions/set-board-result"
-    );
+    const { setBoardSeatsSwapped } =
+      await import("@/db/games/actions/set-board-result");
     await setBoardSeatsSwapped(
       db,
       { roundNumber: 1, tableNumber, boardNumber: 1 },
@@ -195,9 +194,8 @@ describe("leaderboard credits a played-reversed board to the opposite side", () 
 
   describe("Swiss Pairs (matchpoint VP)", () => {
     async function seedRound(db: any) {
-      const { materializeSwissRound } = await import(
-        "@/services/materialize-swiss-round"
-      );
+      const { materializeSwissRound } =
+        await import("@/services/materialize-swiss-round");
       const { boards } = await import("@/db/games/tables/boards");
       const { eq } = await import("drizzle-orm");
 

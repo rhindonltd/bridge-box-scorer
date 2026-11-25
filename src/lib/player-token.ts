@@ -33,13 +33,11 @@ export function getPlayerToken(gameId: string): PlayerToken | null {
  * a sign-in attempt so the director alert can say who the device is.
  */
 export function heldSeats(): { gameId: string; seat: string; token: string }[] {
-  return store
-    .entries()
-    .map(([gameId, t]) => ({
-      gameId,
-      seat: t.startingPosition,
-      token: t.token,
-    }));
+  return store.entries().map(([gameId, t]) => ({
+    gameId,
+    seat: t.startingPosition,
+    token: t.token,
+  }));
 }
 
 export function clearPlayerToken(gameId: string): void {

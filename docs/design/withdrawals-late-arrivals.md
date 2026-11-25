@@ -106,6 +106,7 @@ design decision.
 
 Mirroring how F19/F20/F21 were done, these stay with the director and the UI
 only _records_ them:
+
 - Whether a withdrawal reason is "acceptable" (illness) → ranking-removal vs
   AVE−-plus-fine (§2.4.5).
 - The fine percentage 0–40% (§2.4.5).
@@ -123,12 +124,12 @@ only _records_ them:
 
 `participants` gains a lifecycle fact. A pair/team is one of:
 
-| State | Meaning | Appears in ranking? | Opponents' results vs them |
-|---|---|---|---|
-| `ACTIVE` (default) | normal | yes | count normally |
-| `WITHDRAWN` | stopped at a recorded point | per §2.4.5 (usually no) | per before/after-half (§2.4.4) |
-| `WITHOUT_STANDING` | plays, doesn't count for itself (§2.4.9) | **no** | count in full |
-| `LATE` | arrived after the start (§2.4.7) | yes if present ≥ half the boards; else per §2.4.5 | count in full |
+| State              | Meaning                                  | Appears in ranking?                               | Opponents' results vs them     |
+| ------------------ | ---------------------------------------- | ------------------------------------------------- | ------------------------------ |
+| `ACTIVE` (default) | normal                                   | yes                                               | count normally                 |
+| `WITHDRAWN`        | stopped at a recorded point              | per §2.4.5 (usually no)                           | per before/after-half (§2.4.4) |
+| `WITHOUT_STANDING` | plays, doesn't count for itself (§2.4.9) | **no**                                            | count in full                  |
+| `LATE`             | arrived after the start (§2.4.7)         | yes if present ≥ half the boards; else per §2.4.5 | count in full                  |
 
 Proposed shape (new nullable columns on `participants`, so an ACTIVE pair is
 unchanged and existing rows migrate as all-ACTIVE):
@@ -214,6 +215,7 @@ scorers_, not new scoring maths.
 **(a) Opponents of a withdrawer, BEFORE half (§2.4.4) — cancel.** The scores
 _against_ the withdrawn contestant are removed from the overall. This is exactly
 the "void match" shape already built:
+
 - Teams: emit/read a match-level ruling so the match contributes a ruling VP, or
   is dropped from the opponent's played-match set. Reuse `teams-match-void.ts`.
 - Pairs board-pooled: the withdrawn pair's board rows that have a result against
@@ -228,11 +230,13 @@ the "void match" shape already built:
 Real results stand. A contestant forced to sit out as a result receives **AVE+**
 (§2.4.4 after-half) or the **pre-scheduled sit-out treatment** (§2.4.3
 end-of-session). Both already exist:
+
 - AVE+ credit → `swissSitOutScoredBoards` / `compensationMpFractions` (0.6) and
   the XIMP/VP analogues.
 - "Treat as pre-scheduled sit-out" → the SIT_OUT synthesis path verbatim.
 
 **(c) Score given TO the withdrawer (§2.4.5).**
+
 - `REMOVE` → the F26 "without standing" exclusion (drop from ranking); their
   boards still count for opponents under (a)/(b).
 - `PENALISED` → AVE− (`compensationMpFractions`'s 0.4 / the `AVE_MINUS` fault
@@ -240,6 +244,7 @@ end-of-session). Both already exist:
   minus the director's fine. A per-board score between 0% and AVE−.
 
 **(d) The withdrawer's unplayed boards (§2.4.6).**
+
 - Swiss → the §3.3.9 void-match formula (`voidMatchVp` / `voidSplitVp`), already
   built for F19/F20.
 - Otherwise → AVE− per unplayed board (the 0.4 fraction).
@@ -260,6 +265,7 @@ would delete the opponents' comparisons).
 
 Design: a single `excludeFromRanking: Set<string>` (participant ids) threaded
 into each scorer, applied as a post-aggregation filter at each `rank` seam:
+
 - pairs board-pooled: in/after `buildOverallScore` (drop excluded ids before
   `rank`);
 - Swiss Pairs VP, Teams VP, Teams IMP-agg, BAM/PAB: each drops excluded ids
@@ -318,7 +324,7 @@ is a direct payoff of that work, as the matches-table design predicted.
    - **DONE (board-pooled pairs, PENALISED).** `withdrawerSelfCreditBoards` in
      `leaderboard-service.ts` synthesises a per-board credit on each of a
      PENALISED withdrawer's unplayed (no-result) board rows: MP → `(40 −
-     fine)/100` of the board top on the withdrawer's seat (AVE− at 0% fine, 0 at
+fine)/100` of the board top on the withdrawer's seat (AVE− at 0% fine, 0 at
      40%); IMP/XIMP → the field-average (0) credit so the board still counts.
      Capped at half the event's scheduled boards (§2.4.5). Driven by
      `readPenalisedWithdrawers`; a REMOVE withdrawer is NOT self-credited (it is
@@ -446,13 +452,13 @@ played board 5 once — against N-S pair **P** — before leaving.
 
 **Board 5, as played (5 comparisons, top = 2·(5−1) = 8 on the doubled scale):**
 
-| Line | N-S score | raw MP (vs other 4) |
-|---|---|---|
-| P vs **X** | +620 | 8 (top) |
-| Q | +170 | 6 |
-| R | +170 | 6 (tie with Q → 5+... see note) |
-| S | −100 | 2 |
-| T | −100 | 2 |
+| Line       | N-S score | raw MP (vs other 4)             |
+| ---------- | --------- | ------------------------------- |
+| P vs **X** | +620      | 8 (top)                         |
+| Q          | +170      | 6                               |
+| R          | +170      | 6 (tie with Q → 5+... see note) |
+| S          | −100      | 2                               |
+| T          | −100      | 2                               |
 
 **Before half → cancel the score against X.** P's result on board 5 came only
 from facing the withdrawn pair X, so that comparison is cancelled: P's board-5
@@ -547,7 +553,7 @@ only — and the real pair gets AVE− for its unplayed early boards, no credit
 transfer). Neither single-standing-per-seat value scores a handover correctly;
 that is precisely what the occupancy model was built to fix.
 
-**Still deferred:** the handover *feature* (slices 3–5) is not built yet — only
+**Still deferred:** the handover _feature_ (slices 3–5) is not built yet — only
 the identity layer it needs. Build it when real demand appears; a mid-session
 stand-by handover is a rare club occurrence.
 
@@ -555,8 +561,7 @@ stand-by handover is a rare club occurrence.
 
 ## 10. Expected-late empty seats at the start (§2.4.7 half-table) + the director UI
 
-This section is an addendum: it covers the director-facing UI (build-order step
-7) AND a pragmatic form of the §2.4.7 "half-table at the start" case (part of
+This section is an addendum: it covers the director-facing UI (build-order step 7) AND a pragmatic form of the §2.4.7 "half-table at the start" case (part of
 the deferred §9), decided with the user. It is design-for-sign-off.
 
 ### 10.1 What we are adding
@@ -576,7 +581,7 @@ Two linked things:
 This is distinct from the deferred §9 "stand-by handover": there is **no
 substitute** playing the seat's early boards — the seat is simply empty until
 the real pair arrives. That makes it representable without the per-board
-occupancy *scoring* §9 needs (slices 3–5), because an empty seat already flows
+occupancy _scoring_ §9 needs (slices 3–5), because an empty seat already flows
 through the whole stack as a seat-id string with no occupancy (see §10.4).
 
 ### 10.2 Scope decisions (user-confirmed)
@@ -661,15 +666,15 @@ so it already works mid-game; we remove the seat's `expected_late` row on seatin
    and mark its boards `SIT_OUT`, hiding them from the traveller and treating it
    as a bye). The one genuine sit-out (if any) still goes through `applySitOut`.
    Movements with a built-in missing pair (spec `missingPair`) must still align
-   correctly — the marked-late seat is a *normal* occupied position in the
+   correctly — the marked-late seat is a _normal_ occupied position in the
    layout that just lacks a participant, so no movement regeneration is needed.
 
 3. **Scoring (`leaderboard-service.ts`) — the exact §2.4.7 two-phase rule.** The
-   White Book is explicit (reference §6.6): *"Boards that cannot be played
+   White Book is explicit (reference §6.6): _"Boards that cannot be played
    meanwhile are scored **AVE+/AVE−**. But if the missing pair never arrives,
    those AVE+/AVE− scores are **cancelled** and the pairs forced to sit out
    instead have their scores factored in the usual way (the pre-scheduled-sit-out
-   treatment)."* So there are TWO phases, discriminated by the seat's state:
+   treatment)."_ So there are TWO phases, discriminated by the seat's state:
 
    - **While still expected-late (the pair is coming):** the opponent of each
      unplayed board at the empty seat gets **AVE+ (0.6 of the board top)** — a
@@ -719,7 +724,7 @@ table modal becomes context-sensitive:
   standing"** toggle (§2.4.9 substitute, a setup decision).
 - **Seated pair, post-start:** **standing controls** — Active / Withdrawn /
   Late / Without standing; Withdrawn & Late also collect round + REMOVE/PENALISED
-  + fine%. No eviction post-start (the F27 guard).
+  - fine%. No eviction post-start (the F27 guard).
 - **Empty marked-late seat, post-start:** a **"Seat the pair"** affordance (the
   ordinary create-participant flow) that also clears the `expected_late` row.
 
@@ -800,10 +805,10 @@ because one of its pairs is absent. It is written once, when the absence
 happens, so every consumer can filter on status (as it already does for
 SIT_OUT):
 
-| Event | Rows marked ABSENT |
-|---|---|
-| Pair withdraws (player) | the seat's rows with no result in rounds ≥ the round it withdrew in |
-| Pair seated after start in an expected-late seat | the seat's rows with no result in rounds < its arrival round |
+| Event                                            | Rows marked ABSENT                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| Pair withdraws (player)                          | the seat's rows with no result in rounds ≥ the round it withdrew in |
+| Pair seated after start in an expected-late seat | the seat's rows with no result in rounds < its arrival round        |
 
 The arrival round is the highest round in the section with any finalised
 board (1 if none) — the round the room is on. The occupancy records the

@@ -13,8 +13,11 @@ describe("expected-late seat queries", () => {
   });
   it("adds (idempotently), reads and removes expected-late marks", async () => {
     const db = (await harness.getDb()) as Db;
-    const { readExpectedLateSeats, addExpectedLateSeat, removeExpectedLateSeat } =
-      await import("@/db/games/queries/expected-late-seats");
+    const {
+      readExpectedLateSeats,
+      addExpectedLateSeat,
+      removeExpectedLateSeat,
+    } = await import("@/db/games/queries/expected-late-seats");
     expect(await readExpectedLateSeats(db)).toEqual(new Set());
     await addExpectedLateSeat(db, "A1EW");
     await addExpectedLateSeat(db, "A1EW");

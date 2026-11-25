@@ -123,8 +123,9 @@ describe("Swiss Pairs pair identity across rounds", () => {
     // Each seat's pair is found under that id.
     const { findPairs } = await import("@/db/games/queries/find-pairs");
     const anchors = Object.fromEntries(
-      (await findPairs((await (await import("@/db/games")).getDb(gameId))!))
-        .map((p) => [p.initialSeat, p.anchorId]),
+      (
+        await findPairs((await (await import("@/db/games")).getDb(gameId))!)
+      ).map((p) => [p.initialSeat, p.anchorId]),
     );
     expect(anchors).toEqual({
       A1NS: "A1",

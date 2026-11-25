@@ -17,7 +17,7 @@ import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplet
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
 import { ScoringType, GameType } from "@/model/game-types";
-import { buildTeamBoardResultTable } from "@/scoring/swiss/team-board-result-view";
+import { buildTeamBoardResultTable } from "@/modules/scoring";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";

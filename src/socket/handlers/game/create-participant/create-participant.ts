@@ -38,7 +38,7 @@ export function registerCreateParticipantHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.CREATE_PARTICIPANT,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, newParticipant, teamName } = payload;

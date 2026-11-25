@@ -1,6 +1,6 @@
 import { parseSeat } from "@/model/participants";
 import { swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
-import type { SectionLeaderboard } from "@/services/leaderboard-service";
+import type { SectionStandings } from "@/modules/scoring";
 import type { SwissPairId } from "@/movement/swiss/swiss-pairing";
 
 /**
@@ -24,7 +24,7 @@ type Line = Record<string, unknown> & { totalVP?: number };
  * Mirrors the order the overall plugin ranked the field on.
  */
 export function decodeStandingsOrder<Id extends number>(
-  board: SectionLeaderboard | undefined,
+  board: SectionStandings | undefined,
   { decode }: LeaderboardDecoder<Id>,
 ): Id[] {
   if (!board) return [];
@@ -42,7 +42,7 @@ export function decodeStandingsOrder<Id extends number>(
 
 /** Each id's current total VP (0 when a line carries none). */
 export function decodeVpById<Id extends number>(
-  board: SectionLeaderboard | undefined,
+  board: SectionStandings | undefined,
   { decode }: LeaderboardDecoder<Id>,
 ): Map<Id, number> {
   const map = new Map<Id, number>();
@@ -63,8 +63,7 @@ export function pairLeaderboardDecoder(
   tables: number,
 ): LeaderboardDecoder<SwissPairId> {
   return {
-    decode: (line) =>
-      swissPairIdFromParticipant(line.pairId as string, tables),
+    decode: (line) => swissPairIdFromParticipant(line.pairId as string, tables),
   };
 }
 

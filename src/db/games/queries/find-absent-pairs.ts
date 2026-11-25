@@ -3,7 +3,8 @@ import { boards } from "@/db/games/tables/boards";
 import { players } from "@/db/games/tables/players";
 import { readSeatOccupancies } from "@/db/games/queries/seat-occupancy";
 import { readAbsences } from "@/db/games/queries/absences";
-import { isAbsentRow, type AbsenceTreatment } from "@/model/absence";
+import { isAbsentRow } from "@/modules/rulings";
+import type { AbsenceTreatment } from "@/model/absence";
 
 /**
  * One late, withdrawn or still-missing pair for the director's combined

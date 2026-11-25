@@ -43,7 +43,7 @@ export function registerWithdrawPairHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.WITHDRAW_PAIR,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, seat, token } = payload;

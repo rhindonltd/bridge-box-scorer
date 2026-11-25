@@ -6,21 +6,23 @@ import { findSections } from "@/db/games/queries/find-sections";
 import { getBoardInstances } from "@/services/board-service";
 import { getSchedule } from "@/services/schedule-service";
 import { buildLeaderboards } from "@/services/leaderboard-service";
-import { scoreBoard } from "@/scoring/traveller/score-traveller";
-import { getCombination } from "@/scoring/plugins/registry";
+import {
+  getCombination,
+  type MatchpointLine,
+  type XimpLine,
+  scoreBoard,
+} from "@/modules/scoring";
 import { sectionOf } from "@/model/participants";
 import type { Traveller } from "@/model/traveller";
-import type { MatchpointLine } from "@/scoring/traveller/pair/mp";
-import type { ImpLine } from "@/scoring/traveller/pair/imp";
-import type { XimpLine } from "@/scoring/traveller/pair/x-imp";
 import type {
   PairScorecard,
   ScorecardBoard,
   ScorecardRoundVp,
+  ScorecardScoring,
 } from "@/model/scorecard";
 
 /** A scored line as any of the pairs per-board plugins produce it. */
-type ScoredPairLine = Partial<MatchpointLine & ImpLine & XimpLine> & {
+type ScoredPairLine = Partial<MatchpointLine & XimpLine> & {
   nsId: string;
   ewId: string;
   score: number | null;
@@ -57,7 +59,8 @@ export async function buildPairScorecard(
   const separateSections = sections.length > 1 && !game.combinedRanking;
   const fieldSection = separateSections ? ownSection : undefined;
 
-  const scoring = getCombination(game.scoringType).perBoard;
+  // A pairs game is scored by matchpoints or Cross-IMP.
+  const scoring = getCombination(game.scoringType).perBoard as ScorecardScoring;
 
   const boards: ScorecardBoard[] = [];
   for (const round of schedule.rounds) {
@@ -116,8 +119,6 @@ export async function buildPairScorecard(
           value: (isNs ? line.nsMatchPoints : line.ewMatchPoints) ?? 0,
           max: line.maxMatchPoints ?? 0,
         };
-      } else if (scoring === "IMP") {
-        entry.imps = (isNs ? line.nsImps : line.ewImps) ?? 0;
       } else {
         entry.crossImps = (isNs ? line.nsCrossImps : line.ewCrossImps) ?? 0;
       }

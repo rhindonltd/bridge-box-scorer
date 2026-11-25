@@ -26,9 +26,8 @@ describe("getSwissBoardHistory", () => {
   });
 
   it("returns empty history when there are no boards", async () => {
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     const history = await getSwissBoardHistory(db, "A", TABLES);
@@ -43,9 +42,8 @@ describe("getSwissBoardHistory", () => {
     // the first-class match rows the history reader now consults exist).
     //   Round 1: T1 pair1 vs pair3, T2 pair2 vs pair4.
     //   Round 2: pair1 vs pair4 (NS at T1), pair2 vs pair3 (NS at T2).
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     await materializeSwissRound(
       harness.gameId,
       "A",
@@ -71,9 +69,8 @@ describe("getSwissBoardHistory", () => {
       null,
     );
 
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     const history = await getSwissBoardHistory(db, "A", TABLES);
@@ -99,9 +96,8 @@ describe("getSwissBoardHistory", () => {
   it("records a bye and does not count the sitting pair as an opponent", async () => {
     // 3 pairs: T1 pair1 vs pair3, pair2 byes (materialised through the real
     // writer so the BYE match row exists).
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     await materializeSwissRound(
       harness.gameId,
       "A",
@@ -112,9 +108,8 @@ describe("getSwissBoardHistory", () => {
       2,
     );
 
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     const history = await getSwissBoardHistory(db, "A", TABLES);
@@ -129,9 +124,8 @@ describe("getSwissBoardHistory", () => {
   it("recovers a 2-half-matches group (anchor + both non-anchors) from the match rows", async () => {
     // A half-match group {anchor pair 1, non-anchors pairs 2 and 3} at table 1,
     // plus an ordinary table (pairs 4 v 7), round 1, 4 boards per round.
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     await materializeSwissRound(
       harness.gameId,
       "A",
@@ -146,9 +140,8 @@ describe("getSwissBoardHistory", () => {
       },
     );
 
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     const history = await getSwissBoardHistory(db, "A", TABLES);
@@ -163,9 +156,8 @@ describe("getSwissBoardHistory", () => {
   });
 
   it("does not flag an ordinary one-opponent round as a half-match", async () => {
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     await materializeSwissRound(
       harness.gameId,
       "A",
@@ -179,9 +171,8 @@ describe("getSwissBoardHistory", () => {
       null,
     );
 
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     const history = await getSwissBoardHistory(db, "A", TABLES);
@@ -203,8 +194,20 @@ describe("getSwissBoardHistory", () => {
       .values([
         // A bye / half-match / pairs match whose ids are not real pairs.
         { ...base, id: 1, kind: "BYE", home: "APHANTOM", opponent: null },
-        { ...base, id: 2, kind: "HALF_MATCH", home: "APHANTOM", opponent: "A2" },
-        { ...base, id: 3, kind: "HALF_MATCH", home: "A3", opponent: "APHANTOM" },
+        {
+          ...base,
+          id: 2,
+          kind: "HALF_MATCH",
+          home: "APHANTOM",
+          opponent: "A2",
+        },
+        {
+          ...base,
+          id: 3,
+          kind: "HALF_MATCH",
+          home: "A3",
+          opponent: "APHANTOM",
+        },
         { ...base, id: 4, kind: "HALF_MATCH", home: "A1", opponent: null },
         { ...base, id: 5, kind: "PAIRS", home: "APHANTOM", opponent: "A4" },
         { ...base, id: 6, kind: "PAIRS", home: "A4", opponent: null },
@@ -216,9 +219,8 @@ describe("getSwissBoardHistory", () => {
         makeBoard({ matchId: 1, boardNumber: 2, ns: "A1", ew: "APHANTOM" }),
       ])
       .run();
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const history = await getSwissBoardHistory(db, "A", TABLES);
     expect(history.hadBye.size).toBe(0);
     expect([...history.hadHalfMatch].sort()).toEqual([1, 2, 3]);

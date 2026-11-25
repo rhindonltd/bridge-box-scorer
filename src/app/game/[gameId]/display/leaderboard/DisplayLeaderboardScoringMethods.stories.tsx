@@ -304,7 +304,10 @@ function directionRanking(
   count: number,
   startPct: number,
 ): OverallScoreAndParticipant {
-  const seats = Array.from({ length: count }, (_, i) => `A${i + 1}${direction}`);
+  const seats = Array.from(
+    { length: count },
+    (_, i) => `A${i + 1}${direction}`,
+  );
   return {
     type: "PAIR_MP",
     participants: seats.map((seat, i) => seatPair(seat, i)),
@@ -336,7 +339,10 @@ function directionRanking(
  * per direction.
  */
 function twoWinnerMitchell(count = 18): OverallScoreAndParticipant & {
-  directional: { ns: OverallScoreAndParticipant; ew: OverallScoreAndParticipant };
+  directional: {
+    ns: OverallScoreAndParticipant;
+    ew: OverallScoreAndParticipant;
+  };
 } {
   const ns = directionRanking("NS", count, 64.2);
   const ew = directionRanking("EW", count, 61.8);

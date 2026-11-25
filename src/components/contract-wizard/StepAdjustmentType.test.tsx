@@ -32,7 +32,9 @@ describe("StepAdjustmentType", () => {
     fireEvent.click(screen.getByRole("button", { name: "Weighted Score" }));
     expect(h.onWeightedScore).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel / Foul Board" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Cancel / Foul Board" }),
+    );
     expect(h.onCancelBoard).toHaveBeenCalledTimes(1);
   });
 

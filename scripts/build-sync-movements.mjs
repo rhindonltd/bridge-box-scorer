@@ -40,9 +40,6 @@ await build({
 // `fs.readFileSync(path.join(__dirname, "PSMovements.txt"))` in
 // src/movement/shared.ts resolves against dist/ at runtime.
 for (const file of ["PSMovements.txt", "TSMovements.txt"]) {
-  copyFileSync(
-    path.join("src", "movement", file),
-    path.join("dist", file),
-  );
+  copyFileSync(path.join("src", "movement", file), path.join("dist", file));
   console.log(`copied ${file} -> dist/${file}`);
 }

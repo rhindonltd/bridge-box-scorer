@@ -10,7 +10,7 @@
  */
 
 /** Which per-board score the scorecard carries (the game's per-board scoring). */
-export type ScorecardScoring = "MP" | "IMP" | "XIMP";
+export type ScorecardScoring = "MP" | "XIMP";
 
 export interface ScorecardBoard {
   roundNumber: number;
@@ -31,8 +31,6 @@ export interface ScorecardBoard {
   score: number | null;
   /** MP scoring: this pair's matchpoints and the board top. */
   matchpoints?: { value: number; max: number };
-  /** IMP scoring: this pair's IMPs on the board. */
-  imps?: number;
   /** Cross-IMP scoring: this pair's cross-IMPs on the board. */
   crossImps?: number;
 }

@@ -108,9 +108,7 @@ export function DealEntry({
    */
   hideSubmit?: boolean;
 }) {
-  const [deal, setDeal] = useState<Deal>(
-    () => initialDeal ?? emptyDeal(),
-  );
+  const [deal, setDeal] = useState<Deal>(() => initialDeal ?? emptyDeal());
   const [active, setActive] = useState<Direction>(dealerFor(boardNumber));
   const [activeSuit, setActiveSuit] = useState<Suit>("S");
 
@@ -272,7 +270,21 @@ function ReadOnlyHand({
   for (const card of hand) {
     bySuit[card[0] as Suit].push(card[1] as Rank);
   }
-  const order = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const order = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   for (const suit of Suits) {
     bySuit[suit].sort((a, b) => order.indexOf(a) - order.indexOf(b));
   }

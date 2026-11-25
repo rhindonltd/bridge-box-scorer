@@ -96,28 +96,30 @@ describe("Board-a-Match teams leaderboard (real scoring)", () => {
     // team 2 (home table 2) makes 3NT= = 400. Team 1 outscores team 2 on the
     // board, so team 1 wins the board: 1 board won of 1 played; team 2 wins 0.
     db.insert(boards)
-      .values([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 1,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "4SN=" as BoardOutcome,
-          status: "CONFIRMED" as const,
-        },
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 2,
-          boardNumber: 1,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: "3NTN=" as BoardOutcome,
-          status: "CONFIRMED" as const,
-        },
-      ].map(withFixtureMatchId))
+      .values(
+        [
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 1,
+            boardNumber: 1,
+            ns: "A1NS",
+            ew: "A2EW",
+            confirmedResult: "4SN=" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 2,
+            boardNumber: 1,
+            ns: "A2NS",
+            ew: "A1EW",
+            confirmedResult: "3NTN=" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+        ].map(withFixtureMatchId),
+      )
       .run();
 
     const result = await computeLeaderboard(db, gameId);

@@ -104,7 +104,7 @@ export function registerPreviewNextTeamsRoundHandler(
     io,
     SocketEvents.PREVIEW_NEXT_SWISS_TEAMS_ROUND,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: previewPayloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, section, directorToken } = payload;
@@ -157,7 +157,7 @@ export function registerDrawNextTeamsRoundHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.DRAW_NEXT_SWISS_TEAMS_ROUND,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: commitPayloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, section, directorToken, matches, byeTeamId, triple } =

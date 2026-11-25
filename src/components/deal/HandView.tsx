@@ -1,7 +1,28 @@
-import { Card, Direction, Suit, Suits, SuitMap, parseCard } from "@/model/common";
+import {
+  Card,
+  Direction,
+  Suit,
+  Suits,
+  SuitMap,
+  parseCard,
+} from "@/model/common";
 
 /** Rank order (high to low) for laying a suit out left-to-right. */
-const RANK_ORDER = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+const RANK_ORDER = [
+  "A",
+  "K",
+  "Q",
+  "J",
+  "T",
+  "9",
+  "8",
+  "7",
+  "6",
+  "5",
+  "4",
+  "3",
+  "2",
+];
 
 const RED_SUITS: ReadonlySet<Suit> = new Set<Suit>(["H", "D"]);
 
@@ -20,9 +41,7 @@ function ranksBySuit(hand: Card[]): Record<Suit, string[]> {
     bySuit[suit].push(rank);
   }
   for (const suit of Suits) {
-    bySuit[suit].sort(
-      (a, b) => RANK_ORDER.indexOf(a) - RANK_ORDER.indexOf(b),
-    );
+    bySuit[suit].sort((a, b) => RANK_ORDER.indexOf(a) - RANK_ORDER.indexOf(b));
   }
   return bySuit;
 }
@@ -44,10 +63,7 @@ export function HandView({
   const bySuit = ranksBySuit(hand);
 
   return (
-    <div
-      className="text-sm leading-tight"
-      data-testid={`hand-${direction}`}
-    >
+    <div className="text-sm leading-tight" data-testid={`hand-${direction}`}>
       <div className="font-semibold text-gray-700">
         {DIRECTION_LABEL[direction]}
         {isDealer && (
@@ -63,7 +79,9 @@ export function HandView({
         const ranks = bySuit[suit];
         return (
           <div key={suit} className="flex items-baseline gap-1">
-            <span className={RED_SUITS.has(suit) ? "text-red-600" : "text-black"}>
+            <span
+              className={RED_SUITS.has(suit) ? "text-red-600" : "text-black"}
+            >
               {SuitMap[suit]}
             </span>
             <span className="font-mono tracking-wide">

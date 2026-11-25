@@ -90,6 +90,16 @@ separate choice.
   neither, so the opponents score lower in the published file, and Swiss
   Teams matches against the empty seat are not voided. Recommendation: match
   the leaderboard.
+- **O4. Cross-IMP pairs placings in the export look broken.** The export ranks
+  pairs with its own `computeOverallRanking`
+  (`src/lib/usebio/generate-usebio.ts`). For Cross-IMP it adds each line's
+  cross-IMPs to the total but nothing to the maximum (`accumulate(…, 0)`), so
+  every pair's percentage is "0.00". The placings are sorted by that
+  percentage, so every pair gets place 1. The leaderboard ranks the same
+  field on total cross-IMPs. Recommendation: rank Cross-IMP on the total, as
+  the leaderboard does, and decide what the percentage field should hold.
+  Moving the export onto `scoreEvent` would fix this. Found during step 2 of
+  the split, which deliberately left the export's output unchanged.
 
 ## Checks
 

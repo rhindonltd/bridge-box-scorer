@@ -24,9 +24,8 @@ describe("games db: findTeams", () => {
 
   async function seatPair(seat: string, first: string, lastName = "One") {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
 
     const p1 = await createPlayer(harness.gameId, {
       firstName: first,

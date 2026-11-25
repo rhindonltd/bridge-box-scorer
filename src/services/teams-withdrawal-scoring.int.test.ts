@@ -181,7 +181,7 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     expect(updated).toBe(true);
 
     const { voidMatchVp } =
-      await import("@/scoring/swiss/team-match-void-score");
+      await import("@/modules/scoring/swiss/team-match-void-score");
     const { r2, ids } = await round2Vp();
 
     // The §3.3.9 split over the 2 expected boards: home (withdrawer) AVE−,
@@ -210,7 +210,7 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     });
 
     const { voidMatchVp } =
-      await import("@/scoring/swiss/team-match-void-score");
+      await import("@/modules/scoring/swiss/team-match-void-score");
     const { r2, ids } = await round2Vp();
 
     // REMOVE drops team 1 from the ranking entirely.
@@ -266,7 +266,7 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     }[];
     const r2 = (id: string) => lines.find((l) => l.teamId === id)!.vpByRound[2];
     const { voidMatchVp } =
-      await import("@/scoring/swiss/team-match-void-score");
+      await import("@/modules/scoring/swiss/team-match-void-score");
     const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, 2);
     expect(r2("A1NS")).toBe(expected.home);
     expect(r2("A2NS")).toBe(expected.opponent);

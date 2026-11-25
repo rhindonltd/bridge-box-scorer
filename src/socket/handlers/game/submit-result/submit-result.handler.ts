@@ -42,7 +42,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.SUBMIT_RESULT,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack, log }) => {
         const {

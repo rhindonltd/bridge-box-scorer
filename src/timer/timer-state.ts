@@ -11,12 +11,7 @@
  * - `finished`: terminal. `null`: configured but not started.
  */
 export type Phase =
-  | "move"
-  | "play"
-  | "break"
-  | "awaitingDraw"
-  | "finished"
-  | null;
+  "move" | "play" | "break" | "awaitingDraw" | "finished" | null;
 
 /**
  * A break scheduled in the gap after a given round. Breaks replace the `move`

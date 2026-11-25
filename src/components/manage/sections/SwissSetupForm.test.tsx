@@ -115,7 +115,9 @@ describe("SwissSetupForm", () => {
     const { onConfirm } = renderForm();
     fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
     const plan = screen.getByTestId("odd-round-plan");
-    fireEvent.click(within(plan).getByRole("radio", { name: "Bye for round 1" }));
+    fireEvent.click(
+      within(plan).getByRole("radio", { name: "Bye for round 1" }),
+    );
     fireEvent.click(
       within(plan).getByRole("radio", { name: "Half matches for round 1" }),
     );

@@ -58,7 +58,10 @@ describe("updateEventDetails", () => {
     await updateEventDetails("g1", { gameType: "TEAMS" });
 
     const payload = setSpy.mock.calls[0][0];
-    expect(payload).toMatchObject({ gameType: "TEAMS", selectedMovement: null });
+    expect(payload).toMatchObject({
+      gameType: "TEAMS",
+      selectedMovement: null,
+    });
   });
 
   it("clears the selected movement when the format changes (Swiss)", async () => {

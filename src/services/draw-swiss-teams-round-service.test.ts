@@ -63,7 +63,12 @@ function matchRow(m: StubMatch) {
 
 /** An ordinary TEAMS head-to-head match row for round `r`, teams `a` v `b`. */
 function teamsMatch(r: number, a: number, b: number): StubMatch {
-  return { roundNumber: r, kind: "TEAMS", home: `A${a}NS`, opponent: `A${b}NS` };
+  return {
+    roundNumber: r,
+    kind: "TEAMS",
+    home: `A${a}NS`,
+    opponent: `A${b}NS`,
+  };
 }
 
 /** A BYE match row for round `r`, team `t`. */
@@ -82,9 +87,30 @@ function tripleMatches(
   const groupId = `triple|A|${[a, b, c].sort((x, y) => x - y).join("-")}`;
   const vpPool = kind === "LONG" ? 20 : 10;
   return [
-    { roundNumber: r, kind: "TRIPLE", home: `A${a}NS`, opponent: `A${b}NS`, groupId, vpPool },
-    { roundNumber: r, kind: "TRIPLE", home: `A${b}NS`, opponent: `A${c}NS`, groupId, vpPool },
-    { roundNumber: r, kind: "TRIPLE", home: `A${a}NS`, opponent: `A${c}NS`, groupId, vpPool },
+    {
+      roundNumber: r,
+      kind: "TRIPLE",
+      home: `A${a}NS`,
+      opponent: `A${b}NS`,
+      groupId,
+      vpPool,
+    },
+    {
+      roundNumber: r,
+      kind: "TRIPLE",
+      home: `A${b}NS`,
+      opponent: `A${c}NS`,
+      groupId,
+      vpPool,
+    },
+    {
+      roundNumber: r,
+      kind: "TRIPLE",
+      home: `A${a}NS`,
+      opponent: `A${c}NS`,
+      groupId,
+      vpPool,
+    },
   ];
 }
 
@@ -232,12 +258,14 @@ describe("previewNextSwissTeamsRound", () => {
     expect(result.triple).toBeNull();
     // Standings are returned in draw order (best first) with running VP totals,
     // from the same leaderboard lines the draw ranked on (team i -> (n-i)*10).
-    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual([
-      { id: 1, total: 40 },
-      { id: 2, total: 30 },
-      { id: 3, total: 20 },
-      { id: 4, total: 10 },
-    ]);
+    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual(
+      [
+        { id: 1, total: 40 },
+        { id: 2, total: 30 },
+        { id: 3, total: 20 },
+        { id: 4, total: 10 },
+      ],
+    );
     // Advisory inputs carry the team count + played opponents so the client
     // can re-check repeats after an edit (round 1 played 1v2, recovered here).
     expect(result.advisoryInputs.teams).toBe(4);
@@ -255,7 +283,12 @@ describe("previewNextSwissTeamsRound", () => {
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
-      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 3, oddHandling: "BYE" },
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 3,
+        oddHandling: "BYE",
+      },
     } as any);
     rankTeams(5);
 
@@ -586,7 +619,13 @@ describe("commitNextSwissTeamsRound", () => {
       { a: 2, b: 4 },
     ];
 
-    const result = await commitNextSwissTeamsRound("g1", "A", matches, null, null);
+    const result = await commitNextSwissTeamsRound(
+      "g1",
+      "A",
+      matches,
+      null,
+      null,
+    );
 
     expect(result).toEqual({ ok: true, roundNumber: 2 });
     expect(materializeSwissTeamsRound).toHaveBeenCalledWith(
@@ -610,7 +649,13 @@ describe("commitNextSwissTeamsRound", () => {
       { a: 1, b: 2 },
     ];
 
-    const result = await commitNextSwissTeamsRound("g1", "A", invalid, null, null);
+    const result = await commitNextSwissTeamsRound(
+      "g1",
+      "A",
+      invalid,
+      null,
+      null,
+    );
 
     expect(result).toEqual({ ok: false, reason: "INVALID_MATCHES" });
     expect(materializeSwissTeamsRound).not.toHaveBeenCalled();
@@ -643,7 +688,12 @@ describe("commitNextSwissTeamsRound", () => {
     );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS_TEAMS",
-      swissTeams: { teams: 5, rounds: 4, boardsPerRound: 3, oddHandling: "BYE" },
+      swissTeams: {
+        teams: 5,
+        rounds: 4,
+        boardsPerRound: 3,
+        oddHandling: "BYE",
+      },
     } as any);
     rankTeams(5);
     vi.mocked(materializeSwissTeamsRound).mockResolvedValue({ written: true });

@@ -8,7 +8,12 @@ import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { teams } from "@/db/games/tables/teams";
 import { expectedLateSeats } from "@/db/games/tables/expected-late-seats";
 import { ClientError } from "@/lib/api/client-error";
-import { deriveTeamId, parseSeat, seatFor, type PairSeat } from "@/model/participants";
+import {
+  deriveTeamId,
+  parseSeat,
+  seatFor,
+  type PairSeat,
+} from "@/model/participants";
 import { MIN_SECTION_TABLES, canSplitSection } from "@/model/section";
 
 export interface SplitSectionInput {
@@ -89,7 +94,11 @@ export async function splitSection(
 
   const moved = input.tablesToNewSection;
   const maxMoved = source.tables - MIN_SECTION_TABLES;
-  if (!Number.isInteger(moved) || moved < MIN_SECTION_TABLES || moved > maxMoved) {
+  if (
+    !Number.isInteger(moved) ||
+    moved < MIN_SECTION_TABLES ||
+    moved > maxMoved
+  ) {
     throw new ClientError(
       `Cannot split section ${input.from} into ${source.tables - moved} + ${moved} tables: each section must keep at least ${MIN_SECTION_TABLES} tables, so move between ${MIN_SECTION_TABLES} and ${maxMoved}.`,
     );
@@ -100,9 +109,7 @@ export async function splitSection(
   const keep = source.tables - moved;
   /* v8 ignore start -- unreachable: `source` was found in `existing`, so it is never empty */
   const newOrdinal =
-    existing.length === 0
-      ? 0
-      : Math.max(...existing.map((s) => s.ordinal)) + 1;
+    existing.length === 0 ? 0 : Math.max(...existing.map((s) => s.ordinal)) + 1;
   /* v8 ignore stop */
 
   // Map a seat in the moved range of the source to its new, renumbered seat;
@@ -115,8 +122,13 @@ export async function splitSection(
     } catch {
       return null;
     }
-    if (parsed.section !== input.from || parsed.tableNumber <= keep) return null;
-    return seatFor(input.newSection, parsed.tableNumber - keep, parsed.direction);
+    if (parsed.section !== input.from || parsed.tableNumber <= keep)
+      return null;
+    return seatFor(
+      input.newSection,
+      parsed.tableNumber - keep,
+      parsed.direction,
+    );
   };
 
   const moves: SeatMove[] = [];

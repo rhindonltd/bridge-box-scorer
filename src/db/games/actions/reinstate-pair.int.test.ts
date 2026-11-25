@@ -67,7 +67,9 @@ describe("reinstatePair (design §11)", () => {
   it("sets the pair ACTIVE and un-marks its ABSENT boards", async () => {
     const db = await withdrawnSeat();
     const { reinstatePair } = await import("./reinstate-pair");
-    expect(await reinstatePair(harness.gameId, "A1NS", "fresh-token")).toEqual({ ok: true });
+    expect(await reinstatePair(harness.gameId, "A1NS", "fresh-token")).toEqual({
+      ok: true,
+    });
 
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const occ = db.select().from(seatOccupancy).get()!;

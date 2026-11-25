@@ -33,9 +33,8 @@ describe("EBU sync (parse + write)", () => {
 
   it("parses a fixture CSV and upserts players, then prunes on re-sync", async () => {
     const { parseEbuCsv } = await import("@/db/players/actions/sync-from-ebu");
-    const { syncPlayers } = await import(
-      "@/db/players/actions/sync-ebu-players"
-    );
+    const { syncPlayers } =
+      await import("@/db/players/actions/sync-ebu-players");
     const { findPlayer } = await import("@/db/players/queries/find-player");
 
     // First sync: 1500 players.

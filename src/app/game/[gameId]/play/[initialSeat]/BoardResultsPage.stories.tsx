@@ -4,10 +4,9 @@ import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardRe
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { withGame } from "@storybook/decorators/GameDecorator";
-import { scoreBoard } from "@/scoring/traveller/score-traveller";
+import { buildTeamBoardResultTable, scoreBoard } from "@/modules/scoring";
 import { withAssignment } from "@storybook/decorators/AssignmentDecorator";
 import { mockGame, teamsGame4Tables } from "@/mocks/fixtures/game";
-import { buildTeamBoardResultTable } from "@/scoring/swiss/team-board-result-view";
 import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 
 const meta: Meta<typeof BoardResultsPage> = {

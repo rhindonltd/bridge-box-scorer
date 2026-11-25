@@ -3,8 +3,7 @@
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { CaptionedSpinner } from "@/components/common/Spinner";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
-import { buildTeamBoardResultTable } from "@/scoring/swiss/team-board-result-view";
-import { ScoreTable } from "@/scoring/table/score-table";
+import { buildTeamBoardResultTable, ScoreTable } from "@/modules/scoring";
 import { useRoundResults } from "./useRoundResults";
 
 /** One board's Team Result table, or null when it cannot be built yet. */

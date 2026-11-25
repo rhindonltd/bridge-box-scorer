@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 const mockPlugin = { id: "MP", score: vi.fn(), views: [] };
 const mockGetPerBoardPlugin = vi.fn((_pluginId: string) => mockPlugin);
-vi.mock("@/scoring/plugins/registry", () => ({
+vi.mock("@/modules/scoring/plugins/registry", () => ({
   getPerBoardPlugin: (pluginId: string) => mockGetPerBoardPlugin(pluginId),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("@/components/scoring/PerBoardTravellerView", () => ({
 }));
 
 import { Traveller } from "./Traveller";
-import type { ScoredBoard } from "@/scoring/traveller/score-traveller";
+import type { ScoredBoard } from "@/modules/scoring/traveller/score-traveller";
 
 const scoredBoard = {
   pluginId: "MP",
@@ -37,9 +37,7 @@ describe("Traveller", () => {
   });
 
   it("resolves the plugin from the scored board and renders the per-board view", () => {
-    render(
-      <Traveller scoredBoard={scoredBoard} highlightAssignmentId="A1" />,
-    );
+    render(<Traveller scoredBoard={scoredBoard} highlightAssignmentId="A1" />);
 
     expect(mockGetPerBoardPlugin).toHaveBeenCalledWith("MP");
     expect(screen.getByTestId("plugin-id").textContent).toBe("MP");

@@ -242,7 +242,9 @@ describe("previewNextSwissRound", () => {
   });
 
   it("treats a round with only sit-out boards as incomplete", async () => {
-    vi.mocked(getDb).mockResolvedValue(stubDb([{ status: "SIT_OUT" }]) as never);
+    vi.mocked(getDb).mockResolvedValue(
+      stubDb([{ status: "SIT_OUT" }]) as never,
+    );
     vi.mocked(getSectionMovement).mockResolvedValue({
       source: "SWISS",
       swiss: { tables: 2, rounds: 4, boardsPerRound: 2 },
@@ -267,13 +269,15 @@ describe("previewNextSwissRound", () => {
     expect(result.seating.length).toBeGreaterThan(0);
     // Standings are returned in draw order (best first) with running VP totals,
     // sourced from the same leaderboard lines the draw ranked on.
-    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual([
-      { id: 1, total: 30 },
-      { id: 3, total: 25 },
-      // Pairs 2 and 4 have no leaderboard line yet -> appended with a 0 total.
-      { id: 2, total: 0 },
-      { id: 4, total: 0 },
-    ]);
+    expect(result.standings.map((s) => ({ id: s.id, total: s.total }))).toEqual(
+      [
+        { id: 1, total: 30 },
+        { id: 3, total: 25 },
+        // Pairs 2 and 4 have no leaderboard line yet -> appended with a 0 total.
+        { id: 2, total: 0 },
+        { id: 4, total: 0 },
+      ],
+    );
     // A preview must never materialize.
     expect(materializeSwissRound).not.toHaveBeenCalled();
   });
@@ -322,7 +326,11 @@ describe("previewNextSwissRound", () => {
     // The three seated pairs (1, 2, 3) form the group; best-standing (1) anchors.
     expect(hm.group.anchor).toBe(1);
     expect(
-      [hm.group.anchor, hm.group.halfOneOpponent, hm.group.halfTwoOpponent].sort(),
+      [
+        hm.group.anchor,
+        hm.group.halfOneOpponent,
+        hm.group.halfTwoOpponent,
+      ].sort(),
     ).toEqual([1, 2, 3]);
     // Nothing is materialized by a preview.
     expect(materializeSwissRound).not.toHaveBeenCalled();
@@ -330,17 +338,14 @@ describe("previewNextSwissRound", () => {
   it("ignores unseated, malformed and other-section occupancy rows", async () => {
     seedDrawable();
     vi.mocked(getDb).mockResolvedValue(
-      stubDb(
-        [{ status: "CONFIRMED" }],
-        [
-          { seat: null },
-          { seat: "not-a-seat" },
-          { seat: "B1NS" },
-          // Parses as a seat but the (stubbed) decoder yields no pair id.
-          { seat: "A1NS#7" },
-          ...assignmentsFor(["A1NS", "A2NS", "A1EW", "A2EW"]),
-        ] as never,
-      ) as never,
+      stubDb([{ status: "CONFIRMED" }], [
+        { seat: null },
+        { seat: "not-a-seat" },
+        { seat: "B1NS" },
+        // Parses as a seat but the (stubbed) decoder yields no pair id.
+        { seat: "A1NS#7" },
+        ...assignmentsFor(["A1NS", "A2NS", "A1EW", "A2EW"]),
+      ] as never) as never,
     );
     const result = await previewNextSwissRound("g1", "A");
     expect(result.ok).toBe(true);

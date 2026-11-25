@@ -63,16 +63,16 @@ describe("swiss teams committed readers", () => {
         // A later round must be excluded.
         { kind: "TEAMS", home: "A10NS", opponent: "A11NS", round: 3 },
       ]);
-      const { getSwissTeamsPriorHistory } = await import(
-        "@/db/games/queries/swiss-teams-committed"
-      );
+      const { getSwissTeamsPriorHistory } =
+        await import("@/db/games/queries/swiss-teams-committed");
       const history = await getSwissTeamsPriorHistory(db, "A", 3);
       expect(history.hadBye).toEqual(new Set([5]));
-      expect([...history.hadTriple].sort((a, b) => a - b)).toEqual([3, 4, 6, 7]);
+      expect([...history.hadTriple].sort((a, b) => a - b)).toEqual([
+        3, 4, 6, 7,
+      ]);
       expect(history.playedOpponents.size).toBe(3);
-      const { teamOpponentKey } = await import(
-        "@/movement/swiss-teams/swiss-teams-pairing"
-      );
+      const { teamOpponentKey } =
+        await import("@/movement/swiss-teams/swiss-teams-pairing");
       expect(history.playedOpponents.has(teamOpponentKey(1, 2))).toBe(true);
       expect(history.playedOpponents.has(teamOpponentKey(10, 11))).toBe(false);
     });
@@ -113,9 +113,8 @@ describe("swiss teams committed readers", () => {
         // Other round: ignored.
         { kind: "TEAMS", home: "A20NS", opponent: "A21NS", round: 2 },
       ]);
-      const { getSwissTeamsCommittedRound } = await import(
-        "@/db/games/queries/swiss-teams-committed"
-      );
+      const { getSwissTeamsCommittedRound } =
+        await import("@/db/games/queries/swiss-teams-committed");
       const round = await getSwissTeamsCommittedRound(db, "A", 1);
       expect(round.roundNumber).toBe(1);
       expect([...round.opponentByTeam.entries()].sort()).toEqual([
@@ -143,9 +142,8 @@ describe("swiss teams committed readers", () => {
         { kind: "TRIPLE", home: "A1NS", opponent: "A3NS", groupId: "g" },
         { kind: "TRIPLE", home: "A1NS", opponent: "A2NS", groupId: "g" },
       ]);
-      const { getSwissTeamsCommittedRound } = await import(
-        "@/db/games/queries/swiss-teams-committed"
-      );
+      const { getSwissTeamsCommittedRound } =
+        await import("@/db/games/queries/swiss-teams-committed");
       const round = await getSwissTeamsCommittedRound(db, "A", 1);
       expect(round.triples[0].comparisons.map((c) => c.high)).toEqual([2, 3]);
     });

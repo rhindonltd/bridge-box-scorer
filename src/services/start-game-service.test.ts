@@ -380,7 +380,9 @@ describe("resolveSectionStart", () => {
   });
 
   it("blocks a Swiss Pairs start that is two pairs short", async () => {
-    const seated = seatsForTables(3).filter((s) => s !== "A2NS" && s !== "A3NS");
+    const seated = seatsForTables(3).filter(
+      (s) => s !== "A2NS" && s !== "A3NS",
+    );
     const result = await resolveSectionStart(
       "A",
       {

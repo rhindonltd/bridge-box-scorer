@@ -1,11 +1,10 @@
 import { Traveller } from "@/components/traveller/Traveller";
-import { ScoredBoard } from "@/scoring/traveller/score-traveller";
+import { ScoreTable, ScoredBoard } from "@/modules/scoring";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { useAssignment } from "@/context/AssignmentContext";
 import { DealDisplay } from "@/components/deal/DealDisplay";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
-import { ScoreTable } from "@/scoring/table/score-table";
 import { Deal } from "@/model/common";
 import { useRequiredGame } from "@/context/GameContext";
 import { useSections } from "@/hooks/sections";

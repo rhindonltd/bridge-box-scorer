@@ -24,7 +24,12 @@ export const boardSubmissions = sqliteTable(
   },
   (table) => ({
     pk: primaryKey({
-      columns: [table.section, table.roundNumber, table.tableNumber, table.side],
+      columns: [
+        table.section,
+        table.roundNumber,
+        table.tableNumber,
+        table.side,
+      ],
     }),
   }),
 );

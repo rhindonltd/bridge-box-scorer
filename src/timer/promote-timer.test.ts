@@ -22,10 +22,7 @@ import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { createEngine } from "@/timer/game-store";
 import { scheduleGame } from "@/timer/scheduler";
 import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import {
-  buildConfiguredTimerState,
-  TimerState,
-} from "@/timer/timer-state";
+import { buildConfiguredTimerState, TimerState } from "@/timer/timer-state";
 import { promoteTimerAtGameStart } from "./promote-timer";
 
 function makeIo() {

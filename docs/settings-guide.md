@@ -73,7 +73,7 @@ Connects the Bridge Box to your club's **BridgeWebs** website, so that:
 
 1. Open **Settings → BridgeWebs**.
 2. Enter the **BridgeWebs Club Code** (your club's BridgeWebs name, e.g.
-   *anytownbc*) and the **BridgeWebs Password**.
+   _anytownbc_) and the **BridgeWebs Password**.
 3. Tap **Save**. You'll see **BridgeWebs settings saved**.
 
 The first time, both the club code and the password are needed. Once a password

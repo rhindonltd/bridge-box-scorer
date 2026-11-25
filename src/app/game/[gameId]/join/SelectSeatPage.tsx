@@ -52,8 +52,10 @@ export function SelectSeatPage({ onSeatSelected }: Props) {
   // on submit as the authority (it also covers races from other devices).
   const seatedNationalIds = new Set<string>();
   for (const pair of data ?? []) {
-    if (pair.player1?.nationalId) seatedNationalIds.add(pair.player1.nationalId);
-    if (pair.player2?.nationalId) seatedNationalIds.add(pair.player2.nationalId);
+    if (pair.player1?.nationalId)
+      seatedNationalIds.add(pair.player1.nationalId);
+    if (pair.player2?.nationalId)
+      seatedNationalIds.add(pair.player2.nationalId);
   }
 
   useSocketSWRSync(

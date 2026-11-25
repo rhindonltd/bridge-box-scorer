@@ -75,9 +75,7 @@ export function SwissTeamsDrawControl({
       setPreview(null);
       setNotice(`Round ${result.roundNumber} drawn.`);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not save the draw.",
-      );
+      setError(err instanceof Error ? err.message : "Could not save the draw.");
     } finally {
       setCommitting(false);
     }

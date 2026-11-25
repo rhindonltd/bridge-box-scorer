@@ -7,8 +7,19 @@ function click(name: string | RegExp) {
 }
 
 /** Drive the add-component flow: level -> suit -> declarer -> result. */
-const SYMBOL: Record<string, string> = { C: "♣", D: "♦", H: "♥", S: "♠", NT: "NT" };
-function pickContract(level: string, suit: string, declarer: string, result: string) {
+const SYMBOL: Record<string, string> = {
+  C: "♣",
+  D: "♦",
+  H: "♥",
+  S: "♠",
+  NT: "NT",
+};
+function pickContract(
+  level: string,
+  suit: string,
+  declarer: string,
+  result: string,
+) {
   click("+ Add Component");
   click(level);
   click(`${level}${SYMBOL[suit]}`);
@@ -69,16 +80,22 @@ describe("StepWeightedScore", () => {
     pickContract("1", "C", "S", "=");
     setWeight("0.001");
     click("Add Component");
-    expect(screen.getByText("Total: 0.01%", { exact: false })).toBeInTheDocument();
+    expect(
+      screen.getByText("Total: 0.01%", { exact: false }),
+    ).toBeInTheDocument();
   });
 
   it("disables adding a component whose weight is zero or exceeds the remainder", () => {
     render(<StepWeightedScore onSubmit={vi.fn()} />);
     pickContract("2", "S", "W", "=");
     setWeight("101");
-    expect(screen.getByRole("button", { name: "Add Component" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Add Component" }),
+    ).toBeDisabled();
     setWeight("0");
-    expect(screen.getByRole("button", { name: "Add Component" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Add Component" }),
+    ).toBeDisabled();
   });
 
   it("removes a component", () => {

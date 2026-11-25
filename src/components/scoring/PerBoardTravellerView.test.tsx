@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { PerBoardTravellerView } from "./PerBoardTravellerView";
-import type { ScoreTable } from "@/scoring/table/score-table";
-import type { PerBoardScoringPlugin } from "@/scoring/plugins/types";
+import type { ScoreTable } from "@/modules/scoring/table/score-table";
+import type { PerBoardScoringPlugin } from "@/modules/scoring/plugins/types";
 
 function tableWith(label: string): ScoreTable {
   return {
@@ -15,7 +15,11 @@ function tableWith(label: string): ScoreTable {
 function plugin(viewCount: 1 | 2): PerBoardScoringPlugin<unknown> {
   const views = [
     { id: "v1", label: "First", toTable: vi.fn(() => tableWith("first-cell")) },
-    { id: "v2", label: "Second", toTable: vi.fn(() => tableWith("second-cell")) },
+    {
+      id: "v2",
+      label: "Second",
+      toTable: vi.fn(() => tableWith("second-cell")),
+    },
   ].slice(0, viewCount);
   return { id: "MP", score: vi.fn(), views } as never;
 }

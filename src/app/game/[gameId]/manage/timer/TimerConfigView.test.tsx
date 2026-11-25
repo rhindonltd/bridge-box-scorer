@@ -71,9 +71,7 @@ describe("TimerConfigView", () => {
     expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Next phase" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Previous phase" })).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: "Apply Changes" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Apply Changes" })).toBeNull();
     expect(screen.queryByText("Live End")).toBeNull();
     expect(screen.queryByText("Adjust current phase")).toBeNull();
   });
@@ -117,7 +115,9 @@ describe("TimerConfigView", () => {
   it("renders break problems when present", () => {
     render(
       <TimerConfigView
-        {...makeProps({ breakProblems: [{ afterRound: 3, overrunMs: 90_000 }] })}
+        {...makeProps({
+          breakProblems: [{ afterRound: 3, overrunMs: 90_000 }],
+        })}
       />,
     );
     const alert = screen.getByRole("alert");
@@ -148,7 +148,9 @@ describe("TimerConfigView", () => {
   it("prompts to select a movement when none is selected", () => {
     render(<TimerConfigView {...makeProps({ noMovement: true })} />);
 
-    expect(screen.getByRole("note")).toHaveTextContent("Select a movement first");
+    expect(screen.getByRole("note")).toHaveTextContent(
+      "Select a movement first",
+    );
     // Config fields are replaced by the prompt.
     expect(screen.queryByLabelText("Boards / Round")).toBeNull();
     // No summary panel either while there is no movement.

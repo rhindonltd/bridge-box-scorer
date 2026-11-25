@@ -579,12 +579,6 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<EW_MATCH_POINTS>0.8</EW_MATCH_POINTS>");
     });
 
-    it("emits AVE+ (>50%) as +3 IMPs and AVE- (<50%) as -3 IMPs for IMP scoring", () => {
-      const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
-      expect(xml).toContain("<NS_IMPS>3</NS_IMPS>");
-      expect(xml).toContain("<EW_IMPS>-3</EW_IMPS>");
-    });
-
     it("emits AVE (50%) as 0 IMPs for XIMP scoring", () => {
       const xml = generateUsebioXml(makeAdjustedData("XIMP", 50, 50));
       expect(xml).toContain("<NS_IMPS>0</NS_IMPS>");
@@ -597,12 +591,6 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
       expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
       expect(xml).toContain("<PLACE>");
-    });
-
-    it("lists adjusted IMP-scored pairs as participants", () => {
-      const xml = generateUsebioXml(makeAdjustedData("IMP", 60, 40));
-      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
-      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
     });
 
     it("gives a 0.00 percentage to a lone adjusted MP result (zero max)", () => {

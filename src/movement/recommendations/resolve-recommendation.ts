@@ -207,7 +207,10 @@ export function resolveRecommendationDescriptor(
 
   /* v8 ignore next 3 -- UNSUPPORTED_LABELS is currently empty (a placeholder for future entries), so this guard is unreachable */
   if (UNSUPPORTED_LABELS.has(label)) {
-    return { resolved: false, reason: `unsupported movement: ${entry.movement}` };
+    return {
+      resolved: false,
+      reason: `unsupported movement: ${entry.movement}`,
+    };
   }
 
   // Web Mitchell: even-table Webs are produced by the generator (verified to

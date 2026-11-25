@@ -59,7 +59,11 @@ describe("games db: coverage gaps", () => {
 
       const sections = await findSections(db!);
       expect(sections).toHaveLength(1);
-      expect(sections[0]).toMatchObject({ section: "A", label: "A", tables: 5 });
+      expect(sections[0]).toMatchObject({
+        section: "A",
+        label: "A",
+        tables: 5,
+      });
     });
 
     it("rejects creating a db that already exists", async () => {
@@ -74,12 +78,10 @@ describe("games db: coverage gaps", () => {
 
   describe("timer state", () => {
     it("inserts then updates and reads back a section's timer state", async () => {
-      const { updateTimerState } = await import(
-        "@/db/games/actions/update-timer-state"
-      );
-      const { findTimerState } = await import(
-        "@/db/games/queries/find-timer-state"
-      );
+      const { updateTimerState } =
+        await import("@/db/games/actions/update-timer-state");
+      const { findTimerState } =
+        await import("@/db/games/queries/find-timer-state");
 
       // No timer row yet.
       expect(await findTimerState(harness.gameId, "A")).toBeNull();
@@ -95,12 +97,10 @@ describe("games db: coverage gaps", () => {
     });
 
     it("keeps each section's timer state independent", async () => {
-      const { updateTimerState } = await import(
-        "@/db/games/actions/update-timer-state"
-      );
-      const { findTimerState, findAllTimerStates } = await import(
-        "@/db/games/queries/find-timer-state"
-      );
+      const { updateTimerState } =
+        await import("@/db/games/actions/update-timer-state");
+      const { findTimerState, findAllTimerStates } =
+        await import("@/db/games/queries/find-timer-state");
 
       const stateA = { ...timerState(), totalRounds: 8 };
       const stateB = { ...timerState(), totalRounds: 11, round: 4 };
@@ -123,18 +123,16 @@ describe("games db: coverage gaps", () => {
     });
 
     it("updateTimerState throws when the game db does not exist", async () => {
-      const { updateTimerState } = await import(
-        "@/db/games/actions/update-timer-state"
-      );
+      const { updateTimerState } =
+        await import("@/db/games/actions/update-timer-state");
       await expect(
         updateTimerState(missingGameId, "A", timerState()),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("findTimerState throws when the game db does not exist", async () => {
-      const { findTimerState } = await import(
-        "@/db/games/queries/find-timer-state"
-      );
+      const { findTimerState } =
+        await import("@/db/games/queries/find-timer-state");
       await expect(findTimerState(missingGameId, "A")).rejects.toThrow(
         /Game db does not exist/,
       );
@@ -143,9 +141,8 @@ describe("games db: coverage gaps", () => {
 
   describe("`if (!db) throw` guards on actions and queries", () => {
     it("createParticipant throws for a missing game db", async () => {
-      const { createParticipant } = await import(
-        "@/db/games/actions/create-participant"
-      );
+      const { createParticipant } =
+        await import("@/db/games/actions/create-participant");
       await expect(
         createParticipant(missingGameId, {
           initialSeat: "A1NS",
@@ -171,9 +168,8 @@ describe("games db: coverage gaps", () => {
     });
 
     it("createParticipant throws for a missing game db", async () => {
-      const { createParticipant } = await import(
-        "@/db/games/actions/create-participant"
-      );
+      const { createParticipant } =
+        await import("@/db/games/actions/create-participant");
       await expect(
         createParticipant(missingGameId, {
           initialSeat: "A1NS",
@@ -192,9 +188,8 @@ describe("games db: coverage gaps", () => {
     });
 
     it("createBoardSubmission throws for a missing game db", async () => {
-      const { createBoardSubmission } = await import(
-        "@/db/games/actions/create-submission"
-      );
+      const { createBoardSubmission } =
+        await import("@/db/games/actions/create-submission");
       await expect(
         createBoardSubmission(missingGameId, {
           section: "A",
@@ -207,72 +202,64 @@ describe("games db: coverage gaps", () => {
     });
 
     it("createSection throws for a missing game db", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
       await expect(
         createSection(missingGameId, { section: "Z", tables: 4 }),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("deleteParticipant throws for a missing game db", async () => {
-      const { deleteParticipant } = await import(
-        "@/db/games/actions/delete-participant"
-      );
+      const { deleteParticipant } =
+        await import("@/db/games/actions/delete-participant");
       await expect(
         deleteParticipant(missingGameId, "A1NS" as never),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("deleteSection throws for a missing game db", async () => {
-      const { deleteSection } = await import(
-        "@/db/games/actions/delete-section"
-      );
+      const { deleteSection } =
+        await import("@/db/games/actions/delete-section");
       await expect(deleteSection(missingGameId, "A")).rejects.toThrow(
         /Game db does not exist/,
       );
     });
 
     it("deleteBoardSubmissions throws for a missing game db", async () => {
-      const { deleteBoardSubmissions } = await import(
-        "@/db/games/actions/delete-submissions"
-      );
+      const { deleteBoardSubmissions } =
+        await import("@/db/games/actions/delete-submissions");
       await expect(
         deleteBoardSubmissions(missingGameId, "A", 1, 1),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("renameSection throws for a missing game db", async () => {
-      const { renameSection } = await import(
-        "@/db/games/actions/rename-section"
+      const { renameSection } =
+        await import("@/db/games/actions/rename-section");
+      await expect(renameSection(missingGameId, "A", "Red")).rejects.toThrow(
+        /Game db does not exist/,
       );
-      await expect(
-        renameSection(missingGameId, "A", "Red"),
-      ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("setSectionMovement throws for a missing game db", async () => {
-      const { setSectionMovement } = await import(
-        "@/db/games/actions/set-section-movement"
-      );
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
       await expect(
         setSectionMovement(missingGameId, "A", null),
       ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("updateSectionTables throws for a missing game db", async () => {
-      const { updateSectionTables } = await import(
-        "@/db/games/actions/update-section-tables"
+      const { updateSectionTables } =
+        await import("@/db/games/actions/update-section-tables");
+      await expect(updateSectionTables(missingGameId, "A", 4)).rejects.toThrow(
+        /Game db does not exist/,
       );
-      await expect(
-        updateSectionTables(missingGameId, "A", 4),
-      ).rejects.toThrow(/Game db does not exist/);
     });
 
     it("findBoardSubmissions throws for a missing game db", async () => {
-      const { findBoardSubmissions } = await import(
-        "@/db/games/queries/find-submissions"
-      );
+      const { findBoardSubmissions } =
+        await import("@/db/games/queries/find-submissions");
       await expect(
         findBoardSubmissions(missingGameId, "A", 1, 1),
       ).rejects.toThrow(/Game db does not exist/);
@@ -283,51 +270,44 @@ describe("games db: coverage gaps", () => {
     // These operate on a real (harness-provisioned) game db but reference a
     // section letter that was never created, exercising the second guard.
     it("renameSection throws when the section is unknown", async () => {
-      const { renameSection } = await import(
-        "@/db/games/actions/rename-section"
+      const { renameSection } =
+        await import("@/db/games/actions/rename-section");
+      await expect(renameSection(harness.gameId, "Z", "Red")).rejects.toThrow(
+        /Section Z does not exist/,
       );
-      await expect(
-        renameSection(harness.gameId, "Z", "Red"),
-      ).rejects.toThrow(/Section Z does not exist/);
     });
 
     it("deleteSection throws when the section is unknown", async () => {
-      const { deleteSection } = await import(
-        "@/db/games/actions/delete-section"
-      );
+      const { deleteSection } =
+        await import("@/db/games/actions/delete-section");
       await expect(deleteSection(harness.gameId, "Z")).rejects.toThrow(
         /Section Z does not exist/,
       );
     });
 
     it("setSectionMovement throws when the section is unknown", async () => {
-      const { setSectionMovement } = await import(
-        "@/db/games/actions/set-section-movement"
-      );
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
       await expect(
         setSectionMovement(harness.gameId, "Z", null),
       ).rejects.toThrow(/Section Z does not exist/);
     });
 
     it("updateSectionTables throws when the section is unknown", async () => {
-      const { updateSectionTables } = await import(
-        "@/db/games/actions/update-section-tables"
+      const { updateSectionTables } =
+        await import("@/db/games/actions/update-section-tables");
+      await expect(updateSectionTables(harness.gameId, "Z", 4)).rejects.toThrow(
+        /Section Z does not exist/,
       );
-      await expect(
-        updateSectionTables(harness.gameId, "Z", 4),
-      ).rejects.toThrow(/Section Z does not exist/);
     });
 
     it("setSectionMovement serialises a non-null movement onto the section", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { setSectionMovement } = await import(
-        "@/db/games/actions/set-section-movement"
-      );
-      const { getSectionMovement } = await import(
-        "@/db/games/queries/get-section-movement"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
+      const { getSectionMovement } =
+        await import("@/db/games/queries/get-section-movement");
       const games = await import("@/db/games");
 
       await createSection(harness.gameId, { section: "A", tables: 8 });

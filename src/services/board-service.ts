@@ -6,27 +6,20 @@ import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
 import { findTeams } from "@/db/games/queries/find-teams";
-import { boardResult, type TeamMatchRow } from "@/scoring/swiss/team-match";
-import { outcomeToScore, computeImps } from "@/scoring/traveller/common";
+import {
+  boardResult,
+  type TeamMatchRow,
+  outcomeToScore,
+  computeImps,
+} from "@/modules/scoring";
 import { parseSeat } from "@/model/participants";
 import type { TeamTravellerMatch } from "@/model/participants";
 import { readAbsences } from "@/db/games/queries/absences";
-import { resolveAbsentRow } from "@/model/absence";
-import { applySeatSwaps } from "@/model/seat-swap";
+import { ruledBoardInstances } from "@/modules/rulings";
 
 /**
- * Board statuses that are NOT a real played line and so never belong on a
- * traveller: a Swiss bye (`SIT_OUT`) and a Swiss Pairs "2 half matches"
- * compensation block (`HALF_AVERAGE`). Both carry a phantom opponent and no
- * played result, so including them would show a stray placeholder row (and let
- * a director tap a meaningless phantom row to "override"). The real half-match
- * lines (anchor vs each opponent on their own board subset) are ordinary rows
- * and are unaffected.
- */
-const NON_TRAVELLER_STATUSES = new Set(["SIT_OUT", "HALF_AVERAGE"]);
-
-/**
- * A board's traveller instances (every table's line for that board number).
+ * A board's traveller instances (every table's line for that board number),
+ * with the rulings applied (`ruledBoardInstances`) and each pair's names.
  *
  * By default the rows of EVERY section are returned, so the traveller pools
  * the whole field. Pass `section` to restrict to one section's rows — used by
@@ -39,55 +32,18 @@ export async function getBoardInstances(
   options: { section?: string } = {},
 ) {
   const { section } = options;
-  // A board the director marked "played the wrong way round" is shown with its
-  // ns/ew pair ids exchanged (the result is unchanged; it is credited to the
-  // opposite pairs). Applied first so absence resolution and name lookup below
-  // both work from the credited pairs.
-  const records = applySeatSwaps(
-    (
-      await db
-        .select()
-        .from(pairsBoards)
-        .where(
-          section === undefined
-            ? eq(pairsBoards.boardNumber, boardNumber)
-            : and(
-                eq(pairsBoards.boardNumber, boardNumber),
-                eq(pairsBoards.section, section),
-              ),
-        )
-    ).filter((b) => !NON_TRAVELLER_STATUSES.has(b.status ?? "")),
-  );
-
-  // Design §11: a row missed because a pair is absent shows as it is scored —
-  // the AVE± artificial result under AVERAGE, or not at all under REMOVED (it
-  // is out of the movement).
-  //
-  // Two kinds of missed row: an ABSENT row (a pair withdrew or arrived late;
-  // marked when it happened), and a row against a still-EMPTY expected-late
-  // seat (nobody sits there yet, so it stays NOT_PLAYED and the leaderboard
-  // scores it as absent on the fly). Both must read the same on the traveller
-  // as on the leaderboard. Only EMPTY absences are applied to non-ABSENT rows,
-  // so every other (teams / Swiss) traveller is untouched.
-  const absences = await readAbsences(db);
-  const emptyOnly = new Map(
-    [...absences].filter(([, absence]) => absence.kind === "EMPTY"),
-  );
-  const shown: {
-    row: (typeof records)[number];
-    absentResult: string | null;
-  }[] = [];
-  for (const row of records) {
-    const resolution = resolveAbsentRow(
-      row,
-      row.status === "ABSENT" ? absences : emptyOnly,
+  const rows = await db
+    .select()
+    .from(pairsBoards)
+    .where(
+      section === undefined
+        ? eq(pairsBoards.boardNumber, boardNumber)
+        : and(
+            eq(pairsBoards.boardNumber, boardNumber),
+            eq(pairsBoards.section, section),
+          ),
     );
-    if (resolution?.kind === "removed") continue;
-    shown.push({
-      row,
-      absentResult: resolution?.kind === "outcome" ? resolution.outcome : null,
-    });
-  }
+  const instances = ruledBoardInstances(rows, await readAbsences(db));
 
   // Resolve names PER BOARD (keyed by the board id on `b.ns`/`b.ew`, matching
   // the seat/anchor id), so a §2.4.7 handover seat shows the stand-in's names on
@@ -101,7 +57,7 @@ export async function getBoardInstances(
     return `${pair.player1.firstName} ${pair.player1.lastName} & ${pair.player2.firstName} ${pair.player2.lastName}`;
   };
 
-  return shown.map(({ row: b, absentResult }) => ({
+  return instances.map((b) => ({
     roundNumber: b.roundNumber,
     tableNumber: b.tableNumber,
     boardNumber: b.boardNumber,
@@ -112,9 +68,8 @@ export async function getBoardInstances(
       nsNames: nameOf(b.ns, b.boardNumber),
       ewNames: nameOf(b.ew, b.boardNumber),
     },
-    currentResult:
-      b.directorOverrideResult ?? b.confirmedResult ?? absentResult ?? null,
-    status: b.status ?? null,
+    currentResult: b.currentResult,
+    status: b.status,
     // Lets the director's traveller offer "Mark played reversed" / "Clear".
     seatsSwapped: b.seatsSwapped,
   }));

@@ -52,9 +52,8 @@ describe("assignment player lookups", () => {
     const b = pair("b");
     occupy("A1NS", a);
     occupy("A2NS", b, { anchorId: "2" });
-    const { buildAssignmentPlayerLookup } = await import(
-      "@/db/games/queries/assignment-players"
-    );
+    const { buildAssignmentPlayerLookup } =
+      await import("@/db/games/queries/assignment-players");
     const lookup = await buildAssignmentPlayerLookup(db);
     expect(lookup.get("A1NS")?.player1.firstName).toBe("a1");
     expect(lookup.get("2")?.player2.firstName).toBe("b2");
@@ -68,9 +67,8 @@ describe("assignment player lookups", () => {
     db.insert(seatOccupancy)
       .values({ seat: "A2NS", player1: 9998, player2: 9999, secretKey: "z" })
       .run();
-    const { buildAssignmentPlayerLookup } = await import(
-      "@/db/games/queries/assignment-players"
-    );
+    const { buildAssignmentPlayerLookup } =
+      await import("@/db/games/queries/assignment-players");
     const lookup = await buildAssignmentPlayerLookup(db);
     expect([...lookup.keys()]).toEqual(["A1NS"]);
   });
@@ -86,9 +84,8 @@ describe("assignment player lookups", () => {
     db.insert(seatOccupancy)
       .values({ seat: "A5NS", player1: 9998, player2: 9999, secretKey: "z" })
       .run();
-    const { buildPerBoardPlayerLookup } = await import(
-      "@/db/games/queries/assignment-players"
-    );
+    const { buildPerBoardPlayerLookup } =
+      await import("@/db/games/queries/assignment-players");
     const find = await buildPerBoardPlayerLookup(db);
     expect(find("A1NS", 7)?.player1.firstName).toBe("whole1");
     expect(find("A2NS", 2)?.player1.firstName).toBe("early1");

@@ -173,7 +173,21 @@ describe("Traveller", () => {
   });
 
   it("reveals the deal via the Show hand toggle when a deal is present", () => {
-    const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+    const ranks: Rank[] = [
+      "A",
+      "K",
+      "Q",
+      "J",
+      "T",
+      "9",
+      "8",
+      "7",
+      "6",
+      "5",
+      "4",
+      "3",
+      "2",
+    ];
     const deal = {
       N: ranks.map((r): Card => `S${r}`),
       E: ranks.map((r): Card => `H${r}`),

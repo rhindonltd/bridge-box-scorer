@@ -80,7 +80,9 @@ test.describe("Movement types materialise into playable games", () => {
     await playMovement(browser, `Howell ${Date.now()}`, 2, "Howell");
   });
 
-  test("Standard Mitchell (3 tables) sets up and plays", async ({ browser }) => {
+  test("Standard Mitchell (3 tables) sets up and plays", async ({
+    browser,
+  }) => {
     test.setTimeout(120_000);
     await playMovement(browser, `Mitchell ${Date.now()}`, 3, "Mitchell");
   });

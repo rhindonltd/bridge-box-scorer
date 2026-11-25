@@ -48,9 +48,10 @@ test.describe("Results request-on-mount", () => {
       // The director's freshly-opened traveller for board 1 shows the
       // confirmed Pass Out (round 1, table 1 -> traveller-row-1-1).
       await openDirectorTraveller(directorPage, gameId, 1);
-      await expect(
-        directorPage.getByTestId("traveller-row-1-1"),
-      ).toContainText("PO", { timeout: 15000 });
+      await expect(directorPage.getByTestId("traveller-row-1-1")).toContainText(
+        "PO",
+        { timeout: 15000 },
+      );
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

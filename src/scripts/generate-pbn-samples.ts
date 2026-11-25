@@ -36,7 +36,7 @@ const HAND_SEQUENCE: readonly string[] = [
  */
 function dealForBoard(boardNumber: number): Deal {
   const n = HAND_SEQUENCE.length;
-  const shift = ((boardNumber - 1) % n + n) % n;
+  const shift = (((boardNumber - 1) % n) + n) % n;
   // Right-rotate by `shift`: element i comes from (i - shift) mod n.
   const rotated = HAND_SEQUENCE.map(
     (_, i) => HAND_SEQUENCE[(i - shift + n) % n],

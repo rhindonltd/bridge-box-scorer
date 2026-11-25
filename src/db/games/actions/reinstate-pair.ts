@@ -4,7 +4,7 @@ import { and, eq, or } from "drizzle-orm";
 import { requireGameDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
-import { arrivalAnchorOf } from "@/db/games/queries/seat-occupancy";
+import { arrivalAnchorOf } from "@/modules/rulings";
 import type { PairSeat } from "@/model/participants";
 
 export interface ReinstateResult {

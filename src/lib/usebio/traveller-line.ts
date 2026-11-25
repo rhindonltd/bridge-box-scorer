@@ -1,6 +1,6 @@
 import { BoardOutcome } from "@/model/score";
 import { isPlayedContractCode, parsePlayedContract } from "@/model/result";
-import { outcomeToScore } from "@/scoring/traveller/common";
+import { outcomeToScore } from "@/modules/scoring";
 import {
   formatOutcomeForUsebio,
   formatContractCompact,

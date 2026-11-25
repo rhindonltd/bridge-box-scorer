@@ -20,9 +20,10 @@ describe("SectionPills", () => {
       "aria-selected",
       "true",
     );
-    expect(
-      screen.getByRole("tab", { name: "Blue" }),
-    ).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Blue" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
   });
 
   it("calls onSelect with the section when a pill is clicked", () => {

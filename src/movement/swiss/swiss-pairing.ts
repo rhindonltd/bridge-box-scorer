@@ -295,11 +295,7 @@ export function chooseHalfMatchGroup(
 export function halfMatchGroupIds(
   group: SwissHalfMatchGroup,
 ): Set<SwissPairId> {
-  return new Set([
-    group.anchor,
-    group.halfOneOpponent,
-    group.halfTwoOpponent,
-  ]);
+  return new Set([group.anchor, group.halfOneOpponent, group.halfTwoOpponent]);
 }
 
 /**
@@ -767,9 +763,14 @@ export function reassignBye(
     };
   }
 
-  const isSeated = seating.some((s) => s.ns === newSitOut || s.ew === newSitOut);
+  const isSeated = seating.some(
+    (s) => s.ns === newSitOut || s.ew === newSitOut,
+  );
   if (!isSeated) {
-    return { seating: seating.map((s) => ({ ...s })), sitOutPairId: currentSitOut };
+    return {
+      seating: seating.map((s) => ({ ...s })),
+      sitOutPairId: currentSitOut,
+    };
   }
 
   // The formerly-sitting-out pair takes the seat the incoming sit-out vacates.
@@ -828,7 +829,8 @@ export function evaluateSwissSeating(
   // the whole field; table numbers are within range and unique.
   const structuralReasons: string[] = [];
   const seatedIds = seatedPairIds(seating);
-  const allIds = sitOutPairId == null ? seatedIds : [...seatedIds, sitOutPairId];
+  const allIds =
+    sitOutPairId == null ? seatedIds : [...seatedIds, sitOutPairId];
   const counts = new Map<SwissPairId, number>();
   for (const id of allIds) counts.set(id, (counts.get(id) ?? 0) + 1);
 
@@ -900,7 +902,6 @@ export function evaluateSwissSeating(
     problemTables: [...problemTableSet].sort((a, b) => a - b),
   };
 }
-
 
 /**
  * The advisory-relevant parts of a {@link SwissDrawInput}, in a

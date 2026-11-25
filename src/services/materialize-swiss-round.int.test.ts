@@ -32,9 +32,8 @@ describe("materializeSwissRound", () => {
   });
 
   it("appends round 1 boards (positional seating)", async () => {
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     const db = (await harness.getDb()) as Db;
 
     // 2 tables, boards per round 3. Round 1 positional: T1 (1 vs 3), T2 (2 vs 4).
@@ -64,9 +63,8 @@ describe("materializeSwissRound", () => {
   });
 
   it("appends a later round's boards with the correct board range", async () => {
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     const db = (await harness.getDb()) as Db;
 
     // Round 2 with boards per round 3 -> boards 4..6.
@@ -92,12 +90,10 @@ describe("materializeSwissRound", () => {
   });
 
   it("writes SIT_OUT rows for the bye pair and records only the real pair", async () => {
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
-    const { getSwissBoardHistory } = await import(
-      "@/db/games/queries/swiss-board-history"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
+    const { getSwissBoardHistory } =
+      await import("@/db/games/queries/swiss-board-history");
     const db = (await harness.getDb()) as Db;
 
     // 5 pairs at 2 tables + a spare: pairs 1v3, 2v4 play; pair 5 sits out.
@@ -130,9 +126,8 @@ describe("materializeSwissRound", () => {
   });
 
   it("is idempotent per round (a repeated draw does not duplicate boards)", async () => {
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     const db = (await harness.getDb()) as Db;
 
     const seating = [

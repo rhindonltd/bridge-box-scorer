@@ -90,7 +90,9 @@ export const Loaded: Story = {
         sectionsHandler,
         resultsSummaryHandler,
         http.get(`/api/games/${GAME_ID}/movement`, () =>
-          HttpResponse.json({ result: { movement: { type: "MITCHELL", tables } } }),
+          HttpResponse.json({
+            result: { movement: { type: "MITCHELL", tables } },
+          }),
         ),
       ],
     },
@@ -105,7 +107,9 @@ export const NoMovement: Story = {
         sectionsHandler,
         resultsSummaryHandler,
         http.get(`/api/games/${GAME_ID}/movement`, () =>
-          HttpResponse.json({ result: { movement: { type: "NONE", tables: [] } } }),
+          HttpResponse.json({
+            result: { movement: { type: "NONE", tables: [] } },
+          }),
         ),
       ],
     },
@@ -121,7 +125,9 @@ export const Loading: Story = {
         resultsSummaryHandler,
         http.get(`/api/games/${GAME_ID}/movement`, async () => {
           await delay("infinite");
-          return HttpResponse.json({ result: { movement: { type: "NONE", tables: [] } } });
+          return HttpResponse.json({
+            result: { movement: { type: "NONE", tables: [] } },
+          });
         }),
       ],
     },
@@ -181,10 +187,34 @@ export const SwissPairs: Story = {
         stationary: [],
       },
       standings: [
-        { id: 1, name: "Alice North / Bob South", total: 30, rank: 1, tied: false },
-        { id: 3, name: "Carol East / Dave West", total: 25, rank: 2, tied: false },
-        { id: 2, name: "Erin North / Frank South", total: 20, rank: 3, tied: false },
-        { id: 4, name: "Gina East / Hugo West", total: 15, rank: 4, tied: false },
+        {
+          id: 1,
+          name: "Alice North / Bob South",
+          total: 30,
+          rank: 1,
+          tied: false,
+        },
+        {
+          id: 3,
+          name: "Carol East / Dave West",
+          total: 25,
+          rank: 2,
+          tied: false,
+        },
+        {
+          id: 2,
+          name: "Erin North / Frank South",
+          total: 20,
+          rank: 3,
+          tied: false,
+        },
+        {
+          id: 4,
+          name: "Gina East / Hugo West",
+          total: 15,
+          rank: 4,
+          tied: false,
+        },
       ],
       hadUnavoidableRepeat: false,
       hadStationaryConflict: false,
@@ -200,7 +230,9 @@ export const SwissPairs: Story = {
           HttpResponse.json({ result: { allResultsIn: true } }),
         ),
         http.get(`/api/games/${GAME_ID}/movement`, () =>
-          HttpResponse.json({ result: { movement: { type: "SWISS", tables } } }),
+          HttpResponse.json({
+            result: { movement: { type: "SWISS", tables } },
+          }),
         ),
       ],
     },
@@ -222,7 +254,9 @@ export const SwissPairsWaiting: Story = {
           HttpResponse.json({ result: { allResultsIn: false } }),
         ),
         http.get(`/api/games/${GAME_ID}/movement`, () =>
-          HttpResponse.json({ result: { movement: { type: "SWISS", tables } } }),
+          HttpResponse.json({
+            result: { movement: { type: "SWISS", tables } },
+          }),
         ),
       ],
     },

@@ -25,9 +25,8 @@ describe("findParticipantSecret", () => {
 
   async function seatPair(seat: string, secretKey: string) {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
 
     const p1 = await createPlayer(harness.gameId, {
       firstName: "Alice",
@@ -50,9 +49,8 @@ describe("findParticipantSecret", () => {
   it("returns the secretKey for a seated pair", async () => {
     await seatPair("A1NS", "secret-abc");
 
-    const { findParticipantSecret } = await import(
-      "@/db/games/queries/find-participant-secret"
-    );
+    const { findParticipantSecret } =
+      await import("@/db/games/queries/find-participant-secret");
 
     expect(await findParticipantSecret(harness.gameId, "A1NS")).toBe(
       "secret-abc",
@@ -62,21 +60,17 @@ describe("findParticipantSecret", () => {
   it("returns null for an unknown seat", async () => {
     await seatPair("A1NS", "secret-abc");
 
-    const { findParticipantSecret } = await import(
-      "@/db/games/queries/find-participant-secret"
-    );
+    const { findParticipantSecret } =
+      await import("@/db/games/queries/find-participant-secret");
 
     expect(await findParticipantSecret(harness.gameId, "Z9NS")).toBeNull();
   });
 
   it("returns null when the game database does not exist", async () => {
-    const { findParticipantSecret } = await import(
-      "@/db/games/queries/find-participant-secret"
-    );
+    const { findParticipantSecret } =
+      await import("@/db/games/queries/find-participant-secret");
 
-    expect(
-      await findParticipantSecret("nonexistent-game", "A1NS"),
-    ).toBeNull();
+    expect(await findParticipantSecret("nonexistent-game", "A1NS")).toBeNull();
   });
 
   it("returns the ACTIVE occupant's secret on a handover seat, not the stand-in's", async () => {
@@ -87,9 +81,7 @@ describe("findParticipantSecret", () => {
     // with its own (now dead) secret. The stand-in and the real pair never
     // authenticate at the same instant; auth must resolve to the real pair.
     const { getDb } = await import("@/db/games");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { createPlayer } = await import("@/db/games/actions/create-player");
     const db = await getDb(harness.gameId);
     if (!db) throw new Error("expected game db");
@@ -113,9 +105,8 @@ describe("findParticipantSecret", () => {
       })
       .run();
 
-    const { findParticipantSecret } = await import(
-      "@/db/games/queries/find-participant-secret"
-    );
+    const { findParticipantSecret } =
+      await import("@/db/games/queries/find-participant-secret");
 
     expect(await findParticipantSecret(harness.gameId, "A1NS")).toBe(
       "secret-real",
@@ -124,9 +115,8 @@ describe("findParticipantSecret", () => {
   describe("findSeatDeviceInfo", () => {
     it("returns the live secret and standing for a seated pair", async () => {
       await seatPair("A1NS", "secret-1");
-      const { findSeatDeviceInfo } = await import(
-        "@/db/games/queries/find-participant-secret"
-      );
+      const { findSeatDeviceInfo } =
+        await import("@/db/games/queries/find-participant-secret");
       expect(await findSeatDeviceInfo(harness.gameId, "A1NS")).toEqual({
         secretKey: "secret-1",
         standing: "ACTIVE",
@@ -134,18 +124,19 @@ describe("findParticipantSecret", () => {
     });
     it("returns null for an unknown seat or a missing game database", async () => {
       await seatPair("A1NS", "secret-1");
-      const { findSeatDeviceInfo } = await import(
-        "@/db/games/queries/find-participant-secret"
-      );
+      const { findSeatDeviceInfo } =
+        await import("@/db/games/queries/find-participant-secret");
       expect(await findSeatDeviceInfo(harness.gameId, "A9NS")).toBeNull();
       expect(await findSeatDeviceInfo("no-such-game", "A1NS")).toBeNull();
     });
     it("resolves a handover seat to the arrival anchor", async () => {
       const db = (await harness.getDb()) as import("@/db/games").Db;
-      const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+      const { seatOccupancy } =
+        await import("@/db/games/tables/seat-occupancy");
       const { createPlayer } = await import("@/db/games/actions/create-player");
       const mk = async (n: string) =>
-        (await createPlayer(harness.gameId, { firstName: n, lastName: "X" })).id;
+        (await createPlayer(harness.gameId, { firstName: n, lastName: "X" }))
+          .id;
       db.insert(seatOccupancy)
         .values([
           {
@@ -166,9 +157,8 @@ describe("findParticipantSecret", () => {
           },
         ])
         .run();
-      const { findSeatDeviceInfo } = await import(
-        "@/db/games/queries/find-participant-secret"
-      );
+      const { findSeatDeviceInfo } =
+        await import("@/db/games/queries/find-participant-secret");
       expect(await findSeatDeviceInfo(harness.gameId, "A1NS")).toEqual({
         secretKey: "live",
         standing: "ACTIVE",

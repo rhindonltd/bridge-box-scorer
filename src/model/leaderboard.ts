@@ -22,10 +22,6 @@ export interface CrossImpOverallScore {
   crossImps: number;
 }
 
-export interface ImpOverallScore {
-  imps: number;
-}
-
 /**
  * Swiss Pairs overall (Victory Points) standing for one pair.
  *
@@ -94,7 +90,6 @@ interface ScoreByModeAndScoring {
   PAIR: {
     MP: MatchpointOverallScore;
     XIMP: CrossImpOverallScore;
-    IMP: ImpOverallScore;
     SWISS_VP: SwissVpOverallScore;
   };
   TEAM: {
@@ -142,7 +137,6 @@ export interface OverallScoreBase<
 
 export type PairMatchpointOverallScore = OverallScoreBase<"PAIR", "MP">;
 export type PairXIMPOverallScore = OverallScoreBase<"PAIR", "XIMP">;
-export type PairIMPOverallScore = OverallScoreBase<"PAIR", "IMP">;
 export type PairSwissVpOverallScore = OverallScoreBase<"PAIR", "SWISS_VP">;
 export type TeamSwissVpOverallScore = OverallScoreBase<"TEAM", "SWISS_VP">;
 
@@ -181,7 +175,6 @@ export type TeamImpAggOverallScore = OverallScoreBase<"TEAM", "IMP_AGG"> & {
 export type OverallScore =
   | PairMatchpointOverallScore
   | PairXIMPOverallScore
-  | PairIMPOverallScore
   | PairSwissVpOverallScore
   | TeamSwissVpOverallScore
   | TeamImpAggOverallScore

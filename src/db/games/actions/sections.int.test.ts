@@ -47,12 +47,8 @@ describe("section queries and actions", () => {
   }
 
   it("creates sections, defaults label and ordinal, and lists them ordered", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { findSections } = await import(
-      "@/db/games/queries/find-sections"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { findSections } = await import("@/db/games/queries/find-sections");
     const { db } = await setup();
 
     await createSection(gameId, { section: "A", tables: 8 });
@@ -65,9 +61,7 @@ describe("section queries and actions", () => {
   });
 
   it("rejects duplicate section letters", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
     await setup();
 
     await createSection(gameId, { section: "A", tables: 8 });
@@ -77,15 +71,9 @@ describe("section queries and actions", () => {
   });
 
   it("renames a section label without changing its letter", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { renameSection } = await import(
-      "@/db/games/actions/rename-section"
-    );
-    const { findSections } = await import(
-      "@/db/games/queries/find-sections"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { renameSection } = await import("@/db/games/actions/rename-section");
+    const { findSections } = await import("@/db/games/queries/find-sections");
     const { db } = await setup();
 
     await createSection(gameId, { section: "A", tables: 8 });
@@ -96,21 +84,14 @@ describe("section queries and actions", () => {
   });
 
   it("resizes a section and sets/reads its movement", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { updateSectionTables } = await import(
-      "@/db/games/actions/update-section-tables"
-    );
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { getSectionMovement } = await import(
-      "@/db/games/queries/get-section-movement"
-    );
-    const { findSections } = await import(
-      "@/db/games/queries/find-sections"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { updateSectionTables } =
+      await import("@/db/games/actions/update-section-tables");
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { getSectionMovement } =
+      await import("@/db/games/queries/get-section-movement");
+    const { findSections } = await import("@/db/games/queries/find-sections");
     const { db } = await setup();
 
     await createSection(gameId, { section: "B", tables: 6 });
@@ -133,17 +114,12 @@ describe("section queries and actions", () => {
   });
 
   it("blocks shrinking a section below a seated table", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { updateSectionTables } = await import(
-      "@/db/games/actions/update-section-tables"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { updateSectionTables } =
+      await import("@/db/games/actions/update-section-tables");
     const { db } = await setup();
     const { players } = await import("@/db/games/tables/players");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
 
     await createSection(gameId, { section: "A", tables: 8 });
 
@@ -177,20 +153,12 @@ describe("section queries and actions", () => {
   });
 
   it("blocks deleting a section with seated participants", async () => {
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { deleteSection } = await import(
-      "@/db/games/actions/delete-section"
-    );
-    const { findSections } = await import(
-      "@/db/games/queries/find-sections"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { deleteSection } = await import("@/db/games/actions/delete-section");
+    const { findSections } = await import("@/db/games/queries/find-sections");
     const { db } = await setup();
     const { players } = await import("@/db/games/tables/players");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
 
     await createSection(gameId, { section: "A", tables: 8 });
     await createSection(gameId, { section: "B", tables: 4 });
@@ -233,9 +201,7 @@ describe("section queries and actions", () => {
     tag: string,
   ) {
     const { players } = await import("@/db/games/tables/players");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const p1 = db
       .insert(players)
       .values({ firstName: `${tag}1`, lastName: tag })
@@ -259,15 +225,10 @@ describe("section queries and actions", () => {
 
   describe("splitSection", () => {
     it("splits a section, renumbering the moved tables' seated pairs", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
-      const { findSections } = await import(
-        "@/db/games/queries/find-sections"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
+      const { findSections } = await import("@/db/games/queries/find-sections");
       const { findPairs } = await import("@/db/games/queries/find-pairs");
       const { db } = await setup();
 
@@ -308,12 +269,9 @@ describe("section queries and actions", () => {
     });
 
     it("returns no moves when the moved tables are empty", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       const { db } = await setup();
 
       await createSection(gameId, { section: "A", tables: 6 });
@@ -330,12 +288,9 @@ describe("section queries and actions", () => {
     });
 
     it("re-keys team names for the moved tables", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       const { teams } = await import("@/db/games/tables/teams");
       const { db } = await setup();
 
@@ -357,15 +312,11 @@ describe("section queries and actions", () => {
     });
 
     it("renumbers expected-late marks on moved tables (and leaves kept ones)", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
-      const { expectedLateSeats } = await import(
-        "@/db/games/tables/expected-late-seats"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
+      const { expectedLateSeats } =
+        await import("@/db/games/tables/expected-late-seats");
       const { db } = await setup();
 
       await createSection(gameId, { section: "A", tables: 6 });
@@ -390,18 +341,13 @@ describe("section queries and actions", () => {
     });
 
     it("clears the stored movement on both affected sections", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { setSectionMovement } = await import(
-        "@/db/games/actions/set-section-movement"
-      );
-      const { getSectionMovement } = await import(
-        "@/db/games/queries/get-section-movement"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { setSectionMovement } =
+        await import("@/db/games/actions/set-section-movement");
+      const { getSectionMovement } =
+        await import("@/db/games/queries/get-section-movement");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       const { db } = await setup();
 
       await createSection(gameId, { section: "A", tables: 6 });
@@ -421,12 +367,9 @@ describe("section queries and actions", () => {
     });
 
     it("rejects a section too small to split (fewer than 4 tables)", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       await setup();
 
       await createSection(gameId, { section: "A", tables: 3 });
@@ -441,12 +384,9 @@ describe("section queries and actions", () => {
     });
 
     it("uses the singular 'table' when rejecting a one-table section", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       await setup();
       await createSection(gameId, { section: "A", tables: 1 });
       await expect(
@@ -458,15 +398,11 @@ describe("section queries and actions", () => {
       ).rejects.toThrow(/it has 1 table,/);
     });
     it("leaves a seat that cannot be parsed where it is", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
-      const { seatOccupancy } = await import(
-        "@/db/games/tables/seat-occupancy"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
+      const { seatOccupancy } =
+        await import("@/db/games/tables/seat-occupancy");
       const { db } = await setup();
       await createSection(gameId, { section: "A", tables: 6 });
       await seatPair(db, "not-a-seat" as PairSeat, "odd");
@@ -479,12 +415,9 @@ describe("section queries and actions", () => {
       expect(db.select().from(seatOccupancy).all()[0].seat).toBe("not-a-seat");
     });
     it("rejects an out-of-range split point (each side keeps 2+ tables)", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       await setup();
 
       // A 6-table section can move 2..4 tables; 1 and 5 would leave a side with
@@ -508,12 +441,9 @@ describe("section queries and actions", () => {
     });
 
     it("rejects an unknown source or a taken new letter", async () => {
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { splitSection } = await import(
-        "@/db/games/actions/split-section"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { splitSection } = await import("@/db/games/actions/split-section");
       await setup();
 
       await createSection(gameId, { section: "A", tables: 4 });

@@ -90,7 +90,14 @@ test.describe("Director table management", () => {
 
       // Seat one pair at table 1 NS.
       const { jacquelineCollier, davidCollier } = SEEDED_EBU;
-      await seatPair(directorPage, gameId, 0, "NS", jacquelineCollier, davidCollier);
+      await seatPair(
+        directorPage,
+        gameId,
+        0,
+        "NS",
+        jacquelineCollier,
+        davidCollier,
+      );
 
       await openTablesTab(directorPage, gameId);
 

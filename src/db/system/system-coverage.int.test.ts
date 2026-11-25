@@ -30,9 +30,8 @@ describe("system db: coverage gaps", () => {
 
   it("seedAdminKey generates a verifiable key and writes the label file", async () => {
     const { seedAdminKey } = await import("@/db/system/seed-admin-key");
-    const { adminKeyExists, verifyAdminKey } = await import(
-      "@/db/system/queries/admin-key"
-    );
+    const { adminKeyExists, verifyAdminKey } =
+      await import("@/db/system/queries/admin-key");
     const { adminKeyFilePath } = await import("@/db/system/admin-key-file");
 
     expect(await adminKeyExists()).toBe(false);
@@ -63,21 +62,22 @@ describe("system db: coverage gaps", () => {
   });
 
   it("verifyDirectorPassword returns false when no password has been set", async () => {
-    const { verifyDirectorPassword } = await import(
-      "@/db/system/queries/login-sessions"
-    );
+    const { verifyDirectorPassword } =
+      await import("@/db/system/queries/login-sessions");
     expect(await verifyDirectorPassword("anything")).toBe(false);
   });
 
   it("findLoginSession reads a session through the synchronous getSystemDb", async () => {
-    const { createLoginSession } = await import(
-      "@/db/system/actions/create-login-session"
-    );
-    const { findLoginSession } = await import(
-      "@/db/system/queries/find-login-session"
-    );
+    const { createLoginSession } =
+      await import("@/db/system/actions/create-login-session");
+    const { findLoginSession } =
+      await import("@/db/system/queries/find-login-session");
 
-    await createLoginSession({ token: "tok-1", gameId: "g1", role: "DIRECTOR" });
+    await createLoginSession({
+      token: "tok-1",
+      gameId: "g1",
+      role: "DIRECTOR",
+    });
 
     expect(findLoginSession("tok-1")).toMatchObject({ token: "tok-1" });
     expect(findLoginSession("missing")).toBeNull();
@@ -109,9 +109,8 @@ describe("system db: coverage gaps", () => {
       }),
     }));
 
-    const { findLoginSession } = await import(
-      "@/db/system/queries/find-login-session"
-    );
+    const { findLoginSession } =
+      await import("@/db/system/queries/find-login-session");
     expect(findLoginSession("tok")).toBeNull();
 
     vi.doUnmock("fs");
@@ -129,9 +128,8 @@ describe("system db: coverage gaps", () => {
 
     try {
       expect(fs.existsSync(dataDir)).toBe(false);
-      const { findLoginSession } = await import(
-        "@/db/system/queries/find-login-session"
-      );
+      const { findLoginSession } =
+        await import("@/db/system/queries/find-login-session");
       // No session table row yet (fresh, unmigrated file) — but the getSystemDb
       // path (dir creation + drizzle open) still runs. Querying an unmigrated
       // db throws, so we only assert the directory was created.

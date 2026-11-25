@@ -20,7 +20,7 @@ import {
   type SerializableTeamsAdvisoryInputs,
   type TeamsTriple,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
-import { type TeamTripleKind } from "@/scoring/swiss/team-match";
+import type { TeamTripleKind } from "@/modules/scoring";
 import type { SwissTeamsOddRound } from "@/model/selected-movement";
 import {
   resolveSwissTeamsMatchNames,

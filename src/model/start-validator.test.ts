@@ -182,9 +182,7 @@ describe("validateStart", () => {
     it("lets the game start with TWO empty seats when both are marked late", () => {
       // Two whole positions missing (A3EW, A5EW) would normally be
       // MULTIPLE_EMPTY_POSITIONS; marking both expected-late accounts for them.
-      const seated = allSeats(5).filter(
-        (s) => s !== "A3EW" && s !== "A5EW",
-      );
+      const seated = allSeats(5).filter((s) => s !== "A3EW" && s !== "A5EW");
 
       const result = validateStart(expectedFor(5), seated, ["A3EW", "A5EW"]);
 
@@ -197,9 +195,7 @@ describe("validateStart", () => {
 
     it("still allows ONE unmarked sit-out alongside marked-late seats", () => {
       // A3EW marked late (accounted for) + A5EW genuinely a sit-out.
-      const seated = allSeats(5).filter(
-        (s) => s !== "A3EW" && s !== "A5EW",
-      );
+      const seated = allSeats(5).filter((s) => s !== "A3EW" && s !== "A5EW");
 
       const result = validateStart(expectedFor(5), seated, ["A3EW"]);
 

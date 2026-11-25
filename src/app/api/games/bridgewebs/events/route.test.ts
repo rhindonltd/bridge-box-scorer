@@ -5,7 +5,8 @@ vi.mock("@/db/system/queries/bridgewebs-credentials", () => ({
   getBridgewebsCredentials: vi.fn(),
 }));
 vi.mock("@/lib/bridgewebs/client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/bridgewebs/client")>();
+  const actual =
+    await importOriginal<typeof import("@/lib/bridgewebs/client")>();
   return { ...actual, fetchEventsForDay: vi.fn() };
 });
 

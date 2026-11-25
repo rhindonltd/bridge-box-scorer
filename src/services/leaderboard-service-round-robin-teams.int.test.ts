@@ -97,28 +97,30 @@ describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", (
     // Closed room at team 2's home table: team 2 (NS) makes 3NT= = +400.
     // Team 1 net +30 -> team 1 wins the match.
     db.insert(boards)
-      .values([
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 1,
-          boardNumber: 1,
-          ns: "A1NS",
-          ew: "A2EW",
-          confirmedResult: "3NTN+1" as BoardOutcome,
-          status: "CONFIRMED" as const,
-        },
-        {
-          section: "A",
-          roundNumber: 1,
-          tableNumber: 2,
-          boardNumber: 1,
-          ns: "A2NS",
-          ew: "A1EW",
-          confirmedResult: "3NTN=" as BoardOutcome,
-          status: "CONFIRMED" as const,
-        },
-      ].map(withFixtureMatchId))
+      .values(
+        [
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 1,
+            boardNumber: 1,
+            ns: "A1NS",
+            ew: "A2EW",
+            confirmedResult: "3NTN+1" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+          {
+            section: "A",
+            roundNumber: 1,
+            tableNumber: 2,
+            boardNumber: 1,
+            ns: "A2NS",
+            ew: "A1EW",
+            confirmedResult: "3NTN=" as BoardOutcome,
+            status: "CONFIRMED" as const,
+          },
+        ].map(withFixtureMatchId),
+      )
       .run();
 
     const result = await computeLeaderboard(db, gameId);

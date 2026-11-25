@@ -15,9 +15,7 @@ describe("BoardDropDown", () => {
     );
 
     // Trigger shows the current selection.
-    expect(
-      screen.getByRole("button", { name: /Board 2/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Board 2/ })).toBeInTheDocument();
 
     // List is closed initially (only the trigger button exists).
     expect(screen.getAllByRole("button")).toHaveLength(1);
@@ -90,7 +88,9 @@ describe("BoardDropDown", () => {
 
     // Only the trigger and the outside button remain.
     expect(
-      screen.getAllByRole("button").filter((b) => /^Board \d/.test(b.textContent ?? "")),
+      screen
+        .getAllByRole("button")
+        .filter((b) => /^Board \d/.test(b.textContent ?? "")),
     ).toHaveLength(1);
   });
 
