@@ -5,7 +5,7 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { Spinner } from "@/components/common/Spinner";
 import { useSections } from "@/hooks/sections";
 import { fetchMismatchCandidates } from "@/lib/mismatch-service";
-import type { SectionMismatchCandidate } from "@/services/detect-swiss-mismatch-service";
+import type { SectionMismatchCandidate } from "@/modules/swiss";
 import { emitWithAck } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { getDirectorToken } from "@/lib/director-token";

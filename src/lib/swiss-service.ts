@@ -1,14 +1,13 @@
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck } from "@/lib/socket";
 import { getDirectorToken } from "@/lib/director-token";
-import type { NamedSeating } from "@/services/swiss-seating-names";
-import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
+import type { NamedSeating, NamedTeamsSeating } from "@/model/swiss-seating";
 import type {
   SerializableAdvisoryInputs,
   SwissHalfMatchSeating,
-} from "@/movement/swiss/swiss-pairing";
-import type { SerializableTeamsAdvisoryInputs } from "@/movement/swiss-teams/swiss-teams-pairing";
-import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
+  SerializableTeamsAdvisoryInputs,
+  SwissStandingEntry,
+} from "@/modules/swiss";
 
 /** A single table's seating as stable Swiss pair ids. */
 export interface SwissSeatingEntry {

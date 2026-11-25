@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  swissPairIdFromParticipant,
-  swissPairIdFromSeat,
-} from "./swiss-board-history";
+import { swissPairIdFromParticipant, swissPairIdFromSeat } from "./pair-ids";
 
 const TABLES = 3;
 

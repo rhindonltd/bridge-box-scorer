@@ -4,7 +4,7 @@ import {
   decodeVpById,
   pairLeaderboardDecoder,
   teamLeaderboardDecoder,
-} from "./leaderboard-standings-decode";
+} from "./standings-decode";
 import type { SectionStandings } from "@/modules/scoring";
 
 /** A section leaderboard carrying just the given overall lines. */

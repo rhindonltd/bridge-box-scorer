@@ -72,7 +72,7 @@ describe("swiss teams committed readers", () => {
       ]);
       expect(history.playedOpponents.size).toBe(3);
       const { teamOpponentKey } =
-        await import("@/movement/swiss-teams/swiss-teams-pairing");
+        await import("@/modules/swiss/teams/swiss-teams-pairing");
       expect(history.playedOpponents.has(teamOpponentKey(1, 2))).toBe(true);
       expect(history.playedOpponents.has(teamOpponentKey(10, 11))).toBe(false);
     });

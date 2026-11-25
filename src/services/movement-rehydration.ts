@@ -6,8 +6,7 @@ import { getPairMovement } from "@/db/movements/queries/get-movement";
 import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
 import { generateMitchell } from "@/movement/mitchell/mitchell";
 import { boardRangeForSet } from "@/movement/shared";
-import { swissRoundOne } from "@/movement/swiss/swiss-pairing";
-import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
+import { swissRoundOne, swissRoundBoardRange } from "@/modules/swiss";
 
 /**
  * A single round of a rehydrated movement, carrying concrete board numbers.

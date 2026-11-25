@@ -226,6 +226,7 @@ const eslintConfig = defineConfig([
   },
 
   // Each pure module may import only the kernel and itself.
+  moduleBlock("swiss"),
   moduleBlock("rulings"),
   moduleBlock("scoring"),
   // Results views lay out scoring's numbers, so they read scoring's types.

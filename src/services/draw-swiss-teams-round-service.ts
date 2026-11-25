@@ -5,30 +5,26 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { isSwissRoundComplete } from "@/services/swiss-round-completion";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
+import type { TeamId, TeamsMatch } from "@/model/teams-match-layout";
 import {
-  teamIds,
-  type TeamId,
-  type TeamsMatch,
-} from "@/model/teams-match-layout";
-import {
-  continueLongTriple,
   drawSwissTeamsRound,
-  roundOddResolution,
+  isStructurallyValidTeamsRound,
+  resolveTeamsOddRound,
+  swissTeamsField,
+  swissTeamsHistory,
   teamOpponentKey,
   type OddHandling,
   type OddRoundResolution,
+  type RankedSwissTeam,
   type SerializableTeamsAdvisoryInputs,
+  type SwissStandingEntry,
+  type SwissTeamsHistory,
   type TeamsTriple,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
-import type { TeamTripleKind } from "@/modules/scoring";
-import type { SwissTeamsOddRound } from "@/model/selected-movement";
-import {
-  resolveSwissTeamsMatchNames,
-  type NamedTeamsSeating,
-} from "@/services/swiss-teams-seating-names";
+} from "@/modules/swiss";
+import type { NamedTeamsSeating } from "@/model/swiss-seating";
+import { resolveSwissTeamsMatchNames } from "@/services/swiss-teams-seating-names";
 import { findTeams } from "@/db/games/queries/find-teams";
-import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
-import { SectionLetter, parseSeat } from "@/model/participants";
+import type { SectionLetter } from "@/model/participants";
 
 /**
  * Why a Swiss Teams draw could not proceed. Surfaced to the director so the
@@ -80,45 +76,9 @@ export type CommitSwissTeamsResult =
   | { ok: false; reason: DrawSwissTeamsRejection | "INVALID_MATCHES" };
 
 /** A triple recovered from the match rows, for the draw's slot-2 continuation. */
-interface DrawTriple {
-  kind: TeamTripleKind;
-  teams: [number, number, number];
-  rounds: number[];
-}
-
-/** The current-round number and the matches already played, from match rows. */
-interface SwissTeamsHistory {
-  highestRound: number;
-  playedOpponents: Set<string>;
-  /** Teams that have already had a bye (recovered from BYE match rows). */
-  hadBye: Set<TeamId>;
-  /** Teams that have already been in a triple (recovered from TRIPLE rows). */
-  hadTriple: Set<TeamId>;
-  /** Every triple played so far (short + long), recovered from the match rows. */
-  triples: DrawTriple[];
-}
-
-/** Safe home-table id of a seat string, or null when it is not a seat. */
-function teamTableOf(seat: string): TeamId | null {
-  try {
-    return parseSeat(seat).tableNumber;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Reduce a section's `matches` rows to the Swiss Teams history the draw needs:
- * the highest round materialized so far, the set of team matchups already
- * played, the teams that have already had a bye, and every triple played so far
- * (with the teams in each, so a long triple's second slot can reuse its first
- * slot's teams).
- *
- * The authoritative `matches` table is read directly — no triple re-detection.
- * A TEAMS or TRIPLE row's `home`/`opponent` are the two teams' home-NS seats
- * (a played matchup); a BYE row names the sitting team; a triple's TRIPLE rows
- * share a `groupId` and together name its three teams and the round(s) it spans
- * (SHORT one round, LONG two).
+ * Read a section's `matches` rows and fold them into the Swiss Teams history
+ * the draw needs (`swissTeamsHistory`).
  */
 async function getSwissTeamsHistory(
   db: Db,
@@ -127,65 +87,9 @@ async function getSwissTeamsHistory(
   const { matches } = await import("@/db/games/tables/matches");
   const { eq } = await import("drizzle-orm");
 
-  const matchRows = await db
-    .select()
-    .from(matches)
-    .where(eq(matches.section, section));
-
-  const playedOpponents = new Set<string>();
-  const hadBye = new Set<TeamId>();
-  const hadTriple = new Set<TeamId>();
-  let highestRound = 0;
-
-  // Per groupId, a triple's teams and the rounds it spans.
-  const tripleByGroup = new Map<
-    string,
-    { kind: TeamTripleKind; teams: Set<number>; rounds: Set<number> }
-  >();
-
-  for (const m of matchRows) {
-    highestRound = Math.max(highestRound, m.roundNumber);
-    const home = teamTableOf(m.home);
-    const away = m.opponent != null ? teamTableOf(m.opponent) : null;
-
-    if (m.kind === "BYE") {
-      if (home != null) hadBye.add(home);
-      continue;
-    }
-
-    if (home != null && away != null) {
-      playedOpponents.add(teamOpponentKey(home, away));
-    }
-
-    if (m.kind === "TRIPLE" && m.groupId != null) {
-      const entry = tripleByGroup.get(m.groupId) ?? {
-        kind: (m.vpPool === 20 ? "LONG" : "SHORT") as TeamTripleKind,
-        teams: new Set<number>(),
-        rounds: new Set<number>(),
-      };
-      if (home != null) entry.teams.add(home);
-      if (away != null) entry.teams.add(away);
-      entry.rounds.add(m.roundNumber);
-      tripleByGroup.set(m.groupId, entry);
-    }
-  }
-
-  const triples: DrawTriple[] = [];
-  for (const { kind, teams, rounds } of tripleByGroup.values()) {
-    for (const t of teams) hadTriple.add(t);
-    const sortedTeams = [...teams].sort((a, b) => a - b);
-    triples.push({
-      kind,
-      teams: [sortedTeams[0], sortedTeams[1], sortedTeams[2]] as [
-        number,
-        number,
-        number,
-      ],
-      rounds: [...rounds].sort((a, b) => a - b),
-    });
-  }
-
-  return { highestRound, playedOpponents, hadBye, hadTriple, triples };
+  return swissTeamsHistory(
+    await db.select().from(matches).where(eq(matches.section, section)),
+  );
 }
 
 /**
@@ -214,70 +118,20 @@ function isRoundComplete(
 }
 
 /**
- * Build the ranked team standings (best team first) as stable team ids from the
- * section leaderboard. The team overall lines are keyed by the team's home NS
- * seat (e.g. "A1NS"), already ranked; map each back to its home table number.
- * Any team not yet ranked is appended in id order so the field is complete.
+ * The field in draw order (best team first), from the section standings
+ * (`swissTeamsField`).
  */
-/** A ranked standings line for a team, before names are resolved. */
-interface RankedTeam {
-  id: TeamId;
-  total: number;
-  rank: number;
-  tied: boolean;
-}
-
 async function rankedStandings(
   db: Db,
   gameId: string,
   section: SectionLetter,
   teams: number,
-): Promise<{ order: TeamId[]; ranked: RankedTeam[] }> {
+): Promise<{ order: TeamId[]; ranked: RankedSwissTeam[] }> {
   const sections = await computeSectionLeaderboards(db, gameId);
-  const sectionBoard = sections.find((s) => s.section === section);
-
-  const order: TeamId[] = [];
-  const ranked: RankedTeam[] = [];
-  const seen = new Set<TeamId>();
-
-  if (sectionBoard) {
-    // Lines are already ranked best-first and (for Swiss Teams VP) carry the
-    // running VP total the field is ranked on plus its rank/tie flags.
-    for (const line of sectionBoard.overallScore.lines as {
-      teamId: string;
-      totalVP?: number;
-      rank: number;
-      tied: boolean;
-    }[]) {
-      try {
-        const id = parseSeat(line.teamId).tableNumber;
-        if (!seen.has(id)) {
-          order.push(id);
-          ranked.push({
-            id,
-            total: line.totalVP ?? 0,
-            rank: line.rank,
-            tied: line.tied,
-          });
-          seen.add(id);
-        }
-      } catch {
-        // Skip a non-seat team id (should not occur).
-      }
-    }
-  }
-
-  // Append any team not yet ranked, lowest priority, with a zero total.
-  const lastRank = ranked.length > 0 ? ranked[ranked.length - 1].rank : 0;
-  for (const id of teamIds(teams)) {
-    if (!seen.has(id)) {
-      order.push(id);
-      ranked.push({ id, total: 0, rank: lastRank + 1, tied: false });
-      seen.add(id);
-    }
-  }
-
-  return { order, ranked };
+  return swissTeamsField(
+    sections.find((s) => s.section === section),
+    teams,
+  );
 }
 
 /** Everything needed to draw or validate the next teams round after checks pass. */
@@ -306,64 +160,7 @@ interface TeamsDrawContext {
   hadBye: ReadonlySet<TeamId>;
   hadTriple: ReadonlySet<TeamId>;
   /** Current standings (best first) with running totals, for the preview. */
-  ranked: RankedTeam[];
-}
-
-/**
- * Resolve the next round's odd-team handling and, when it is the second slot of
- * a long triple, the fixed triple to reuse.
- *
- * A long triple occupies two adjacent plan entries sharing a `group`. If the
- * next round's entry is `{ kind: "LONG"; group g }` AND the PREVIOUS round's
- * entry is the same group, the next round is that triple's SECOND slot: its
- * three teams are fixed by the first slot (recovered from the detected
- * triples), advanced to slot 2 via {@link continueLongTriple}. No fresh triple
- * is drawn. In every other case (bye, short, or a long triple's first slot)
- * there is no fixed triple.
- */
-function resolveOddRound(
-  oddHandling: OddHandling,
-  oddRoundPlan: SwissTeamsOddRound[] | undefined,
-  nextRound: number,
-  triples: DrawTriple[],
-): { oddRound: OddRoundResolution; fixedTriple: TeamsTriple | null } {
-  const plan = oddRoundPlan as OddRoundResolution[] | undefined;
-  const oddRound = roundOddResolution(oddHandling, plan, nextRound);
-
-  if (typeof oddRound !== "object" || oddRound.kind !== "LONG") {
-    return { oddRound, fixedTriple: null };
-  }
-
-  const prev = plan?.[nextRound - 2];
-  const isSecondSlot =
-    typeof prev === "object" &&
-    prev.kind === "LONG" &&
-    prev.group === oddRound.group;
-  if (!isSecondSlot) {
-    return { oddRound, fixedTriple: null };
-  }
-
-  // The first slot was the previous round; find that long triple's teams.
-  const firstRound = nextRound - 1;
-  const firstSlot = triples.find(
-    (t) => t.kind === "LONG" && t.rounds.includes(firstRound),
-  );
-  if (!firstSlot) {
-    // The first slot isn't recoverable yet (shouldn't happen once it is
-    // materialized); fall back to drawing a fresh long triple.
-    return { oddRound, fixedTriple: null };
-  }
-
-  const [a, b, c] = firstSlot.teams;
-  const fixedTriple = continueLongTriple({
-    a,
-    b,
-    c,
-    kind: "LONG",
-    group: oddRound.group,
-    slot: 1,
-  });
-  return { oddRound, fixedTriple };
+  ranked: RankedSwissTeam[];
 }
 
 /**
@@ -419,7 +216,7 @@ async function resolveTeamsDrawContext(
   const { order, ranked } = await rankedStandings(db, gameId, section, teams);
 
   const nextRound = currentRound + 1;
-  const { oddRound, fixedTriple } = resolveOddRound(
+  const { oddRound, fixedTriple } = resolveTeamsOddRound(
     oddHandling,
     oddRoundPlan,
     nextRound,
@@ -516,7 +313,7 @@ export async function previewNextSwissTeamsRound(
 async function buildTeamStandings(
   db: Db,
   section: SectionLetter,
-  ranked: RankedTeam[],
+  ranked: RankedSwissTeam[],
 ): Promise<SwissStandingEntry[]> {
   const assigned = await findTeams(db);
   const nameBySeat = new Map(assigned.map((t) => [t.id, t.name]));
@@ -528,30 +325,6 @@ async function buildTeamStandings(
     rank: r.rank,
     tied: r.tied,
   }));
-}
-
-/**
- * Whether a set of team matches (+ bye/triple) is a structurally valid round
- * for a field of `teams` teams: every team appears exactly once across the
- * matches, the bye, and the triple, and each is a real team id. Advisory
- * issues (a repeat pairing) are NOT checked here — those are the director's
- * call and don't block a commit.
- */
-function isStructurallyValidTeamsRound(
-  teams: number,
-  matches: TeamsMatch[],
-  byeTeamId: TeamId | null,
-  triple: TeamsTriple | null,
-): boolean {
-  const seen: TeamId[] = [];
-  for (const m of matches) seen.push(m.a, m.b);
-  if (byeTeamId != null) seen.push(byeTeamId);
-  if (triple != null) seen.push(triple.a, triple.b, triple.c);
-
-  const expected = teamIds(teams);
-  if (seen.length !== expected.length) return false;
-  if (new Set(seen).size !== seen.length) return false;
-  return seen.every((id) => id >= 1 && id <= teams);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { getDirectorToken } from "@/lib/director-token";
-import type { SectionMismatchCandidate } from "@/services/detect-swiss-mismatch-service";
+import type { SectionMismatchCandidate } from "@/modules/swiss";
 
 /**
  * Director-only §3.5 mismatch candidate fetch. Like the section-management

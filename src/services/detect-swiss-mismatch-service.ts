@@ -1,122 +1,62 @@
 import { getDb, type Db } from "@/db/games";
-import { SectionLetter, parseSeat } from "@/model/participants";
-import { stationaryPairsForRound } from "@/model/selected-movement";
+import { SectionLetter } from "@/model/participants";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import {
   getSwissTeamsPriorHistory,
   getSwissTeamsCommittedRound,
 } from "@/db/games/queries/swiss-teams-committed";
 import {
-  detectTeamsRoundMismatches,
-  detectTripleMismatches,
-} from "@/movement/swiss-teams/detect-teams-mismatch";
-import { chooseTeamTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
-import type { SectionStandings } from "@/modules/scoring";
-import {
   computeSectionLeaderboards,
   computeSectionLeaderboardsAsOf,
 } from "@/services/leaderboard-service";
-import {
-  getSwissBoardHistory,
-  swissPairIdFromParticipant,
-} from "@/db/games/queries/swiss-board-history";
-import {
-  decodeStandingsOrder,
-  decodeVpById,
-  pairLeaderboardDecoder,
-  teamLeaderboardDecoder,
-} from "@/services/leaderboard-standings-decode";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
 import { getSwissCommittedRound } from "@/db/games/queries/swiss-committed-seating";
-import {
-  swissPairHomeSeat,
-  type SwissDrawInput,
-  type SwissHomeSeat,
-  type SwissPairId,
-} from "@/movement/swiss/swiss-pairing";
-import { swissRoundBoardRange } from "@/services/materialize-swiss-round";
-import { parseMismatches } from "@/model/swiss-mismatch";
 import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { eq } from "drizzle-orm";
 import {
-  detectRoundMismatches,
-  type MismatchCandidate,
-} from "@/movement/swiss/detect-mismatch";
+  decodeStandingsOrder,
+  decodeVpById,
+  detectSwissPairsMismatches,
+  detectSwissTeamsMismatches,
+  pairLeaderboardDecoder,
+  ruledMismatches,
+  swissPairIdFromParticipant,
+  teamLeaderboardDecoder,
+  teamTableOf,
+  teamsRoundToAssess,
+  type PairsRoundReplay,
+  type RuledMismatch,
+  type SectionMismatchCandidate,
+  type SwissPairsDrawSpec,
+  type TeamsRoundReplay,
+} from "@/modules/swiss";
 
 /**
- * EBU §3.5 mismatch DETECTION for a Swiss PAIRS section.
+ * EBU §3.5 mismatch DETECTION for a Swiss section — the adapter.
  *
  * After a retroactive score adjustment on an earlier round, the committed draws
  * of later rounds may no longer match what the corrected standings would have
- * produced. This service re-derives, for each already-committed round R (R ≥ 2),
- * the draw the CORRECTED standings-as-of-R would have given, diffs it against
- * what was actually played, and returns the pairs whose opponent changed by
- * more than 5 current VP — the §3.5 candidates a director then reviews.
+ * produced. For each already-committed round R (R ≥ 2) this reads what the
+ * replay needs — the committed seating, the history of earlier rounds and the
+ * corrected standings as of R — and hands it to the swiss module's replay
+ * driver, which re-derives the draw and returns the pairs/teams whose opponent
+ * changed by more than 5 current VP: the §3.5 candidates a director reviews.
  *
  * It is read-only and never rules: fault and the "valid alternatives" exception
  * are the director's call (they feed the existing `markMismatch` adjustment).
  */
 
 /**
- * A detected §3.5 candidate — pairs OR teams — plus the location the director's
- * ruling targets. The §3.5.2 adjustment is applied through `markMismatch`,
- * which is keyed to a (round, table, board) room and a home-relative `side`;
- * those are resolved here from the committed seating so the review UI can emit
- * the ruling directly without re-deriving them.
- *
- * Participant ids are stable pair ids (pairs) or home-table team ids (teams);
- * `participantKind` tells the UI which it is, for the right wording.
- */
-export interface SectionMismatchCandidate {
-  section: SectionLetter;
-  participantKind: "PAIR" | "TEAM";
-  roundNumber: number;
-  /** The mismatched pair/team (stable id). */
-  mismatchedId: number;
-  /** The opponent actually played (stable id). */
-  actualOpponent: number;
-  /** The opponent the corrected draw would have given (stable id). */
-  correctOpponent: number;
-  actualOpponentVp: number;
-  correctOpponentVp: number;
-  direction: MismatchCandidate["direction"];
-  /** The table the mismatched pair/team sat at this round. */
-  tableNumber: number;
-  /** Which seat the mismatched side held there (NS/EW), for the MM token. */
-  side: "NS" | "EW";
-  /** A board number of that round, for the live-traveller push on apply. */
-  boardNumber: number;
-}
-
-/** Decode each ranked leaderboard line into a stable pair id, best-first. */
-function standingsOrder(
-  board: SectionStandings | undefined,
-  tables: number,
-): SwissPairId[] {
-  return decodeStandingsOrder(board, pairLeaderboardDecoder(tables));
-}
-
-/** A pair-id → current total VP map from the (as-of-now) section leaderboard. */
-function currentVpByPair(
-  board: SectionStandings | undefined,
-  tables: number,
-): Map<SwissPairId, number> {
-  return decodeVpById(board, pairLeaderboardDecoder(tables));
-}
-
-/**
- * The pairs/teams already ruled mismatched, so detection doesn't list them
- * again. Each ruled side is recorded with its round and the boards of the match
- * it was ruled on; only THAT candidate is then dropped — a ruling for one pair
- * leaves every other candidate in the round (including its own opponent's)
- * listed. `idOf` decodes a match's `home`/`opponent` into the stable id a
+ * The sides already ruled mismatched in a section, so detection doesn't list
+ * them again. `idOf` decodes a match's `home`/`opponent` into the stable id a
  * candidate carries (a Swiss pair number, or a team's home table).
  */
-async function alreadyRuled(
+async function readRuledMismatches(
   db: Db,
   section: SectionLetter,
   idOf: (participant: string) => number | null,
-): Promise<(c: SectionMismatchCandidate) => boolean> {
+): Promise<RuledMismatch[]> {
   const rows = await db
     .select({
       roundNumber: matches.roundNumber,
@@ -128,45 +68,7 @@ async function alreadyRuled(
     })
     .from(matches)
     .where(eq(matches.section, section));
-
-  const ruled: {
-    round: number;
-    id: number;
-    boardStart: number;
-    boardEnd: number;
-  }[] = [];
-  for (const r of rows) {
-    if (r.ruling == null) continue;
-    for (const { side } of parseMismatches(r.ruling)) {
-      const participant = side === "NS" ? r.home : r.opponent;
-      const id = participant != null ? idOf(participant) : null;
-      if (id == null) continue;
-      ruled.push({
-        round: r.roundNumber,
-        id,
-        boardStart: r.boardStart,
-        boardEnd: r.boardEnd,
-      });
-    }
-  }
-
-  return (c) =>
-    ruled.some(
-      (r) =>
-        r.round === c.roundNumber &&
-        r.id === c.mismatchedId &&
-        c.boardNumber >= r.boardStart &&
-        c.boardNumber <= r.boardEnd,
-    );
-}
-
-/** A team's id (its home table) from a match's `home`/`opponent` seat. */
-function teamIdOf(participant: string): number | null {
-  try {
-    return parseSeat(participant).tableNumber;
-  } catch {
-    return null;
-  }
+  return ruledMismatches(rows, idOf);
 }
 
 /**
@@ -197,29 +99,15 @@ export async function detectSectionMismatches(
   return [];
 }
 
-/**
- * Detect §3.5 mismatch candidates across one Swiss PAIRS section.
- *
- * For each committed round from 2 up to the highest played, it rebuilds the
- * corrected as-of-R draw input (history over rounds < R + corrected
- * standings-as-of-R) and diffs the replayed draw against the committed seating.
- * A pair the director has already ruled mismatched is not listed again; the
- * round's other candidates still are.
- */
+/** Read one Swiss PAIRS section's committed rounds and replay them. */
 async function detectPairsSectionMismatches(
   gameId: string,
   db: Db,
   section: SectionLetter,
-  swiss: {
-    tables: number;
-    boardsPerRound: number;
-    stationaryPairs?: number[];
-    stationaryEarlier?: { throughRound: number; pairs: number[] }[];
-    oddHandling?: "BYE" | "HALF_MATCHES";
-    oddRoundPlan?: ("BYE" | "HALF_MATCHES")[];
-  },
+  swiss: SwissPairsDrawSpec & { boardsPerRound: number },
 ): Promise<SectionMismatchCandidate[]> {
-  const { tables, boardsPerRound, oddHandling = "BYE", oddRoundPlan } = swiss;
+  const { tables } = swiss;
+  const decoder = pairLeaderboardDecoder(tables);
 
   const history = await getSwissBoardHistory(db, section, tables);
   const highestRound = history.highestRound;
@@ -227,246 +115,80 @@ async function detectPairsSectionMismatches(
 
   // Current VP (as of now) for the > 5 comparison, from the full leaderboard.
   const nowSections = await computeSectionLeaderboards(db, gameId);
-  const vpByPair = currentVpByPair(
+  const vpByPair = decodeVpById(
     nowSections.find((s) => s.section === section),
-    tables,
+    decoder,
   );
 
-  const isRuled = await alreadyRuled(db, section, (p) =>
+  const ruled = await readRuledMismatches(db, section, (p) =>
     swissPairIdFromParticipant(p, tables),
   );
 
-  const candidates: SectionMismatchCandidate[] = [];
-
+  const rounds: PairsRoundReplay[] = [];
   for (let round = 2; round <= highestRound; round++) {
     const committed = await getSwissCommittedRound(db, section, tables, round);
-
     // Corrected standings as of this round (rounds < round, current values).
     const asOf = await computeSectionLeaderboardsAsOf(db, gameId, round);
-    const order = standingsOrder(
-      asOf.find((s) => s.section === section),
-      tables,
-    );
-
     // History the round-R draw consumed (rounds < round).
     const priorHistory = await getSwissBoardHistory(db, section, tables, round);
-
-    /* v8 ignore next 4 -- the `?.`/`?? "BYE"` fallbacks are unreachable: the movement schema requires an oddRoundPlan with one entry per round whenever oddHandling is HALF_MATCHES */
-    const roundOddHandling =
-      oddHandling === "HALF_MATCHES" &&
-      (oddRoundPlan?.[round - 1] ?? "BYE") === "HALF_MATCHES"
-        ? "HALF_MATCHES"
-        : "BYE";
-
-    // Each round is replayed under the stationary list it was DRAWN under, so a
-    // later change by the director can't make an earlier round look wrong.
-    const stationary = new Map<SwissPairId, SwissHomeSeat>();
-    for (const pairId of stationaryPairsForRound(swiss, round)) {
-      stationary.set(pairId, swissPairHomeSeat(tables, pairId));
-    }
-    const correctedInput: SwissDrawInput = {
-      tables,
-      standings: order,
-      playedOpponents: priorHistory.playedOpponents,
-      hadBye: priorHistory.hadBye,
-      hadHalfMatch: priorHistory.hadHalfMatch,
-      oddHandling: roundOddHandling,
-      directionCounts: priorHistory.directionCounts,
-      stationary,
-    };
-
-    const found = detectRoundMismatches({
+    rounds.push({
       roundNumber: round,
-      correctedInput,
-      committedOpponentByPair: committed.opponentByPair,
-      currentVpByPair: vpByPair,
-      committedExcludedPairs: committed.excludedPairs,
+      standingsAsOf: decodeStandingsOrder(
+        asOf.find((s) => s.section === section),
+        decoder,
+      ),
+      priorHistory,
+      committed,
     });
-
-    const { boardStart } = swissRoundBoardRange(round, boardsPerRound);
-
-    for (const c of found) {
-      // Resolve the table + seat the mismatched pair sat at, so the ruling can
-      // target the right (round, table, board) room with the right home side.
-      const table = committed.tables.find(
-        (t) => t.ns === c.mismatchedPair || t.ew === c.mismatchedPair,
-      );
-      // A candidate always comes from a real head-to-head table (half-match
-      // rounds are skipped upstream), so `table` is defined; guard defensively.
-      /* v8 ignore next */
-      if (!table) continue;
-
-      candidates.push({
-        section,
-        participantKind: "PAIR",
-        roundNumber: c.roundNumber,
-        mismatchedId: c.mismatchedPair,
-        actualOpponent: c.actualOpponent,
-        correctOpponent: c.correctOpponent,
-        actualOpponentVp: c.actualOpponentVp,
-        correctOpponentVp: c.correctOpponentVp,
-        direction: c.direction,
-        tableNumber: table.tableNumber,
-        side: table.ns === c.mismatchedPair ? "NS" : "EW",
-        boardNumber: boardStart,
-      });
-    }
   }
 
-  // A pair/team already ruled is not listed again; every other candidate is.
-  return candidates.filter((c) => !isRuled(c));
+  return detectSwissPairsMismatches(section, swiss, rounds, vpByPair, ruled);
 }
 
-/** Each team's current (as-of-now) total VP, from the teams leaderboard. */
-function currentVpByTeam(
-  board: SectionStandings | undefined,
-): Map<number, number> {
-  return decodeVpById(board, teamLeaderboardDecoder);
-}
-
-/** Team ids in corrected standing order (best first), from the as-of board. */
-function teamStandingsOrder(board: SectionStandings | undefined): number[] {
-  return decodeStandingsOrder(board, teamLeaderboardDecoder);
-}
-
-/**
- * Detect §3.5 mismatch candidates across one Swiss TEAMS section.
- *
- * Mirrors the pairs path, with two teams-specific points: the deterministic
- * teams draw is replayed (its round-1 RNG is never involved in later rounds),
- * and the odd-field handling is assessed in two passes. For round R the
- * corrected standings are reduced to the ordinary field (triple/bye teams
- * removed) and the ordinary head-to-head tables are diffed as normal; then the
- * round's committed TRIPLE is assessed separately (F21 Part B) by replaying the
- * deterministic trio selection and flagging a team that faced the wrong third
- * team. A BYE team is still left alone.
- */
+/** Read one Swiss TEAMS section's committed rounds and replay them. */
 async function detectTeamsSectionMismatches(
   gameId: string,
   db: Db,
   section: SectionLetter,
   swissTeams: { teams: number; boardsPerRound: number },
 ): Promise<SectionMismatchCandidate[]> {
-  const { teams, boardsPerRound } = swissTeams;
-
-  // Highest round + skip set, from the (unfiltered) prior history of the whole
-  // event is simplest via the committed rounds; find the highest round first.
   const highestRound = await highestTeamsRound(db, section);
   if (highestRound < 2) return [];
 
   const nowSections = await computeSectionLeaderboards(db, gameId);
-  const vpByTeam = currentVpByTeam(
+  const vpByTeam = decodeVpById(
     nowSections.find((s) => s.section === section),
+    teamLeaderboardDecoder,
   );
 
-  const isRuled = await alreadyRuled(db, section, teamIdOf);
+  const ruled = await readRuledMismatches(db, section, teamTableOf);
 
-  const candidates: SectionMismatchCandidate[] = [];
-
+  const rounds: TeamsRoundReplay[] = [];
   for (let round = 2; round <= highestRound; round++) {
     const committed = await getSwissTeamsCommittedRound(db, section, round);
-    // Skip only when there is nothing to assess at all — no ordinary tables AND
-    // no triple. (A round can be all-triple with no ordinary tables.)
-    if (committed.opponentByTeam.size === 0 && committed.triples.length === 0) {
-      continue;
-    }
+    // Nothing to assess (no ordinary tables AND no triple): skip the reads.
+    if (!teamsRoundToAssess(committed)) continue;
 
     const asOf = await computeSectionLeaderboardsAsOf(db, gameId, round);
-    const fullOrder = teamStandingsOrder(
-      asOf.find((s) => s.section === section),
-    );
-    // Reduce to the ordinary field: drop the round's triple/bye teams.
-    const orderedOrdinary = fullOrder.filter(
-      (id) => !committed.excludedTeams.has(id),
-    );
-
     const prior = await getSwissTeamsPriorHistory(db, section, round);
-
-    // --- Ordinary head-to-head tables ---
-    if (committed.opponentByTeam.size > 0) {
-      const found = detectTeamsRoundMismatches({
-        roundNumber: round,
-        teams,
-        orderedOrdinary,
-        playedOpponents: prior.playedOpponents,
-        committedOpponentByTeam: committed.opponentByTeam,
-        currentVpByTeam: vpByTeam,
-        excludedTeams: committed.excludedTeams,
-      });
-
-      const { boardStart } = swissRoundBoardRange(round, boardsPerRound);
-
-      for (const c of found) {
-        // The mismatched team sits NS at its own home table; the ruling token is
-        // home-relative, so `side` is always NS for the acted (home) team.
-        const tableNumber = committed.homeTableByTeam.get(c.mismatchedTeam);
-        /* v8 ignore next */
-        if (tableNumber == null) continue;
-
-        candidates.push({
-          section,
-          participantKind: "TEAM",
-          roundNumber: c.roundNumber,
-          mismatchedId: c.mismatchedTeam,
-          actualOpponent: c.actualOpponent,
-          correctOpponent: c.correctOpponent,
-          actualOpponentVp: c.actualOpponentVp,
-          correctOpponentVp: c.correctOpponentVp,
-          direction: c.direction,
-          tableNumber,
-          side: "NS",
-          boardNumber: boardStart,
-        });
-      }
-    }
-
-    // --- Triple-internal §3.5 detection (F21 Part B) ---
-    // The correct trio is the deterministic bottom-3 of the corrected FULL
-    // standings that have not already been in a triple — the same selection the
-    // draw used. If it differs from the committed trio, a team faced the wrong
-    // third team.
-    for (const triple of committed.triples) {
-      // Only the round that CHOSE the trio is a clean replay. A LONG triple's
-      // second slot reuses the first slot's teams (not re-chosen), which shows
-      // up as its members already being in `prior.hadTriple`; skip those (and
-      // any other already-tripled member) rather than replay a fresh choice
-      // that would falsely diff. Left to a manual director ruling.
-      if (triple.members.some((m) => prior.hadTriple.has(m))) continue;
-
-      const correctMembers = chooseTeamTriple(fullOrder, prior.hadTriple);
-
-      const found = detectTripleMismatches({
-        roundNumber: round,
-        committedMembers: triple.members,
-        correctMembers,
-        comparisons: triple.comparisons,
-        currentVpByTeam: vpByTeam,
-      });
-
-      for (const c of found) {
-        // In a triple each team sits NS at its own home table; the ruling is
-        // home-relative so `side` is NS for the mismatched (home) team. The
-        // candidate's boardNumber pins the specific 10-VP comparison.
-        candidates.push({
-          section,
-          participantKind: "TEAM",
-          roundNumber: c.roundNumber,
-          mismatchedId: c.mismatchedTeam,
-          actualOpponent: c.actualOpponent,
-          correctOpponent: c.correctOpponent,
-          actualOpponentVp: c.actualOpponentVp,
-          correctOpponentVp: c.correctOpponentVp,
-          direction: c.direction,
-          tableNumber: c.mismatchedTeam,
-          side: "NS",
-          boardNumber: c.boardNumber,
-        });
-      }
-    }
+    rounds.push({
+      roundNumber: round,
+      standingsAsOf: decodeStandingsOrder(
+        asOf.find((s) => s.section === section),
+        teamLeaderboardDecoder,
+      ),
+      prior,
+      committed,
+    });
   }
 
-  // A pair/team already ruled is not listed again; every other candidate is.
-  return candidates.filter((c) => !isRuled(c));
+  return detectSwissTeamsMismatches(
+    section,
+    swissTeams,
+    rounds,
+    vpByTeam,
+    ruled,
+  );
 }
 
 /** The highest round materialized in a teams section (0 when none). */

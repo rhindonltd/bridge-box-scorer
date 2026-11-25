@@ -1,39 +1,32 @@
 import "server-only";
 
 import { getDb, type Db } from "@/db/games";
-import { stationaryPairsForRound } from "@/model/selected-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { isSwissRoundComplete } from "@/services/swiss-round-completion";
-import {
-  getSwissBoardHistory,
-  swissPairIdFromParticipant,
-  swissPairIdFromSeat,
-} from "@/db/games/queries/swiss-board-history";
-import {
-  materializeSwissRound,
-  swissPairMovementId,
-} from "@/services/materialize-swiss-round";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
+import { materializeSwissRound } from "@/services/materialize-swiss-round";
 import {
   drawSwissRound,
   evaluateSwissSeating,
+  isValidHalfMatchCommit,
+  pairsDrawInput,
+  seatedSwissPairIds,
   serializeAdvisoryInputs,
-  swissPairHomeSeat,
-  swissPairIds,
+  swissPairMovementId,
+  swissPairsField,
+  type RankedSwissPair,
   type SerializableAdvisoryInputs,
   type SwissDrawInput,
   type SwissHalfMatchSeating,
-  type SwissHomeSeat,
   type SwissPairId,
   type SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
-import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
-import {
-  resolveSwissSeatingNames,
-  type NamedSeating,
-} from "@/services/swiss-seating-names";
+  type SwissStandingEntry,
+} from "@/modules/swiss";
+import type { NamedSeating } from "@/model/swiss-seating";
+import { resolveSwissSeatingNames } from "@/services/swiss-seating-names";
 import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
-import { parseSeat, type SectionLetter } from "@/model/participants";
+import type { SectionLetter } from "@/model/participants";
 
 /**
  * Why a Swiss draw could not proceed. Surfaced to the director so the "Draw
@@ -117,30 +110,10 @@ function isRoundComplete(
 }
 
 /**
- * Build the ranked standings (best pair first) as stable Swiss pair ids from
- * the section leaderboard. The leaderboard's overall lines are keyed by the
- * pair's participant id (its round-1 home seat), already ranked; map each back
- * to its integer pair id. Any pair that has not appeared on the leaderboard yet
- * (e.g. only sat out so far) is appended at the end in id order.
- *
- * Only the pairs that were actually SEATED (one assignment row each) are
- * included. A Swiss event has `2*tables` positions, but an ODD field leaves one
- * position unseated — a phantom that is never a real pair. Including it would
- * pad the field to an even `2*tables` and mask the oddness, so the pure draw
- * engine's odd-field handling (bye or 2-half-matches) would never fire. We
- * therefore restrict the field to the real seated pairs, so an odd field yields
- * an odd-length `order` (`2*tables - 1`) exactly as the engine expects.
- */
-/**
- * The stable Swiss pair ids actually SEATED in a section — one per real pair,
- * read from the `seat_occupancy` table (each `seat` is the pair's
- * section-qualified round-1 home seat). An odd field leaves one of the
- * `2*tables` positions unseated; that phantom position has no occupancy, so it
- * is absent here. Used to keep an odd field's `order` genuinely odd for the
- * draw engine.
- *
- * Occupancies are the authoritative seated set: one is written for every real
- * pair when the director seats it (pre-start), before the first round is drawn.
+ * The stable Swiss pair ids actually SEATED in a section, read from the
+ * `seat_occupancy` table (`seatedSwissPairIds`). Occupancies are the
+ * authoritative seated set: one is written for every real pair when the
+ * director seats it (pre-start), before the first round is drawn.
  */
 async function seatedPairIdsForSection(
   db: Db,
@@ -151,87 +124,33 @@ async function seatedPairIdsForSection(
   const rows = await db
     .select({ seat: seatOccupancy.seat })
     .from(seatOccupancy);
-
-  const ids = new Set<SwissPairId>();
-  for (const row of rows) {
-    if (row.seat == null) continue;
-    let parsed;
-    try {
-      parsed = parseSeat(row.seat);
-    } catch {
-      continue;
-    }
-    if (parsed.section !== section) continue;
-    // `row.seat` is a physical seat (occupancy.seat, e.g. "A1NS"), so decode it
-    // via the seat decoder rather than the bare board-id one.
-    const id = swissPairIdFromSeat(row.seat, tables);
-    if (id != null) ids.add(id);
-  }
-  return ids;
+  return seatedSwissPairIds(
+    rows.map((r) => r.seat),
+    section,
+    tables,
+  );
 }
 
-/** A ranked standings line for a pair, before names are resolved. */
-interface RankedPair {
-  id: SwissPairId;
-  total: number;
-  rank: number;
-  tied: boolean;
-}
-
+/**
+ * The field in draw order (best pair first), from the section standings and
+ * the seated pairs (`swissPairsField`).
+ */
 async function rankedStandings(
   db: Db,
   gameId: string,
   section: SectionLetter,
   tables: number,
-): Promise<{ order: SwissPairId[]; ranked: RankedPair[] }> {
+): Promise<{ order: SwissPairId[]; ranked: RankedSwissPair[] }> {
   const sections = await computeSectionLeaderboards(db, gameId);
-  const sectionBoard = sections.find((s) => s.section === section);
-
   // The pairs that are actually seated in this section (one assignment per real
   // pair). The unseated position of an odd field has no pair here, so it is
   // excluded — keeping the field genuinely odd for the engine.
   const realPairIds = await seatedPairIdsForSection(db, section, tables);
-
-  const order: SwissPairId[] = [];
-  const ranked: RankedPair[] = [];
-  const seen = new Set<SwissPairId>();
-
-  if (sectionBoard) {
-    // overallScore.lines are already ranked best-first, and (for Swiss) carry
-    // the running VP total the field is ranked on plus its rank/tie flags.
-    for (const line of sectionBoard.overallScore.lines as {
-      pairId: string;
-      totalVP?: number;
-      rank?: number;
-      tied?: boolean;
-    }[]) {
-      const id = swissPairIdFromParticipant(line.pairId, tables);
-      if (id != null && realPairIds.has(id) && !seen.has(id)) {
-        order.push(id);
-        ranked.push({
-          id,
-          total: line.totalVP ?? 0,
-          rank: line.rank ?? order.length,
-          tied: line.tied ?? false,
-        });
-        seen.add(id);
-      }
-    }
-  }
-
-  // Append any REAL pair not yet ranked (no scored boards), lowest priority.
-  // They have no leaderboard line yet, so show a zero total ranked last. The
-  // phantom position of an odd field is not a real pair, so it is never added.
-  const lastRank = ranked.length > 0 ? ranked[ranked.length - 1].rank : 0;
-  for (const id of swissPairIds(tables)) {
-    if (realPairIds.has(id) && !seen.has(id)) {
-      order.push(id);
-      ranked.push({ id, total: 0, rank: lastRank + 1, tied: false });
-      seen.add(id);
-    }
-  }
-
-  return { order, ranked };
+  return swissPairsField(
+    sections.find((s) => s.section === section),
+    realPairIds,
+    tables,
+  );
 }
 
 /** Everything needed to draw or validate the next round, once preconditions pass. */
@@ -242,7 +161,7 @@ interface DrawContext {
   nextRound: number;
   input: SwissDrawInput;
   /** Current standings (best first) with running totals, for the preview. */
-  ranked: RankedPair[];
+  ranked: RankedSwissPair[];
 }
 
 /**
@@ -266,13 +185,7 @@ async function resolveDrawContext(
     return { reason: "NOT_SWISS" };
   }
 
-  const {
-    tables,
-    rounds: totalRounds,
-    boardsPerRound,
-    oddHandling = "BYE",
-    oddRoundPlan,
-  } = selected.swiss;
+  const { tables, rounds: totalRounds, boardsPerRound } = selected.swiss;
 
   const history = await getSwissBoardHistory(db, section, tables);
   const currentRound = history.highestRound;
@@ -294,37 +207,13 @@ async function resolveDrawContext(
 
   const nextRound = currentRound + 1;
 
-  // The stationary list in force for THIS draw: a change the director made
-  // mid-event applies from here on, never to rounds already drawn.
-  const stationary = new Map<SwissPairId, SwissHomeSeat>();
-  for (const pairId of stationaryPairsForRound(selected.swiss, nextRound)) {
-    stationary.set(pairId, swissPairHomeSeat(tables, pairId));
-  }
-
-  // How THIS round resolves an odd field: the per-round plan entry when the
-  // event uses half-matches (1-indexed round → 0-indexed plan), else a bye.
-  const roundOddHandling =
-    oddHandling === "HALF_MATCHES" &&
-    (oddRoundPlan?.[nextRound - 1] ?? "BYE") === "HALF_MATCHES"
-      ? "HALF_MATCHES"
-      : "BYE";
-
   return {
     db,
     tables,
     boardsPerRound,
     nextRound,
     ranked,
-    input: {
-      tables,
-      standings: order,
-      playedOpponents: history.playedOpponents,
-      hadBye: history.hadBye,
-      hadHalfMatch: history.hadHalfMatch,
-      oddHandling: roundOddHandling,
-      directionCounts: history.directionCounts,
-      stationary,
-    },
+    input: pairsDrawInput(selected.swiss, nextRound, order, history),
   };
 }
 
@@ -389,7 +278,7 @@ async function buildPairStandings(
   db: Db,
   section: SectionLetter,
   tables: number,
-  ranked: RankedPair[],
+  ranked: RankedSwissPair[],
 ): Promise<SwissStandingEntry[]> {
   const lookup = await buildAssignmentPlayerLookup(db);
 
@@ -434,7 +323,7 @@ export async function commitNextSwissRound(
     // A 2-half-matches round: the group's three pairs are NOT in `seating`.
     // Validate structural soundness treating the group as covering those three
     // pairs, then materialize the ordinary tables plus the group.
-    if (!isHalfMatchCommitValid(seating, halfMatch, ctx.input)) {
+    if (!isValidHalfMatchCommit(seating, halfMatch, ctx.input)) {
       return { ok: false, reason: "INVALID_SEATING" };
     }
 
@@ -476,45 +365,4 @@ export async function commitNextSwissRound(
   );
 
   return { ok: true, roundNumber: ctx.nextRound };
-}
-
-/**
- * Structural soundness of a 2-half-matches commit: the ordinary `seating` plus
- * the group's three pairs must cover every pair in the field exactly once, on
- * distinct tables (the anchor's table must not clash with an ordinary table).
- * Advisories are not checked here (the group isn't director-editable yet).
- */
-function isHalfMatchCommitValid(
-  seating: SwissSeating[],
-  halfMatch: SwissHalfMatchSeating,
-  input: SwissDrawInput,
-): boolean {
-  const groupIds = [
-    halfMatch.group.anchor,
-    halfMatch.group.halfOneOpponent,
-    halfMatch.group.halfTwoOpponent,
-  ];
-
-  const counts = new Map<SwissPairId, number>();
-  for (const s of seating) {
-    counts.set(s.ns, (counts.get(s.ns) ?? 0) + 1);
-    counts.set(s.ew, (counts.get(s.ew) ?? 0) + 1);
-  }
-  for (const id of groupIds) counts.set(id, (counts.get(id) ?? 0) + 1);
-
-  // Every pair in the REAL field (the odd standings, 2*tables - 1) seated once.
-  // Using the standings — not swissPairIds(tables) — so the phantom position of
-  // the odd field isn't demanded.
-  const expected = input.standings;
-  if (counts.size !== expected.length) return false;
-  for (const id of expected) {
-    if (counts.get(id) !== 1) return false;
-  }
-
-  // Tables unique, and the anchor's table distinct from the ordinary tables.
-  const tableNumbers = seating.map((s) => s.tableNumber);
-  if (new Set(tableNumbers).size !== tableNumbers.length) return false;
-  if (tableNumbers.includes(halfMatch.anchorTable)) return false;
-
-  return true;
 }

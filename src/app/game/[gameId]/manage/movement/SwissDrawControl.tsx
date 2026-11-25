@@ -10,7 +10,7 @@ import type {
   SwissHalfMatchSeating,
   SwissPairId,
   SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
+} from "@/modules/swiss";
 import { SwissDrawPreview } from "./SwissDrawPreview";
 
 /**

@@ -1,65 +1,21 @@
 import "server-only";
 
 import { Db } from "@/db/games";
-import type { Player } from "@/db/games/tables/players";
 import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
-import { swissPairMovementId } from "@/services/materialize-swiss-round";
-import type {
-  SwissHalfMatchSeating,
-  SwissPairId,
-  SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
+import {
+  swissPairMovementId,
+  type SwissHalfMatchSeating,
+  type SwissPairId,
+  type SwissSeating,
+} from "@/modules/swiss";
 import type { SectionLetter } from "@/model/participants";
-
-/** One table's seating with resolved player names, ready to render. */
-export interface NamedSeatingTable {
-  tableNumber: number;
-  /** Stable Swiss pair id sitting North/South. */
-  nsPairId: SwissPairId;
-  /** Stable Swiss pair id sitting East/West. */
-  ewPairId: SwissPairId;
-  players: {
-    N: Player | null;
-    S: Player | null;
-    E: Player | null;
-    W: Player | null;
-  };
-}
-
-/** The bye pair with resolved player names. */
-export interface NamedByePair {
-  pairId: SwissPairId;
-  players: { player1: Player | null; player2: Player | null };
-}
-
-/** One pair in a half-match group, with its two player names. */
-export interface NamedHalfMatchPair {
-  pairId: SwissPairId;
-  players: { player1: Player | null; player2: Player | null };
-}
-
-/**
- * A drawn 2-half-matches group with names, for the preview. The anchor plays
- * both halves at its table; `halfOneOpponent` plays the first half, then
- * swaps out for `halfTwoOpponent` in the second.
- */
-export interface NamedHalfMatch {
-  anchorTable: number;
-  anchorDirection: "NS" | "EW";
-  anchor: NamedHalfMatchPair;
-  halfOneOpponent: NamedHalfMatchPair;
-  halfTwoOpponent: NamedHalfMatchPair;
-}
-
-/**
- * A round's seating with names: the played tables, the optional bye pair, and
- * the optional 2-half-matches group (mutually exclusive with the bye).
- */
-export interface NamedSeating {
-  tables: NamedSeatingTable[];
-  bye: NamedByePair | null;
-  halfMatch: NamedHalfMatch | null;
-}
+import type {
+  NamedByePair,
+  NamedHalfMatch,
+  NamedHalfMatchPair,
+  NamedSeating,
+  NamedSeatingTable,
+} from "@/model/swiss-seating";
 
 /**
  * Resolve a drawn/edited Swiss seating (stable pair ids) into player names for

@@ -9,7 +9,7 @@ import type {
   SelectedMovement,
   SwissMovementSpec,
 } from "@/model/selected-movement";
-import { swissPairHomeSeat } from "@/movement/swiss/swiss-pairing";
+import { swissPairHomeSeat } from "@/modules/swiss";
 import type { MovementByTable } from "@/movement/movementData";
 import { generatedToMovementByTable } from "@/movement/movementData";
 import { generateMitchell } from "@/movement/mitchell/mitchell";

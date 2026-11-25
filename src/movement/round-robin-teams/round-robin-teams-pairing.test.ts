@@ -6,7 +6,7 @@ import {
   roundRobinTeamsSchedule,
 } from "./round-robin-teams-pairing";
 import type { Tables } from "@/model/movement";
-import { teamOpponentKey } from "@/movement/swiss-teams/swiss-teams-pairing";
+import { teamOpponentKey } from "@/modules/swiss/teams/swiss-teams-pairing";
 
 /**
  * Recover, for each team, the ordered list of opponents it meets across the

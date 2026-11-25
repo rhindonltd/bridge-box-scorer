@@ -8,10 +8,10 @@ import {
   swissTeamsRoundOneSeed,
   swissTeamsRoundToMaterializable,
   tripleBoardSets,
-  materializeSwissTeamsRound,
-} from "./materialize-swiss-teams-round";
+} from "@/modules/swiss";
+import { materializeSwissTeamsRound } from "./materialize-swiss-teams-round";
 import type { TeamsMatch } from "@/model/teams-match-layout";
-import type { TeamsTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamsTriple } from "@/modules/swiss/teams/swiss-teams-pairing";
 import { getDb } from "@/db/games";
 
 /**

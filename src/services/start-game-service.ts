@@ -35,15 +35,6 @@ import {
   alignSpecMissingPair,
 } from "@/movement/spec-sit-out";
 import {
-  roundOddResolution,
-  swissTeamsRoundOne,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
-import {
-  swissTeamsRoundOneSeed,
-  swissTeamsRoundToMaterializable,
-} from "@/services/materialize-swiss-teams-round";
-import { swissRoundToMaterializable } from "@/services/materialize-swiss-round";
-import {
   drawSwissRound,
   swissPairHomeSeat,
   swissPairIdFromHomeSeat,
@@ -51,8 +42,13 @@ import {
   type SwissHomeSeat,
   type SwissPairId,
   type SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
-import { swissPairIdFromSeat } from "@/db/games/queries/swiss-board-history";
+  roundOddResolution,
+  swissTeamsRoundOne,
+  swissRoundToMaterializable,
+  swissTeamsRoundOneSeed,
+  swissTeamsRoundToMaterializable,
+  swissPairIdFromSeat,
+} from "@/modules/swiss";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**

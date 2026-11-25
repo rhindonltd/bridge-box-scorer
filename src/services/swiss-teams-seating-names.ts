@@ -3,34 +3,9 @@ import "server-only";
 import { Db } from "@/db/games";
 import { findTeams } from "@/db/games/queries/find-teams";
 import type { TeamId, TeamsMatch } from "@/model/teams-match-layout";
-import type { TeamsTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamsTriple } from "@/modules/swiss";
 import type { SectionLetter } from "@/model/participants";
-
-/** A team identified by its stable id and resolved display name. */
-export interface NamedTeam {
-  teamId: TeamId;
-  name: string;
-}
-
-/** One drawn match with both teams' names. */
-export interface NamedTeamsMatch {
-  a: NamedTeam;
-  b: NamedTeam;
-}
-
-/** A three-way triple with all three teams' names. */
-export interface NamedTeamsTriple {
-  a: NamedTeam;
-  b: NamedTeam;
-  c: NamedTeam;
-}
-
-/** A round's team draw with names: the matches plus any bye or triple. */
-export interface NamedTeamsSeating {
-  matches: NamedTeamsMatch[];
-  bye: NamedTeam | null;
-  triple: NamedTeamsTriple | null;
-}
+import type { NamedTeam, NamedTeamsSeating } from "@/model/swiss-seating";
 
 /**
  * Resolve a drawn Swiss Teams round (stable team ids) into team display names,
