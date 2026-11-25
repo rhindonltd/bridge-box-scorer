@@ -5,9 +5,11 @@ import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findSections } from "@/db/games/queries/find-sections";
 import { getBoardInstances } from "@/services/board-service";
 import { getSchedule } from "@/services/schedule-service";
-import { buildLeaderboards } from "@/services/leaderboard-service";
+import { scoreGame } from "@/services/leaderboard-service";
 import {
   getCombination,
+  type AdjustedBoardScore,
+  type EventScore,
   type MatchpointLine,
   type XimpLine,
   scoreBoard,
@@ -30,10 +32,14 @@ type ScoredPairLine = Partial<MatchpointLine & XimpLine> & {
 
 /**
  * Build the personal scorecard for the pair holding `seat`: every board it has
- * played so far, each scored exactly as the player's Board Results screen
- * scores it — the board's traveller is scored on its own with the game's
- * per-board scoring (no leaderboard-only adjustments). For a Swiss Pairs event
- * the per-round Victory Points come from the standings.
+ * played so far, with the figure the leaderboard counts for it — after Neuberg
+ * equalisation, the "better than average" uplift and rounding — so the
+ * scorecard's total matches the leaderboard (D5). A board's figure can
+ * therefore differ from the same board on the traveller, which stays flat.
+ * Where the standings have no figure for the pair (a Swiss Pairs event, which
+ * ranks on Victory Points, or a split handover seat scored under another id)
+ * the board is scored on its own, as the Board Results screen scores it. For a
+ * Swiss Pairs event the per-round Victory Points come from the standings.
  *
  * The field each board is scored against follows the leaderboard the players
  * see: the pair's own section when a multi-section event ranks its sections
@@ -61,6 +67,14 @@ export async function buildPairScorecard(
 
   // A pairs game is scored by matchpoints or Cross-IMP.
   const scoring = getCombination(game.scoringType).perBoard as ScorecardScoring;
+
+  // One scoring run gives both the adjusted board figures and (for Swiss) the
+  // per-round VP, the same run the leaderboard shows.
+  const eventScore = await scoreGame(db, gameId);
+  const adjustedByBoard = adjustedFor(
+    eventScore.adjustedBoards,
+    fieldSection ?? gameId,
+  );
 
   const boards: ScorecardBoard[] = [];
   for (const round of schedule.rounds) {
@@ -114,13 +128,18 @@ export async function buildPairScorecard(
         outcome: mine.currentResult,
         score: rawScore,
       };
+      const adjusted = adjustedByBoard.get(adjustedKey(boardNumber, pairId));
       if (scoring === "MP") {
-        entry.matchpoints = {
-          value: (isNs ? line.nsMatchPoints : line.ewMatchPoints) ?? 0,
-          max: line.maxMatchPoints ?? 0,
-        };
+        entry.matchpoints = adjusted
+          ? { value: adjusted.value, max: adjusted.top ?? 0 }
+          : {
+              value: (isNs ? line.nsMatchPoints : line.ewMatchPoints) ?? 0,
+              max: line.maxMatchPoints ?? 0,
+            };
       } else {
-        entry.crossImps = (isNs ? line.nsCrossImps : line.ewCrossImps) ?? 0;
+        entry.crossImps = adjusted
+          ? adjusted.value
+          : ((isNs ? line.nsCrossImps : line.ewCrossImps) ?? 0);
       }
       boards.push(entry);
     }
@@ -128,9 +147,8 @@ export async function buildPairScorecard(
 
   const roundVps =
     game.eventFormat === "SWISS"
-      ? await swissRoundVps(
-          db,
-          gameId,
+      ? swissRoundVps(
+          eventScore,
           pairId,
           fieldSection ?? ownSection,
           separateSections,
@@ -146,15 +164,14 @@ export async function buildPairScorecard(
  * standings the leaderboard shows (a round's VP comes from the whole match, so
  * it is per round, not per board).
  */
-async function swissRoundVps(
-  db: Db,
-  gameId: string,
+function swissRoundVps(
+  eventScore: EventScore,
   pairId: string,
   section: string,
   separateSections: boolean,
   boards: ScorecardBoard[],
-): Promise<ScorecardRoundVp[]> {
-  const { leaderboard, sections } = await buildLeaderboards(db, gameId);
+): ScorecardRoundVp[] {
+  const { overall: leaderboard, sections } = eventScore;
   const board =
     (separateSections ? null : leaderboard) ??
     sections.find((s) => s.section === section) ??
@@ -176,4 +193,21 @@ async function swissRoundVps(
         boards.find((b) => b.roundNumber === roundNumber)?.opponentId ?? null,
       vp: vpByRound[roundNumber],
     }));
+}
+
+/** The lookup key for one pair's adjusted score on one board. */
+function adjustedKey(boardNumber: number, pairId: string): string {
+  return `${boardNumber}|${pairId}`;
+}
+
+/** The adjusted board scores for one field, by board and pair. */
+function adjustedFor(
+  adjusted: AdjustedBoardScore[],
+  field: string,
+): Map<string, AdjustedBoardScore> {
+  const byKey = new Map<string, AdjustedBoardScore>();
+  for (const a of adjusted) {
+    if (a.field === field) byKey.set(adjustedKey(a.boardNumber, a.pairId), a);
+  }
+  return byKey;
 }

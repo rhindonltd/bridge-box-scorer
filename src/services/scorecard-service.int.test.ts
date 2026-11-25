@@ -223,6 +223,43 @@ describe("buildPairScorecard (real scoring)", () => {
     expect(card!.boards[0].matchpoints).toEqual({ value: 2, max: 4 });
   });
 
+  it("shows the equalised figures the leaderboard counts, so the totals match (D5)", async () => {
+    const db = await setup();
+    await seatTable(db, "A", 1);
+    await seatTable(db, "A", 2);
+    await seatTable(db, "A", 3);
+    // Board 1: three results, a top of 4.
+    await addResult(db, "A", 1, 1, "3NTN+1"); // 430
+    await addResult(db, "A", 2, 1, "3NTN="); // 400
+    await addResult(db, "A", 3, 1, "3NTN-1"); // -50
+    // Board 2: only two tables played it (a short board). On its own it has a
+    // top of 2; Neuberg scales it to the full field's top of 4.
+    await addResult(db, "A", 1, 2, "4SN="); // 420
+    await addResult(db, "A", 2, 2, "4SN-1"); // -50
+    await addResult(db, "A", 3, 2, null);
+
+    const card = await scorecard(db, "A1NS");
+    const [b1, b2] = card!.boards;
+    expect(b1.matchpoints).toEqual({ value: 4, max: 4 });
+    // A top on the short board, shown on the equalised scale (not 2/2).
+    expect(b2.matchpoints!.max).toBe(4);
+
+    const { computeLeaderboard } = await import("./leaderboard-service");
+    const leaderboard = await computeLeaderboard(db, gameId);
+    const line = leaderboard.overallScore.lines.find(
+      (l) => "pairId" in l && l.pairId === "A1NS",
+    ) as { totalMP: number; maxMP: number };
+
+    const total = card!.boards.reduce(
+      (sum, b) => ({
+        value: sum.value + b.matchpoints!.value,
+        max: sum.max + b.matchpoints!.max,
+      }),
+      { value: 0, max: 0 },
+    );
+    expect(total).toEqual({ value: line.totalMP, max: line.maxMP });
+  });
+
   it("is null for a teams game", async () => {
     mockGame.current = { ...mockGame.current, gameType: "TEAMS" };
     const db = await setup();
