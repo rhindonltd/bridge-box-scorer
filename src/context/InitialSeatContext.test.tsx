@@ -2,10 +2,7 @@ import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 
-import {
-  InitialSeatProvider,
-  useInitialSeat,
-} from "./InitialSeatContext";
+import { InitialSeatProvider, useInitialSeat } from "./InitialSeatContext";
 import type { Seat } from "@/model/participants";
 
 describe("InitialSeatContext", () => {

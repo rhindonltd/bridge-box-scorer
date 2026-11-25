@@ -15,9 +15,7 @@ describe("GET /api/games/[gameId]/participants", () => {
   });
 
   it("returns the seated pairs", async () => {
-    vi.mocked(findPairs).mockResolvedValue([
-      { initialSeat: "A1NS" },
-    ] as never);
+    vi.mocked(findPairs).mockResolvedValue([{ initialSeat: "A1NS" }] as never);
 
     await testApiHandler({
       appHandler,

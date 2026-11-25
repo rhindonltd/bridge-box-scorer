@@ -153,7 +153,9 @@ export async function getSwissBoardHistory(
   for (const m of matchRows) {
     const homeId = swissPairIdFromParticipant(m.home, tables);
     const oppId =
-      m.opponent != null ? swissPairIdFromParticipant(m.opponent, tables) : null;
+      m.opponent != null
+        ? swissPairIdFromParticipant(m.opponent, tables)
+        : null;
 
     if (m.kind === "BYE") {
       if (homeId != null) hadBye.add(homeId);
@@ -213,5 +215,11 @@ export async function getSwissBoardHistory(
     if (ewId != null) bump(ewId, "ew", row.roundNumber);
   }
 
-  return { playedOpponents, hadBye, hadHalfMatch, directionCounts, highestRound };
+  return {
+    playedOpponents,
+    hadBye,
+    hadHalfMatch,
+    directionCounts,
+    highestRound,
+  };
 }

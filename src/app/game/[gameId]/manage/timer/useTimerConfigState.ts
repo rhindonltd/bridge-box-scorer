@@ -102,7 +102,8 @@ export function useTimerConfigState(
     // total back down by the section's boards-per-round to recover what they
     // originally entered. Derived boards-per-round (from the selected movement)
     // wins over any persisted value, so prefer it when reversing.
-    const seededBoardsPerRound = derived?.boardsPerRound ?? seedFrom.boardsPerRound;
+    const seededBoardsPerRound =
+      derived?.boardsPerRound ?? seedFrom.boardsPerRound;
     const seededPlaySeconds =
       seededMode === "perBoard" && seededBoardsPerRound > 0
         ? Math.round(seedFrom.playDuration / seededBoardsPerRound)
@@ -155,10 +156,7 @@ export function useTimerConfigState(
     Math.round((sessionEndMs - tick) / 1000),
   );
 
-  const previewEndDate = useMemo(
-    () => new Date(sessionEndMs),
-    [sessionEndMs],
-  );
+  const previewEndDate = useMemo(() => new Date(sessionEndMs), [sessionEndMs]);
 
   const config: TimerConfig = {
     boardsPerRound,

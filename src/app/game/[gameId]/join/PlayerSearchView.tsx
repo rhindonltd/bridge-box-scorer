@@ -44,9 +44,7 @@ export function PlayerSearchView({
     return (
       <div
         className={`w-full rounded-xl border p-4 ${
-          invalid
-            ? "border-red-300 bg-red-50"
-            : "border-green-200 bg-green-50"
+          invalid ? "border-red-300 bg-red-50" : "border-green-200 bg-green-50"
         }`}
       >
         <div className="flex items-start justify-between">

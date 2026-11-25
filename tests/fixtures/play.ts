@@ -311,7 +311,10 @@ export async function enterNotPlayed(
 
   // "Not Played" sits on the level step next to "Pass Out"; it has no test id,
   // but the label is unique on that step.
-  const notPlayed = page.getByRole("button", { name: "Not Played", exact: true });
+  const notPlayed = page.getByRole("button", {
+    name: "Not Played",
+    exact: true,
+  });
   await expect(notPlayed).toBeVisible();
   await notPlayed.click();
 }

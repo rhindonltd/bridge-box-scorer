@@ -2,7 +2,7 @@ import { Db } from "@/db/games";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { players } from "@/db/games/tables/players";
 import type { Player } from "@/db/games/tables/players";
-import { occupancyCoversBoard } from "@/db/games/queries/seat-occupancy";
+import { occupancyCoversBoard } from "@/modules/rulings";
 
 /** The two players seated as one pair. */
 export type PairPlayers = { player1: Player; player2: Player };
@@ -99,4 +99,3 @@ export async function buildPerBoardPlayerLookup(
     return { player1: occupant.player1, player2: occupant.player2 };
   };
 }
-

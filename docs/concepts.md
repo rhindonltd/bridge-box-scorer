@@ -92,7 +92,7 @@ director guide):
 ## Results
 
 - **Contract** — level + suit + declarer + doubling (e.g. `4♠ by South,
-  doubled`).
+doubled`).
 - **Pass Out** — the board was passed in (no contract).
 - **Not Played** — the board was not played.
 - **Confirmation** — a board is only recorded once **both** pairs at the table

@@ -9,7 +9,7 @@ import {
   multilineCell,
   expandableCell,
   type ScoreTable,
-} from "@/scoring/table/score-table";
+} from "@/modules/scoring/table/score-table";
 import type { BoardOutcome } from "@/model/score";
 
 function table(): ScoreTable {

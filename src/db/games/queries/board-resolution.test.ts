@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { isPlayableRow, isResolvedRow, type ResolutionRow } from "./board-resolution";
+import {
+  isPlayableRow,
+  isResolvedRow,
+  type ResolutionRow,
+} from "./board-resolution";
 const row = (over: Partial<ResolutionRow> = {}): ResolutionRow => ({
   status: null,
   ruling: null,

@@ -8,10 +8,7 @@ import { useSections } from "@/hooks/sections";
 import { parseContract, ContractCode } from "@/model/contract";
 import { SpecialBoardOutcome } from "@/model/result";
 import { buildPlayedContractCode } from "@/lib/buildPlayedContractCode";
-import {
-  buildAdjustedScore,
-  buildWeightedScore,
-} from "@/model/adjusted-score";
+import { buildAdjustedScore, buildWeightedScore } from "@/model/adjusted-score";
 import { getDirectorToken } from "@/lib/director-token";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
@@ -181,7 +178,11 @@ export function CorrectResultPage({
    */
   function rulingFor(
     data: DirectorWizardResult,
-  ): { event: string; extra: Record<string, unknown>; errorMessage: string } | null {
+  ): {
+    event: string;
+    extra: Record<string, unknown>;
+    errorMessage: string;
+  } | null {
     switch (data.type) {
       case "adjusted":
         return {

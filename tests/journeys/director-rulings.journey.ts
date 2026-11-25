@@ -1,11 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { openDirectorTraveller } from "../fixtures/director-override";
-import {
-  applyRuling,
-  hubChoices,
-  openHub,
-} from "../fixtures/director-rulings";
+import { applyRuling, hubChoices, openHub } from "../fixtures/director-rulings";
 import {
   parseScore,
   readScoreTables,

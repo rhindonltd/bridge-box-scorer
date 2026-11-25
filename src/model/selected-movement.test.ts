@@ -607,7 +607,11 @@ describe("stationary pairs over the event", () => {
 
   describe("withStationaryHistory", () => {
     it("starts a fresh history when there is no previous movement", () => {
-      const next = withStationaryHistory(null, swissOf({ stationaryPairs: [2] }), 3);
+      const next = withStationaryHistory(
+        null,
+        swissOf({ stationaryPairs: [2] }),
+        3,
+      );
       expect(spec(next).stationaryPairs).toEqual([2]);
       expect(spec(next).stationaryEarlier).toBeUndefined();
     });

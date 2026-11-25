@@ -138,9 +138,9 @@ describe("findAbsentPairs + setAbsenceTreatment (design §11)", () => {
       .run();
     const { findAbsentPairs } = await import("./find-absent-pairs");
     const result = await findAbsentPairs(db);
-    expect(result.filter((a) => a.kind === "WITHDRAWN").map((a) => a.seat)).toEqual(
-      ["A0NS", "A1NS"],
-    );
+    expect(
+      result.filter((a) => a.kind === "WITHDRAWN").map((a) => a.seat),
+    ).toEqual(["A0NS", "A1NS"]);
     expect(result.find((a) => a.seat === "A0NS")?.pair).toBe(" & ");
   });
   it("sets the treatment on the absent occupancy or the empty seat", async () => {

@@ -25,12 +25,10 @@ describe("movements db: team specs and schema references", () => {
   });
 
   it("creates a team movement spec and reads it by id (null when missing)", async () => {
-    const { createTeamMovementSpec } = await import(
-      "@/db/movements/actions/create-movement-spec"
-    );
-    const { getTeamMovementSpecById } = await import(
-      "@/db/movements/queries/get-movement-spec"
-    );
+    const { createTeamMovementSpec } =
+      await import("@/db/movements/actions/create-movement-spec");
+    const { getTeamMovementSpecById } =
+      await import("@/db/movements/queries/get-movement-spec");
 
     const id = await createTeamMovementSpec({
       name: "Team 4",
@@ -47,18 +45,14 @@ describe("movements db: team specs and schema references", () => {
   });
 
   it("assembles the full team movement tree (tables with their rounds)", async () => {
-    const { createTeamMovementSpec } = await import(
-      "@/db/movements/actions/create-movement-spec"
-    );
-    const { createTeamMovementTableSpec } = await import(
-      "@/db/movements/actions/create-movement-table-spec"
-    );
-    const { createTeamMovementRoundSpec } = await import(
-      "@/db/movements/actions/create-movement-round-spec"
-    );
-    const { getTeamMovement } = await import(
-      "@/db/movements/queries/get-movement"
-    );
+    const { createTeamMovementSpec } =
+      await import("@/db/movements/actions/create-movement-spec");
+    const { createTeamMovementTableSpec } =
+      await import("@/db/movements/actions/create-movement-table-spec");
+    const { createTeamMovementRoundSpec } =
+      await import("@/db/movements/actions/create-movement-round-spec");
+    const { getTeamMovement } =
+      await import("@/db/movements/queries/get-movement");
 
     const movementId = await createTeamMovementSpec({
       name: "Team 2",
@@ -114,11 +108,15 @@ describe("movements db: team specs and schema references", () => {
     ];
 
     for (const [table, referenced] of cases) {
-      const config = getTableConfig(table as Parameters<typeof getTableConfig>[0]);
+      const config = getTableConfig(
+        table as Parameters<typeof getTableConfig>[0],
+      );
       expect(config.foreignKeys.length).toBeGreaterThan(0);
       // Evaluate each reference thunk and confirm it points at the expected
       // parent table.
-      const targets = config.foreignKeys.map((fk) => fk.reference().foreignTable);
+      const targets = config.foreignKeys.map(
+        (fk) => fk.reference().foreignTable,
+      );
       expect(targets).toContain(referenced);
     }
   });

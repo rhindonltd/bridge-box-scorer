@@ -134,7 +134,9 @@ describe("ManageMovementPage", () => {
       mutate: vi.fn(),
     });
 
-    const { container } = render(<ManageMovementPage backFallbackHref="/back" />);
+    const { container } = render(
+      <ManageMovementPage backFallbackHref="/back" />,
+    );
     expect(container.querySelector(".animate-spin")).toBeTruthy();
   });
 

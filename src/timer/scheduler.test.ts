@@ -62,11 +62,7 @@ describe("scheduleGame", () => {
       "A",
       expect.any(Object),
     );
-    expect(deps.broadcast).toHaveBeenCalledWith(
-      "g1",
-      "A",
-      expect.any(Object),
-    );
+    expect(deps.broadcast).toHaveBeenCalledWith("g1", "A", expect.any(Object));
   });
 
   it("does not schedule if engine is not running", () => {

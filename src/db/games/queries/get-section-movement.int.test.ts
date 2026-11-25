@@ -24,9 +24,8 @@ describe("section movement queries", () => {
   it("getSectionMovement parses a section's stored movement, or null", async () => {
     add("A", spec(7));
     add("B", null, 1);
-    const { getSectionMovement } = await import(
-      "@/db/games/queries/get-section-movement"
-    );
+    const { getSectionMovement } =
+      await import("@/db/games/queries/get-section-movement");
     expect(await getSectionMovement(db, "A")).toMatchObject({ specId: 7 });
     expect(await getSectionMovement(db, "B")).toBeNull();
     expect(await getSectionMovement(db, "Z")).toBeNull();
@@ -36,16 +35,14 @@ describe("section movement queries", () => {
     add("C", spec(3), 2);
     add("A", "not json", 0);
     add("B", spec(2), 1);
-    const { getAnySectionMovement } = await import(
-      "@/db/games/queries/get-section-movement"
-    );
+    const { getAnySectionMovement } =
+      await import("@/db/games/queries/get-section-movement");
     expect(await getAnySectionMovement(db)).toMatchObject({ specId: 2 });
   });
   it("getAnySectionMovement is null when no section has a movement", async () => {
     add("A", null);
-    const { getAnySectionMovement } = await import(
-      "@/db/games/queries/get-section-movement"
-    );
+    const { getAnySectionMovement } =
+      await import("@/db/games/queries/get-section-movement");
     expect(await getAnySectionMovement(db)).toBeNull();
   });
 });

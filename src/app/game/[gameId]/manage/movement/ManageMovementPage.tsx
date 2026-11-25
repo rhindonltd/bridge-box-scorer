@@ -21,7 +21,9 @@ interface ManageMovementPageProps {
   backFallbackHref: string;
 }
 
-export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps) {
+export function ManageMovementPage({
+  backFallbackHref,
+}: ManageMovementPageProps) {
   interface MovementResponse {
     type: string;
     tables: MovementByTable[];
@@ -99,7 +101,10 @@ export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps
 
   if (isLoading || !data) {
     return (
-      <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
+      <PageLayout
+        headerTitle="Movement Details"
+        backFallbackHref={backFallbackHref}
+      >
         {selector}
         <div className="flex-1 flex items-center justify-center">
           <Spinner />
@@ -110,7 +115,10 @@ export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps
 
   if (data.tables.length === 0) {
     return (
-      <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
+      <PageLayout
+        headerTitle="Movement Details"
+        backFallbackHref={backFallbackHref}
+      >
         {selector}
         <div className="flex-1 flex items-center justify-center">
           <p className="text-gray-500 text-base">No movement set up yet.</p>
@@ -120,7 +128,10 @@ export function ManageMovementPage({ backFallbackHref }: ManageMovementPageProps
   }
 
   return (
-    <PageLayout headerTitle="Movement Details" backFallbackHref={backFallbackHref}>
+    <PageLayout
+      headerTitle="Movement Details"
+      backFallbackHref={backFallbackHref}
+    >
       {selector}
       {swissControl}
       <MovementDetailView tables={data.tables} />

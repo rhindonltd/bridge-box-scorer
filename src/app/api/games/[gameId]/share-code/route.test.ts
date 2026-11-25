@@ -9,7 +9,12 @@ vi.mock("@/db/system/actions/create-share-code", () => ({
 }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { getDb } from "@/db/games";
@@ -18,13 +23,10 @@ import { createShareCode } from "@/db/system/actions/create-share-code";
 import { POST } from "./route";
 
 function invoke(gameId: string, token: string | null = "tok") {
-  const req = new Request(
-    `http://localhost/api/games/${gameId}/share-code`,
-    {
-      method: "POST",
-      headers: token ? { "x-director-token": token } : {},
-    },
-  );
+  const req = new Request(`http://localhost/api/games/${gameId}/share-code`, {
+    method: "POST",
+    headers: token ? { "x-director-token": token } : {},
+  });
   return POST(req, { params: Promise.resolve({ gameId }) } as never);
 }
 

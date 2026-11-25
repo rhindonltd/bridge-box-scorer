@@ -320,12 +320,8 @@ export function DirectorContractWizard({
             onRemoveTeamsBoard={
               allowTeamsRulings ? () => setStep(10) : undefined
             }
-            onVoidTeamsMatch={
-              allowTeamsRulings ? () => setStep(11) : undefined
-            }
-            onVoidPairsMatch={
-              allowPairsVoid ? () => setStep(12) : undefined
-            }
+            onVoidTeamsMatch={allowTeamsRulings ? () => setStep(11) : undefined}
+            onVoidPairsMatch={allowPairsVoid ? () => setStep(12) : undefined}
             onMismatch={allowMismatch ? () => setStep(13) : undefined}
             seatsSwapped={seatsSwapped}
             onToggleSeatsSwapped={() =>

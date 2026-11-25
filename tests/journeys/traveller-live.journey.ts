@@ -36,17 +36,13 @@ test.describe("Traveller live updates and director override", () => {
       // (1) Director opens board 1's traveller before the board is played.
       // Table 1's row is round 1, table 1 -> traveller-row-1-1; it shows "—".
       await openDirectorTraveller(directorPage, gameId, board);
-      const directorRow = directorPage.getByTestId(
-        `traveller-row-1-${table}`,
-      );
+      const directorRow = directorPage.getByTestId(`traveller-row-1-${table}`);
       await expect(directorRow).toContainText("\u2014"); // em dash, no result
 
       // (2) Both pairs enter matching Pass Outs for board 1 at the table. NS
       // waits; EW confirms. The director's already-open traveller updates live.
       await enterPassOut(nsPage, gameId, `A${table}NS`, board);
-      await expect(
-        nsPage.getByText("Waiting for confirmation"),
-      ).toBeVisible();
+      await expect(nsPage.getByText("Waiting for confirmation")).toBeVisible();
       await enterPassOut(ewPage, gameId, `A${table}EW`, board);
 
       // NS lands on Board Results (board confirmed) and stays mounted as our

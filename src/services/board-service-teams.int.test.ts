@@ -48,15 +48,11 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
 
   it("groups a board's two rooms into one team match with names and margin", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
 
     await createSection(harness.gameId, { section: "A", tables: 2 });
     // Teams 1 v 2, round 1, 1 board.
@@ -89,15 +85,11 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
 
   it("reports a null margin when a room has no comparable result yet", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
 
     await createSection(harness.gameId, { section: "A", tables: 2 });
     await materializeSwissTeamsRound(
@@ -123,35 +115,27 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
 
   it("frames each SHORT-triple board set as its own two-team card", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
     const { matches } = await import("@/db/games/tables/matches");
 
     await createSection(harness.gameId, { section: "A", tables: 3 });
     // A SHORT triple {1,2,3} over 4 boards/round.
-    await materializeSwissTeamsRound(
-      harness.gameId,
-      "A",
-      1,
-      4,
-      5,
-      [],
-      null,
-      { a: 1, b: 2, c: 3, kind: "SHORT" },
-    );
+    await materializeSwissTeamsRound(harness.gameId, "A", 1, 4, 5, [], null, {
+      a: 1,
+      b: 2,
+      c: 3,
+      kind: "SHORT",
+    });
 
     // Find a board that belongs to a TRIPLE comparison and frame it: it must
     // yield exactly one two-team card (that comparison), never a three-way.
-    const tripleMatch = (
-      await db.select().from(matches)
-    ).find((mm) => mm.kind === "TRIPLE")!;
+    const tripleMatch = (await db.select().from(matches)).find(
+      (mm) => mm.kind === "TRIPLE",
+    )!;
     const board = tripleMatch.boardStart;
 
     const framed = await buildTeamTravellerMatches(db, board);
@@ -161,23 +145,18 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
 
   it("returns an empty array for a board with no rows", async () => {
     const db = (await harness.getDb()) as Db;
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
     expect(await buildTeamTravellerMatches(db, 99)).toEqual([]);
   });
 
   it("returns an empty array for a pairs board (no teams match)", async () => {
     const db = (await harness.getDb()) as Db;
-    const { createSection } = await import(
-      "@/db/games/actions/create-section"
-    );
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
 
     await createSection(harness.gameId, { section: "A", tables: 1 });
     await materializeSwissRound(
@@ -200,9 +179,8 @@ describe("buildTeamTravellerMatches (reads the matches table)", () => {
     const { boards } = await import("@/db/games/tables/boards");
     const { players } = await import("@/db/games/tables/players");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
-    const { buildTeamTravellerMatches } = await import(
-      "@/services/board-service"
-    );
+    const { buildTeamTravellerMatches } =
+      await import("@/services/board-service");
     // Team 1 (A1NS + A1EW) is complete, so findTeams resolves its name.
     for (const seat of ["A1NS", "A1EW"]) {
       const p1 = db

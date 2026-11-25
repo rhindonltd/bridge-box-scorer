@@ -11,8 +11,7 @@ import {
 } from "./hesitation-utils";
 import { Tables } from "../../model/movement";
 
-export interface DoubleHesitationMitchellMovementSpec
-  extends MitchellMovementSpec {
+export interface DoubleHesitationMitchellMovementSpec extends MitchellMovementSpec {
   doubleHesitation: true;
   /**
    * Modified Double Hesitation: table 2 is played with a permanent arrow switch
@@ -54,8 +53,12 @@ export interface DoubleHesitationMitchellMovementSpec
 export function generateDoubleHesitationMitchell(
   spec: DoubleHesitationMitchellMovementSpec,
 ): Tables {
-  const { tables, boardsPerRound, arrowSwitchRounds = 0, modified = false } =
-    spec;
+  const {
+    tables,
+    boardsPerRound,
+    arrowSwitchRounds = 0,
+    modified = false,
+  } = spec;
 
   validateDoubleHesitationSpec(spec);
 
@@ -77,9 +80,7 @@ export function generateDoubleHesitationMitchell(
 
   // Round-1 identity: EW at table t = pair t + tables; a pivot NS seat's round-1
   // occupant is that table's NS-origin pair (pair == table).
-  const pairForStation = (
-    s: Station,
-  ): Omit<SeatOccupant, "originStation"> =>
+  const pairForStation = (s: Station): Omit<SeatOccupant, "originStation"> =>
     s.direction === "EW"
       ? { pair: s.table + tables, origin: "EW" }
       : { pair: s.table, origin: "NS" };

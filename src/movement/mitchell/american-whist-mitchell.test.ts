@@ -11,7 +11,8 @@ describe("generateAmericanWhistMitchell", () => {
     });
 
     // Board sets: set S = boards (S-1)*5+1 .. S*5.
-    const set = (s: number): number[] => [1, 2, 3, 4, 5].map((i) => (s - 1) * 5 + i);
+    const set = (s: number): number[] =>
+      [1, 2, 3, 4, 5].map((i) => (s - 1) * 5 + i);
 
     // Expected EW pair id and board set per (table, round), transcribed from
     // the bridge.fandom.com American Whist 5-team example (round 1 = the

@@ -24,9 +24,8 @@ describe("games db: players and participants", () => {
 
   async function seatPair(seat: string) {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
 
     const p1 = await createPlayer(harness.gameId, {
       firstName: "Alice",
@@ -79,9 +78,8 @@ describe("games db: players and participants", () => {
   it("deletes a participant and both of their player rows", async () => {
     const { p1, p2 } = await seatPair("A3NS");
 
-    const { deleteParticipant } = await import(
-      "@/db/games/actions/delete-participant"
-    );
+    const { deleteParticipant } =
+      await import("@/db/games/actions/delete-participant");
     const { findPairs } = await import("@/db/games/queries/find-pairs");
     const db = (await harness.getDb()) as Db;
 
@@ -98,9 +96,8 @@ describe("games db: players and participants", () => {
   });
 
   it("is a no-op when deleting a participant that does not exist", async () => {
-    const { deleteParticipant } = await import(
-      "@/db/games/actions/delete-participant"
-    );
+    const { deleteParticipant } =
+      await import("@/db/games/actions/delete-participant");
     await expect(
       deleteParticipant(harness.gameId, "Z9NS" as PairSeat),
     ).resolves.toBeUndefined();
@@ -119,9 +116,8 @@ describe("games db: players and participants", () => {
 
   it("withdraws a participant (PENALISED) without deleting any rows", async () => {
     const { p1, p2 } = await seatPair("A5NS");
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     const db = (await harness.getDb()) as Db;
 
     const ok = await withdrawParticipant(harness.gameId, "A5NS", {
@@ -140,16 +136,19 @@ describe("games db: players and participants", () => {
     expect(row.withdrawalTreatment).toBe("PENALISED");
     expect(row.withdrawalFinePercent).toBe(20);
     // The participant and BOTH player rows survive (unlike eviction).
-    const remainingIds = db.select().from(players).all().map((r) => r.id);
+    const remainingIds = db
+      .select()
+      .from(players)
+      .all()
+      .map((r) => r.id);
     expect(remainingIds).toContain(p1.id);
     expect(remainingIds).toContain(p2.id);
   });
 
   it("clamps the §2.4.5 fine into 0..40 and clears it for REMOVE", async () => {
     await seatPair("A6NS");
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const db = (await harness.getDb()) as Db;
 
@@ -160,7 +159,9 @@ describe("games db: players and participants", () => {
       treatment: "PENALISED",
       finePercent: 99,
     });
-    expect(db.select().from(seatOccupancy).all()[0].withdrawalFinePercent).toBe(40);
+    expect(db.select().from(seatOccupancy).all()[0].withdrawalFinePercent).toBe(
+      40,
+    );
 
     // REMOVE carries no fine, even if a stale one was set before.
     await withdrawParticipant(harness.gameId, "A6NS", {
@@ -175,9 +176,8 @@ describe("games db: players and participants", () => {
 
   it("marks a WITHOUT_STANDING substitute and clears withdrawal fields", async () => {
     await seatPair("A7NS");
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const db = (await harness.getDb()) as Db;
 
@@ -199,9 +199,8 @@ describe("games db: players and participants", () => {
   });
 
   it("is a no-op (false) withdrawing a participant that does not exist", async () => {
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     const ok = await withdrawParticipant(harness.gameId, "Z9NS", {
       standing: "WITHDRAWN",
       withdrawnInRound: 1,

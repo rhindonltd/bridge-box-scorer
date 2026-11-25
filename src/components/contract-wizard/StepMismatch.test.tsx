@@ -13,7 +13,9 @@ describe("StepMismatch", () => {
 
     // Stage 2: choose the §3.5.2 treatment.
     fireEvent.click(
-      screen.getByRole("button", { name: /Stronger opponent — not their fault/ }),
+      screen.getByRole("button", {
+        name: /Stronger opponent — not their fault/,
+      }),
     );
 
     expect(onSubmit).toHaveBeenCalledWith({

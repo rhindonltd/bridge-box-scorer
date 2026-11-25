@@ -63,12 +63,10 @@ describe("games db: boards and submissions", () => {
   });
 
   it("inserts a submission then finds it by section/table/round", async () => {
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
-    const { findBoardSubmissions } = await import(
-      "@/db/games/queries/find-submissions"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
+    const { findBoardSubmissions } =
+      await import("@/db/games/queries/find-submissions");
 
     await createBoardSubmission(harness.gameId, makeSubmission());
 
@@ -78,12 +76,10 @@ describe("games db: boards and submissions", () => {
   });
 
   it("upserts a submission for the same (section, round, table, side)", async () => {
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
-    const { findBoardSubmissions } = await import(
-      "@/db/games/queries/find-submissions"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
+    const { findBoardSubmissions } =
+      await import("@/db/games/queries/find-submissions");
 
     await createBoardSubmission(harness.gameId, makeSubmission());
     // Same NS side / same table+round: should update, not duplicate.
@@ -101,12 +97,10 @@ describe("games db: boards and submissions", () => {
   });
 
   it("keeps NS and EW submissions as separate rows", async () => {
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
-    const { findBoardSubmissions } = await import(
-      "@/db/games/queries/find-submissions"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
+    const { findBoardSubmissions } =
+      await import("@/db/games/queries/find-submissions");
 
     await createBoardSubmission(harness.gameId, makeSubmission({ side: "NS" }));
     await createBoardSubmission(harness.gameId, makeSubmission({ side: "EW" }));
@@ -116,15 +110,12 @@ describe("games db: boards and submissions", () => {
   });
 
   it("deletes all submissions for a (section, table, round)", async () => {
-    const { createBoardSubmission } = await import(
-      "@/db/games/actions/create-submission"
-    );
-    const { deleteBoardSubmissions } = await import(
-      "@/db/games/actions/delete-submissions"
-    );
-    const { findBoardSubmissions } = await import(
-      "@/db/games/queries/find-submissions"
-    );
+    const { createBoardSubmission } =
+      await import("@/db/games/actions/create-submission");
+    const { deleteBoardSubmissions } =
+      await import("@/db/games/actions/delete-submissions");
+    const { findBoardSubmissions } =
+      await import("@/db/games/queries/find-submissions");
 
     await createBoardSubmission(harness.gameId, makeSubmission({ side: "NS" }));
     await createBoardSubmission(harness.gameId, makeSubmission({ side: "EW" }));
@@ -137,9 +128,8 @@ describe("games db: boards and submissions", () => {
   });
 
   it("returns an empty array when no submissions match", async () => {
-    const { findBoardSubmissions } = await import(
-      "@/db/games/queries/find-submissions"
-    );
+    const { findBoardSubmissions } =
+      await import("@/db/games/queries/find-submissions");
     expect(await findBoardSubmissions(harness.gameId, "B", 9, 9)).toEqual([]);
   });
 });

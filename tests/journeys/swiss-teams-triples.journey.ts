@@ -149,7 +149,10 @@ function materializedRounds(gameId: string, section = "A"): number {
 }
 
 /** Draw the next round from the in-play Movement screen (preview → OK). */
-async function drawNextRound(directorPage: Page, gameId: string): Promise<void> {
+async function drawNextRound(
+  directorPage: Page,
+  gameId: string,
+): Promise<void> {
   await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
   const button = directorPage.getByTestId("draw-next-round");
   await expect(button).toBeEnabled({ timeout: 15000 });

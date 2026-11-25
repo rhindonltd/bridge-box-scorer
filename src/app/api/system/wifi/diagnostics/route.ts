@@ -34,7 +34,10 @@ async function tryNmcli(
   try {
     return { ok: true, stdout: await runNmcli(args) };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 

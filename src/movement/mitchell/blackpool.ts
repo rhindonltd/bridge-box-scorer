@@ -40,9 +40,7 @@ export interface BlackpoolMovementSpec extends MitchellMovementSpec {
  * The optional revenge round(s) extend the movement by continuing the normal
  * EW/board circulation; pairs then re-meet earlier opponents.
  */
-export function generateBlackpool(
-  spec: BlackpoolMovementSpec,
-): Tables {
+export function generateBlackpool(spec: BlackpoolMovementSpec): Tables {
   const { tables, revengeRounds = 0 } = spec;
 
   validateBlackpoolSpec(spec);

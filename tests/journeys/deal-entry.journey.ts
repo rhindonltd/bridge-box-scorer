@@ -93,7 +93,9 @@ test.describe("Board deal capture", () => {
       // The deals page's StartedGuard briefly redirects to /manage while its
       // started-state resolves, which can interrupt a plain goto; gotoStable
       // rides that out. Once loaded it shows the board picker.
-      const boardButton = directorPage.getByTestId(`select-board-${firstBoard}`);
+      const boardButton = directorPage.getByTestId(
+        `select-board-${firstBoard}`,
+      );
       await gotoStable(directorPage, `/game/${gameId}/manage/deals`);
       await expect(boardButton).toBeVisible({ timeout: 15000 });
       await boardButton.click();
@@ -157,7 +159,10 @@ test.describe("Board deal capture", () => {
       // deal exists, the menu gains a "Deal" view option that switches the
       // board-results body to the hand diagram. Open the menu and pick "Deal".
       await nsPage.getByRole("button", { name: "Menu" }).click();
-      const dealItem = nsPage.getByRole("menuitem", { name: "Deal", exact: true });
+      const dealItem = nsPage.getByRole("menuitem", {
+        name: "Deal",
+        exact: true,
+      });
       // The "Deal" item only appears once the live deal has arrived, so this
       // also waits out the push.
       await expect(dealItem).toBeVisible({ timeout: 15000 });
@@ -227,9 +232,9 @@ test.describe("Board deal capture", () => {
       await directorPage
         .getByRole("button", { name: /^Import \d+ boards?$/ })
         .click();
-      await expect(
-        directorPage.getByText(/\d+ boards? imported/),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText(/\d+ boards? imported/)).toBeVisible({
+        timeout: 15000,
+      });
 
       // Done returns the director to the Manage Game Menu.
       await directorPage.getByRole("button", { name: "Done" }).click();

@@ -61,9 +61,7 @@ describe("RecommendedMovementCard", () => {
       copies: 2,
     };
     rerender(<RecommendedMovementCard movement={web} onSelect={vi.fn()} />);
-    expect(
-      screen.getByText("Needs 2 sets of boards."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Needs 2 sets of boards.")).toBeInTheDocument();
   });
 
   it("renders pros and cons", () => {
@@ -95,7 +93,9 @@ describe("RecommendedMovementCard", () => {
     expect(
       screen.queryByText("Every pair plays every other pair"),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("One stationary pair only")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("One stationary pair only"),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText("Shuffle the last-round boards in advance."),
     ).not.toBeInTheDocument();
@@ -110,7 +110,9 @@ describe("RecommendedMovementCard", () => {
     render(<RecommendedMovementCard movement={prosOnly} onSelect={vi.fn()} />);
 
     expect(screen.getByText("A single upside")).toBeInTheDocument();
-    expect(screen.queryByText("One stationary pair only")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("One stationary pair only"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a Selected badge and marks the card when selected", () => {
@@ -137,9 +139,7 @@ describe("RecommendedMovementCard", () => {
 
   it("calls onSelect when clicked", () => {
     const onSelect = vi.fn();
-    render(
-      <RecommendedMovementCard movement={movement} onSelect={onSelect} />,
-    );
+    render(<RecommendedMovementCard movement={movement} onSelect={onSelect} />);
     fireEvent.click(screen.getByRole("button"));
     expect(onSelect).toHaveBeenCalledOnce();
   });

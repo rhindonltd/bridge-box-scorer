@@ -106,15 +106,20 @@ export function StepMismatch({ teams = false, onSubmit }: Props) {
   return (
     <div className="flex-1 flex flex-col p-4 min-h-0">
       <p className="text-sm text-gray-600 text-center mb-4">
-        Mismatched side: <span className="font-semibold">{side === "NS" ? thisLabel : oppLabel}</span>. How
-        does §3.5.2 adjust its VP?
+        Mismatched side:{" "}
+        <span className="font-semibold">
+          {side === "NS" ? thisLabel : oppLabel}
+        </span>
+        . How does §3.5.2 adjust its VP?
       </p>
       <div className="flex flex-col gap-3">
         {TREATMENTS.map((t) => (
           <button
             key={`${t.direction}:${t.fault}`}
             type="button"
-            onClick={() => onSubmit({ side, direction: t.direction, fault: t.fault })}
+            onClick={() =>
+              onSubmit({ side, direction: t.direction, fault: t.fault })
+            }
             className="py-4 px-4 rounded-xl text-left border-2 border-gray-200 bg-white hover:bg-gray-50 active:scale-[0.98] transition"
           >
             <span className="block text-base font-semibold text-gray-900">

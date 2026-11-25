@@ -87,7 +87,12 @@ describe("leaderboard-service game-configuration edges", () => {
   }
   describe("baseline field before any board is played", () => {
     const cases: [string, Record<string, unknown>, string, string][] = [
-      ["Cross-IMP pairs", { gameType: "PAIRS", scoringType: "XIMP" }, "pairId", "crossImps"],
+      [
+        "Cross-IMP pairs",
+        { gameType: "PAIRS", scoringType: "XIMP" },
+        "pairId",
+        "crossImps",
+      ],
       [
         "Swiss Cross-IMP pairs",
         {
@@ -106,19 +111,31 @@ describe("leaderboard-service game-configuration edges", () => {
       ],
       [
         "aggregate-IMP teams",
-        { gameType: "TEAMS", scoringType: "IMP", selectedMovement: SWISS_TEAMS },
+        {
+          gameType: "TEAMS",
+          scoringType: "IMP",
+          selectedMovement: SWISS_TEAMS,
+        },
         "teamId",
         "totalImps",
       ],
       [
         "Board-a-Match teams",
-        { gameType: "TEAMS", scoringType: "BAM", selectedMovement: SWISS_TEAMS },
+        {
+          gameType: "TEAMS",
+          scoringType: "BAM",
+          selectedMovement: SWISS_TEAMS,
+        },
         "teamId",
         "totalWon",
       ],
       [
         "Point-a-Board teams",
-        { gameType: "TEAMS", scoringType: "PAB", selectedMovement: SWISS_TEAMS },
+        {
+          gameType: "TEAMS",
+          scoringType: "PAB",
+          selectedMovement: SWISS_TEAMS,
+        },
         "teamId",
         "totalWon",
       ],
@@ -128,9 +145,8 @@ describe("leaderboard-service game-configuration edges", () => {
       async (_label, config, idField, valueField) => {
         const db = await setup(config);
         await seatTwoTeams(db);
-        const { computeLeaderboard, computeSectionLeaderboards } = await import(
-          "./leaderboard-service"
-        );
+        const { computeLeaderboard, computeSectionLeaderboards } =
+          await import("./leaderboard-service");
         const combined = await computeLeaderboard(db, gameId);
         const sections = await computeSectionLeaderboards(db, gameId);
         expect(sections.map((s) => s.section)).toEqual(["A"]);
@@ -173,9 +189,8 @@ describe("leaderboard-service game-configuration edges", () => {
             }),
           )
           .run();
-        const { computeSectionLeaderboards } = await import(
-          "./leaderboard-service"
-        );
+        const { computeSectionLeaderboards } =
+          await import("./leaderboard-service");
         const sections = await computeSectionLeaderboards(db, gameId);
         const b = sections.find((s) => s.section === "B")!;
         expect(b.participants).toEqual([]);
@@ -232,7 +247,8 @@ describe("leaderboard-service game-configuration edges", () => {
         selectedMovement: MITCHELL,
       });
       await seatAndScore(db);
-      const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
+      const { seatOccupancy } =
+        await import("@/db/games/tables/seat-occupancy");
       const { eq } = await import("drizzle-orm");
       db.update(seatOccupancy)
         .set({ standing: "WITHOUT_STANDING" })
@@ -286,9 +302,8 @@ describe("leaderboard-service game-configuration edges", () => {
         selectedMovement: SWISS_TEAMS,
       });
       await seatTwoTeams(db);
-      const { expectedLateSeats } = await import(
-        "@/db/games/tables/expected-late-seats"
-      );
+      const { expectedLateSeats } =
+        await import("@/db/games/tables/expected-late-seats");
       db.insert(expectedLateSeats)
         .values([{ seat: "A1NS" }, { seat: "A3NS" }])
         .run();

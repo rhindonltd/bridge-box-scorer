@@ -14,9 +14,8 @@ describe("findNonPrimaryOccupantPairs", () => {
   it("lists the non-anchor occupant of a split seat and skips one whose players are missing", async () => {
     const db = (await harness.getDb()) as Db;
     const { players } = await import("@/db/games/tables/players");
-    const { seatOccupancy: table } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy: table } =
+      await import("@/db/games/tables/seat-occupancy");
     const mk = (n: string) =>
       db
         .insert(players)
@@ -60,9 +59,8 @@ describe("findNonPrimaryOccupantPairs", () => {
         },
       ])
       .run();
-    const { findNonPrimaryOccupantPairs } = await import(
-      "@/db/games/queries/seat-occupancy"
-    );
+    const { findNonPrimaryOccupantPairs } =
+      await import("@/db/games/queries/seat-occupancy");
     const found = await findNonPrimaryOccupantPairs(db);
     expect(found.map((f) => [f.seat, f.player1.firstName])).toEqual([
       ["A1NS", "a"],
@@ -71,7 +69,14 @@ describe("findNonPrimaryOccupantPairs", () => {
     db.$client.pragma("foreign_keys = OFF");
     db.insert(table)
       .values([
-        { seat: "A3NS", boards: [1], player1: 9998, player2: 9999, secretKey: "s5", split: 1 },
+        {
+          seat: "A3NS",
+          boards: [1],
+          player1: 9998,
+          player2: 9999,
+          secretKey: "s5",
+          split: 1,
+        },
         {
           seat: "A3NS",
           boards: [2],
@@ -89,9 +94,8 @@ describe("findNonPrimaryOccupantPairs", () => {
   });
   it("is empty when no seat has a split handover", async () => {
     const db = (await harness.getDb()) as Db;
-    const { findNonPrimaryOccupantPairs } = await import(
-      "@/db/games/queries/seat-occupancy"
-    );
+    const { findNonPrimaryOccupantPairs } =
+      await import("@/db/games/queries/seat-occupancy");
     expect(await findNonPrimaryOccupantPairs(db)).toEqual([]);
   });
 });

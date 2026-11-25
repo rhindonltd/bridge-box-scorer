@@ -59,7 +59,9 @@ const list = (raw: string | undefined): string[] | undefined =>
         .filter(Boolean);
 
 /** Parse the CLI flags into {@link SeedGameOptions} (validation is seedGame's). */
-export function parseCliArgs(argv: string[]): SeedGameOptions & { json: boolean } {
+export function parseCliArgs(
+  argv: string[],
+): SeedGameOptions & { json: boolean } {
   const scoring = (getFlag(argv, "--scoring") ?? "MP") as FixtureKey;
   if (!(scoring in FIXTURES)) {
     throw new Error(
@@ -71,8 +73,7 @@ export function parseCliArgs(argv: string[]): SeedGameOptions & { json: boolean 
     throw new Error(`--play must be all | partial | round1 | none`);
   }
   const movement = (getFlag(argv, "--movement") ?? "fixture") as
-    | "fixture"
-    | "recommended";
+    "fixture" | "recommended";
   if (movement !== "fixture" && movement !== "recommended") {
     throw new Error(`--movement must be fixture | recommended`);
   }

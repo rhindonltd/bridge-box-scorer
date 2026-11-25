@@ -104,7 +104,10 @@ function halfMatchAck(over: Record<string, unknown> = {}): any {
         anchorDirection: "NS",
         anchor: pair(1, "Ann", "Ben"),
         halfOneOpponent: pair(4, "Cat", "Dan"),
-        halfTwoOpponent: { pairId: 6, players: { player1: null, player2: null } },
+        halfTwoOpponent: {
+          pairId: 6,
+          players: { player1: null, player2: null },
+        },
       },
     },
     ...over,
@@ -127,7 +130,14 @@ describe("SwissDrawPreview", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("shows names, dashes for unseated players, and a fallback for unnamed pairs", () => {
-    setup(byeAck({ seating: [{ tableNumber: 1, ns: 1, ew: 4 }, { tableNumber: 2, ns: 2, ew: 9 }] }));
+    setup(
+      byeAck({
+        seating: [
+          { tableNumber: 1, ns: 1, ew: 4 },
+          { tableNumber: 2, ns: 2, ew: 9 },
+        ],
+      }),
+    );
     expect(screen.getByText("Ann One")).toBeInTheDocument();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     // Pair 9 has no resolved names.
@@ -201,7 +211,9 @@ describe("SwissDrawPreview", () => {
 
   it("mentions the bye slot in the instructions only when a pair sits out", () => {
     setup(byeAck());
-    expect(screen.getByText(/sit-out slot to give it the bye/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/sit-out slot to give it the bye/),
+    ).toBeInTheDocument();
   });
 
   it("omits the bye slot and its instructions when nobody sits out", () => {

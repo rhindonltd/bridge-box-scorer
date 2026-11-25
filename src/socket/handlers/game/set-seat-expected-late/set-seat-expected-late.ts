@@ -38,7 +38,7 @@ export function registerSetSeatExpectedLateHandler(socket: Socket, io: Server) {
     io,
     SocketEvents.SET_SEAT_EXPECTED_LATE,
     {
-    blockWhenFinalised: true,
+      blockWhenFinalised: true,
       schema: payloadSchema,
       handler: async ({ payload, ack }) => {
         const { gameId, directorToken, seat, expectedLate } = payload;

@@ -1,0 +1,27 @@
+import { PairMatchpointOverallScore } from "@/model/leaderboard";
+import { ScoredTravellerOfType } from "@/modules/scoring/overall/scored-traveller";
+import { buildOverallScore } from "@/modules/scoring/overall/common";
+
+export function calculateOverallMPResults(
+  travellers: ScoredTravellerOfType<"PAIR_MP">[],
+): PairMatchpointOverallScore {
+  return {
+    type: "PAIR_MP",
+    mode: "PAIR",
+    scoring: "MP",
+    lines: buildOverallScore({
+      travellers,
+      project: (line) => [
+        { id: line.nsId, value: line.nsMatchPoints, max: line.maxMatchPoints },
+        { id: line.ewId, value: line.ewMatchPoints, max: line.maxMatchPoints },
+      ],
+      toResult: (pairId, data) => ({
+        pairId,
+        totalMP: data.value,
+        maxMP: data.max,
+      }),
+      // No matchpoints available yet (maxMP 0): rank at the 50% it is shown at.
+      sort: (x) => (x.maxMP > 0 ? x.totalMP / x.maxMP : 0.5),
+    }),
+  };
+}

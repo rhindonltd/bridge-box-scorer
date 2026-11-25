@@ -7,28 +7,36 @@ describe("StepTeamsRemoval", () => {
   it("submits opponents (EW) at fault", () => {
     const onSubmit = vi.fn();
     render(<StepTeamsRemoval onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByRole("button", { name: /Opponents \(EW\) at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Opponents \(EW\) at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("EW_FAULT");
   });
 
   it("submits this table (NS) at fault", () => {
     const onSubmit = vi.fn();
     render(<StepTeamsRemoval onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByRole("button", { name: /This table \(NS\) at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /This table \(NS\) at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("NS_FAULT");
   });
 
   it("submits neither at fault", () => {
     const onSubmit = vi.fn();
     render(<StepTeamsRemoval onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByRole("button", { name: /Neither side at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Neither side at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("NEITHER_FAULT");
   });
 
   it("submits both at fault", () => {
     const onSubmit = vi.fn();
     render(<StepTeamsRemoval onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByRole("button", { name: /Both sides at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Both sides at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("BOTH_FAULT");
   });
 

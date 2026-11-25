@@ -22,7 +22,9 @@ vi.mock("fs", async (importActual) => {
 const { isWifiManagementAvailable } = vi.hoisted(() => ({
   isWifiManagementAvailable: vi.fn(),
 }));
-vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
+vi.mock("@/lib/system/wifi-availability", () => ({
+  isWifiManagementAvailable,
+}));
 
 import { exec as mockExec } from "child_process";
 import { GET } from "./route";

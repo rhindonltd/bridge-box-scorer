@@ -47,18 +47,18 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Scripts
 
-| Command             | Description                                        |
-| ------------------- | -------------------------------------------------- |
-| `npm run dev`       | Start dev server (Next.js + Socket.IO, hot reload) |
-| `npm run build`     | Production build (runs migrations first)           |
-| `npm start`         | Start production server                            |
-| `npm test`          | Run unit tests (Vitest)                            |
-| `npm run coverage`  | Run tests with coverage report                     |
-| `npm run journey:all` | Run the Playwright journeys (build first; see Testing) |
-| `npm run lint`      | ESLint check                                       |
-| `npm run format`    | Prettier format                                    |
-| `npm run storybook` | Launch Storybook on port 6006                      |
-| `npm run test:storybook`    | Run Storybook stories as tests (headless browser + a11y) |
+| Command                      | Description                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| `npm run dev`                | Start dev server (Next.js + Socket.IO, hot reload)        |
+| `npm run build`              | Production build (runs migrations first)                  |
+| `npm start`                  | Start production server                                   |
+| `npm test`                   | Run unit tests (Vitest)                                   |
+| `npm run coverage`           | Run tests with coverage report                            |
+| `npm run journey:all`        | Run the Playwright journeys (build first; see Testing)    |
+| `npm run lint`               | ESLint check                                              |
+| `npm run format`             | Prettier format                                           |
+| `npm run storybook`          | Launch Storybook on port 6006                             |
+| `npm run test:storybook`     | Run Storybook stories as tests (headless browser + a11y)  |
 | `npm run check:page-stories` | Verify every route `*Page`/`*Flow` has a co-located story |
 
 ## Project Structure
@@ -162,7 +162,7 @@ npm run check:page-stories
 > ```
 >
 > `check:page-stories` uses a shrinking allowlist (`scripts/check-page-stories.mjs`,
-> `KNOWN_MISSING`) so it baselines today's gaps and fails only on *new* uncovered route
+> `KNOWN_MISSING`) so it baselines today's gaps and fails only on _new_ uncovered route
 > components. Accessibility enforcement is rolled out per-component via
 > `parameters.a11y.test = "error"` (global default stays report-only — see
 > `.storybook/preview.tsx`).
@@ -188,7 +188,7 @@ the route-entry files above are considered "journey-covered" by the specs in
 
 ## Environment Variables
 
-| Variable                    | Default                 | Description                                              |
+| Variable                    | Default                 | Description                                             |
 | --------------------------- | ----------------------- | ------------------------------------------------------- |
 | `DATABASE_URL`              | `./data`                | Directory for system databases                          |
 | `DATABASE_GAMES_URL`        | `./data/games`          | Directory for per-game databases                        |

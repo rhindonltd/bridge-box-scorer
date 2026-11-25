@@ -17,8 +17,8 @@ import type {
   SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
 import { buildSectionRows } from "./materialize-movement";
-import { segmentsForPair } from "@/scoring/swiss/swiss-half-match";
-import type { SwissVpBoardRow } from "@/scoring/swiss/swiss-vp-overall";
+import { segmentsForPair } from "@/modules/scoring/swiss/swiss-half-match";
+import type { SwissVpBoardRow } from "@/modules/scoring/swiss/swiss-vp-overall";
 import { getDb } from "@/db/games";
 
 /**
@@ -245,35 +245,87 @@ describe("swissHalfMatchToMaterializable", () => {
   };
 
   it("seats both halves at the anchor's table, anchor fixed, opponents swapping", () => {
-    const out = swissHalfMatchToMaterializable(3, 1, 8, group, { tableNumber: 1, anchorDirection: "NS" }, 7)!;
+    const out = swissHalfMatchToMaterializable(
+      3,
+      1,
+      8,
+      group,
+      { tableNumber: 1, anchorDirection: "NS" },
+      7,
+    )!;
     const anchorTable = out[0];
     expect(anchorTable.tableNumber).toBe(1);
     expect(anchorTable.rounds).toHaveLength(2);
     // Half 1: anchor NS vs halfOneOpponent on boards 1-4.
-    expect(anchorTable.rounds[0]).toMatchObject({ ns: "1", ew: "2", boardStart: 1, boardEnd: 4 });
+    expect(anchorTable.rounds[0]).toMatchObject({
+      ns: "1",
+      ew: "2",
+      boardStart: 1,
+      boardEnd: 4,
+    });
     // Half 2: anchor NS vs halfTwoOpponent on boards 5-8.
-    expect(anchorTable.rounds[1]).toMatchObject({ ns: "1", ew: "4", boardStart: 5, boardEnd: 8 });
+    expect(anchorTable.rounds[1]).toMatchObject({
+      ns: "1",
+      ew: "4",
+      boardStart: 5,
+      boardEnd: 8,
+    });
   });
 
   it("compensates each non-anchor on the half it missed, as HALF_AVERAGE blocks", () => {
-    const out = swissHalfMatchToMaterializable(3, 1, 8, group, { tableNumber: 1, anchorDirection: "NS" }, 7)!;
+    const out = swissHalfMatchToMaterializable(
+      3,
+      1,
+      8,
+      group,
+      { tableNumber: 1, anchorDirection: "NS" },
+      7,
+    )!;
     const [, compOne, compTwo] = out;
     // halfOneOpponent (2 → "2") played S1, so is compensated on S2 (5-8).
     expect(compOne).toMatchObject({ tableNumber: 7 });
-    expect(compOne.rounds[0]).toMatchObject({ ns: "2", ew: "PHANTOM", boardStart: 5, boardEnd: 8, halfAverage: true });
+    expect(compOne.rounds[0]).toMatchObject({
+      ns: "2",
+      ew: "PHANTOM",
+      boardStart: 5,
+      boardEnd: 8,
+      halfAverage: true,
+    });
     // halfTwoOpponent (4 → "4") played S2, so is compensated on S1 (1-4).
     expect(compTwo).toMatchObject({ tableNumber: 8 });
-    expect(compTwo.rounds[0]).toMatchObject({ ns: "4", ew: "PHANTOM", boardStart: 1, boardEnd: 4, halfAverage: true });
+    expect(compTwo.rounds[0]).toMatchObject({
+      ns: "4",
+      ew: "PHANTOM",
+      boardStart: 1,
+      boardEnd: 4,
+      halfAverage: true,
+    });
   });
 
   it("puts the anchor EW (opponents NS) when the anchor is seated EW", () => {
-    const out = swissHalfMatchToMaterializable(3, 1, 8, group, { tableNumber: 1, anchorDirection: "EW" }, 7)!;
+    const out = swissHalfMatchToMaterializable(
+      3,
+      1,
+      8,
+      group,
+      { tableNumber: 1, anchorDirection: "EW" },
+      7,
+    )!;
     expect(out[0].rounds[0]).toMatchObject({ ns: "2", ew: "1" });
     expect(out[0].rounds[1]).toMatchObject({ ns: "4", ew: "1" });
   });
 
   it("returns null for a round too short to split", () => {
-    expect(swissHalfMatchToMaterializable(3, 1, 1, group, { tableNumber: 1, anchorDirection: "NS" }, 7)).toBeNull();
+    expect(
+      swissHalfMatchToMaterializable(
+        3,
+        1,
+        1,
+        group,
+        { tableNumber: 1, anchorDirection: "NS" },
+        7,
+      ),
+    ).toBeNull();
   });
 });
 
@@ -309,7 +361,9 @@ describe("swissRoundToMaterializable — half-match round", () => {
     const anchorSegs = segmentsForPair(anchor, rowsFor(rows, anchor));
     expect(anchorSegs).toHaveLength(2);
     expect(anchorSegs.every((s) => !s.compensation)).toBe(true);
-    expect(anchorSegs.map((s) => s.opponent).sort()).toEqual([oppOne, oppTwo].sort());
+    expect(anchorSegs.map((s) => s.opponent).sort()).toEqual(
+      [oppOne, oppTwo].sort(),
+    );
 
     for (const nonAnchor of [oppOne, oppTwo]) {
       const segs = segmentsForPair(nonAnchor, rowsFor(rows, nonAnchor));
@@ -334,7 +388,9 @@ describe("swissRoundToMaterializable — half-match round", () => {
     // Played table 2, anchor table 1, sit-out table 3, compensation tables
     // beyond them: no table number is used twice.
     expect(new Set(numbers).size).toBe(numbers.length);
-    expect(movement.find((t) => t.rounds.some((r) => r.sitOut))!.tableNumber).toBe(3);
+    expect(
+      movement.find((t) => t.rounds.some((r) => r.sitOut))!.tableNumber,
+    ).toBe(3);
     expect(Math.max(...numbers)).toBeGreaterThan(3);
   });
   it("rejects a half-match round with too few boards to split", () => {

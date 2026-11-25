@@ -33,38 +33,39 @@ conclusions of any earlier audit or of `ebu-white-book-scoring.md`.
 
 ## Summary
 
-| # | White Book | Topic | Status | Severity |
-|---|-----------|-------|--------|----------|
-| B1 | §3.1.1 | Teams-of-four IMP→VP discrete scale | OK | — |
-| B2 | §3.1.2 | Triangular (10–0) VP scale | OK | — |
-| B3 | §3.1.3 | Cross-IMP XIMPQ normaliser √(rc/2) | OK | — |
-| B4 | §3.1.7 | Swiss pairs %→VP tables + borderline | OK | — |
-| B5 | §3.3.2 | Pairs unplayable board (cancel / sub-field) | OK | — |
-| B6 | §3.3.6 | Teams incorrect seating void (40%/60%) | OK | — |
-| B7 | §3.3.7 | Teams removed board ±3 IMP indemnity | OK | — |
-| B8 | §3.3.9 | Void match AVE+/AVE−/AVE half-split | OK | — |
-| B9 | §3.5 / §3.5.2 | Swiss mismatch detection + VP adjustment (0.5-VP round-up) | OK | — |
-| B10 | §4.1.1.1 | AVE+/AVE− "better than average" at MP | OK | — |
-| B10b | §4.1.1.1 | AVE+/AVE− "better than average" at IMP/XIMP | OK | — |
-| B11 | §4.1.1.4 | Weighted scores (convert-then-blend, 2dp) | OK | — |
-| B12 | §4.2.3.2 | Neuberg's formula + application condition | OK | — |
-| B13 | §4.2.3.3 | Small sub-fields (65/55, 70/50) | OK | — |
-| B14 | §4.2.5 | All boards count equally / scale by boards | OK | — |
-| B15 | §4.2.6.1 | No mid-calc rounding; halves away from average | OK | — |
-| B16 | §4.2.6.3 | Cross-IMP total rounded to whole IMP | OK | — |
-| B17 | §2.4.3–§2.4.7 | Withdrawals / late arrival | OK | — |
-| D1 | §3.2 | Split-tie / tie-break ordering | WONT-IMPLEMENT | — |
-| D2 | §4.2.4 / §4.2.6.2 | Butler datum (nearest 10) IMP pairs | WONT-IMPLEMENT | — |
-| D3 | §3.5.3 | Mismatch in a match-point-scored Swiss event | WONT-IMPLEMENT | — |
-| C1 | §4.1.1.4 | "Offenders must not gain" | TD-JUDGEMENT | — |
-| C2 | §3.3.6.2 | ≥half / <half void decision | TD-JUDGEMENT | — |
-| C3 | §3.3.10 | Wrong board number → AVE−/AVE− | TD-JUDGEMENT | — |
+| #    | White Book        | Topic                                                      | Status         | Severity |
+| ---- | ----------------- | ---------------------------------------------------------- | -------------- | -------- |
+| B1   | §3.1.1            | Teams-of-four IMP→VP discrete scale                        | OK             | —        |
+| B2   | §3.1.2            | Triangular (10–0) VP scale                                 | OK             | —        |
+| B3   | §3.1.3            | Cross-IMP XIMPQ normaliser √(rc/2)                         | OK             | —        |
+| B4   | §3.1.7            | Swiss pairs %→VP tables + borderline                       | OK             | —        |
+| B5   | §3.3.2            | Pairs unplayable board (cancel / sub-field)                | OK             | —        |
+| B6   | §3.3.6            | Teams incorrect seating void (40%/60%)                     | OK             | —        |
+| B7   | §3.3.7            | Teams removed board ±3 IMP indemnity                       | OK             | —        |
+| B8   | §3.3.9            | Void match AVE+/AVE−/AVE half-split                        | OK             | —        |
+| B9   | §3.5 / §3.5.2     | Swiss mismatch detection + VP adjustment (0.5-VP round-up) | OK             | —        |
+| B10  | §4.1.1.1          | AVE+/AVE− "better than average" at MP                      | OK             | —        |
+| B10b | §4.1.1.1          | AVE+/AVE− "better than average" at IMP/XIMP                | OK             | —        |
+| B11  | §4.1.1.4          | Weighted scores (convert-then-blend, 2dp)                  | OK             | —        |
+| B12  | §4.2.3.2          | Neuberg's formula + application condition                  | OK             | —        |
+| B13  | §4.2.3.3          | Small sub-fields (65/55, 70/50)                            | OK             | —        |
+| B14  | §4.2.5            | All boards count equally / scale by boards                 | OK             | —        |
+| B15  | §4.2.6.1          | No mid-calc rounding; halves away from average             | OK             | —        |
+| B16  | §4.2.6.3          | Cross-IMP total rounded to whole IMP                       | OK             | —        |
+| B17  | §2.4.3–§2.4.7     | Withdrawals / late arrival                                 | OK             | —        |
+| D1   | §3.2              | Split-tie / tie-break ordering                             | WONT-IMPLEMENT | —        |
+| D2   | §4.2.4 / §4.2.6.2 | Butler datum (nearest 10) IMP pairs                        | WONT-IMPLEMENT | —        |
+| D3   | §3.5.3            | Mismatch in a match-point-scored Swiss event               | WONT-IMPLEMENT | —        |
+| C1   | §4.1.1.4          | "Offenders must not gain"                                  | TD-JUDGEMENT   | —        |
+| C2   | §3.3.6.2          | ≥half / <half void decision                                | TD-JUDGEMENT   | —        |
+| C3   | §3.3.10           | Wrong board number → AVE−/AVE−                             | TD-JUDGEMENT   | —        |
 
 ---
 
 ## Verified-correct (OK)
 
 ### B1 — Teams-of-four IMP→VP discrete scale — OK
+
 **§3.1.1.** `src/scoring/swiss/imp-vp-table.ts` is ported verbatim from the EBU's
 own VP generator (`vps.js`): golden-ratio decay constant `R`, the `imap` inverse
 curve, `discrete` band construction (`blitz = 15·√boards`), and the `discreteCC`
@@ -73,12 +74,14 @@ takes `pool − winner`. This reproduces the published discrete tables rather th
 rounding a continuous curve.
 
 ### B2 — Triangular / short-triangle 10–0 scale — OK
+
 **§3.1.2 / §3.4.3.** The 10-VP pool is the same `imp-vp-table.ts` machinery with
 the EBU "triangular" board indexing (`boardArg` uses `H/2`). Teams triples pick
 the pool via `tripleVpPool` (10 SHORT / 20 LONG) in
 `src/scoring/swiss/team-match.ts`.
 
 ### B3 — Cross-IMP XIMPQ normaliser — OK
+
 **§3.1.3 / §4.2.6.3.** In `src/scoring/swiss/swiss-vp-round.ts`
 (`buildXimpByBoard`) the per-board normaliser is `Math.sqrt((r * c) / 2)` with
 `r` = results and `c = r − 1`, matching `XIMP / √(rc/2)` exactly. The round total
@@ -86,6 +89,7 @@ is rounded to a whole IMP (halves away from zero, `roundHalfAwayFromZero`) befor
 the VP lookup, per §4.2.6.3.
 
 ### B4 — Swiss pairs %→VP tables + borderline — OK
+
 **§3.1.7.** `src/scoring/swiss/mp-vp-table.ts` holds the board-count-banded
 threshold tables (full 20-VP and half 10-VP). The lookup is "not exceeding"
 (`pct <= threshold` keeps the lower band) and the percentage is rounded to 2 dp
@@ -95,6 +99,7 @@ first, matching the published precision. Below 50% a pair mirrors
 consistent with note (b) "the VP nearer to average is taken".
 
 ### B5 — Pairs unplayable board — OK
+
 **§3.3.2.** A board played once in a form is cancelled and given an artificial
 adjusted score (`cancel-board.handler.ts` → `A<ns>/<ew>`); a board played in two
 forms becomes two sub-fields, which the §4.2.3 cross-board equalisation
@@ -102,11 +107,13 @@ forms becomes two sub-fields, which the §4.2.3 cross-board equalisation
 field.
 
 ### B6 — Teams incorrect seating void — OK
+
 **§3.3.6.1.** `src/model/teams-match-void.ts`: `SEATING_STANDARD` → both teams
 40% of the pool (8/20); `SEATING_TD` → both 60% (the TD-at-fault converse).
 Board-a-match variants mirror this in board-won units.
 
 ### B7 — Teams removed board ±3 IMP — OK
+
 **§3.3.7.** `src/model/teams-removed-board.ts`: `REMOVED_BOARD_IMPS = 3`, a fixed
 ±3 IMP swing per removed board by fault, consumed by `teamMatchBoardImps` as a
 board that counts as played. (Documented limitation: `NEITHER_FAULT` +3/+3 and
@@ -115,6 +122,7 @@ per-side distinction is carried only by the whole-match void path. Minor, no
 scope impact.)
 
 ### B8 — Void match AVE+/AVE−/AVE half-split — OK
+
 **§3.3.9.** `voidSplitVp` awards AVE+/AVE− on `⌈N/2⌉` boards (±3 IMP each) and
 AVE on the rest, reading each side's VP independently off the N-board scale, so
 both-at-fault correctly gives both teams a below-average VP. The Swiss-pairs
@@ -122,6 +130,7 @@ analogue is `src/model/pairs-match-void.ts` (`VOIDP:<cause>` per-pair
 AVE+/AVE−/AVE blend via `voidMpFractions` / `voidXimpPerComparison`).
 
 ### B9 — Swiss mismatch detection + VP adjustment — OK
+
 **§3.5 / §3.5.2.** `detect-mismatch.ts` replays the deterministic draw on
 corrected standings and flags a swap only when the opponents' current VPs differ
 by **more than 5** (`MISMATCH_VP_THRESHOLD = 5`). `adjustMismatchVp` applies the
@@ -136,6 +145,7 @@ left to the director (correctly — they are judgement calls). The match-point-
 scored-Swiss variant (§3.5.3) is not applicable — see D3.
 
 ### B10 — AVE+/AVE− "better than average" at matchpoints — OK
+
 **§4.1.1.1.** `src/scoring/traveller/pair/better-than-average.ts`: AVE+ =
 `max(60%, pair's windowed average)`, AVE− = `min(40%, average)`, computed over
 the pair's real boards in the window (the Swiss match's round, or the session
@@ -145,6 +155,7 @@ withdrawal, late/handover credits), not just director rulings. (IMP/XIMP: see
 B10b.)
 
 ### B10b — AVE+/AVE− "better than average" at IMP and Cross-IMP — OK
+
 **§4.1.1.1.** The same principle on the IMP scale: a pair averaging +5 IMPs
 given AVE+ keeps +5, not a flat +3 (the White Book example: +4 average → +4 for
 AVE+). `src/scoring/traveller/pair/better-than-average-imp.ts`
@@ -161,6 +172,7 @@ row is dropped from the field rather than valued at a flat ±3 — so this uplif
 does not apply there.)
 
 ### B11 — Weighted scores — OK
+
 **§4.1.1.4 / §4.2.1.** `src/model/adjusted-score.ts` encodes `W<pct>*<contract>;…`
 with weights 0 < w ≤ 100 at up to 2 decimal places summing to 100 (checked in
 integer basis points, so 33.33/33.33/33.34 is accepted). `assigned.ts` converts
@@ -169,6 +181,7 @@ weight, per §4.1.1.4. The ≥5-component, 2-dp recommendation is met (component
 are unbounded).
 
 ### B12 — Neuberg's formula + condition — OK
+
 **§4.2.3.2.** `src/scoring/traveller/pair/neuberg-across-boards.ts`: Neuberg is
 used unless the small-sub-field rule applies —
 `useSmallSubField = (a === 2 || a === 3) && a*3 <= e`, i.e. Neuberg when
@@ -178,12 +191,14 @@ ratio in `neuberg()`. Full precision is kept through the calculation (the
 B15).
 
 ### B13 — Small sub-fields — OK
+
 **§4.2.3.3.** `smallSubFieldFraction = 60 + (singleMp − (A−1)/2)·10` (percent),
 yielding top 65% / bottom 55% for a group of 2 and 70/60/50 for a group of 3,
 with intermediate/tied results between — and summing to 120% (AVE+/AVE+) as the
 note prescribes. Guarded by `A ∈ {2,3}` and `A ≤ E/3`.
 
 ### B14 — All boards count equally / scale by boards played — OK
+
 **§4.2.5.** MP ranks on `totalMP / maxMP` (a percentage of available
 matchpoints); IMP and cross-IMP rank on the **average** per board
 (`value / boards`) with the §4.2.5 citation in
@@ -192,6 +207,7 @@ that lifts every board to a common top, all boards carry equal weight and a
 contestant playing fewer boards is compared fairly.
 
 ### B15 — No mid-calculation rounding; halves away from average — OK
+
 **§4.2.6.1.** `src/scoring/traveller/pair/round-mp-boards.ts`
 (`roundHalfAwayFromAverage`, around `avg = max/2`) runs **last** in the pipeline —
 after Neuberg equalisation and the better-than-average uplift, all of which run
@@ -200,11 +216,13 @@ seats sum to the top, and the published total equals the sum of the shown board
 scores.
 
 ### B16 — Cross-IMP total rounded to whole IMP — OK
+
 **§4.2.6.3.** The XIMPQ round total is rounded to a whole IMP (halves away from
 zero) in `swiss-vp-round.ts` before the VP-scale lookup, exactly as the text
 requires so swings never fall in the gaps of the VP scale.
 
 ### B17 — Withdrawals / late or non-arrival — OK
+
 **§2.4.3–§2.4.7.** `src/services/leaderboard-service.ts` (`withdrawalCreditBoards`)
 plus `src/db/games/queries/ranking-exclusions.ts` (`resolveStandings`) implement:
 withdrawal part-way through a session (§2.4.4) — opponent gets AVE+ after half,
@@ -223,7 +241,7 @@ supported. Strong, scope-complete coverage.
 
 ### D1 — Tied contestants share a rank; no split-tie procedure — WONT-IMPLEMENT
 
-**White Book §3.2 (esp. §3.2.7).** When a tie *must* be broken — for the winner,
+**White Book §3.2 (esp. §3.2.7).** When a tie _must_ be broken — for the winner,
 the last qualifying position, or an indivisible prize (§3.2.4) — there is a
 defined order of tests. For two contestants (§3.2.7.1): (a) the result of the
 head-to-head match/round (final method, then basic method); (b) number of
@@ -295,6 +313,7 @@ B9.)
 ## TD-judgement items (software supports, does not enforce)
 
 ### C1 — "Offenders must not gain" — TD-JUDGEMENT
+
 **§4.1.1.4 (Law 12C1b).** A weighted ruling must not let the offending side gain;
 the weighting leans to the non-offenders ("sympathetic weighting"). The model has
 no concept of which side offended, and the director chooses the components and
@@ -302,6 +321,7 @@ weights. Automating a clamp would risk overriding a legitimate ruling. The
 software's role is to calculate the ruling the director enters, which it does.
 
 ### C2 — ≥half / <half void decision — TD-JUDGEMENT
+
 **§3.3.6.2 / §3.3.7.** Whether at least half a match was played correctly (so the
 rest is averaged) versus the match being void is a director determination that
 also depends on time available (§3.3.7(c)). The director selects the void cause
@@ -309,6 +329,7 @@ also depends on time available (§3.3.7(c)). The director selects the void cause
 correctly (B6/B8). No automatic half-detection is required or desirable.
 
 ### C3 — Wrong board number → AVE−/AVE− — TD-JUDGEMENT
+
 **§3.3.10.** Making a board unplayable by scoring against the wrong board number
 is AVE−/AVE−. The director enters this as `A40/40`; there is no dedicated
 automation (nor is one needed — it is a specific ruling).

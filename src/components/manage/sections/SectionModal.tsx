@@ -96,9 +96,7 @@ export function SectionModal({
   );
   // Split-mode state.
   const [splitFrom, setSplitFrom] = useState(splittable[0]?.letter ?? "");
-  const [fromLabel, setFromLabel] = useState(
-    splittable[0]?.label ?? "",
-  );
+  const [fromLabel, setFromLabel] = useState(splittable[0]?.label ?? "");
   const [tablesToNew, setTablesToNew] = useState(MIN_SECTION_TABLES);
 
   // Re-seed all fields whenever the modal (re)opens for a different add/split,
@@ -233,8 +231,9 @@ export function SectionModal({
                 ) : (
                   <>
                     <Dialog.Description className="text-sm text-gray-600">
-                      Divide a section&rsquo;s tables into two. The pairs already
-                      seated at the moved tables come across to the new section.
+                      Divide a section&rsquo;s tables into two. The pairs
+                      already seated at the moved tables come across to the new
+                      section.
                     </Dialog.Description>
 
                     {/* Which section to split — a dropdown only when more than

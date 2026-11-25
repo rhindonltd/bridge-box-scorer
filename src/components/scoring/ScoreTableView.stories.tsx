@@ -6,7 +6,7 @@ import {
   contractCell,
   numberCell,
   textCell,
-} from "@/scoring/table/score-table";
+} from "@/modules/scoring";
 
 const meta: Meta<typeof ScoreTableView> = {
   title: "Components/Scoring/ScoreTableView",

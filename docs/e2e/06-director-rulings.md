@@ -10,16 +10,16 @@ These checks need **director access**. The quickest setup is a seeded fixture +
 planted token (see [README](README.md) → Fixture setup); the fixture tells you
 which `--scoring` to use so the relevant ruling is offered.
 
-| Ruling | Offered for | Fixture |
-|---|---|---|
-| Override / played contract | every game | `--scoring MP --play all` |
-| Adjusted score | every game | `--scoring MP --play all` |
-| Weighted score | every game | `--scoring MP --play all` |
-| Cancel / foul board (§3.3.2) | every game | `--scoring MP --play all` |
-| Void match — pairs (§3.3.8) | Swiss **Pairs** | `--scoring SWISS_PAIRS_MP --play round1` |
-| Void match — teams (§3.3.6/§3.3.9) | **Teams** | `--scoring TEAMS_IMP_VP --play round1` |
-| Board not played — teams (§3.3.7) | **Teams** | `--scoring TEAMS_IMP_VP --play round1` |
-| Mismatch (§3.5) | any **Swiss** | `--scoring SWISS_PAIRS_MP --play round1` (needs ≥2 drawn rounds) |
+| Ruling                             | Offered for     | Fixture                                                          |
+| ---------------------------------- | --------------- | ---------------------------------------------------------------- |
+| Override / played contract         | every game      | `--scoring MP --play all`                                        |
+| Adjusted score                     | every game      | `--scoring MP --play all`                                        |
+| Weighted score                     | every game      | `--scoring MP --play all`                                        |
+| Cancel / foul board (§3.3.2)       | every game      | `--scoring MP --play all`                                        |
+| Void match — pairs (§3.3.8)        | Swiss **Pairs** | `--scoring SWISS_PAIRS_MP --play round1`                         |
+| Void match — teams (§3.3.6/§3.3.9) | **Teams**       | `--scoring TEAMS_IMP_VP --play round1`                           |
+| Board not played — teams (§3.3.7)  | **Teams**       | `--scoring TEAMS_IMP_VP --play round1`                           |
+| Mismatch (§3.5)                    | any **Swiss**   | `--scoring SWISS_PAIRS_MP --play round1` (needs ≥2 drawn rounds) |
 
 ---
 
@@ -27,12 +27,12 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring MP --play all`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-1 | Travellers → a board with results → tap a result row. | The director wizard opens at the **Adjust Result** hub. |
-| ☐ RULE-2 | Tap **Enter Contract**, enter a **different** contract/result, reach **Confirm**, tap **Submit**. | Saves; the traveller row updates to the new result; the leaderboard recomputes. |
-| ☐ RULE-3 | On a **player device** viewing that board's traveller, confirm the corrected result appears **live**. | Updates without refresh. |
-| ☐ RULE-4 | **Pass Out / Not Played override:** repeat, choosing **Pass Out** (or **Not Played**) at the Level step. | Saved as "Pass Out" / "Not Played". |
+| Check    | Step                                                                                                     | Expected                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ☐ RULE-1 | Travellers → a board with results → tap a result row.                                                    | The director wizard opens at the **Adjust Result** hub.                         |
+| ☐ RULE-2 | Tap **Enter Contract**, enter a **different** contract/result, reach **Confirm**, tap **Submit**.        | Saves; the traveller row updates to the new result; the leaderboard recomputes. |
+| ☐ RULE-3 | On a **player device** viewing that board's traveller, confirm the corrected result appears **live**.    | Updates without refresh.                                                        |
+| ☐ RULE-4 | **Pass Out / Not Played override:** repeat, choosing **Pass Out** (or **Not Played**) at the Level step. | Saved as "Pass Out" / "Not Played".                                             |
 
 ---
 
@@ -40,11 +40,11 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring MP --play all`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-5 | Open the wizard on a board row → **Adjusted Score**. | Presets (e.g. **AVE (50/50)**, **AVE+ / AVE− (60/40)**) and a **Custom** option. |
-| ☐ RULE-6 | Pick **AVE+ / AVE− (60/40)** (or Custom NS 60 / EW 40) → **Submit**. | Saved as an adjusted result; the traveller shows an **AVE-type** score (e.g. `A60/40`). |
-| ☐ RULE-7 | Open the **Leaderboard**. | The two pairs' standings reflect the adjusted split. (On MP, an **exact** AVE+/AVE− is further uplifted in the standings — see `AVEUP-1` in [file 07](07-special-scoring.md).) |
+| Check     | Step                                                                           | Expected                                                                                                                                                                                                          |
+| --------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ☐ RULE-5  | Open the wizard on a board row → **Adjusted Score**.                           | Presets (e.g. **AVE (50/50)**, **AVE+ / AVE− (60/40)**) and a **Custom** option.                                                                                                                                  |
+| ☐ RULE-6  | Pick **AVE+ / AVE− (60/40)** (or Custom NS 60 / EW 40) → **Submit**.           | Saved as an adjusted result; the traveller shows an **AVE-type** score (e.g. `A60/40`).                                                                                                                           |
+| ☐ RULE-7  | Open the **Leaderboard**.                                                      | The two pairs' standings reflect the adjusted split. (On MP, an **exact** AVE+/AVE− is further uplifted in the standings — see `AVEUP-1` in [file 07](07-special-scoring.md).)                                    |
 | ☐ RULE-7a | **MP:** on the same board's traveller, read the **real** results' matchpoints. | Each real line's matchpoints lie between **0 and the board top**: the top real score gets exactly the top. An adjusted line on the board must never push a real result above the top, or its opponent below zero. |
 
 ---
@@ -53,11 +53,11 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring MP --play all`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-8 | Open the wizard → **Weighted Score**. | A screen to enter **weighted components** (contracts + weights). |
-| ☐ RULE-9 | Enter two components with weights summing to 100% → **Submit**. | Saved; the traveller shows the weighted result; the leaderboard reflects the director's chosen split. |
-| ☐ RULE-10 | Confirm the weighted board is **not** re-matchpointed/re-scaled against the field (the director's figure stands). | Weighted value preserved in standings. |
+| Check     | Step                                                                                                              | Expected                                                                                              |
+| --------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| ☐ RULE-8  | Open the wizard → **Weighted Score**.                                                                             | A screen to enter **weighted components** (contracts + weights).                                      |
+| ☐ RULE-9  | Enter two components with weights summing to 100% → **Submit**.                                                   | Saved; the traveller shows the weighted result; the leaderboard reflects the director's chosen split. |
+| ☐ RULE-10 | Confirm the weighted board is **not** re-matchpointed/re-scaled against the field (the director's figure stands). | Weighted value preserved in standings.                                                                |
 
 ---
 
@@ -65,10 +65,10 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring MP --play all`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-11 | Open the wizard → **Cancel / Foul Board**. | The adjusted-score picker (a cancel carries an AVE-type split). |
-| ☐ RULE-12 | Pick a split (e.g. AVE 50/50) → **Submit**. | The board flips to **CANCELLED** with the artificial `A<ns>/<ew>` score. |
+| Check     | Step                                                                                                                        | Expected                                                                                           |
+| --------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| ☐ RULE-11 | Open the wizard → **Cancel / Foul Board**.                                                                                  | The adjusted-score picker (a cancel carries an AVE-type split).                                    |
+| ☐ RULE-12 | Pick a split (e.g. AVE 50/50) → **Submit**.                                                                                 | The board flips to **CANCELLED** with the artificial `A<ns>/<ew>` score.                           |
 | ☐ RULE-13 | Confirm the **correctly-played** copies of that board still score among themselves (a fouled copy doesn't poison the rest). | Other copies form a Neuberg-scaled sub-field — see [file 07](07-special-scoring.md) (`NEUBERG-*`). |
 
 ---
@@ -77,11 +77,11 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring SWISS_PAIRS_MP --play round1`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-14 | Open the wizard on a board row → confirm a **Void Match (Pairs)** branch is offered (only for Swiss Pairs). | Branch present. |
-| ☐ RULE-15 | Choose a cause (e.g. an offending side) → **Submit**. | The whole table's match is voided; each pair gets an **AVE+/AVE−/AVE** compensation per the cause; the match is removed from the field the other pairs are matchpointed against. |
-| ☐ RULE-16 | Confirm a **non-Swiss pairs** game (`--scoring MP`) does **not** offer this branch. | Branch absent. |
+| Check     | Step                                                                                                        | Expected                                                                                                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ☐ RULE-14 | Open the wizard on a board row → confirm a **Void Match (Pairs)** branch is offered (only for Swiss Pairs). | Branch present.                                                                                                                                                                  |
+| ☐ RULE-15 | Choose a cause (e.g. an offending side) → **Submit**.                                                       | The whole table's match is voided; each pair gets an **AVE+/AVE−/AVE** compensation per the cause; the match is removed from the field the other pairs are matchpointed against. |
+| ☐ RULE-16 | Confirm a **non-Swiss pairs** game (`--scoring MP`) does **not** offer this branch.                         | Branch absent.                                                                                                                                                                   |
 
 ---
 
@@ -89,12 +89,12 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring TEAMS_IMP_VP --play round1`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-17 | Open the wizard → **Void Match (Teams)**. | Cause options: a **standard** seating void and the **short** (§3.3.9) causes (offender NS/EW/both/neither). |
-| ☐ RULE-18 | Choose the **standard** cause → **Submit**. | The match scores as a ruling **VP** (flat 40/60) instead of a margin → VP; the leaderboard updates. |
-| ☐ RULE-19 | On another match, choose a **short-offender** cause → **Submit**. | The §3.3.9 half-board AVE+/AVE− split is applied; the offending team gets the lower VP. |
-| ☐ RULE-20 | Confirm a **board-comparison** teams game (`--scoring TEAMS_BAM`) phrases the void in **board-win** terms, not VP. | Wording adapts to BAM/PAB. |
+| Check     | Step                                                                                                               | Expected                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| ☐ RULE-17 | Open the wizard → **Void Match (Teams)**.                                                                          | Cause options: a **standard** seating void and the **short** (§3.3.9) causes (offender NS/EW/both/neither). |
+| ☐ RULE-18 | Choose the **standard** cause → **Submit**.                                                                        | The match scores as a ruling **VP** (flat 40/60) instead of a margin → VP; the leaderboard updates.         |
+| ☐ RULE-19 | On another match, choose a **short-offender** cause → **Submit**.                                                  | The §3.3.9 half-board AVE+/AVE− split is applied; the offending team gets the lower VP.                     |
+| ☐ RULE-20 | Confirm a **board-comparison** teams game (`--scoring TEAMS_BAM`) phrases the void in **board-win** terms, not VP. | Wording adapts to BAM/PAB.                                                                                  |
 
 ---
 
@@ -102,11 +102,11 @@ which `--scoring` to use so the relevant ruling is offered.
 
 **Fixture:** `--scoring TEAMS_IMP_VP --play round1`.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-21 | Open the wizard → **Board Not Played (Teams)**. | A **fault** picker (EW at fault / NS at fault / neither / both). |
-| ☐ RULE-22 | Choose **EW at fault** → **Submit**. | The board is removed; the non-offending side (NS) gets a **+3 IMP** indemnity (NS at fault → −3; neither/both → 0 net). |
-| ☐ RULE-23 | Confirm the removed board contributes the ±3 IMP swing to the team totals (not a table comparison). | Teams IMP total moves by ±3. |
+| Check     | Step                                                                                                | Expected                                                                                                                |
+| --------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| ☐ RULE-21 | Open the wizard → **Board Not Played (Teams)**.                                                     | A **fault** picker (EW at fault / NS at fault / neither / both).                                                        |
+| ☐ RULE-22 | Choose **EW at fault** → **Submit**.                                                                | The board is removed; the non-offending side (NS) gets a **+3 IMP** indemnity (NS at fault → −3; neither/both → 0 net). |
+| ☐ RULE-23 | Confirm the removed board contributes the ±3 IMP swing to the team totals (not a table comparison). | Teams IMP total moves by ±3.                                                                                            |
 
 ---
 
@@ -121,18 +121,18 @@ Easiest: seed `--scoring SWISS_PAIRS_MP --tables 4 --rounds 5 --play round1`,
 draw round 2 live (file 05), play some of it, then go back and **override** a
 round-1 result enough to reshuffle round-1 standings.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-24 | After the retroactive change, open the wizard on an affected board row → confirm a **Mismatch (Swiss)** branch is offered. | Branch present (Swiss only). |
-| ☐ RULE-25 | Confirm the detection only flags a round where the **correct** opponent differs AND the two candidate opponents' current VPs differ by **more than 5**. | Below-threshold differences are not flagged. |
-| ☐ RULE-26 | Enter a mismatch ruling (side / direction / fault) → **Submit**. | Only the **mismatched side's** round VP is adjusted (§3.5.2 one-sided); the boards themselves stay real/in the field. |
-| ☐ RULE-27 | Confirm a **teams** Swiss game offers the same branch with sides labelled as **teams**. | Teams wording. |
-| ☐ RULE-27a | Before any correction, Manage Game Menu → **Review Mismatches**. | Shown for Swiss only; **No mismatches to review**. |
-| ☐ RULE-27b | After the retroactive change, open **Review Mismatches**. | A card per affected pair/team: round, table, the opponent met and the corrected one with their current VP, **stronger/weaker**, and the gap (> 5). Both pairs of one table can each have a card. |
-| ☐ RULE-27c | On a **stronger opponent** card tap **Apply — not their fault**. | That pair's round VP becomes 5 + ¾ × actual, rounded up to 0.5 (10 → 12.5); no other pair's VP moves. The card goes. |
-| ☐ RULE-27d | Reopen **Review Mismatches**. | Every **other** card is still listed — including that pair's own opponent's. The ruled pair is not. |
-| ☐ RULE-27e | On the opponent's (**weaker opponent**) card tap **Apply — their own fault**. | Its round VP is docked a quarter above 5, rounded up (10 → 9); the first pair's 12.5 still stands. |
-| ☐ RULE-27f | Tap **Not a mismatch** on another card, then reopen the review. | No score changes; the dismissed card is listed again (dismissing is not recorded). |
+| Check      | Step                                                                                                                                                    | Expected                                                                                                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ☐ RULE-24  | After the retroactive change, open the wizard on an affected board row → confirm a **Mismatch (Swiss)** branch is offered.                              | Branch present (Swiss only).                                                                                                                                                                     |
+| ☐ RULE-25  | Confirm the detection only flags a round where the **correct** opponent differs AND the two candidate opponents' current VPs differ by **more than 5**. | Below-threshold differences are not flagged.                                                                                                                                                     |
+| ☐ RULE-26  | Enter a mismatch ruling (side / direction / fault) → **Submit**.                                                                                        | Only the **mismatched side's** round VP is adjusted (§3.5.2 one-sided); the boards themselves stay real/in the field.                                                                            |
+| ☐ RULE-27  | Confirm a **teams** Swiss game offers the same branch with sides labelled as **teams**.                                                                 | Teams wording.                                                                                                                                                                                   |
+| ☐ RULE-27a | Before any correction, Manage Game Menu → **Review Mismatches**.                                                                                        | Shown for Swiss only; **No mismatches to review**.                                                                                                                                               |
+| ☐ RULE-27b | After the retroactive change, open **Review Mismatches**.                                                                                               | A card per affected pair/team: round, table, the opponent met and the corrected one with their current VP, **stronger/weaker**, and the gap (> 5). Both pairs of one table can each have a card. |
+| ☐ RULE-27c | On a **stronger opponent** card tap **Apply — not their fault**.                                                                                        | That pair's round VP becomes 5 + ¾ × actual, rounded up to 0.5 (10 → 12.5); no other pair's VP moves. The card goes.                                                                             |
+| ☐ RULE-27d | Reopen **Review Mismatches**.                                                                                                                           | Every **other** card is still listed — including that pair's own opponent's. The ruled pair is not.                                                                                              |
+| ☐ RULE-27e | On the opponent's (**weaker opponent**) card tap **Apply — their own fault**.                                                                           | Its round VP is docked a quarter above 5, rounded up (10 → 9); the first pair's 12.5 still stands.                                                                                               |
+| ☐ RULE-27f | Tap **Not a mismatch** on another card, then reopen the review.                                                                                         | No score changes; the dismissed card is listed again (dismissing is not recorded).                                                                                                               |
 
 ---
 
@@ -140,11 +140,11 @@ round-1 result enough to reshuffle round-1 standings.
 
 **Fixture:** any, with **Allow Hand Entry** on (create live, or any seeded game).
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-28 | Manage Game Menu → **Deals** → **Select Board** → a board. | Deal entry with direction tabs (North/East/South/West), each "{count}/13". |
-| ☐ RULE-29 | Lay out all four hands (52 cards). | **Save deal** becomes available. |
-| ☐ RULE-30 | Tap **Save deal**. | Saved; a **Show hand** button now appears on that board's traveller for everyone. |
+| Check     | Step                                                       | Expected                                                                          |
+| --------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| ☐ RULE-28 | Manage Game Menu → **Deals** → **Select Board** → a board. | Deal entry with direction tabs (North/East/South/West), each "{count}/13".        |
+| ☐ RULE-29 | Lay out all four hands (52 cards).                         | **Save deal** becomes available.                                                  |
+| ☐ RULE-30 | Tap **Save deal**.                                         | Saved; a **Show hand** button now appears on that board's traveller for everyone. |
 
 ### Import deals from a PBN file (director)
 
@@ -152,14 +152,14 @@ Hands from a dealing machine (Duplimate) arrive as a `.pbn` file on the director
 
 **Fixture:** a started game. Have a PBN file covering the event's boards (a machine file with or without `[Board]` tags), and ideally one board whose hand a player has already entered.
 
-| Check | Step | Expected |
-|---|---|---|
-| ☐ RULE-31 | Manage Game Menu → **Deals** → tap **Import from PBN file**. | **Import PBN** page with a **PBN file** chooser and an **Or paste PBN text** box. **Import** is disabled. |
-| ☐ RULE-32 | Choose the `.pbn` file. | "Loaded {file name}" appears, then a preview: "{n} boards found, {m} missing", with the warning "Any hands already entered for these boards will be replaced." |
-| ☐ RULE-33 | Use a file that has extra boards, a board missing, and one damaged deal (for example a hand shown as `-`). | The preview lists "Event boards not in the file", "Not in this event, so skipped", and a red line for the damaged board ("Deal is incomplete…"). The valid boards are still counted. |
-| ☐ RULE-34 | Clear the file and paste the PBN text instead. | The same preview appears for the pasted text. |
-| ☐ RULE-35 | Tap **Import {n} boards**. | A "{n} boards imported" confirmation. Tap **Done** to return to the Manage Game Menu. |
-| ☐ RULE-36 | On a player device already showing a board that was imported (open its traveller, header **Menu**). | A **Deal** option is there without a refresh, and shows the imported hands. A board that had a player-entered hand now shows the imported one. |
+| Check     | Step                                                                                                                                                         | Expected                                                                                                                                                                                       |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ☐ RULE-31 | Manage Game Menu → **Deals** → tap **Import from PBN file**.                                                                                                 | **Import PBN** page with a **PBN file** chooser and an **Or paste PBN text** box. **Import** is disabled.                                                                                      |
+| ☐ RULE-32 | Choose the `.pbn` file.                                                                                                                                      | "Loaded {file name}" appears, then a preview: "{n} boards found, {m} missing", with the warning "Any hands already entered for these boards will be replaced."                                 |
+| ☐ RULE-33 | Use a file that has extra boards, a board missing, and one damaged deal (for example a hand shown as `-`).                                                   | The preview lists "Event boards not in the file", "Not in this event, so skipped", and a red line for the damaged board ("Deal is incomplete…"). The valid boards are still counted.           |
+| ☐ RULE-34 | Clear the file and paste the PBN text instead.                                                                                                               | The same preview appears for the pasted text.                                                                                                                                                  |
+| ☐ RULE-35 | Tap **Import {n} boards**.                                                                                                                                   | A "{n} boards imported" confirmation. Tap **Done** to return to the Manage Game Menu.                                                                                                          |
+| ☐ RULE-36 | On a player device already showing a board that was imported (open its traveller, header **Menu**).                                                          | A **Deal** option is there without a refresh, and shows the imported hands. A board that had a player-entered hand now shows the imported one.                                                 |
 | ☐ RULE-37 | Load a file where every board is outside the event. Then, with a good file loaded, switch the director's device off the Bridge Box Wi-Fi and tap **Import**. | With nothing usable, **Import** stays disabled. When the connection is lost, an error appears, nothing is imported, and the loaded text is kept so the import can be retried once reconnected. |
 
 Automated: journey `deal-entry` ("the director imports a PBN file…") covers RULE-31, 32, 35 and 36.

@@ -101,7 +101,7 @@ top lets you switch between the boards in the round.
 3. **Suit** — Clubs, Diamonds, Hearts, Spades, or No Trumps.
 4. **Declarer & double** — who played the hand (N/S/E/W) and whether it was
    undoubled, **doubled (X)**, or **redoubled (XX)**.
-5. **Opening lead** *(only if your director turned this on)* — tap the suit of
+5. **Opening lead** _(only if your director turned this on)_ — tap the suit of
    the card led, then its rank.
 6. **Result** — tap **Made** or **Down**, then how many tricks:
    - **Made**: exactly making, or +1, +2, … for overtricks.
@@ -114,7 +114,7 @@ You can use the back arrow at any step to change an earlier choice.
 
 After you submit, you may see **Waiting for confirmation**, with the result you
 just entered shown underneath (**You entered**) so you can check it while you
-wait. The board is only recorded once *both* pairs at the table submit — this
+wait. The board is only recorded once _both_ pairs at the table submit — this
 is the built-in check that catches entry mistakes. As soon as the other pair
 enters the same board and result, it is confirmed.
 
@@ -151,7 +151,7 @@ Tap **Next** to move on to the next board.
 
 ### Entering the cards (optional)
 
-When a round is finished, and *if your director turned this on for the game*,
+When a round is finished, and _if your director turned this on for the game_,
 you may be offered an **Enter cards** screen for the boards you have just
 played. This is entirely optional, and it only appears once the whole round is
 complete — so filling it in never holds the table up. If your director did not

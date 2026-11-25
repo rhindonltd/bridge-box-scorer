@@ -60,15 +60,18 @@ describe("findSubstitutionSeats — edge cases", () => {
         makeBoard({ roundNumber: 3, boardNumber: 3, ns: "A7NS", ew: "A7EW" }),
       ])
       .run();
-    const { findSubstitutionSeats } = await import(
-      "@/db/games/queries/find-substitution-seats"
-    );
+    const { findSubstitutionSeats } =
+      await import("@/db/games/queries/find-substitution-seats");
     const result = await findSubstitutionSeats(db);
     expect(result.map((s) => s.seat)).toEqual(["A1NS", "A2NS"]);
     const a1 = result[0];
     expect(a1.occupants).toHaveLength(3);
     // The first whole-seat occupant is the anchor; the rest follow in id order.
-    expect(a1.occupants.map((o) => o.pair.split(" ")[0])).toEqual(["a", "b", "e"]);
+    expect(a1.occupants.map((o) => o.pair.split(" ")[0])).toEqual([
+      "a",
+      "b",
+      "e",
+    ]);
     // A whole-seat occupant counts every board the seat plays (boards 1 and 2).
     expect(a1.occupants[0].boardCount).toBe(2);
     expect(a1.playedCount).toBe(2);

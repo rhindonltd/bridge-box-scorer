@@ -16,19 +16,31 @@ describe("getBoardStatus", () => {
   afterEach(() => {
     harness.teardown();
   });
-  const where = { section: "A", roundNumber: 1, tableNumber: 1, boardNumber: 1 };
+  const where = {
+    section: "A",
+    roundNumber: 1,
+    tableNumber: 1,
+    boardNumber: 1,
+  };
   it("returns the stored status of the board row", async () => {
-    db.insert(boards).values(makeBoard({ status: "SIT_OUT" })).run();
-    const { getBoardStatus } = await import("@/db/games/queries/get-board-status");
+    db.insert(boards)
+      .values(makeBoard({ status: "SIT_OUT" }))
+      .run();
+    const { getBoardStatus } =
+      await import("@/db/games/queries/get-board-status");
     expect(await getBoardStatus(db, where)).toBe("SIT_OUT");
   });
   it("returns null when the row has no status", async () => {
-    db.insert(boards).values(makeBoard({ status: null })).run();
-    const { getBoardStatus } = await import("@/db/games/queries/get-board-status");
+    db.insert(boards)
+      .values(makeBoard({ status: null }))
+      .run();
+    const { getBoardStatus } =
+      await import("@/db/games/queries/get-board-status");
     expect(await getBoardStatus(db, where)).toBeNull();
   });
   it("returns null when there is no such board row", async () => {
-    const { getBoardStatus } = await import("@/db/games/queries/get-board-status");
+    const { getBoardStatus } =
+      await import("@/db/games/queries/get-board-status");
     expect(await getBoardStatus(db, where)).toBeNull();
   });
 });

@@ -6,15 +6,15 @@ import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
+  rank,
   groupTeamMatches,
   groupTeamTriples,
   teamMatchBoardWins,
   boardResult,
   type TeamMatchStructureRow,
-} from "@/scoring/swiss/team-match";
-import { rank } from "@/scoring/overall/rank";
+} from "@/modules/scoring";
 import { buildTravellerLine } from "./traveller-line";
-import { applySeatSwap } from "@/model/seat-swap";
+import { applySeatSwap } from "@/modules/rulings";
 import {
   buildTeamPairing,
   type TeamOccupancy,

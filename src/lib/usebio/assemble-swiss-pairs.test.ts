@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { assembleSwissPairs as assembleSwissPairsImpl } from "./assemble-swiss-pairs";
-import { swissVpStructureFromRows } from "@/scoring/swiss/swiss-vp-test-structure";
-import type { SwissRoundMode } from "@/scoring/swiss/swiss-vp-round";
+import { swissVpStructureFromRows } from "@/modules/scoring/swiss/swiss-vp-test-structure";
+import type { SwissRoundMode } from "@/modules/scoring/swiss/swiss-vp-round";
 import type { Board } from "@/db/games/tables/boards";
 import type { Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";

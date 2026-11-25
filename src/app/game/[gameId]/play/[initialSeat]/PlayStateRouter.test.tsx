@@ -203,7 +203,7 @@ const mockTraveller = vi.fn(() => ({
   instances: [] as any[],
 }));
 const mockBuildTeamTable = vi.fn();
-vi.mock("@/scoring/swiss/team-board-result-view", () => ({
+vi.mock("@/modules/scoring/swiss/team-board-result-view", () => ({
   buildTeamBoardResultTable: (...a: unknown[]) => mockBuildTeamTable(...a),
 }));
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage", () => ({

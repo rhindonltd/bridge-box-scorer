@@ -8,7 +8,9 @@ describe("StepVoidMatch", () => {
     const onSubmit = vi.fn();
     render(<StepVoidMatch onSubmit={onSubmit} />);
     fireEvent.click(
-      screen.getByRole("button", { name: /Incorrect seating \/ cannot replay/ }),
+      screen.getByRole("button", {
+        name: /Incorrect seating \/ cannot replay/,
+      }),
     );
     expect(onSubmit).toHaveBeenCalledWith("SEATING_STANDARD");
   });
@@ -34,9 +36,13 @@ describe("StepVoidMatch", () => {
   it("submits the both- and neither-at-fault §3.3.9 variants", () => {
     const onSubmit = vi.fn();
     render(<StepVoidMatch onSubmit={onSubmit} />);
-    fireEvent.click(screen.getByRole("button", { name: /Both sides at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Both sides at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("SHORT_BOTH");
-    fireEvent.click(screen.getByRole("button", { name: /Neither side at fault/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Neither side at fault/ }),
+    );
     expect(onSubmit).toHaveBeenCalledWith("SHORT_NEITHER");
   });
   it("describes the currency as boards won for board-comparison teams", () => {

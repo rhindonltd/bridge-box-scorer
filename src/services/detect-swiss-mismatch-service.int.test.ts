@@ -197,7 +197,11 @@ describe("detectSectionMismatches (§3.5 detection)", () => {
     const p1 = before.find((c) => c.mismatchedId === 1)!;
     await markMismatch(
       db,
-      { roundNumber: 2, tableNumber: p1.tableNumber, boardNumber: p1.boardNumber },
+      {
+        roundNumber: 2,
+        tableNumber: p1.tableNumber,
+        boardNumber: p1.boardNumber,
+      },
       buildMismatch({ side: p1.side, direction: p1.direction, fault: "NOT" }),
     );
     const afterOne = await detectSectionMismatches(gameId, "A");
@@ -208,7 +212,11 @@ describe("detectSectionMismatches (§3.5 detection)", () => {
     const p3 = afterOne.find((c) => c.mismatchedId === 3)!;
     await markMismatch(
       db,
-      { roundNumber: 2, tableNumber: p3.tableNumber, boardNumber: p3.boardNumber },
+      {
+        roundNumber: 2,
+        tableNumber: p3.tableNumber,
+        boardNumber: p3.boardNumber,
+      },
       buildMismatch({ side: p3.side, direction: p3.direction, fault: "OWN" }),
     );
     const afterBoth = await detectSectionMismatches(gameId, "A");
@@ -295,9 +303,9 @@ describe("detectSectionMismatches (§3.5 detection)", () => {
     it("throws when the game db does not exist", async () => {
       const { detectSectionMismatches } =
         await import("@/services/detect-swiss-mismatch-service");
-      await expect(detectSectionMismatches("no-such-game", "A")).rejects.toThrow(
-        "Game db does not exist",
-      );
+      await expect(
+        detectSectionMismatches("no-such-game", "A"),
+      ).rejects.toThrow("Game db does not exist");
     });
     it("returns nothing for a section with no movement", async () => {
       const { createGameDb } = await import("@/db/games/actions/create-game");

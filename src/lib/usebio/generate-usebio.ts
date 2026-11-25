@@ -6,17 +6,15 @@ import {
   isAssignedOutcome,
 } from "./format-contract";
 import { totalTricksFor } from "./traveller-line";
-import { outcomeToScore } from "@/scoring/traveller/common";
-import { scoreMP as scorePairMP } from "@/scoring/traveller/pair/mp";
-import { scoreIMP as scorePairIMP } from "@/scoring/traveller/pair/imp";
-import { scoreXIMP as scorePairXIMP } from "@/scoring/traveller/pair/x-imp";
-import { equaliseMpBoards } from "@/scoring/traveller/pair/neuberg-across-boards";
-import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
 import {
-  applyBetterThanAverageImpBoards,
+  outcomeToScore,
+  applyBetterThanAverage,
   applyBetterThanAverageXimpBoards,
-} from "@/scoring/traveller/pair/better-than-average-imp";
-import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
+  scoreMP as scorePairMP,
+  equaliseMpBoards,
+  roundMpBoards,
+  scoreXIMP as scorePairXIMP,
+} from "@/modules/scoring";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { ScoringType, TournamentLevel } from "@/model/game-types";
@@ -351,7 +349,7 @@ const SCORING_TYPE_MAP: Record<ScoringType, string> = {
 
    Director-assigned lines (artificial adjusted `A<ns>/<ew>` and weighted
    assigned `W…`) are NOT handled here any more: the shared per-board scorers
-   (`scorePairMP` / `scorePairIMP` / `scorePairXIMP`) now value them inline
+   (`scorePairMP` / `scorePairXIMP`) now value them inline
    alongside the real played lines, so the live leaderboard and this export use
    exactly the same matchpointing (convention (b): an assigned line occupies a
    seat in the field). The descriptor therefore just forwards every line to the
@@ -380,16 +378,6 @@ const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
         ew: l.ewMatchPoints,
       })),
     contributesToMax: true,
-  },
-  IMP: {
-    scoreLines: (board, lines) =>
-      scorePairIMP(board, lines).map((l) => ({
-        nsId: l.nsId,
-        ewId: l.ewId,
-        ns: l.nsImps,
-        ew: l.ewImps,
-      })),
-    contributesToMax: false,
   },
   XIMP: {
     scoreLines: (board, lines) =>
@@ -1093,48 +1081,28 @@ function computeOverallRanking(
         accumulate(totals, line.ewId, "EW", line.ewMatchPoints, maxForBoard);
       }
     }
-  } else if (scoringType === "IMP" || scoringType === "XIMP") {
-    // IMP / Cross-IMP: score every board (keeping the per-board scored lines so
-    // the §4.1.1.1 uplift can see each pair's own board results), apply the
+  } else if (scoringType === "XIMP") {
+    // Cross-IMP: score every board (keeping the per-board scored lines so the
+    // §4.1.1.1 uplift can see each pair's own board results), apply the
     // "better than average" AVE+/AVE− uplift across the whole field, THEN
     // accumulate — mirroring the MP branch so the exported totals match the
-    // live leaderboard. IMP/XIMP lines never contribute to a ranking MAX
+    // live leaderboard. Cross-IMP lines never contribute to a ranking MAX
     // (`contributesToMax` is false for them), so `maxForBoard` stays 0.
-    if (scoringType === "IMP") {
-      const scored = Array.from(boardGroups, ([boardNum, results]) => ({
-        board: boardNum,
-        lines: scorePairIMP(
-          boardNum,
-          results.map((r) => ({
-            outcome: r.outcome,
-            nsId: r.nsPairNumber,
-            ewId: r.ewPairNumber,
-          })),
-        ),
-      }));
-      for (const b of applyBetterThanAverageImpBoards(scored)) {
-        for (const line of b.lines) {
-          accumulate(totals, line.nsId, "NS", line.nsImps, 0);
-          accumulate(totals, line.ewId, "EW", line.ewImps, 0);
-        }
-      }
-    } else {
-      const scored = Array.from(boardGroups, ([boardNum, results]) => ({
-        board: boardNum,
-        lines: scorePairXIMP(
-          boardNum,
-          results.map((r) => ({
-            outcome: r.outcome,
-            nsId: r.nsPairNumber,
-            ewId: r.ewPairNumber,
-          })),
-        ),
-      }));
-      for (const b of applyBetterThanAverageXimpBoards(scored)) {
-        for (const line of b.lines) {
-          accumulate(totals, line.nsId, "NS", line.nsCrossImps, 0);
-          accumulate(totals, line.ewId, "EW", line.ewCrossImps, 0);
-        }
+    const scored = Array.from(boardGroups, ([boardNum, results]) => ({
+      board: boardNum,
+      lines: scorePairXIMP(
+        boardNum,
+        results.map((r) => ({
+          outcome: r.outcome,
+          nsId: r.nsPairNumber,
+          ewId: r.ewPairNumber,
+        })),
+      ),
+    }));
+    for (const b of applyBetterThanAverageXimpBoards(scored)) {
+      for (const line of b.lines) {
+        accumulate(totals, line.nsId, "NS", line.nsCrossImps, 0);
+        accumulate(totals, line.ewId, "EW", line.ewCrossImps, 0);
       }
     }
   } else {
@@ -1145,7 +1113,7 @@ function computeOverallRanking(
       // scored-lines map. Accumulate every one into the pair totals.
       for (const [key, lineScore] of scoredLines) {
         const [, nsId, ewId] = key.split("-");
-        /* v8 ignore next 3 -- unreachable: MP/IMP/XIMP are handled above, so this branch only sees the MP fallback descriptor (contributesToMax is always true) */
+        /* v8 ignore next 3 -- unreachable: MP/XIMP are handled above, so this branch only sees the MP fallback descriptor (contributesToMax is always true) */
         const maxForBoard = descriptor.contributesToMax
           ? lineScore.ns + lineScore.ew
           : 0;

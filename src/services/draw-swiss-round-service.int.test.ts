@@ -39,16 +39,12 @@ describe("preview/commit next Swiss round", () => {
    */
   async function setupSwiss(boardsPerRound = 2, totalRounds = 4) {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { materializeSwissRound } = await import(
-      "@/services/materialize-swiss-round"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { materializeSwissRound } =
+      await import("@/services/materialize-swiss-round");
     const games = await import("@/db/games");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { players } = await import("@/db/games/tables/players");
 
     await createGameDb(gameId, 2);
@@ -115,14 +111,16 @@ describe("preview/commit next Swiss round", () => {
     const { boards } = await import("@/db/games/tables/boards");
     const { and, eq } = await import("drizzle-orm");
     const db = (await games.getDb(gameId))!;
-    return db.select().from(boards).where(and(eq(boards.roundNumber, 2)));
+    return db
+      .select()
+      .from(boards)
+      .where(and(eq(boards.roundNumber, 2)));
   }
 
   it("preview rejects while the current round is not fully scored", async () => {
     await setupSwiss();
-    const { previewNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { previewNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     const result = await previewNextSwissRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
@@ -132,9 +130,8 @@ describe("preview/commit next Swiss round", () => {
     await setupSwiss();
     await confirmRound(1);
 
-    const { previewNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { previewNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     const result = await previewNextSwissRound(gameId, "A");
     expect(result.ok).toBe(true);
@@ -159,9 +156,8 @@ describe("preview/commit next Swiss round", () => {
     await setupSwiss();
     await confirmRound(1);
 
-    const { previewNextSwissRound, commitNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { previewNextSwissRound, commitNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     const preview = await previewNextSwissRound(gameId, "A");
     expect(preview.ok).toBe(true);
@@ -191,9 +187,8 @@ describe("preview/commit next Swiss round", () => {
     await setupSwiss();
     await confirmRound(1);
 
-    const { commitNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { commitNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     // Deliberately commit an arrangement that repeats round 1's pairings (an
     // override the director is allowed to make): pair 1 vs pair 3 again.
@@ -217,9 +212,8 @@ describe("preview/commit next Swiss round", () => {
     await setupSwiss();
     await confirmRound(1);
 
-    const { commitNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { commitNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     // Pair 1 seated twice, pair 4 missing.
     const invalid = [
@@ -236,9 +230,8 @@ describe("preview/commit next Swiss round", () => {
     await setupSwiss(2, 1);
     await confirmRound(1);
 
-    const { previewNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { previewNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
 
     const result = await previewNextSwissRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "EVENT_COMPLETE" });
@@ -246,18 +239,16 @@ describe("preview/commit next Swiss round", () => {
 
   it("preview rejects for a non-Swiss section", async () => {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
     await createGameDb(gameId, 2);
     await setSectionMovement(gameId, "A", {
       source: "MITCHELL",
       mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
     });
 
-    const { previewNextSwissRound } = await import(
-      "@/services/draw-swiss-round-service"
-    );
+    const { previewNextSwissRound } =
+      await import("@/services/draw-swiss-round-service");
     const result = await previewNextSwissRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "NOT_SWISS" });
   });

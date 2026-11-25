@@ -9,12 +9,12 @@ import {
 import {
   detectTeamsRoundMismatches,
   detectTripleMismatches,
-} from "@/scoring/swiss/detect-teams-mismatch";
+} from "@/movement/swiss-teams/detect-teams-mismatch";
 import { chooseTeamTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { SectionStandings } from "@/modules/scoring";
 import {
   computeSectionLeaderboards,
   computeSectionLeaderboardsAsOf,
-  type SectionLeaderboard,
 } from "@/services/leaderboard-service";
 import {
   getSwissBoardHistory,
@@ -41,7 +41,7 @@ import { eq } from "drizzle-orm";
 import {
   detectRoundMismatches,
   type MismatchCandidate,
-} from "@/scoring/swiss/detect-mismatch";
+} from "@/movement/swiss/detect-mismatch";
 
 /**
  * EBU §3.5 mismatch DETECTION for a Swiss PAIRS section.
@@ -90,7 +90,7 @@ export interface SectionMismatchCandidate {
 
 /** Decode each ranked leaderboard line into a stable pair id, best-first. */
 function standingsOrder(
-  board: SectionLeaderboard | undefined,
+  board: SectionStandings | undefined,
   tables: number,
 ): SwissPairId[] {
   return decodeStandingsOrder(board, pairLeaderboardDecoder(tables));
@@ -98,7 +98,7 @@ function standingsOrder(
 
 /** A pair-id → current total VP map from the (as-of-now) section leaderboard. */
 function currentVpByPair(
-  board: SectionLeaderboard | undefined,
+  board: SectionStandings | undefined,
   tables: number,
 ): Map<SwissPairId, number> {
   return decodeVpById(board, pairLeaderboardDecoder(tables));
@@ -319,13 +319,13 @@ async function detectPairsSectionMismatches(
 
 /** Each team's current (as-of-now) total VP, from the teams leaderboard. */
 function currentVpByTeam(
-  board: SectionLeaderboard | undefined,
+  board: SectionStandings | undefined,
 ): Map<number, number> {
   return decodeVpById(board, teamLeaderboardDecoder);
 }
 
 /** Team ids in corrected standing order (best first), from the as-of board. */
-function teamStandingsOrder(board: SectionLeaderboard | undefined): number[] {
+function teamStandingsOrder(board: SectionStandings | undefined): number[] {
   return decodeStandingsOrder(board, teamLeaderboardDecoder);
 }
 

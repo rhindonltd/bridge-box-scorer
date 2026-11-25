@@ -24,7 +24,13 @@ type Phase =
   | { step: "level" }
   | { step: "suit"; level: Level }
   | { step: "declarer"; level: Level; suit: ContractSuit }
-  | { step: "result"; level: Level; suit: ContractSuit; declarer: Direction; dbl: Doubling }
+  | {
+      step: "result";
+      level: Level;
+      suit: ContractSuit;
+      declarer: Direction;
+      dbl: Doubling;
+    }
   | { step: "weight"; contract: PlayedContractCode };
 
 /**
@@ -297,8 +303,7 @@ export function StepWeightedScore({ onSubmit }: Props) {
               className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 border border-gray-200"
             >
               <span className="font-semibold text-gray-800">
-                {c.weight}%{" "}
-                <ContractLabel contract={c.contract} />
+                {c.weight}% <ContractLabel contract={c.contract} />
               </span>
               <button
                 type="button"

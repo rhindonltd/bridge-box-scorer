@@ -107,7 +107,10 @@ export function parseAdjustedScore(
 }
 
 /** Builds the `A<ns>/<ew>` encoding from NS/EW percentages. */
-export function buildAdjustedScore(nsPercent: number, ewPercent: number): string {
+export function buildAdjustedScore(
+  nsPercent: number,
+  ewPercent: number,
+): string {
   return `A${nsPercent}/${ewPercent}`;
 }
 
@@ -156,7 +159,10 @@ export function parseWeightedScore(
     components.push({ weight, contract });
   }
 
-  const totalBp = components.reduce((sum, c) => sum + toBasisPoints(c.weight), 0);
+  const totalBp = components.reduce(
+    (sum, c) => sum + toBasisPoints(c.weight),
+    0,
+  );
   if (totalBp !== FULL_WEIGHT_BP) return null;
 
   return components;
@@ -171,12 +177,18 @@ export function buildWeightedScore(components: WeightedComponent[]): string {
   if (components.length === 0) {
     throw new Error("A weighted score needs at least one component");
   }
-  const totalBp = components.reduce((sum, c) => sum + toBasisPoints(c.weight), 0);
+  const totalBp = components.reduce(
+    (sum, c) => sum + toBasisPoints(c.weight),
+    0,
+  );
   if (totalBp !== FULL_WEIGHT_BP) {
     const total = totalBp / 100;
     throw new Error(`Weighted score weights must sum to 100 (got ${total})`);
   }
-  return "W" + components.map((c) => `${formatWeight(c.weight)}*${c.contract}`).join(";");
+  return (
+    "W" +
+    components.map((c) => `${formatWeight(c.weight)}*${c.contract}`).join(";")
+  );
 }
 
 /**

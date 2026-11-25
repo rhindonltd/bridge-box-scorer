@@ -63,24 +63,39 @@ describe("uploadResultsToBridgewebs", () => {
 
   it("blocks when club info is not configured", async () => {
     vi.mocked(findClub).mockResolvedValue(null);
-    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
+    const result = await uploadResultsToBridgewebs(
+      db,
+      makeGame(),
+      "NORMAL_CLUB",
+    );
     expect(result).toEqual({ status: "blocked", reason: "club" });
     expect(postToBridgewebs).not.toHaveBeenCalled();
   });
 
   it("blocks when BridgeWebs credentials are not configured", async () => {
     vi.mocked(getBridgewebsCredentials).mockResolvedValue(null);
-    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
+    const result = await uploadResultsToBridgewebs(
+      db,
+      makeGame(),
+      "NORMAL_CLUB",
+    );
     expect(result).toEqual({ status: "blocked", reason: "credentials" });
     expect(postToBridgewebs).not.toHaveBeenCalled();
   });
 
   it("uploads USEBIO as data and PBN as dealdata, and passes the reply through", async () => {
-    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
+    const result = await uploadResultsToBridgewebs(
+      db,
+      makeGame(),
+      "NORMAL_CLUB",
+    );
 
     expect(result).toEqual({
       status: "sent",
-      reply: expect.objectContaining({ ok: true, message: "Upload Successful" }),
+      reply: expect.objectContaining({
+        ok: true,
+        message: "Upload Successful",
+      }),
     });
 
     const [club, fields] = vi.mocked(postToBridgewebs).mock.calls[0];
@@ -116,10 +131,17 @@ describe("uploadResultsToBridgewebs", () => {
       json: null,
       raw: "message = Invalid password",
     });
-    const result = await uploadResultsToBridgewebs(db, makeGame(), "NORMAL_CLUB");
+    const result = await uploadResultsToBridgewebs(
+      db,
+      makeGame(),
+      "NORMAL_CLUB",
+    );
     expect(result).toEqual({
       status: "sent",
-      reply: expect.objectContaining({ ok: false, message: "Invalid password" }),
+      reply: expect.objectContaining({
+        ok: false,
+        message: "Invalid password",
+      }),
     });
   });
 });

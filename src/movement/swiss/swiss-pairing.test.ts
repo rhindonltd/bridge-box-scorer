@@ -402,7 +402,11 @@ describe("drawSwissRound — odd field / 2 half matches", () => {
 
   it("ignores HALF_MATCHES for an even field (ordinary round)", () => {
     const result = drawSwissRound(
-      input({ tables: 2, standings: [1, 2, 3, 4], oddHandling: "HALF_MATCHES" }),
+      input({
+        tables: 2,
+        standings: [1, 2, 3, 4],
+        oddHandling: "HALF_MATCHES",
+      }),
     );
     expect(result.halfMatch).toBeNull();
     expect(result.sitOutPairId).toBeNull();
@@ -471,9 +475,9 @@ describe("swapPairs", () => {
 
   it("keeps every pair seated exactly once after a swap", () => {
     const out = swapPairs(seating, 1, 6);
-    expect([...seatedPairIds(out)].sort((a: number, b: number) => a - b)).toEqual([
-      1, 2, 3, 4, 5, 6,
-    ]);
+    expect(
+      [...seatedPairIds(out)].sort((a: number, b: number) => a - b),
+    ).toEqual([1, 2, 3, 4, 5, 6]);
   });
 });
 

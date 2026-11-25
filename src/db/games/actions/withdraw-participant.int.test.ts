@@ -35,10 +35,13 @@ describe("withdrawParticipant", () => {
     harness.teardown();
   });
   const occ = () => db.select().from(seatOccupancy).get()!;
-  async function withdraw(change: unknown, seat = "A1NS", gameId = harness.gameId) {
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+  async function withdraw(
+    change: unknown,
+    seat = "A1NS",
+    gameId = harness.gameId,
+  ) {
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     return withdrawParticipant(gameId, seat, change as never);
   }
   it("records a REMOVE withdrawal with no fine", async () => {

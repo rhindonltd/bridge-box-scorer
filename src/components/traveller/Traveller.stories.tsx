@@ -3,7 +3,7 @@ import { expect, within } from "storybook/test";
 import { Traveller } from "@/components/traveller/Traveller";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
-import { scoreBoard } from "@/scoring/traveller/score-traveller";
+import { scoreBoard } from "@/modules/scoring";
 
 const meta: Meta<typeof Traveller> = {
   title: "Components/Traveller/Traveller",

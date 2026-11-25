@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
 import { PerBoardTravellerView } from "./PerBoardTravellerView";
-import "@/scoring/plugins/register";
-import { getPerBoardPlugin } from "@/scoring/plugins/registry";
+import { getPerBoardPlugin } from "@/modules/scoring";
 import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
 import { impBoard1 } from "@/mocks/fixtures/ximp-travellers";
 

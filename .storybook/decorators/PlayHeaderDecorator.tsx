@@ -22,5 +22,9 @@ export const storyPlayHeader = (
   seat = "A1NS",
   extraItems: HeaderMenuItem[] = [],
 ): React.ReactNode => (
-  <PlayHeaderMenu gameId={mockGame.gameId} seat={seat} extraItems={extraItems} />
+  <PlayHeaderMenu
+    gameId={mockGame.gameId}
+    seat={seat}
+    extraItems={extraItems}
+  />
 );

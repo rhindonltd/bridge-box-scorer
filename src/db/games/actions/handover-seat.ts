@@ -6,7 +6,7 @@ import {
   seatOccupancy,
   type SeatOccupancy,
 } from "@/db/games/tables/seat-occupancy";
-import { arrivalAnchorOf } from "@/db/games/queries/seat-occupancy";
+import { arrivalAnchorOf } from "@/modules/rulings";
 import { splitSeatBoardsByResult } from "@/db/games/queries/seat-board-results";
 import { PairSeat, parseSeat, seatFor } from "@/model/participants";
 import { eq, inArray } from "drizzle-orm";

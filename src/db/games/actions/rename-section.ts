@@ -26,8 +26,5 @@ export async function renameSection(
     throw new ClientError(`Section ${section} does not exist`);
   }
 
-  await db
-    .update(sections)
-    .set({ label })
-    .where(eq(sections.section, section));
+  await db.update(sections).set({ label }).where(eq(sections.section, section));
 }

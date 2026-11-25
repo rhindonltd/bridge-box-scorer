@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/db/system/queries/admin-key", () => ({
+  validateAdminToken: vi.fn(),
+}));
 
 const { isWifiManagementAvailable } = vi.hoisted(() => ({
   isWifiManagementAvailable: vi.fn(),
 }));
-vi.mock("@/lib/system/wifi-availability", () => ({ isWifiManagementAvailable }));
+vi.mock("@/lib/system/wifi-availability", () => ({
+  isWifiManagementAvailable,
+}));
 
 const { getOwnAp } = vi.hoisted(() => ({ getOwnAp: vi.fn() }));
 vi.mock("@/lib/system/wifi-ap", () => ({ getOwnAp }));

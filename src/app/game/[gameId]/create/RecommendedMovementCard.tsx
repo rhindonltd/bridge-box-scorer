@@ -39,7 +39,9 @@ export function RecommendedMovementCard({
     >
       <div
         className={`flex items-center justify-between gap-2 border-b px-4 py-2.5 ${
-          selected ? "border-blue-200 bg-blue-100" : "border-gray-200 bg-gray-50"
+          selected
+            ? "border-blue-200 bg-blue-100"
+            : "border-gray-200 bg-gray-50"
         }`}
       >
         <h3 className="text-base font-bold text-gray-900">{movement.name}</h3>
@@ -66,14 +68,20 @@ export function RecommendedMovementCard({
 
       {movement.copies > 1 && (
         <p className="flex items-start gap-1.5 px-3 pb-3 text-xs font-medium text-amber-700">
-          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+          <Info
+            className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+            aria-hidden="true"
+          />
           <span>Needs {movement.copies} sets of boards.</span>
         </p>
       )}
 
       {movement.note && (
         <p className="flex items-start gap-1.5 px-3 pb-3 text-xs text-gray-500">
-          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+          <Info
+            className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+            aria-hidden="true"
+          />
           <span>{movement.note}</span>
         </p>
       )}

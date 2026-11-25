@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useRef,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useRef, useState, ReactNode } from "react";
 import { TimerState } from "@/timer/timer-state";
 import { BreakProblem } from "@/timer/breaks";
 import { SocketEvents } from "@/socket/socket-events";
@@ -75,8 +69,12 @@ export function TimerProvider({
       // Defensive: ignore syncs for a different section (the room already
       // scopes delivery, but a shared socket could receive multiple sections).
       if (payload.section !== section) return;
-      const { serverNow, breakProblems: problems, section: _s, ...state } =
-        payload;
+      const {
+        serverNow,
+        breakProblems: problems,
+        section: _s,
+        ...state
+      } = payload;
       setTimerState(state);
       setBreakProblems(problems ?? []);
       offsetRef.current = serverNow - Date.now();

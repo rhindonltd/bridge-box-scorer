@@ -2,11 +2,11 @@
 
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
-import { getTeamOverallPlugin } from "@/scoring/plugins/team-overall/registry";
 import {
+  getTeamOverallPlugin,
   TeamOverallScoreOf,
   TeamOverallScoreType,
-} from "@/scoring/plugins/team-overall/types";
+} from "@/modules/scoring";
 import { AssignedTeam } from "@/model/participants";
 
 type Props<T extends TeamOverallScoreType> = {

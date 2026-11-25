@@ -38,7 +38,10 @@ export const DeleteError: Story = {
     msw: {
       handlers: [
         http.delete(`/api/games/${mockGame.gameId}/delete`, () =>
-          HttpResponse.json({ error: "Could not delete game" }, { status: 500 }),
+          HttpResponse.json(
+            { error: "Could not delete game" },
+            { status: 500 },
+          ),
         ),
       ],
     },

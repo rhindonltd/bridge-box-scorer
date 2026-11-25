@@ -25,7 +25,9 @@ public/                    # Static assets
 - `services/` — Higher-level application/service logic.
 - `model/` — Pure domain types and logic (framework-agnostic).
 - `movement/` — Movement generation algorithms (Mitchell, Howell, American Whist).
-- `scoring/` — Scoring algorithms (matchpoint, IMP, cross-IMP).
+- `modules/` — Pure domain modules, each imported only through its entry (`@/modules/<name>`); see `docs/design/modules.md`. Each may import only the kernel (`src/model`) and itself, enforced by ESLint.
+  - `modules/rulings/` — Every pre-scoring rewrite (handover ids, seat swaps, absences, standings); entry `applyRulings`, `ruledBoardInstances`.
+  - `modules/scoring/` — Scoring algorithms (matchpoint, cross-IMP, Swiss VP, teams) and `scoreEvent` for whole-event standings.
 - `timer/` — Bridge session timer engine and scheduler.
 - `socket/` — Socket.IO server: `handlers/`, `middleware/`, room/event maps (`rooms.ts`, `socket-event-map.ts`, `socket-events.ts`).
 - `db/` — Drizzle schemas, queries, and actions, split per database: `game-index/`, `games/`, `movements/`, `players/`, `system/`.
@@ -34,7 +36,7 @@ public/                    # Static assets
 
 ## Conventions
 
-- Keep pure domain logic (`model/`, `movement/`, `scoring/`, `timer/`) free of React and I/O so it stays unit-testable.
+- Keep pure domain logic (`model/`, `modules/`, `movement/`, `timer/`) free of React and I/O so it stays unit-testable.
 - Co-locate tests and stories with their source: `Name.tsx`, `Name.test.tsx`, `Name.stories.tsx`; integration tests use `*.int.test.ts`.
 - Data flow (default): SWR fetches initial HTTP data, Socket.IO pushes real-time updates, and a socket→SWR sync hook merges those events into the SWR cache. Route new real-time state through this pattern rather than ad-hoc socket listeners in components.
 - Data flow (socket-only screens): for state that lives only over Socket.IO (no HTTP resource), use a feature-scoped context provider that (a) requests its initial slice on mount — and on reconnect — via an acknowledged request event whose data is returned on the callback (e.g. `timer:requestState` → `{ success, data }`), then (b) applies live update events on top. Keep `game:join` a dumb room-join: it must not replay feature state, so joining does not spray every feature's data at every client. The bridge session timer is the reference implementation (`src/context/TimerContext.tsx` + the `timer:requestState` handler).

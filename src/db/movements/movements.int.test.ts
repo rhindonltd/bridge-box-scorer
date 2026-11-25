@@ -22,12 +22,10 @@ describe("movements db", () => {
   });
 
   it("creates a pair movement spec and finds it by table count", async () => {
-    const { createPairMovementSpec } = await import(
-      "@/db/movements/actions/create-movement-spec"
-    );
-    const { getPairMovementSpecsForTables } = await import(
-      "@/db/movements/queries/get-movements"
-    );
+    const { createPairMovementSpec } =
+      await import("@/db/movements/actions/create-movement-spec");
+    const { getPairMovementSpecsForTables } =
+      await import("@/db/movements/queries/get-movements");
 
     const id = await createPairMovementSpec({
       name: "Mitchell 8",
@@ -47,12 +45,10 @@ describe("movements db", () => {
   });
 
   it("fetches a single pair spec by id (null when missing)", async () => {
-    const { createPairMovementSpec } = await import(
-      "@/db/movements/actions/create-movement-spec"
-    );
-    const { getPairMovementSpecById } = await import(
-      "@/db/movements/queries/get-movement-spec"
-    );
+    const { createPairMovementSpec } =
+      await import("@/db/movements/actions/create-movement-spec");
+    const { getPairMovementSpecById } =
+      await import("@/db/movements/queries/get-movement-spec");
 
     const id = await createPairMovementSpec({
       name: "Howell 6",
@@ -68,18 +64,14 @@ describe("movements db", () => {
   });
 
   it("assembles the full pair movement tree (tables with their rounds)", async () => {
-    const { createPairMovementSpec } = await import(
-      "@/db/movements/actions/create-movement-spec"
-    );
-    const { createPairMovementTableSpec } = await import(
-      "@/db/movements/actions/create-movement-table-spec"
-    );
-    const { createPairMovementRoundSpec } = await import(
-      "@/db/movements/actions/create-movement-round-spec"
-    );
-    const { getPairMovement } = await import(
-      "@/db/movements/queries/get-movement"
-    );
+    const { createPairMovementSpec } =
+      await import("@/db/movements/actions/create-movement-spec");
+    const { createPairMovementTableSpec } =
+      await import("@/db/movements/actions/create-movement-table-spec");
+    const { createPairMovementRoundSpec } =
+      await import("@/db/movements/actions/create-movement-round-spec");
+    const { getPairMovement } =
+      await import("@/db/movements/queries/get-movement");
 
     const movementId = await createPairMovementSpec({
       name: "Mitchell 2",

@@ -51,7 +51,12 @@ describe("rehydrateSelectedMovement — Mitchell variants", () => {
 
   it("builds an American Whist Mitchell — not standard", async () => {
     const result = await rehydrateSelectedMovement(
-      mitchell({ tables: 5, rounds: 5, boardsPerRound: 5, americanWhist: true }),
+      mitchell({
+        tables: 5,
+        rounds: 5,
+        boardsPerRound: 5,
+        americanWhist: true,
+      }),
     );
 
     expect(result.isStandardMitchell).toBe(false);
@@ -78,7 +83,12 @@ describe("rehydrateSelectedMovement — Mitchell variants", () => {
 
   it("builds a Share and Relay Mitchell (rounds === tables) — not standard", async () => {
     const result = await rehydrateSelectedMovement(
-      mitchell({ tables: 6, rounds: 6, boardsPerRound: 4, shareAndRelay: true }),
+      mitchell({
+        tables: 6,
+        rounds: 6,
+        boardsPerRound: 4,
+        shareAndRelay: true,
+      }),
     );
 
     expect(result.isStandardMitchell).toBe(false);

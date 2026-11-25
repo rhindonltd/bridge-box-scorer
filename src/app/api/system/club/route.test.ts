@@ -4,7 +4,9 @@ import { testApiHandler } from "next-test-api-route-handler";
 vi.mock("@/db/system/queries/find-club", () => ({ findClub: vi.fn() }));
 vi.mock("@/db/system/actions/upsert-club", () => ({ upsertClub: vi.fn() }));
 // POST is admin-gated; control token validation per-test.
-vi.mock("@/db/system/queries/admin-key", () => ({ validateAdminToken: vi.fn() }));
+vi.mock("@/db/system/queries/admin-key", () => ({
+  validateAdminToken: vi.fn(),
+}));
 
 import { findClub } from "@/db/system/queries/find-club";
 import { upsertClub } from "@/db/system/actions/upsert-club";

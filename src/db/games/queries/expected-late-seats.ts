@@ -21,10 +21,7 @@ export async function addExpectedLateSeat(
   db: Db,
   seat: PairSeat,
 ): Promise<void> {
-  await db
-    .insert(expectedLateSeats)
-    .values({ seat })
-    .onConflictDoNothing();
+  await db.insert(expectedLateSeats).values({ seat }).onConflictDoNothing();
 }
 
 /**

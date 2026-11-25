@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTravellerContext } from "@/context/TravellerContext";
-import { scoreBoard, ScoredBoard } from "@/scoring/traveller/score-traveller";
+import { scoreBoard, ScoredBoard } from "@/modules/scoring";
 import { ScoringType } from "@/model/game-types";
 import { Traveller } from "@/model/traveller";
 

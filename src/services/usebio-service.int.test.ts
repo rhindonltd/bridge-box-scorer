@@ -514,9 +514,8 @@ describe("generateUsebio", () => {
     tableNumber: number,
     swapped: boolean,
   ) {
-    const { setBoardSeatsSwapped } = await import(
-      "@/db/games/actions/set-board-result"
-    );
+    const { setBoardSeatsSwapped } =
+      await import("@/db/games/actions/set-board-result");
     await setBoardSeatsSwapped(
       db,
       { roundNumber: 1, tableNumber, boardNumber: 1 },
@@ -556,9 +555,7 @@ describe("generateUsebio", () => {
     // Clearing the flag restores the original export.
     await setSeatsSwapped(db, 3, false);
     expect(
-      travellerPairNumbers(
-        await generateUsebio(db, game, club, "NORMAL_CLUB"),
-      ),
+      travellerPairNumbers(await generateUsebio(db, game, club, "NORMAL_CLUB")),
     ).toEqual(before);
   });
 
@@ -1266,9 +1263,8 @@ describe("generateUsebio", () => {
     it("does not place an empty expected-late seat", async () => {
       const db = (await harness.getDb()) as Db;
       const { createBoard } = await import("@/db/games/actions/create-board");
-      const { expectedLateSeats } = await import(
-        "@/db/games/tables/expected-late-seats"
-      );
+      const { expectedLateSeats } =
+        await import("@/db/games/tables/expected-late-seats");
       for (const t of [1, 2, 3]) {
         await seatPair(`A${t}NS`, `N${t}`);
         await seatPair(`A${t}EW`, `E${t}`);

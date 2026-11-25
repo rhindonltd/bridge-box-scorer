@@ -87,7 +87,10 @@ export const WithBye: Story = {
       byeTeamId: 5,
       named: {
         matches: [
-          { a: { teamId: 1, name: "Sharks" }, b: { teamId: 2, name: "Dragons" } },
+          {
+            a: { teamId: 1, name: "Sharks" },
+            b: { teamId: 2, name: "Dragons" },
+          },
           { a: { teamId: 3, name: "Owls" }, b: { teamId: 4, name: "Eagles" } },
         ],
         bye: { teamId: 5, name: "Robins" },
@@ -108,7 +111,10 @@ export const WithShortTriple: Story = {
       triple: { a: 1, b: 2, c: 3, kind: "SHORT", group: null, slot: null },
       named: {
         matches: [
-          { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
+          {
+            a: { teamId: 4, name: "Eagles" },
+            b: { teamId: 5, name: "Robins" },
+          },
         ],
         bye: null,
         triple: {
@@ -135,7 +141,10 @@ export const WithLongTriple: Story = {
       triple: { a: 1, b: 2, c: 3, kind: "LONG", group: 0, slot: 1 },
       named: {
         matches: [
-          { a: { teamId: 4, name: "Eagles" }, b: { teamId: 5, name: "Robins" } },
+          {
+            a: { teamId: 4, name: "Eagles" },
+            b: { teamId: 5, name: "Robins" },
+          },
         ],
         bye: null,
         triple: {

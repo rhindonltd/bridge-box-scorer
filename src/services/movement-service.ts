@@ -16,7 +16,10 @@ import { isBoardEntered } from "@/lib/round-status";
  */
 export async function getMovementWithProgress(db: Db, section?: string) {
   const allRows = section
-    ? await db.select().from(pairsBoards).where(eq(pairsBoards.section, section))
+    ? await db
+        .select()
+        .from(pairsBoards)
+        .where(eq(pairsBoards.section, section))
     : await db.select().from(pairsBoards);
 
   // SIT_OUT boards are not played at their table that round; exclude them so

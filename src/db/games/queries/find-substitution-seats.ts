@@ -1,11 +1,8 @@
 import { Db } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { players } from "@/db/games/tables/players";
-import {
-  readSeatOccupancies,
-  arrivalAnchorOf,
-  mergedLineOf,
-} from "@/db/games/queries/seat-occupancy";
+import { arrivalAnchorOf, mergedLineOf } from "@/modules/rulings";
+import { readSeatOccupancies } from "@/db/games/queries/seat-occupancy";
 import type { SeatOccupancy } from "@/db/games/tables/seat-occupancy";
 
 /**

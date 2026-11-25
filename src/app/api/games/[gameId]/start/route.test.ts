@@ -14,7 +14,12 @@ vi.mock("@/socket/broadcast/game-broadcast", () => ({
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn() }));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
-  childLogger: () => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() }),
+  childLogger: () => ({
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 import { getDb } from "@/db/games";
@@ -51,7 +56,10 @@ describe("POST /api/games/[gameId]/start", () => {
     const res = await invoke("g1");
 
     expect(res.status).toBe(200);
-    expect(promoteTimerAtGameStart).toHaveBeenCalledWith("g1", expect.anything());
+    expect(promoteTimerAtGameStart).toHaveBeenCalledWith(
+      "g1",
+      expect.anything(),
+    );
     expect(broadcastGameStarted).toHaveBeenCalledWith("g1");
   });
 
@@ -70,9 +78,7 @@ describe("POST /api/games/[gameId]/start", () => {
     await expect(res.json()).resolves.toMatchObject({
       success: false,
       error: "Game cannot be started",
-      problems: [
-        expect.objectContaining({ code: "NO_PAIRS_SEATED" }),
-      ],
+      problems: [expect.objectContaining({ code: "NO_PAIRS_SEATED" })],
     });
     expect(broadcastGameStarted).not.toHaveBeenCalled();
     expect(promoteTimerAtGameStart).not.toHaveBeenCalled();

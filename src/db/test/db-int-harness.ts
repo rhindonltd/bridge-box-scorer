@@ -29,7 +29,8 @@ import path from "node:path";
 import fs from "node:fs";
 import { vi } from "vitest";
 
-export type DbName = "game-index" | "games" | "movements" | "players" | "system";
+export type DbName =
+  "game-index" | "games" | "movements" | "players" | "system";
 
 interface DbDescriptor {
   /** Env var that points the db module at its data directory. */
@@ -89,7 +90,10 @@ const DESCRIPTORS: Record<DbName, DbDescriptor> = {
  * Build a migrated SQLite database file on disk at `dbFile`, applying the
  * migrations from `migrationsFolder`.
  */
-export async function buildMigratedDb(dbFile: string, migrationsFolder: string) {
+export async function buildMigratedDb(
+  dbFile: string,
+  migrationsFolder: string,
+) {
   const Database = (await import("better-sqlite3")).default;
   const { drizzle } = await import("drizzle-orm/better-sqlite3");
   const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");

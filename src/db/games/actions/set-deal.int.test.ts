@@ -7,7 +7,21 @@ import type { Card, Deal, Rank } from "@/model/common";
 
 /** A valid 52-card deal (N=spades, E=hearts, S=diamonds, W=clubs). */
 function buildValidDeal(): Deal {
-  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   return {
     N: ranks.map((r): Card => `S${r}`),
     E: ranks.map((r): Card => `H${r}`),
@@ -18,7 +32,21 @@ function buildValidDeal(): Deal {
 
 /** A second, different valid deal (rotate suits one direction). */
 function buildOtherDeal(): Deal {
-  const ranks: Rank[] = ["A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2"];
+  const ranks: Rank[] = [
+    "A",
+    "K",
+    "Q",
+    "J",
+    "T",
+    "9",
+    "8",
+    "7",
+    "6",
+    "5",
+    "4",
+    "3",
+    "2",
+  ];
   return {
     N: ranks.map((r): Card => `H${r}`),
     E: ranks.map((r): Card => `D${r}`),
@@ -42,9 +70,8 @@ describe("deals query/action layer", () => {
   it("insertDealIfAbsent stores a deal once then reports it exists", async () => {
     const db = (await harness.getDb()) as Db;
     const { insertDealIfAbsent } = await import("@/db/games/actions/set-deal");
-    const { getDealHands, getDealRow } = await import(
-      "@/db/games/queries/get-deal"
-    );
+    const { getDealHands, getDealRow } =
+      await import("@/db/games/queries/get-deal");
 
     const deal = buildValidDeal();
     const first = await insertDealIfAbsent(db, 1, deal);
@@ -62,12 +89,10 @@ describe("deals query/action layer", () => {
 
   it("upsertDeal overwrites an existing deal", async () => {
     const db = (await harness.getDb()) as Db;
-    const { insertDealIfAbsent, upsertDeal } = await import(
-      "@/db/games/actions/set-deal"
-    );
-    const { getDealHands, getDealRow } = await import(
-      "@/db/games/queries/get-deal"
-    );
+    const { insertDealIfAbsent, upsertDeal } =
+      await import("@/db/games/actions/set-deal");
+    const { getDealHands, getDealRow } =
+      await import("@/db/games/queries/get-deal");
 
     await insertDealIfAbsent(db, 2, buildValidDeal());
     const replacement = buildOtherDeal();
@@ -80,12 +105,10 @@ describe("deals query/action layer", () => {
 
   it("upsertDeals saves every board and overwrites an existing deal", async () => {
     const db = (await harness.getDb()) as Db;
-    const { insertDealIfAbsent, upsertDeals } = await import(
-      "@/db/games/actions/set-deal"
-    );
-    const { getDealHands, getDealRow } = await import(
-      "@/db/games/queries/get-deal"
-    );
+    const { insertDealIfAbsent, upsertDeals } =
+      await import("@/db/games/actions/set-deal");
+    const { getDealHands, getDealRow } =
+      await import("@/db/games/queries/get-deal");
 
     // Board 2 was entered by a player; the import must replace it.
     await insertDealIfAbsent(db, 2, buildValidDeal());
@@ -104,9 +127,8 @@ describe("deals query/action layer", () => {
 
   it("upsertDeals writes nothing when any deal is incomplete", async () => {
     const db = (await harness.getDb()) as Db;
-    const { insertDealIfAbsent, upsertDeals } = await import(
-      "@/db/games/actions/set-deal"
-    );
+    const { insertDealIfAbsent, upsertDeals } =
+      await import("@/db/games/actions/set-deal");
     const { getDealHands } = await import("@/db/games/queries/get-deal");
 
     await insertDealIfAbsent(db, 2, buildValidDeal());
@@ -148,9 +170,8 @@ describe("deals query/action layer", () => {
 
   it("rejects an incomplete deal before writing", async () => {
     const db = (await harness.getDb()) as Db;
-    const { insertDealIfAbsent, upsertDeal } = await import(
-      "@/db/games/actions/set-deal"
-    );
+    const { insertDealIfAbsent, upsertDeal } =
+      await import("@/db/games/actions/set-deal");
     const { getDealHands } = await import("@/db/games/queries/get-deal");
 
     const broken = buildValidDeal();

@@ -85,7 +85,9 @@ describe("LeaderboardProvider", () => {
       </LeaderboardProvider>,
     );
 
-    await waitFor(() => expect(screen.getByTestId("lb").textContent).toBe("yes"));
+    await waitFor(() =>
+      expect(screen.getByTestId("lb").textContent).toBe("yes"),
+    );
     expect(screen.getByTestId("sections").textContent).toBe("1");
     expect(screen.getByTestId("loading").textContent).toBe("false");
   });
@@ -106,7 +108,9 @@ describe("LeaderboardProvider", () => {
       handler(snapshot);
     });
 
-    await waitFor(() => expect(screen.getByTestId("lb").textContent).toBe("yes"));
+    await waitFor(() =>
+      expect(screen.getByTestId("lb").textContent).toBe("yes"),
+    );
   });
 
   it("re-requests on reconnect", async () => {

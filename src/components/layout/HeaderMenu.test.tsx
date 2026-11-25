@@ -34,7 +34,9 @@ describe("HeaderMenu", () => {
     await user.click(screen.getByRole("button", { name: "Menu" }));
 
     expect(screen.getAllByRole("menuitem")).toHaveLength(3);
-    expect(screen.getByRole("menuitem", { name: "Tables" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("menuitem", { name: "Tables" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: "Movement" }),
     ).toBeInTheDocument();

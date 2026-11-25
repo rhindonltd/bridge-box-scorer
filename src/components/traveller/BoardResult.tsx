@@ -53,8 +53,7 @@ export function BoardResult({ boardOutcome }: Props) {
           {components.map((c, i) => (
             <span key={i}>
               {i > 0 && ", "}
-              {c.weight}%{" "}
-              <ContractDisplay contract={c.contract} />
+              {c.weight}% <ContractDisplay contract={c.contract} />
             </span>
           ))}
         </span>

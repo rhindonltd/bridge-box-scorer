@@ -64,7 +64,9 @@ describe("StepConfirm", () => {
   });
 
   it("renders the Not Played special outcome", () => {
-    render(<StepConfirm {...baseProps} specialOutcome="NP" onSubmit={vi.fn()} />);
+    render(
+      <StepConfirm {...baseProps} specialOutcome="NP" onSubmit={vi.fn()} />,
+    );
     expect(screen.getByText("Not Played")).toBeInTheDocument();
   });
 

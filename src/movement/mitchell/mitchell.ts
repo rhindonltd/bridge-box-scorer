@@ -46,7 +46,8 @@ const VARIANT_GENERATORS: {
   { flag: "skip", generate: (s) => generateSkipMitchell({ ...s, skip: true }) },
   {
     flag: "shareAndRelay",
-    generate: (s) => generateShareAndRelayMitchell({ ...s, shareAndRelay: true }),
+    generate: (s) =>
+      generateShareAndRelayMitchell({ ...s, shareAndRelay: true }),
   },
   {
     flag: "blackpool",

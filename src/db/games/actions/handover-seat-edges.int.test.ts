@@ -15,10 +15,16 @@ describe("isSamePair", () => {
   const b = { firstName: "B", lastName: "Two" };
   it("never matches a recorded side with a missing player", () => {
     expect(
-      isSamePair({ player1: a, player2: b }, { player1: a, player2: undefined }),
+      isSamePair(
+        { player1: a, player2: b },
+        { player1: a, player2: undefined },
+      ),
     ).toBe(false);
     expect(
-      isSamePair({ player1: a, player2: b }, { player1: undefined, player2: b }),
+      isSamePair(
+        { player1: a, player2: b },
+        { player1: undefined, player2: b },
+      ),
     ).toBe(false);
   });
   it("matches either seat order", () => {

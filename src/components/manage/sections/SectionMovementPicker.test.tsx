@@ -496,9 +496,7 @@ describe("SectionMovementPicker", () => {
     );
     // The inline Swiss Pairs form is shown (its odd-pairs legend is a stable
     // marker), and the normal movement list is not.
-    expect(
-      screen.getByText(/odd number of pairs/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/odd number of pairs/i)).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Mitchell" }),
     ).not.toBeInTheDocument();
@@ -630,9 +628,7 @@ describe("SectionMovementPicker", () => {
     // The Teams form has a "Teams" field; it never shows the Pairs form's
     // "odd number of pairs" legend.
     expect(screen.getByText("Teams")).toBeInTheDocument();
-    expect(
-      screen.queryByText(/odd number of pairs/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/odd number of pairs/i)).not.toBeInTheDocument();
   });
 
   it("seeds the Swiss Pairs form from the persisted SWISS selection", () => {
@@ -730,9 +726,7 @@ describe("SectionMovementPicker", () => {
     fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     // The confirm button shows "Saving…" and is disabled while the save is pending.
-    expect(
-      screen.getByRole("button", { name: /saving…/i }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: /saving…/i })).toBeDisabled();
   });
 
   it("defaults an odd Swiss Teams field to a Bye and confirms with oddHandling", async () => {

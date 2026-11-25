@@ -91,11 +91,7 @@ vi.mock("@/components/contract-wizard/StepPairsVoid", () => ({
 }));
 
 vi.mock("@/components/contract-wizard/StepTeamsRemoval", () => ({
-  StepTeamsRemoval: ({
-    onSubmit,
-  }: {
-    onSubmit: (fault: string) => void;
-  }) => (
+  StepTeamsRemoval: ({ onSubmit }: { onSubmit: (fault: string) => void }) => (
     <div data-testid="step-teams-removal">
       <button onClick={() => onSubmit("EW_FAULT")}>removal-ew</button>
     </div>
@@ -124,8 +120,6 @@ vi.mock("@/components/contract-wizard/StepLevel", () => ({
     </div>
   ),
 }));
-
-
 
 vi.mock("@/components/contract-wizard/StepSuit", () => ({
   StepSuit: ({ onSuitSelected }: { onSuitSelected: (s: string) => void }) => (
@@ -196,14 +190,10 @@ vi.mock("@/components/contract-wizard/StepWeightedScore", () => ({
   StepWeightedScore: ({
     onSubmit,
   }: {
-    onSubmit: (
-      components: { contract: string; weight: number }[],
-    ) => void;
+    onSubmit: (components: { contract: string; weight: number }[]) => void;
   }) => (
     <div data-testid="step-weighted">
-      <button
-        onClick={() => onSubmit([{ contract: "3NTN=", weight: 100 }])}
-      >
+      <button onClick={() => onSubmit([{ contract: "3NTN=", weight: 100 }])}>
         weighted-submit
       </button>
     </div>

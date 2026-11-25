@@ -37,20 +37,32 @@ function mpPairs(): UsebioPairsData {
       {
         pairNumber: "A1NS",
         direction: "N",
-        player1: { firstName: "Alice", lastName: "Smith", nationalId: "111111" },
+        player1: {
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: "111111",
+        },
         player2: { firstName: "Bob", lastName: "Jones", nationalId: "222222" },
       },
       {
         pairNumber: "A2NS",
         direction: "N",
-        player1: { firstName: "Carol", lastName: "Brown", nationalId: "333333" },
+        player1: {
+          firstName: "Carol",
+          lastName: "Brown",
+          nationalId: "333333",
+        },
         player2: { firstName: "Dave", lastName: "White", nationalId: "444444" },
       },
       {
         pairNumber: "A1EW",
         direction: "E",
         player1: { firstName: "Eve", lastName: "Green", nationalId: "555555" },
-        player2: { firstName: "Frank", lastName: "Black", nationalId: "666666" },
+        player2: {
+          firstName: "Frank",
+          lastName: "Black",
+          nationalId: "666666",
+        },
       },
       {
         pairNumber: "A2EW",
@@ -114,20 +126,32 @@ function swissPairs(): UsebioSwissPairsData {
       {
         pairNumber: "1",
         direction: "N",
-        player1: { firstName: "Alice", lastName: "Smith", nationalId: "111111" },
+        player1: {
+          firstName: "Alice",
+          lastName: "Smith",
+          nationalId: "111111",
+        },
         player2: { firstName: "Bob", lastName: "Jones", nationalId: "222222" },
       },
       {
         pairNumber: "2",
         direction: "N",
-        player1: { firstName: "Carol", lastName: "Brown", nationalId: "333333" },
+        player1: {
+          firstName: "Carol",
+          lastName: "Brown",
+          nationalId: "333333",
+        },
         player2: { firstName: "Dave", lastName: "White", nationalId: "444444" },
       },
       {
         pairNumber: "3",
         direction: "E",
         player1: { firstName: "Eve", lastName: "Green", nationalId: "555555" },
-        player2: { firstName: "Frank", lastName: "Black", nationalId: "666666" },
+        player2: {
+          firstName: "Frank",
+          lastName: "Black",
+          nationalId: "666666",
+        },
       },
       {
         pairNumber: "4",

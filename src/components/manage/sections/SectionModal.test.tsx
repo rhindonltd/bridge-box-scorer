@@ -151,7 +151,9 @@ describe("SectionModal", () => {
     expect(
       screen.getByRole("option", { name: "Section A — North" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Section B" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Section B" }),
+    ).toBeInTheDocument();
     fireEvent.change(picker, { target: { value: "B" } });
     expect(screen.getByLabelText("Section B name")).toHaveValue("B");
     fireEvent.change(picker, { target: { value: "A" } });

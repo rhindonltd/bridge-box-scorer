@@ -43,9 +43,9 @@ export default mergeConfig(
           "src/model/leaderboard.ts",
           "src/model/traveller.ts",
           "src/timer/timer-state.ts",
-          "src/scoring/plugins/types.ts",
-          "src/scoring/overall/scored-traveller.ts",
-          "src/scoring/traveller/pair/common.ts",
+          "src/modules/scoring/plugins/types.ts",
+          "src/modules/scoring/overall/scored-traveller.ts",
+          "src/modules/scoring/traveller/pair/common.ts",
           // CLI entry scripts (run via tsx): top-level side effects on import,
           // not unit-testable as modules. Exercised by running them directly.
           "src/scripts/**",

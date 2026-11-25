@@ -2,11 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 import { openDirectorTraveller } from "../fixtures/director-override";
 import { hubChoices, openHub } from "../fixtures/director-rulings";
-import {
-  closeDevices,
-  openDirector,
-  seedGame,
-} from "../fixtures/seeded-game";
+import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
 
 /**
  * A board played the wrong way round (the arrows were not switched). The

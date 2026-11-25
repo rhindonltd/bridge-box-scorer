@@ -22,6 +22,7 @@ results.
   per-Law commentary (Laws 1–93), and the roles of the TD/scorer/DIC.
 
 > **Source caveats**
+>
 > - Section numbers below (e.g. §4.1.1.1) are the White Book's own numbering,
 >   2025 edition. Later editions may renumber.
 > - This reference was transcribed from the published PDF. **Large numeric
@@ -29,7 +30,7 @@ results.
 >   NOT reproduced here**, because they do not transcribe reliably from the PDF
 >   and an error in a VP table would be worse than an omission. For those,
 >   consult the official White Book PDF or the EBU's online VP calculator. Where
->   a table *is* reproduced (e.g. the Swiss Pairs percentage scale), treat it as
+>   a table _is_ reproduced (e.g. the Swiss Pairs percentage scale), treat it as
 >   indicative and confirm against the official source before relying on it.
 > - Rules are paraphrased and summarised, not quoted verbatim. Always defer to
 >   the official White Book for the authoritative wording.
@@ -64,7 +65,7 @@ Each side receives one of:
   ahead without the board is 26 ahead with the AVE+).
 
 **"Better than average" override (matchpoints and IMPs).** If a pair's **actual
-average** on the *other* boards is already better than the flat value, they keep
+average** on the _other_ boards is already better than the flat value, they keep
 their actual average instead:
 
 - If a pair's average is **greater than 60%**, AVE+ gives them **their actual
@@ -78,8 +79,8 @@ their actual average instead:
 "session" over which the average is computed depends on the event:
 
 - **Swiss events:** a session is **the match**. So within a Swiss match, AVE+ is
-  the greater of 60% and the pair's average percentage on the *other boards in
-  that match* (§8.80.6.1).
+  the greater of 60% and the pair's average percentage on the _other boards in
+  that match_ (§8.80.6.1).
 - **All-play-all stage:** the average is over the **whole stage**, which may be
   more than one session (§8.80.6.2).
 - **Otherwise:** the average is over a session, which ends at a major movement of
@@ -206,6 +207,7 @@ Match points = ((M + 1) / A) × E − 1
 ```
 
 where:
+
 - **M** = matchpoints earned considering only the group itself,
 - **E** = number of scores expected on a (normal) board,
 - **A** = actual number of results in the group.
@@ -265,9 +267,9 @@ before the datum is computed from the central factored results.
 
 ### 2.7 Minimum unit of scoring (§8.12.3)
 
-- **IMPs as the *initial* method of scoring:** the minimum unit is **1 IMP** (an
+- **IMPs as the _initial_ method of scoring:** the minimum unit is **1 IMP** (an
   application of Law 12C4 can produce 0.5 IMP).
-- **IMPs as the *final* method of scoring** (no conversion to VP): the minimum
+- **IMPs as the _final_ method of scoring** (no conversion to VP): the minimum
   unit becomes **0.1 IMP (or 0.25 IMP)**.
 
 (The "unit of scoring" referenced by the rounding rules in §2.6 is this.)
@@ -317,17 +319,18 @@ by **match length** and the pair's **percentage of available matchpoints**. The
 boundaries tighten toward 50% as matches get longer. Indicative values (confirm
 against the official source):
 
-| VP (win–loss) | ≤4 bds | 5–6 | 7–9 | 10–13 | 14–19 | 20–27 | 28–39 | 40–55 |
-| ------------- | ------ | --- | --- | ----- | ----- | ----- | ----- | ----- |
-| 10–10 (≤ %)   | 50.92  | 50.78 | 50.65 | 50.54 | 50.45 | 50.38 | 50.32 | 50.27 |
-| 15–5 (≤ %)    | 61.08  | 59.45 | 57.83 | 56.53 | 55.45 | 54.57 | 53.83 | 53.21 |
-| 19–1 (≤ %)    | 75.95  | 72.13 | 68.35 | 65.30 | 62.78 | 60.71 | 58.97 | 57.53 |
+| VP (win–loss) | ≤4 bds  | 5–6     | 7–9     | 10–13   | 14–19   | 20–27   | 28–39   | 40–55   |
+| ------------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- | ------- |
+| 10–10 (≤ %)   | 50.92   | 50.78   | 50.65   | 50.54   | 50.45   | 50.38   | 50.32   | 50.27   |
+| 15–5 (≤ %)    | 61.08   | 59.45   | 57.83   | 56.53   | 55.45   | 54.57   | 53.83   | 53.21   |
+| 19–1 (≤ %)    | 75.95   | 72.13   | 68.35   | 65.30   | 62.78   | 60.71   | 58.97   | 57.53   |
 | 20–0          | > 75.95 | > 72.13 | > 68.35 | > 65.30 | > 62.78 | > 60.71 | > 58.97 | > 57.53 |
 
 (The full table has a row for every VP from 10–10 to 20–0; only three rows plus
 the top are shown here as a sample — see §3.1.7 for all rows.)
 
 Notes:
+
 - VPs in matches of **fewer than 5 boards** are **not recommended**.
 - When a percentage is **exactly on a boundary**, take the **VP nearer to
   average**. Example: an 8-board match at exactly 56.23% scores **14–6**.
@@ -443,7 +446,7 @@ formula.
 
 ### 5.2 The Swiss draw (§3.6)
 
-Mostly draw *philosophy* rather than scoring:
+Mostly draw _philosophy_ rather than scoring:
 
 - **Ties when ranking for the draw (§3.6.1):** software splits ties to produce a
   ranking; manual draws break ties at random.
@@ -497,7 +500,7 @@ event. The rule is:
     the remainder as AVE**;
   - (e) in aggravated circumstances, a more generous indemnity.
 - "All-play-all" means advertised as such in the Conditions of Contest — not
-  merely a field small enough that everyone *could* meet.
+  merely a field small enough that everyone _could_ meet.
 
 ### 6.3 Withdrawals — events that are not all-play-all (§2.4.3, §2.4.4)
 
@@ -511,7 +514,7 @@ event. The rule is:
   - withdraws **after half** the session → scores against them **stand**, and any
     contestant forced to sit out as a result receives **AVE+**.
 
-### 6.4 The score given *to* the withdrawing contestant (§2.4.5)
+### 6.4 The score given _to_ the withdrawing contestant (§2.4.5)
 
 A withdrawal is normally treated as abandoning the event (the contestant does
 not appear in the final ranking) and, unless the reason is acceptable, the
@@ -592,46 +595,46 @@ disqualified), their **unplayed** boards/matches are scored as:
 
 ## Index of White Book sections referenced
 
-| §         | Topic                                              | Covered in |
-| --------- | -------------------------------------------------- | ---------- |
-| §2.3.3    | Stand-by players (45 / 90 min)                     | 6.6        |
-| §2.4.2    | Withdrawal — all-play-all                          | 6.2        |
-| §2.4.3–4  | Withdrawal — not all-play-all                      | 6.3        |
-| §2.4.5    | Score given to a withdrawing contestant            | 6.4        |
-| §2.4.6    | Score for a missing / late / suspended contestant  | 6.5        |
-| §2.4.7    | Late arrival                                       | 6.6        |
-| §2.4.8    | Movement / start-delay timing                      | 6.6        |
-| §2.4.9    | "Without standing"                                 | 6.1        |
-| §3.1.1    | WBF discrete teams-of-four VP scale                | 3.1        |
-| §3.1.3    | Modified cross-IMP (XIMPQ / Probst) → VP           | 3.2        |
-| §3.1.6    | Hybrid-IMP (Pachabo) VP                            | 3.4        |
-| §3.1.7    | Swiss Pairs VP scale (% of available MP)           | 3.3        |
-| §3.2      | Split-tie procedures                               | 7          |
-| §3.3.2    | Unplayable board — pairs                           | 4.1        |
-| §3.3.6    | Teams — incorrect seating                          | 4.2        |
-| §3.3.7    | Teams — part/all of match cannot be played         | 4.3        |
-| §3.3.8    | Pairs — part/all of match cannot be played         | 4.4        |
-| §3.3.9    | Match void — scoring                               | 4.5        |
-| §3.5      | Swiss mismatches                                   | 5.1        |
-| §3.6      | Swiss draw / assigning                             | 5.2, 5.3   |
-| §3.8      | Carry-forward score formula                        | 7          |
-| §4.1.1.1  | Artificial adjusted (AVE+/AVE/AVE−)                | 1.1        |
-| §4.1.1.2  | Assigned adjusted                                  | 1.2        |
-| §4.1.1.3  | Split scores                                       | 1.3        |
-| §4.1.1.4  | Weighted scores                                    | 1.4        |
-| §4.2.1    | Weighted/split in MP frequencies                   | 2.1        |
-| §4.2.2    | Assigned score not on board (manual)               | 2.2        |
-| §4.2.3    | Fewer results — matchpoints (Neuberg)              | 2.3        |
-| §4.2.4    | Fewer results — Butler/cross-IMP                   | 2.4        |
-| §4.2.5    | Overall scoring across unequal boards              | 2.5        |
-| §4.2.6    | Calculations and rounding                          | 2.6        |
-| §8.12.3   | Minimum unit of scoring                            | 2.7        |
-| §8.12.14  | Weighting must not benefit offenders               | 1.4        |
-| §8.80.6   | "Session" window for AVE+/AVE−                     | 1.1        |
+| §        | Topic                                             | Covered in |
+| -------- | ------------------------------------------------- | ---------- |
+| §2.3.3   | Stand-by players (45 / 90 min)                    | 6.6        |
+| §2.4.2   | Withdrawal — all-play-all                         | 6.2        |
+| §2.4.3–4 | Withdrawal — not all-play-all                     | 6.3        |
+| §2.4.5   | Score given to a withdrawing contestant           | 6.4        |
+| §2.4.6   | Score for a missing / late / suspended contestant | 6.5        |
+| §2.4.7   | Late arrival                                      | 6.6        |
+| §2.4.8   | Movement / start-delay timing                     | 6.6        |
+| §2.4.9   | "Without standing"                                | 6.1        |
+| §3.1.1   | WBF discrete teams-of-four VP scale               | 3.1        |
+| §3.1.3   | Modified cross-IMP (XIMPQ / Probst) → VP          | 3.2        |
+| §3.1.6   | Hybrid-IMP (Pachabo) VP                           | 3.4        |
+| §3.1.7   | Swiss Pairs VP scale (% of available MP)          | 3.3        |
+| §3.2     | Split-tie procedures                              | 7          |
+| §3.3.2   | Unplayable board — pairs                          | 4.1        |
+| §3.3.6   | Teams — incorrect seating                         | 4.2        |
+| §3.3.7   | Teams — part/all of match cannot be played        | 4.3        |
+| §3.3.8   | Pairs — part/all of match cannot be played        | 4.4        |
+| §3.3.9   | Match void — scoring                              | 4.5        |
+| §3.5     | Swiss mismatches                                  | 5.1        |
+| §3.6     | Swiss draw / assigning                            | 5.2, 5.3   |
+| §3.8     | Carry-forward score formula                       | 7          |
+| §4.1.1.1 | Artificial adjusted (AVE+/AVE/AVE−)               | 1.1        |
+| §4.1.1.2 | Assigned adjusted                                 | 1.2        |
+| §4.1.1.3 | Split scores                                      | 1.3        |
+| §4.1.1.4 | Weighted scores                                   | 1.4        |
+| §4.2.1   | Weighted/split in MP frequencies                  | 2.1        |
+| §4.2.2   | Assigned score not on board (manual)              | 2.2        |
+| §4.2.3   | Fewer results — matchpoints (Neuberg)             | 2.3        |
+| §4.2.4   | Fewer results — Butler/cross-IMP                  | 2.4        |
+| §4.2.5   | Overall scoring across unequal boards             | 2.5        |
+| §4.2.6   | Calculations and rounding                         | 2.6        |
+| §8.12.3  | Minimum unit of scoring                           | 2.7        |
+| §8.12.14 | Weighting must not benefit offenders              | 1.4        |
+| §8.80.6  | "Session" window for AVE+/AVE−                    | 1.1        |
 
 ---
 
-*Source: EBU White Book — Technical matters, 2025 edition (effective 1 August
+_Source: EBU White Book — Technical matters, 2025 edition (effective 1 August
 2025), © English Bridge Union Ltd. Paraphrased for internal reference. Content
 was rephrased for compliance with licensing restrictions; consult the official
-White Book for authoritative wording and for all numeric VP tables.*
+White Book for authoritative wording and for all numeric VP tables._

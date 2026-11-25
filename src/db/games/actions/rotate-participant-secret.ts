@@ -2,10 +2,8 @@ import "server-only";
 
 import { getDb } from "@/db/games";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
-import {
-  arrivalAnchorOf,
-  anchorPickColumns,
-} from "@/db/games/queries/seat-occupancy";
+import { arrivalAnchorOf } from "@/modules/rulings";
+import { anchorPickColumns } from "@/db/games/queries/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { PairSeat } from "@/model/participants";
 

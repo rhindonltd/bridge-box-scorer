@@ -43,12 +43,10 @@ describe("drawNextSwissTeamsRound", () => {
    */
   async function setup(boardsPerRound = 1, totalRounds = 4) {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
 
     await createGameDb(gameId, 4);
     await setSectionMovement(gameId, "A", {
@@ -56,10 +54,17 @@ describe("drawNextSwissTeamsRound", () => {
       swissTeams: { teams: 4, rounds: totalRounds, boardsPerRound },
     });
 
-    await materializeSwissTeamsRound(gameId, "A", 1, boardsPerRound, totalRounds, [
-      { a: 1, b: 2 },
-      { a: 3, b: 4 },
-    ]);
+    await materializeSwissTeamsRound(
+      gameId,
+      "A",
+      1,
+      boardsPerRound,
+      totalRounds,
+      [
+        { a: 1, b: 2 },
+        { a: 3, b: 4 },
+      ],
+    );
   }
 
   /** Mark every round-`round` board CONFIRMED with a result. */
@@ -84,9 +89,8 @@ describe("drawNextSwissTeamsRound", () => {
 
   it("preview rejects while the current round is not fully scored", async () => {
     await setup();
-    const { previewNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+    const { previewNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
     const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "ROUND_INCOMPLETE" });
   });
@@ -95,9 +99,8 @@ describe("drawNextSwissTeamsRound", () => {
     await setup();
     await confirmRound(1);
 
-    const { previewNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+    const { previewNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
 
     const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result.ok).toBe(true);
@@ -153,9 +156,8 @@ describe("drawNextSwissTeamsRound", () => {
     await setup();
     await confirmRound(1);
 
-    const { commitNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+    const { commitNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
 
     // Team 1 placed twice, team 4 missing.
     const invalid = [
@@ -178,27 +180,24 @@ describe("drawNextSwissTeamsRound", () => {
     await setup(1, 1);
     await confirmRound(1);
 
-    const { previewNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+    const { previewNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
     const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "EVENT_COMPLETE" });
   });
 
   it("preview rejects for a non-Swiss-Teams section", async () => {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
     await createGameDb(gameId, 2);
     await setSectionMovement(gameId, "A", {
       source: "MITCHELL",
       mitchell: { tables: 2, rounds: 2, boardsPerRound: 2 },
     });
 
-    const { previewNextSwissTeamsRound } = await import(
-      "@/services/draw-swiss-teams-round-service"
-    );
+    const { previewNextSwissTeamsRound } =
+      await import("@/services/draw-swiss-teams-round-service");
     const result = await previewNextSwissTeamsRound(gameId, "A");
     expect(result).toEqual({ ok: false, reason: "NOT_SWISS_TEAMS" });
   });

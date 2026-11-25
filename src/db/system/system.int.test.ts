@@ -43,7 +43,8 @@ describe("system db", () => {
   });
 
   it("upserts and reads a setting (null when absent)", async () => {
-    const { updateSetting } = await import("@/db/system/actions/update-setting");
+    const { updateSetting } =
+      await import("@/db/system/actions/update-setting");
     const { findSetting } = await import("@/db/system/queries/settings");
 
     expect(await findSetting("theme")).toBeNull();
@@ -56,12 +57,10 @@ describe("system db", () => {
   });
 
   it("creates a share code and claims it once", async () => {
-    const { createShareCode } = await import(
-      "@/db/system/actions/create-share-code"
-    );
-    const { validateAndClaimShareCode } = await import(
-      "@/db/system/queries/validate-share-code"
-    );
+    const { createShareCode } =
+      await import("@/db/system/actions/create-share-code");
+    const { validateAndClaimShareCode } =
+      await import("@/db/system/queries/validate-share-code");
 
     const code = await createShareCode("game-1");
     expect(code).toMatch(/^[A-Z2-9]{6}$/);
@@ -72,13 +71,15 @@ describe("system db", () => {
 
     // Second claim fails: already used.
     const second = await validateAndClaimShareCode(code);
-    expect(second).toEqual({ valid: false, error: "Code has already been used" });
+    expect(second).toEqual({
+      valid: false,
+      error: "Code has already been used",
+    });
   });
 
   it("rejects an unknown share code", async () => {
-    const { validateAndClaimShareCode } = await import(
-      "@/db/system/queries/validate-share-code"
-    );
+    const { validateAndClaimShareCode } =
+      await import("@/db/system/queries/validate-share-code");
     expect(await validateAndClaimShareCode("ZZZZZZ")).toEqual({
       valid: false,
       error: "Invalid code",
@@ -86,9 +87,8 @@ describe("system db", () => {
   });
 
   it("rejects an expired share code", async () => {
-    const { validateAndClaimShareCode } = await import(
-      "@/db/system/queries/validate-share-code"
-    );
+    const { validateAndClaimShareCode } =
+      await import("@/db/system/queries/validate-share-code");
     const db = (await harness.getDb()) as {
       insert: (t: unknown) => { values: (v: unknown) => { run: () => void } };
     };
@@ -111,12 +111,15 @@ describe("system db", () => {
   });
 
   it("creates a login session and recognises the director token", async () => {
-    const { createLoginSession } = await import(
-      "@/db/system/actions/create-login-session"
-    );
+    const { createLoginSession } =
+      await import("@/db/system/actions/create-login-session");
     const { isDirector } = await import("@/db/system/queries/login-sessions");
 
-    await createLoginSession({ token: "tok-1", gameId: "g1", role: "director" });
+    await createLoginSession({
+      token: "tok-1",
+      gameId: "g1",
+      role: "director",
+    });
 
     expect(await isDirector("tok-1")).toBe(true);
     expect(await isDirector("unknown")).toBe(false);
@@ -139,9 +142,8 @@ describe("system db", () => {
   });
 
   it("round-trips the admin key (hashed, verifiable)", async () => {
-    const { adminKeyExists, setAdminKey, verifyAdminKey } = await import(
-      "@/db/system/queries/admin-key"
-    );
+    const { adminKeyExists, setAdminKey, verifyAdminKey } =
+      await import("@/db/system/queries/admin-key");
 
     expect(await adminKeyExists()).toBe(false);
 
@@ -153,14 +155,16 @@ describe("system db", () => {
   });
 
   it("validates an admin token only for an ADMIN login session", async () => {
-    const { createLoginSession } = await import(
-      "@/db/system/actions/create-login-session"
-    );
-    const { validateAdminToken } = await import(
-      "@/db/system/queries/admin-key"
-    );
+    const { createLoginSession } =
+      await import("@/db/system/actions/create-login-session");
+    const { validateAdminToken } =
+      await import("@/db/system/queries/admin-key");
 
-    await createLoginSession({ token: "admin-tok", gameId: null, role: "ADMIN" });
+    await createLoginSession({
+      token: "admin-tok",
+      gameId: null,
+      role: "ADMIN",
+    });
     await createLoginSession({
       token: "dir-tok",
       gameId: "g1",

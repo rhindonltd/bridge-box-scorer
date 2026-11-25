@@ -45,11 +45,17 @@ import { SocketEvents } from "@/socket/socket-events";
 import { POST } from "./route";
 
 function invoke(gameId: string, body: unknown) {
-  const req = new Request(`http://localhost/api/games/${gameId}/sections/split`, {
-    method: "POST",
-    headers: { "x-director-token": "tok", "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const req = new Request(
+    `http://localhost/api/games/${gameId}/sections/split`,
+    {
+      method: "POST",
+      headers: {
+        "x-director-token": "tok",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
   return POST(req, { params: Promise.resolve({ gameId }) } as never);
 }
 

@@ -36,7 +36,7 @@ options.
 | Field             | Description                                   |
 | ----------------- | --------------------------------------------- |
 | **Event Name**    | The name of your event (e.g. "Monday Pairs"). |
-| **Director Name** | Your name.                                     |
+| **Director Name** | Your name.                                    |
 
 Both are required. If you tap **Create Game** with either box empty, the empty
 box is highlighted so you can see what's missing and nothing is created.
@@ -53,12 +53,12 @@ the name as normal.
 
 Below those are the event options:
 
-| Field                   | Description                                                       |
-| ----------------------- | ----------------------------------------------------------------- |
-| **Event Type**          | **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**. The Swiss options are drawn round by round as the event runs (see the Movements tab); the Pairs and Teams options use a fixed movement you pick from a list. |
+| Field                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Event Type**          | **Pairs**, **Teams**, **Swiss Pairs**, or **Swiss Teams**. The Swiss options are drawn round by round as the event runs (see the Movements tab); the Pairs and Teams options use a fixed movement you pick from a list.                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (Aggregate)** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
-| **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
-| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
+| **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 Tap **Create Game**.
 
@@ -150,7 +150,7 @@ From this tab you can:
   - **Without standing** — as above, their results count for opponents but not
     for themselves.
   - **Active** — put a pair back to normal if you marked them by mistake.
-  A small badge on the pair shows its current standing at a glance.
+    A small badge on the pair shows its current standing at a glance.
 - **A pair's phone has died** — you don't need to withdraw them. Open **Pairs**
   from the Manage Game Menu, tap the pair, and choose **Move to a new device**.
   Give the code that appears to the pair; on their new device they open the
@@ -342,18 +342,18 @@ example, to correct a board and then return to enter your own table's result.
 
 ### The Manage Game Menu
 
-| Option                    | What it does                                                              |
-| ------------------------- | ------------------------------------------------------------------------- |
-| **Set Up Game**           | Returns to the Set Up Game menu (Tables, Movement, Timer, Start Game). Shown only before the game starts. |
-| **Travellers**            | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)). |
-| **Deals**                 | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)). |
-| **Movement**              | View or change the movement; in a Swiss event, draw the next round.       |
-| **Timer**                 | The live timer controls: start, pause, step between phases, add or take off time (see [Controlling a running timer](#controlling-a-running-timer)). |
-| **Review Mismatches**     | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)). |
-| **Pairs**                 | Pairs and Swiss Pairs events. Every pair's status, plus per-pair actions such as **Withdraw**, **Mark without standing** and **Move to a new device**. |
-| **Teams**                 | Teams and Swiss Teams events. Every team, grouped by section, with its standing (Active, Withdrawn, Late, No standing) and the pairs that have played for it. Tap a team to change its standing. Substitutes are arranged by the players, up to three pairs per team. |
-| **Finalise Game**         | Check every result is in, then lock the game and move it to **Export Game** (see [Finalising and exporting results](#finalising-and-exporting-results)). Shown once the game has started. |
-| **Delete Game** _(red)_   | Permanently delete the game. This cannot be undone.                       |
+| Option                  | What it does                                                                                                                                                                                                                                                          |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Set Up Game**         | Returns to the Set Up Game menu (Tables, Movement, Timer, Start Game). Shown only before the game starts.                                                                                                                                                             |
+| **Travellers**          | View results by board, correct any that were entered wrong, and make director rulings (see [Correcting results](#correcting-results)).                                                                                                                                |
+| **Deals**               | Enter or correct the dealt cards (the four hands) for any board, or import them all from a dealing machine's PBN file (see [Importing the deals from a PBN file](#importing-the-deals-from-a-pbn-file)).                                                              |
+| **Movement**            | View or change the movement; in a Swiss event, draw the next round.                                                                                                                                                                                                   |
+| **Timer**               | The live timer controls: start, pause, step between phases, add or take off time (see [Controlling a running timer](#controlling-a-running-timer)).                                                                                                                   |
+| **Review Mismatches**   | _Swiss events only._ Check for pairs or teams that were drawn against the wrong opponents after a result was corrected (see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches)).                                                                               |
+| **Pairs**               | Pairs and Swiss Pairs events. Every pair's status, plus per-pair actions such as **Withdraw**, **Mark without standing** and **Move to a new device**.                                                                                                                |
+| **Teams**               | Teams and Swiss Teams events. Every team, grouped by section, with its standing (Active, Withdrawn, Late, No standing) and the pairs that have played for it. Tap a team to change its standing. Substitutes are arranged by the players, up to three pairs per team. |
+| **Finalise Game**       | Check every result is in, then lock the game and move it to **Export Game** (see [Finalising and exporting results](#finalising-and-exporting-results)). Shown once the game has started.                                                                             |
+| **Delete Game** _(red)_ | Permanently delete the game. This cannot be undone.                                                                                                                                                                                                                   |
 
 **Delete Game** is always there. The other options (apart from **Set Up Game**)
 appear once the game has started.
@@ -551,6 +551,7 @@ If a board was entered incorrectly, you can override it:
    Tap the room you want to correct. (A three-way triple's board belongs to one
    of its pairings, so it shows as an ordinary two-team card too; a Pairs game
    shows the usual flat NS/EW list.)
+
 4. Enter the correct result step by step, the same way players enter one
    (contract, or **Pass Out** / **Not Played**). You also get two extra
    director-only options:
@@ -570,17 +571,18 @@ If a board was entered incorrectly, you can override it:
    Depending on the event, the same screen offers rulings that go beyond one
    board's score:
 
-   | Option | Offered in | What it does |
-   | --- | --- | --- |
-   | **Cancel / Foul Board** | Every event | The board can't stand (fouled, mis-dealt and so on). Choose the averages to award, as for an adjusted score (for example AVE+ / AVE−). |
-   | **Mark Played Reversed** / **Clear Reversed** | Every event | The board was played the wrong way round, usually because the arrows weren't switched. See [A board played the wrong way round](#a-board-played-the-wrong-way-round). |
-   | **Board Not Played (Teams)** | Teams and Swiss Teams | The board couldn't be played in this match. Choose who was at fault: the side not at fault gains 3 IMPs on it and the side at fault loses 3 (neither or both at fault: no swing). In Point-a-Board or Board-a-Match, the board is won, lost or tied instead. |
-   | **Void Match (Teams)** | Teams and Swiss Teams | The whole match can't stand. **Incorrect seating / cannot replay** gives each team 40% of the Victory Points (8 of 20), or 60% (12) when the director was at fault. **Less than half played** gives averages by who was at fault. |
-   | **Void Match (Pairs)** | Swiss Pairs | The whole match can't stand. It no longer counts against the rest of the field, and each pair gets averages by who was at fault: the side not at fault AVE+ and the side at fault AVE−, or AVE+ to both if neither was at fault and AVE− to both if both were. |
-   | **Mismatch (Swiss)** | Swiss Pairs and Swiss Teams | The match was drawn against the wrong opponents. Choose which side was mismatched and how — see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches). |
+   | Option                                        | Offered in                  | What it does                                                                                                                                                                                                                                                   |
+   | --------------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+   | **Cancel / Foul Board**                       | Every event                 | The board can't stand (fouled, mis-dealt and so on). Choose the averages to award, as for an adjusted score (for example AVE+ / AVE−).                                                                                                                         |
+   | **Mark Played Reversed** / **Clear Reversed** | Every event                 | The board was played the wrong way round, usually because the arrows weren't switched. See [A board played the wrong way round](#a-board-played-the-wrong-way-round).                                                                                          |
+   | **Board Not Played (Teams)**                  | Teams and Swiss Teams       | The board couldn't be played in this match. Choose who was at fault: the side not at fault gains 3 IMPs on it and the side at fault loses 3 (neither or both at fault: no swing). In Point-a-Board or Board-a-Match, the board is won, lost or tied instead.   |
+   | **Void Match (Teams)**                        | Teams and Swiss Teams       | The whole match can't stand. **Incorrect seating / cannot replay** gives each team 40% of the Victory Points (8 of 20), or 60% (12) when the director was at fault. **Less than half played** gives averages by who was at fault.                              |
+   | **Void Match (Pairs)**                        | Swiss Pairs                 | The whole match can't stand. It no longer counts against the rest of the field, and each pair gets averages by who was at fault: the side not at fault AVE+ and the side at fault AVE−, or AVE+ to both if neither was at fault and AVE− to both if both were. |
+   | **Mismatch (Swiss)**                          | Swiss Pairs and Swiss Teams | The match was drawn against the wrong opponents. Choose which side was mismatched and how — see [Reviewing Swiss mismatches](#reviewing-swiss-mismatches).                                                                                                     |
 
    The rulings that affect a whole match (Void Match, Mismatch) apply to every
    board of that match, whichever board you opened.
+
 5. The correction is saved, and anyone viewing that board sees the updated
    result.
 
@@ -683,15 +685,15 @@ the order they appear in the file.
 
 **If something goes wrong**
 
-| What you see | What it means |
-| --- | --- |
-| "That file is too large to be a PBN deal file." | The file isn't a normal deal file. Check you picked the right one. |
-| "Could not read that file. Try pasting its text instead." | Your device couldn't open the file. Copy its text and paste it instead. |
-| "Deal is incomplete (one or more hands are not given)" | The file has a board with a missing hand. Fix the hand with **Deals** after importing the others. |
-| "Board {n} appears more than once; the first one was used" | The file lists the same board twice. Only the first is imported. |
-| "Game has no Board number" or "Invalid board number" | Some boards have no usable number while others do. Fix the file, or enter that board by hand. |
-| "Game has no Deal" | A board in the file has no hands. |
-| "Board {n} is not a complete deal" after tapping Import | The Bridge Box rejected the deal, and **nothing** was imported. Fix the file and try again. |
+| What you see                                                                                   | What it means                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "That file is too large to be a PBN deal file."                                                | The file isn't a normal deal file. Check you picked the right one.                                                                                         |
+| "Could not read that file. Try pasting its text instead."                                      | Your device couldn't open the file. Copy its text and paste it instead.                                                                                    |
+| "Deal is incomplete (one or more hands are not given)"                                         | The file has a board with a missing hand. Fix the hand with **Deals** after importing the others.                                                          |
+| "Board {n} appears more than once; the first one was used"                                     | The file lists the same board twice. Only the first is imported.                                                                                           |
+| "Game has no Board number" or "Invalid board number"                                           | Some boards have no usable number while others do. Fix the file, or enter that board by hand.                                                              |
+| "Game has no Deal"                                                                             | A board in the file has no hands.                                                                                                                          |
+| "Board {n} is not a complete deal" after tapping Import                                        | The Bridge Box rejected the deal, and **nothing** was imported. Fix the file and try again.                                                                |
 | "Failed to import the deals", "Failed to save deals", or "Timeout waiting for deal:importBulk" | The import didn't complete, usually because the connection dropped. Nothing was imported, and the file or text you chose is still there; tap Import again. |
 
 ---

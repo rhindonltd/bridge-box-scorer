@@ -11,9 +11,7 @@ export interface SkipMitchellMovementSpec extends MitchellMovementSpec {
   skip: true;
 }
 
-export function generateSkipMitchell(
-  spec: SkipMitchellMovementSpec,
-): Tables {
+export function generateSkipMitchell(spec: SkipMitchellMovementSpec): Tables {
   validateMitchellSpec(spec);
 
   const { tables, rounds } = spec;

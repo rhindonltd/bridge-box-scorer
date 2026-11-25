@@ -6,24 +6,22 @@ import { boards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { findSections } from "@/db/games/queries/find-sections";
 import {
-  readParticipantStandings,
+  applySeatSwaps,
+  applyAbsences,
+  pairsStandingsForRanking,
   resolveStandings,
-} from "@/db/games/queries/ranking-exclusions";
+  buildOccupantScoredIdResolver,
+} from "@/modules/rulings";
+import { readParticipantStandings } from "@/db/games/queries/ranking-exclusions";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import {
   readSeatOccupancies,
-  buildOccupantScoredIdResolver,
   findNonPrimaryOccupantPairs,
 } from "@/db/games/queries/seat-occupancy";
 import { players } from "@/db/games/tables/players";
-import { applyTeamWithdrawalRulings } from "@/scoring/swiss/team-withdrawal";
+import { applyTeamWithdrawalRulings } from "@/modules/scoring";
 import { readAbsences } from "@/db/games/queries/absences";
 import type { Absences } from "@/model/absence";
-import { applySeatSwaps } from "@/model/seat-swap";
-import {
-  applyAbsences,
-  pairsStandingsForRanking,
-} from "@/services/absent-board-rows";
 import { sectionOf } from "@/model/participants";
 import { stripSectionPrefix } from "@/model/pair-label";
 import { Club } from "@/db/system/schema";

@@ -186,7 +186,9 @@ describe("SwissTeamsDrawPreview", () => {
   });
 
   it("flags a repeat match and shows the advisory", () => {
-    setup(matchesAck({ advisoryInputs: { teams: 4, playedOpponents: ["1-3"] } }));
+    setup(
+      matchesAck({ advisoryInputs: { teams: 4, playedOpponents: ["1-3"] } }),
+    );
     expect(screen.getByTestId("draw-advisories")).toBeInTheDocument();
     expect(screen.getByText("Repeat — check this match")).toBeInTheDocument();
     expect(screen.getAllByTestId("teams-match")[0]).toHaveAttribute(

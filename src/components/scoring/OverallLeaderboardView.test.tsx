@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { OverallLeaderboardView } from "./OverallLeaderboardView";
-import type { ScoreTable } from "@/scoring/table/score-table";
-import type { OverallScoringPlugin } from "@/scoring/plugins/types";
+import type { ScoreTable } from "@/modules/scoring/table/score-table";
+import type { OverallScoringPlugin } from "@/modules/scoring/plugins/types";
 import type { AssignedPair } from "@/model/participants";
 
 function tableWith(label: string): ScoreTable {

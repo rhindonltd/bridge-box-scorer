@@ -93,9 +93,7 @@ describe("findSubstitutionSeats", () => {
     await seatStandIn(db);
     await layBoards(db, [1, 2, 3, 4], [1, 2]);
 
-    const { findSubstitutionSeats } = await import(
-      "./find-substitution-seats"
-    );
+    const { findSubstitutionSeats } = await import("./find-substitution-seats");
     expect(await findSubstitutionSeats(db)).toEqual([]);
   });
 
@@ -115,9 +113,7 @@ describe("findSubstitutionSeats", () => {
       secretKey: "real-secret",
     });
 
-    const { findSubstitutionSeats } = await import(
-      "./find-substitution-seats"
-    );
+    const { findSubstitutionSeats } = await import("./find-substitution-seats");
     const list = await findSubstitutionSeats(db);
 
     // The arriving (anchor) pair finished the session: it played boards 3-4;
@@ -159,17 +155,14 @@ describe("findSubstitutionSeats", () => {
       secretKey: "real-secret",
     });
 
-    const { findSubstitutionSeats } = await import(
-      "./find-substitution-seats"
-    );
+    const { findSubstitutionSeats } = await import("./find-substitution-seats");
     const before = await findSubstitutionSeats(db);
     const earlierId = before[0].occupants.find((o) => !o.isArrivalAnchor)!.id;
     const anchorId = before[0].occupants.find((o) => o.isArrivalAnchor)!.id;
 
     // Split the seat and mark the earlier pair ineligible.
-    const { setSubstitutionOptions } = await import(
-      "@/db/games/actions/set-substitution-options"
-    );
+    const { setSubstitutionOptions } =
+      await import("@/db/games/actions/set-substitution-options");
     await setSubstitutionOptions(gameId, "A1NS", {
       split: true,
       eligibility: [

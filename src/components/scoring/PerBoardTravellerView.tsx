@@ -2,7 +2,7 @@
 
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
 import { PluginViewSwitcher } from "@/components/scoring/PluginViewSwitcher";
-import { PerBoardScoringPlugin } from "@/scoring/plugins/types";
+import { PerBoardScoringPlugin } from "@/modules/scoring";
 
 type Props = {
   plugin: PerBoardScoringPlugin<unknown>;

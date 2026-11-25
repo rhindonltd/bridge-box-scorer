@@ -41,9 +41,7 @@ export async function getDealHands(
  * Read every stored deal for the game as a map from board number to parsed
  * hands. Used by the USEBIO export to attach deals to board groups in one read.
  */
-export async function getAllDealHands(
-  db: Db,
-): Promise<Map<number, Deal>> {
+export async function getAllDealHands(db: Db): Promise<Map<number, Deal>> {
   const rows = await db.select().from(deals);
   const map = new Map<number, Deal>();
   for (const row of rows) {

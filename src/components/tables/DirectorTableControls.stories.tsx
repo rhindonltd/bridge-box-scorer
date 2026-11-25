@@ -74,7 +74,12 @@ export const Default: Story = {
 export const LongNames: Story = {
   args: {
     tables: [
-      { tableNumber: 1, players: longNamePlayers, seats: emptySeats, pairSeats },
+      {
+        tableNumber: 1,
+        players: longNamePlayers,
+        seats: emptySeats,
+        pairSeats,
+      },
     ],
   },
 };

@@ -2,9 +2,7 @@ import { OverallScoreAndParticipant } from "@/model/leaderboard";
 import { TeamOverallLeaderboardView } from "@/components/leaderboard/TeamOverallLeaderboardView";
 import { OverallLeaderboardView } from "@/components/scoring/OverallLeaderboardView";
 import { ScoreTableView } from "@/components/scoring/ScoreTableView";
-import { buildSwissVpTable } from "@/scoring/swiss/swiss-vp-view";
-import { getOverallPlugin } from "@/scoring/plugins/registry";
-import "@/scoring/plugins/register";
+import { getOverallPlugin, buildSwissVpTable } from "@/modules/scoring";
 
 type Props = {
   overallScoreAndParticipant: OverallScoreAndParticipant;

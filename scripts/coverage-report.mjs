@@ -27,15 +27,22 @@ for (const [t, byB] of Object.entries(j.recommendations)) {
       const res = resolveRecommendationDescriptor(entry, catalog);
       if (res.resolved) resolved++;
       else if (res.excluded) excluded++;
-      else gaps.push(`${t}t/${b}b ${r.movement} ${r.rounds}x${Math.round(r.boardsPerRound)}: ${res.reason}`);
+      else
+        gaps.push(
+          `${t}t/${b}b ${r.movement} ${r.rounds}x${Math.round(r.boardsPerRound)}: ${res.reason}`,
+        );
     }
   }
 }
 console.log(`Total non-null entries: ${total}`);
 console.log(`Resolved:  ${resolved}`);
-console.log(`Excluded:  ${excluded} (out of scope: Twin, Twin Skip, Beynon, Hybrid)`);
+console.log(
+  `Excluded:  ${excluded} (out of scope: Twin, Twin Skip, Beynon, Hybrid)`,
+);
 console.log(`Gaps:      ${gaps.length}`);
 if (gaps.length) {
-  console.log("\n--- Remaining gaps (missing seeded spec at these tables/rounds) ---");
+  console.log(
+    "\n--- Remaining gaps (missing seeded spec at these tables/rounds) ---",
+  );
   for (const g of gaps) console.log("  " + g);
 }

@@ -39,9 +39,7 @@ export interface WebMitchellMovementSpec extends MitchellMovementSpec {
  * copy is what distinguishes those otherwise-identical instances. It is emitted
  * per (table, round) as `boardCopy` and persisted at materialization.
  */
-export function generateWebMitchell(
-  spec: WebMitchellMovementSpec,
-): Tables {
+export function generateWebMitchell(spec: WebMitchellMovementSpec): Tables {
   return spec.tables % 2 === 0
     ? generateWebMitchellEven(spec)
     : generateWebMitchellOdd(spec);
@@ -64,9 +62,7 @@ function ewDistance(round: number, rounds: number): number {
   return round - 1 + extraSkip;
 }
 
-function generateWebMitchellEven(
-  spec: WebMitchellMovementSpec,
-): Tables {
+function generateWebMitchellEven(spec: WebMitchellMovementSpec): Tables {
   const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);
@@ -111,9 +107,7 @@ function generateWebMitchellEven(
 /** Physical-copy labels, assigned by band for the odd-table Web. */
 const COPY_LABELS = ["A", "B", "C", "D"];
 
-function generateWebMitchellOdd(
-  spec: WebMitchellMovementSpec,
-): Tables {
+function generateWebMitchellOdd(spec: WebMitchellMovementSpec): Tables {
   const { tables, rounds } = spec;
 
   validateMitchellSpec(spec);

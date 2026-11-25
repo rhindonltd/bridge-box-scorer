@@ -10,5 +10,7 @@
  * footer button rather than a shared action bar.
  */
 export function FillContent({ children }: { children: React.ReactNode }) {
-  return <div className="relative flex-1 flex flex-col min-h-0">{children}</div>;
+  return (
+    <div className="relative flex-1 flex flex-col min-h-0">{children}</div>
+  );
 }

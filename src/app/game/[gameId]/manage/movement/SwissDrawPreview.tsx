@@ -12,7 +12,6 @@ import {
   type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
 
-
 const primaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";
 
@@ -145,9 +144,13 @@ export function SwissDrawPreview({
   const anchorLabel = () =>
     preview.halfMatch ? shortLabel(preview.halfMatch.group.anchor) : "";
   const halfOneLabel = () =>
-    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfOneOpponent) : "";
+    preview.halfMatch
+      ? shortLabel(preview.halfMatch.group.halfOneOpponent)
+      : "";
   const halfTwoLabel = () =>
-    preview.halfMatch ? shortLabel(preview.halfMatch.group.halfTwoOpponent) : "";
+    preview.halfMatch
+      ? shortLabel(preview.halfMatch.group.halfTwoOpponent)
+      : "";
   /* v8 ignore stop */
 
   // Running VP total per pair, from the standings the draw ranked on. Shown on
@@ -206,153 +209,165 @@ export function SwissDrawPreview({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="swiss-draw-preview">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      data-testid="swiss-draw-preview"
+    >
       <div className="shrink-0 border-b border-gray-200 bg-gray-100 px-4 py-3 text-center font-semibold text-gray-800">
         Round {preview.roundNumber} — review draw
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-      <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-4">
-        <p className="mb-3 text-sm text-gray-600">
-          Review the draw for round {preview.roundNumber}. Tap two pairs to swap
-          their seats
-          {sitOutPairId != null
-            ? ", or tap a pair then the sit-out slot to give it the bye"
-            : ""}
-          . Stationary pairs (amber) stay put and can&apos;t be moved. Each pair
-          shows its current total (the order the draw ranks on). Nothing is saved
-          until you tap OK.
-        </p>
+        <div className="mx-auto w-full max-w-2xl px-4 pt-4 pb-4">
+          <p className="mb-3 text-sm text-gray-600">
+            Review the draw for round {preview.roundNumber}. Tap two pairs to
+            swap their seats
+            {sitOutPairId != null
+              ? ", or tap a pair then the sit-out slot to give it the bye"
+              : ""}
+            . Stationary pairs (amber) stay put and can&apos;t be moved. Each
+            pair shows its current total (the order the draw ranks on). Nothing
+            is saved until you tap OK.
+          </p>
 
-        {advisoryMessages.length > 0 && (
-          <div
-            className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800"
-            role="status"
-            data-testid="draw-advisories"
-          >
-            <ul className="list-disc pl-5">
-              {advisoryMessages.map((m) => (
-                <li key={m}>{m}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+          {advisoryMessages.length > 0 && (
+            <div
+              className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800"
+              role="status"
+              data-testid="draw-advisories"
+            >
+              <ul className="list-disc pl-5">
+                {advisoryMessages.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-        <div className="flex flex-col gap-3">
-          {seating.map((table) => {
-            const hasProblem = problemTables.has(table.tableNumber);
-            return (
-              <div
-                key={table.tableNumber}
-                data-testid={`table-card-${table.tableNumber}`}
-                data-problem={hasProblem ? "true" : undefined}
-                className={`rounded-xl border bg-white p-3 shadow-sm ${
-                  hasProblem
-                    ? "border-amber-400 ring-2 ring-amber-400"
-                    : "border-gray-200"
+          <div className="flex flex-col gap-3">
+            {seating.map((table) => {
+              const hasProblem = problemTables.has(table.tableNumber);
+              return (
+                <div
+                  key={table.tableNumber}
+                  data-testid={`table-card-${table.tableNumber}`}
+                  data-problem={hasProblem ? "true" : undefined}
+                  className={`rounded-xl border bg-white p-3 shadow-sm ${
+                    hasProblem
+                      ? "border-amber-400 ring-2 ring-amber-400"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-500">
+                      Table {table.tableNumber}
+                    </span>
+                    {hasProblem && (
+                      <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
+                        Check this table
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <PairChip
+                      label="N/S"
+                      names={nameLines(table.ns)}
+                      total={totalFor(table.ns)}
+                      stationary={isStationary(table.ns)}
+                      selected={selected === table.ns}
+                      onClick={() => pickPair(table.ns)}
+                    />
+                    <PairChip
+                      label="E/W"
+                      names={nameLines(table.ew)}
+                      total={totalFor(table.ew)}
+                      stationary={isStationary(table.ew)}
+                      selected={selected === table.ew}
+                      onClick={() => pickPair(table.ew)}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+
+            {sitOutPairId != null && (
+              <button
+                type="button"
+                onClick={pickBye}
+                disabled={selected == null}
+                data-testid="draw-bye"
+                className={`rounded-xl border border-dashed p-3 text-left transition ${
+                  selected == null
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-blue-400 bg-blue-50 hover:bg-blue-100"
                 }`}
               >
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-gray-500">
-                    Table {table.tableNumber}
+                <div className="-mx-3 -mt-3 mb-2 flex items-baseline justify-between gap-2 rounded-t-xl bg-gray-200 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-gray-600">
+                    Sitting out (bye)
                   </span>
-                  {hasProblem && (
-                    <span className="rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950">
-                      Check this table
+                  {totalFor(sitOutPairId) != null && (
+                    <span className="text-xs font-medium text-gray-600 tabular-nums">
+                      {totalFor(sitOutPairId)!.toFixed(2)} VP
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <PairChip
-                    label="N/S"
-                    names={nameLines(table.ns)}
-                    total={totalFor(table.ns)}
-                    stationary={isStationary(table.ns)}
-                    selected={selected === table.ns}
-                    onClick={() => pickPair(table.ns)}
-                  />
-                  <PairChip
-                    label="E/W"
-                    names={nameLines(table.ew)}
-                    total={totalFor(table.ew)}
-                    stationary={isStationary(table.ew)}
-                    selected={selected === table.ew}
-                    onClick={() => pickPair(table.ew)}
-                  />
-                </div>
-              </div>
-            );
-          })}
-
-          {sitOutPairId != null && (
-            <button
-              type="button"
-              onClick={pickBye}
-              disabled={selected == null}
-              data-testid="draw-bye"
-              className={`rounded-xl border border-dashed p-3 text-left transition ${
-                selected == null
-                  ? "border-gray-200 bg-gray-50"
-                  : "border-blue-400 bg-blue-50 hover:bg-blue-100"
-              }`}
-            >
-              <div className="-mx-3 -mt-3 mb-2 flex items-baseline justify-between gap-2 rounded-t-xl bg-gray-200 px-3 py-1.5">
-                <span className="text-xs font-semibold text-gray-600">
-                  Sitting out (bye)
-                </span>
-                {totalFor(sitOutPairId) != null && (
-                  <span className="text-xs font-medium text-gray-600 tabular-nums">
-                    {totalFor(sitOutPairId)!.toFixed(2)} VP
-                  </span>
+                {nameLines(sitOutPairId).map((n, i) => (
+                  <div key={i} className="text-sm text-gray-800">
+                    {n}
+                  </div>
+                ))}
+                {selected != null && (
+                  <div className="mt-1 text-xs text-blue-700">
+                    Tap to give the bye to the selected pair
+                  </div>
                 )}
-              </div>
-              {nameLines(sitOutPairId).map((n, i) => (
-                <div key={i} className="text-sm text-gray-800">
-                  {n}
-                </div>
-              ))}
-              {selected != null && (
-                <div className="mt-1 text-xs text-blue-700">
-                  Tap to give the bye to the selected pair
-                </div>
-              )}
-            </button>
-          )}
+              </button>
+            )}
 
-          {preview.halfMatch != null && (
-            <div
-              data-testid="draw-half-match"
-              className="rounded-xl border border-indigo-300 bg-indigo-50 p-3"
+            {preview.halfMatch != null && (
+              <div
+                data-testid="draw-half-match"
+                className="rounded-xl border border-indigo-300 bg-indigo-50 p-3"
+              >
+                <div className="-mx-3 -mt-3 mb-2 rounded-t-xl bg-indigo-200 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-indigo-900">
+                    2 half matches — table {preview.halfMatch.anchorTable}
+                  </span>
+                </div>
+                <p className="mb-2 text-xs text-indigo-800">
+                  {anchorLabel()} plays the whole round at table{" "}
+                  {preview.halfMatch.anchorTable}: {halfOneLabel()} in the first
+                  half, then {halfTwoLabel()} swaps in for the second half.
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  <HalfMatchRow
+                    role="Anchor (plays both halves)"
+                    names={nameLines(preview.halfMatch.group.anchor)}
+                  />
+                  <HalfMatchRow
+                    role="First half"
+                    names={nameLines(preview.halfMatch.group.halfOneOpponent)}
+                  />
+                  <HalfMatchRow
+                    role="Second half"
+                    names={nameLines(preview.halfMatch.group.halfTwoOpponent)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <p
+              className="mt-3 text-sm font-medium text-red-700"
+              role="alert"
+              data-testid="draw-error"
             >
-              <div className="-mx-3 -mt-3 mb-2 rounded-t-xl bg-indigo-200 px-3 py-1.5">
-                <span className="text-xs font-semibold text-indigo-900">
-                  2 half matches — table {preview.halfMatch.anchorTable}
-                </span>
-              </div>
-              <p className="mb-2 text-xs text-indigo-800">
-                {anchorLabel()} plays the whole round at table{" "}
-                {preview.halfMatch.anchorTable}: {halfOneLabel()} in the first
-                half, then {halfTwoLabel()} swaps in for the second half.
-              </p>
-              <div className="flex flex-col gap-1.5">
-                <HalfMatchRow role="Anchor (plays both halves)" names={nameLines(preview.halfMatch.group.anchor)} />
-                <HalfMatchRow role="First half" names={nameLines(preview.halfMatch.group.halfOneOpponent)} />
-                <HalfMatchRow role="Second half" names={nameLines(preview.halfMatch.group.halfTwoOpponent)} />
-              </div>
-            </div>
+              {error}
+            </p>
           )}
         </div>
-
-        {error && (
-          <p
-            className="mt-3 text-sm font-medium text-red-700"
-            role="alert"
-            data-testid="draw-error"
-          >
-            {error}
-          </p>
-        )}
-      </div>
       </div>
 
       <div className="shrink-0 border-t border-gray-200 p-2">

@@ -36,9 +36,9 @@ export async function openDirectorTraveller(
   }).toPass({ timeout: 20000 });
 
   await boardButton.click();
-  await expect(
-    page.getByText("Tap a row to adjust the result"),
-  ).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("Tap a row to adjust the result")).toBeVisible({
+    timeout: 15000,
+  });
 }
 
 /**
@@ -87,7 +87,8 @@ function declarerLabel(spec: OverrideContractSpec): string {
 }
 
 function resultLabel(result: OverrideContractSpec["result"]): string {
-  if (result.mode === "made") return result.value === 0 ? "=" : `+${result.value}`;
+  if (result.mode === "made")
+    return result.value === 0 ? "=" : `+${result.value}`;
   return `-${result.value}`;
 }
 
@@ -106,14 +107,18 @@ export async function overrideRowToContract(
   await page.getByTestId(rowTestId).click();
 
   // Hub: choose "Enter Contract" to begin the Level→…→Confirm flow.
-  await page.getByRole("button", { name: "Enter Contract", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Enter Contract", exact: true })
+    .click();
 
   // Step: Level.
   await clickButtonByText(page, String(spec.level));
   // Step: Suit.
   await clickButtonByText(
     page,
-    spec.suit === "NT" ? `${spec.level}NT` : `${spec.level}${SUIT_GLYPH[spec.suit]}`,
+    spec.suit === "NT"
+      ? `${spec.level}NT`
+      : `${spec.level}${SUIT_GLYPH[spec.suit]}`,
   );
   // Step: Declarer (apply doubling toggle first).
   const dbl = spec.doubling ?? "";
@@ -171,7 +176,9 @@ export async function overrideRowToAdjusted(
   await page.getByTestId(rowTestId).click();
 
   // The hub exposes the "Adjusted Score" branch.
-  await page.getByRole("button", { name: "Adjusted Score", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Adjusted Score", exact: true })
+    .click();
 
   // Custom entry: fill NS%/EW% and submit (covers arbitrary splits).
   await page.locator("#ns-percent").fill(String(nsPercent));
@@ -198,11 +205,15 @@ export async function overrideRowToAdjustedPreset(
   await page.getByTestId(rowTestId).click();
 
   // The hub exposes the "Adjusted Score" branch.
-  await page.getByRole("button", { name: "Adjusted Score", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Adjusted Score", exact: true })
+    .click();
 
   // Tap the preset whose parenthetical split matches, e.g. "(60/40)".
   await page
-    .getByRole("button", { name: new RegExp(`\\(${nsPercent}/${ewPercent}\\)`) })
+    .getByRole("button", {
+      name: new RegExp(`\\(${nsPercent}/${ewPercent}\\)`),
+    })
     .click();
 
   await page.waitForURL(/\/game\/[^/]+\/manage$/, { timeout: 15000 });

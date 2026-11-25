@@ -10,7 +10,7 @@ under `src/app`, HTTP handlers under `src/app/api`, and Socket.IO events under
 `src/socket`).
 
 The bulk of this file is the **gap list**: functionality that has **no E2E
-coverage**, with enough detail to act on each item. A short summary of what *is*
+coverage**, with enough detail to act on each item. A short summary of what _is_
 covered is included first for context.
 
 ## How to read this
@@ -139,21 +139,21 @@ below:
   expected figure is worked out by hand and recorded beside the assertion
   (`fixtures/scoring-scenarios.ts`); a few boards are then played by real pairs
   through the app and their scored traveller read back.
-  - *Cross-IMPs (pairs):* the NS/EW standings to two decimals, a board's
+  - _Cross-IMPs (pairs):_ the NS/EW standings to two decimals, a board's
     traveller (each line's cross-IMPs, cancelling to zero), a director's
     correction re-scoring a mounted display live, a withdrawn pair under the
     default AVE-/AVE+ (-3 / +3 per missed board) and under Remove, and choosing
     Cross-IMPs on the create form.
-  - *Teams:* IMP (Aggregate) per-round and total net IMPs; Board-a-Match and
+  - _Teams:_ IMP (Aggregate) per-round and total net IMPs; Board-a-Match and
     Point-a-Board shares with a shared first place; IMP (Victory Points) with a
     10-10 tie, a 20-0 blitz and two published-table values over 5 boards (a 10
     IMP margin is 15-5, a 9 IMP margin 14-6); the director traveller's per-match
     IMP swing; the create form's Teams scoring list (IMP, IMP Victory Points and
     the region's board-comparison method) and saving each choice.
-  - *Matchpoints and Neuberg (§4.2.3.2):* exact standings with and without
+  - _Matchpoints and Neuberg (§4.2.3.2):_ exact standings with and without
     short boards, and a short board played live (the traveller shows the board's
     own field; the scaling to the full top is applied in the standings).
-  - *Invariants:* on the default spread of results, matchpoint shares average
+  - _Invariants:_ on the default spread of results, matchpoint shares average
     50%, cross-IMPs cancel, aggregate IMPs are zero-sum, board-comparison shares
     average 50%, every VP match totals 20, and every ranking is consistent with
     its own figures.
@@ -252,8 +252,8 @@ below:
   (`completed-game-redirect.journey.ts`).
 - **Settings/device**: admin-key gate + verify + full update cycle + logout
   re-gate + validate contract (`admin-key.journey.ts`); WiFi capability-aware UI
-  + admin-gated scan (`wifi-settings.journey.ts`, `settings.spec.ts`); club info
-  page + API (`club-settings.spec.ts`, `settings-menu.spec.ts`).
+  - admin-gated scan (`wifi-settings.journey.ts`, `settings.spec.ts`); club info
+    page + API (`club-settings.spec.ts`, `settings-menu.spec.ts`).
 - **Auth**: director socket + HTTP 401s, admin 401s, intentionally-open events
   (`authorization.journey.ts`).
 - **HTTP API contract**: games reads/404s, movements 400/404, players search,
@@ -487,7 +487,7 @@ reachable or are timing-fragile in a browser:
 
 - **Error boundary** (`src/app/error.test.tsx`) — no clean UI throw path
   (unknown games call `notFound()`, not `throw`).
-- **Leaderboard / traveller empty-state copy** — not reachable for a *started*
+- **Leaderboard / traveller empty-state copy** — not reachable for a _started_
   game (boards always have round instances / a non-null snapshot with zero rows);
   unit-covered (`DisplayLeaderboardPage.test.tsx`, `Traveller.test.tsx`).
 - **Invalid break-timing alert** — wall-clock-projection fragile; unit-covered

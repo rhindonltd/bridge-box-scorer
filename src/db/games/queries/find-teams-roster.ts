@@ -15,10 +15,7 @@ export const TEAM_MAX_PAIRS = 3;
 
 /** A team's standing on the roster (the lifecycle facts the director edits). */
 export type TeamRosterStatus =
-  | "ACTIVE"
-  | "WITHDRAWN"
-  | "LATE"
-  | "WITHOUT_STANDING";
+  "ACTIVE" | "WITHDRAWN" | "LATE" | "WITHOUT_STANDING";
 
 /** One of a team's two seats and every pair that has sat it. */
 export interface TeamRosterSeat {

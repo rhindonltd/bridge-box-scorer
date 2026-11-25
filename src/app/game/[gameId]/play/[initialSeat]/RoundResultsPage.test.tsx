@@ -6,7 +6,7 @@ vi.mock("./useRoundResults", () => ({
   useRoundResults: (...a: unknown[]) => mockUseRoundResults(...a),
 }));
 const mockBuild = vi.fn();
-vi.mock("@/scoring/swiss/team-board-result-view", () => ({
+vi.mock("@/modules/scoring/swiss/team-board-result-view", () => ({
   buildTeamBoardResultTable: (...a: unknown[]) => mockBuild(...a),
 }));
 vi.mock("@/components/scoring/ScoreTableView", () => ({

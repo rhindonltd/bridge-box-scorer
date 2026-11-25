@@ -229,9 +229,10 @@ export function SwissTeamsSetupForm({
                 className="mt-0.5"
               />
               <span>
-                <span className="font-medium">Bye</span> — one team sits out each
-                round (the bottom table first, then the lowest-ranked team that
-                hasn&apos;t had a bye) and is credited an average-plus result.
+                <span className="font-medium">Bye</span> — one team sits out
+                each round (the bottom table first, then the lowest-ranked team
+                that hasn&apos;t had a bye) and is credited an average-plus
+                result.
               </span>
             </label>
 
@@ -293,9 +294,7 @@ export function SwissTeamsSetupForm({
                       const value = plan[i] ?? "SHORT";
                       return (
                         <tr key={i} className="border-t border-gray-100">
-                          <td className="px-2 py-1.5 text-gray-700">
-                            {i + 1}
-                          </td>
+                          <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
                           <td className="px-2 py-1.5 text-center">
                             <input
                               type="radio"

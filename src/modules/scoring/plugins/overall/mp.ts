@@ -1,0 +1,63 @@
+import { calculateOverallMPResults } from "@/modules/scoring/overall/pair/mp";
+import { PairMatchpointOverallScore } from "@/model/leaderboard";
+import { ScoredTravellerOfType } from "@/modules/scoring/overall/scored-traveller";
+import {
+  ScoreTable,
+  multilineCell,
+  numberCell,
+  textCell,
+} from "@/modules/scoring/table/score-table";
+import {
+  OverallScoringPlugin,
+  OverallView,
+} from "@/modules/scoring/plugins/types";
+import { pairNameLines } from "./pair-names";
+import { rankCell } from "./overall-view";
+
+type MpScored = ScoredTravellerOfType<"PAIR_MP">;
+type MpOverall = PairMatchpointOverallScore;
+
+const mpView: OverallView<MpOverall> = {
+  id: "matchpoints",
+  label: "MP",
+  toTable(leaderboard, participants): ScoreTable {
+    return {
+      columns: [{ label: "Rank" }, { label: "Pair" }, { label: "MP" }],
+      rows: leaderboard.lines.map((row) => ({
+        highlightIds: [row.pairId],
+        cells: [
+          rankCell(row),
+          multilineCell(pairNameLines(participants, row.pairId)),
+          textCell(`${row.totalMP}/${row.maxMP}`),
+        ],
+      })),
+    };
+  },
+};
+
+const percentageView: OverallView<MpOverall> = {
+  id: "percentage",
+  label: "%",
+  toTable(leaderboard, participants): ScoreTable {
+    return {
+      columns: [{ label: "Rank" }, { label: "Pair" }, { label: "%" }],
+      rows: leaderboard.lines.map((row) => ({
+        highlightIds: [row.pairId],
+        cells: [
+          rankCell(row),
+          multilineCell(pairNameLines(participants, row.pairId)),
+          // Before any board is played (maxMP === 0) show the conventional 50%
+          // starting point rather than 0%.
+          numberCell(row.maxMP === 0 ? 50 : (row.totalMP / row.maxMP) * 100, 2),
+        ],
+      })),
+    };
+  },
+};
+
+export const mpOverallPlugin: OverallScoringPlugin<MpScored, MpOverall> = {
+  id: "MP",
+  aggregate: (scoredTravellers) => calculateOverallMPResults(scoredTravellers),
+  // Percentage first matches the previous leaderboard default (Toggle "on"="%").
+  views: [percentageView, mpView],
+};

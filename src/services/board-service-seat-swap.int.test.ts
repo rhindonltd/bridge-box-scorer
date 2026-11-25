@@ -5,7 +5,10 @@ import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
 import { makeBoard, seedFixtureMatch } from "@/mocks/fixtures/db-rows";
 import type { BoardOutcome } from "@/model/score";
-import { computeImps, outcomeToScore } from "@/scoring/traveller/common";
+import {
+  computeImps,
+  outcomeToScore,
+} from "@/modules/scoring/traveller/common";
 
 // Board 1 scores for the open (table 1) and closed (table 2) rooms.
 const OPEN = () => outcomeToScore(1, "4HN=" as BoardOutcome)!;
@@ -73,9 +76,8 @@ describe("board-service — played-reversed boards", () => {
 
     it("restores the original attribution once the flag is cleared", async () => {
       const db = await seed(true);
-      const { setBoardSeatsSwapped } = await import(
-        "@/db/games/actions/set-board-result"
-      );
+      const { setBoardSeatsSwapped } =
+        await import("@/db/games/actions/set-board-result");
       const { getBoardInstances } = await import("@/services/board-service");
 
       await setBoardSeatsSwapped(
@@ -94,12 +96,10 @@ describe("board-service — played-reversed boards", () => {
     /** Materialise teams 1 v 2 (1 board) with open 4H= / closed 3NT=. */
     async function seedTeams() {
       const db = (await harness.getDb()) as Db;
-      const { createSection } = await import(
-        "@/db/games/actions/create-section"
-      );
-      const { materializeSwissTeamsRound } = await import(
-        "@/services/materialize-swiss-teams-round"
-      );
+      const { createSection } =
+        await import("@/db/games/actions/create-section");
+      const { materializeSwissTeamsRound } =
+        await import("@/services/materialize-swiss-teams-round");
       const { boards } = await import("@/db/games/tables/boards");
 
       await createSection(harness.gameId, { section: "A", tables: 2 });
@@ -128,9 +128,8 @@ describe("board-service — played-reversed boards", () => {
     }
 
     async function swapTable(db: Db, tableNumber: number) {
-      const { setBoardSeatsSwapped } = await import(
-        "@/db/games/actions/set-board-result"
-      );
+      const { setBoardSeatsSwapped } =
+        await import("@/db/games/actions/set-board-result");
       await setBoardSeatsSwapped(
         db,
         { roundNumber: 1, tableNumber, boardNumber: 1 },
@@ -139,9 +138,8 @@ describe("board-service — played-reversed boards", () => {
     }
 
     async function margin(db: Db) {
-      const { buildTeamTravellerMatches } = await import(
-        "@/services/board-service"
-      );
+      const { buildTeamTravellerMatches } =
+        await import("@/services/board-service");
       return (await buildTeamTravellerMatches(db, 1))[0].margin;
     }
 
@@ -167,9 +165,8 @@ describe("board-service — played-reversed boards", () => {
     it("returns to the original margin when the flag is cleared", async () => {
       const db = await seedTeams();
       await swapTable(db, 1);
-      const { setBoardSeatsSwapped } = await import(
-        "@/db/games/actions/set-board-result"
-      );
+      const { setBoardSeatsSwapped } =
+        await import("@/db/games/actions/set-board-result");
       await setBoardSeatsSwapped(
         db,
         { roundNumber: 1, tableNumber: 1, boardNumber: 1 },

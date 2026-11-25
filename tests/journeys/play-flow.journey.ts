@@ -69,7 +69,9 @@ test.describe("Play flow mount & board dropdown", () => {
 
       // The dropdown trigger now reflects the newly selected board.
       await expect(
-        nsPage.getByRole("button", { name: new RegExp(`^Board ${secondBoard}`) }),
+        nsPage.getByRole("button", {
+          name: new RegExp(`^Board ${secondBoard}`),
+        }),
       ).toBeVisible({ timeout: 15000 });
     } finally {
       await deleteGame(directorPage, gameId);

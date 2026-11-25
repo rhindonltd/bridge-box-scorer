@@ -27,9 +27,8 @@ describe("games db: createPairWithPlayers team name", () => {
   });
 
   async function seat(seat: string, teamName?: string | null) {
-    const { createPairWithPlayers } = await import(
-      "@/db/games/actions/create-pair-with-players"
-    );
+    const { createPairWithPlayers } =
+      await import("@/db/games/actions/create-pair-with-players");
     await createPairWithPlayers(harness.gameId, {
       initialSeat: seat as PairSeat,
       player1: { firstName: "North", lastName: "Smith" },

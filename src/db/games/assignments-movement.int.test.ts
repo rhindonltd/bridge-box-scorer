@@ -24,12 +24,10 @@ describe("games db: movement, occupancy", () => {
 
   it("round-trips a section movement (null before, value after)", async () => {
     const { createSection } = await import("@/db/games/actions/create-section");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { getSectionMovement } = await import(
-      "@/db/games/queries/get-section-movement"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { getSectionMovement } =
+      await import("@/db/games/queries/get-section-movement");
     const db = (await harness.getDb()) as Db;
 
     await createSection(harness.gameId, { section: "A", tables: 8 });
@@ -47,9 +45,8 @@ describe("games db: movement, occupancy", () => {
   });
 
   it("reports 0 for a section with no seated pairs", async () => {
-    const { highestOccupiedTableInSection } = await import(
-      "@/db/games/queries/highest-occupied-table"
-    );
+    const { highestOccupiedTableInSection } =
+      await import("@/db/games/queries/highest-occupied-table");
     const db = (await harness.getDb()) as Db;
 
     expect(await highestOccupiedTableInSection(db, "A")).toBe(0);
@@ -57,12 +54,10 @@ describe("games db: movement, occupancy", () => {
 
   it("reports the highest occupied table within a section only", async () => {
     const { createPlayer } = await import("@/db/games/actions/create-player");
-    const { createParticipant } = await import(
-      "@/db/games/actions/create-participant"
-    );
-    const { highestOccupiedTableInSection } = await import(
-      "@/db/games/queries/highest-occupied-table"
-    );
+    const { createParticipant } =
+      await import("@/db/games/actions/create-participant");
+    const { highestOccupiedTableInSection } =
+      await import("@/db/games/queries/highest-occupied-table");
     const db = (await harness.getDb()) as Db;
 
     let key = 0;

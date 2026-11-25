@@ -34,7 +34,9 @@ type Story = StoryObj<typeof DownloadPbnPage>;
 export const ClubConfigured: Story = {
   parameters: {
     msw: {
-      handlers: [clubHandler({ name: "Anytown Bridge Club", clubNumber: "12345" })],
+      handlers: [
+        clubHandler({ name: "Anytown Bridge Club", clubNumber: "12345" }),
+      ],
     },
   },
 };

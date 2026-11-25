@@ -40,12 +40,10 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
   };
 
   it("promotes each configured section into an independent running timer", async () => {
-    const { updateTimerState } = await import(
-      "@/db/games/actions/update-timer-state"
-    );
-    const { findTimerState } = await import(
-      "@/db/games/queries/find-timer-state"
-    );
+    const { updateTimerState } =
+      await import("@/db/games/actions/update-timer-state");
+    const { findTimerState } =
+      await import("@/db/games/queries/find-timer-state");
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
     const { scheduleGame } = await import("@/timer/scheduler");
 
@@ -80,12 +78,10 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
   });
 
   it("promotes only the section that was configured", async () => {
-    const { updateTimerState } = await import(
-      "@/db/games/actions/update-timer-state"
-    );
-    const { findTimerState } = await import(
-      "@/db/games/queries/find-timer-state"
-    );
+    const { updateTimerState } =
+      await import("@/db/games/actions/update-timer-state");
+    const { findTimerState } =
+      await import("@/db/games/queries/find-timer-state");
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
 
     await updateTimerState(
@@ -114,12 +110,10 @@ describe("promoteTimerAtGameStart (real games db, per section)", () => {
   });
 
   it("does not re-promote a section that is already running", async () => {
-    const { updateTimerState } = await import(
-      "@/db/games/actions/update-timer-state"
-    );
-    const { findTimerState } = await import(
-      "@/db/games/queries/find-timer-state"
-    );
+    const { updateTimerState } =
+      await import("@/db/games/actions/update-timer-state");
+    const { findTimerState } =
+      await import("@/db/games/queries/find-timer-state");
     const { promoteTimerAtGameStart } = await import("@/timer/promote-timer");
 
     const startedAt = Date.now() - 5000;

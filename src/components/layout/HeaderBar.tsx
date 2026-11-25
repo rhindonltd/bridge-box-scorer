@@ -36,8 +36,7 @@ type Props = {
   headerRight?: React.ReactNode;
 };
 
-const BACK_BUTTON_CLASS =
-  "p-2 -ml-2 rounded-lg hover:bg-gray-300 transition";
+const BACK_BUTTON_CLASS = "p-2 -ml-2 rounded-lg hover:bg-gray-300 transition";
 
 export function HeaderBar({
   headerTitle,
@@ -71,7 +70,11 @@ export function HeaderBar({
     }
     if (backHref) {
       return (
-        <Link href={backHref} className={BACK_BUTTON_CLASS} aria-label="Go back">
+        <Link
+          href={backHref}
+          className={BACK_BUTTON_CLASS}
+          aria-label="Go back"
+        >
           <ArrowLeft size={20} />
         </Link>
       );

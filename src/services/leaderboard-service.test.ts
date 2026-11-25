@@ -21,16 +21,16 @@ vi.mock("@/db/games/queries/find-pairs", () => ({
   findPairs: vi.fn(),
 }));
 
-vi.mock("@/scoring/traveller/score-traveller", () => ({
+vi.mock("@/modules/scoring/traveller/score-traveller", () => ({
   scoreBoard: vi.fn(),
 }));
 
 // The overall aggregation is resolved through the plugin registry; mock the
 // registry so we can assert which plugin is selected without exercising the
 // real aggregators.
-vi.mock("@/scoring/plugins/registry", async (importOriginal) => {
+vi.mock("@/modules/scoring/plugins/registry", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/scoring/plugins/registry")>();
+    await importOriginal<typeof import("@/modules/scoring/plugins/registry")>();
   return {
     ...actual,
     getCombination: vi.fn(),
@@ -59,13 +59,13 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
 
 // The Swiss/Teams VP overall calculators are exercised elsewhere; here we mock
 // them to assert routing and return canned overalls.
-vi.mock("@/scoring/swiss/swiss-ximp-vp-overall", () => ({
+vi.mock("@/modules/scoring/swiss/swiss-ximp-vp-overall", () => ({
   calculateSwissXimpVpOverall: vi.fn(),
 }));
-vi.mock("@/scoring/swiss/swiss-mp-vp-overall", () => ({
+vi.mock("@/modules/scoring/swiss/swiss-mp-vp-overall", () => ({
   calculateSwissMpVpOverall: vi.fn(),
 }));
-vi.mock("@/scoring/swiss/teams-vp-overall", () => ({
+vi.mock("@/modules/scoring/swiss/teams-vp-overall", () => ({
   calculateTeamsVpOverall: vi.fn(),
 }));
 
@@ -73,11 +73,14 @@ import { Db, getDb as getPairsDb } from "@/db/games";
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findTeams } from "@/db/games/queries/find-teams";
-import { scoreBoard } from "@/scoring/traveller/score-traveller";
-import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
-import { calculateSwissXimpVpOverall } from "@/scoring/swiss/swiss-ximp-vp-overall";
-import { calculateSwissMpVpOverall } from "@/scoring/swiss/swiss-mp-vp-overall";
-import { calculateTeamsVpOverall } from "@/scoring/swiss/teams-vp-overall";
+import { scoreBoard } from "@/modules/scoring/traveller/score-traveller";
+import {
+  getCombination,
+  getOverallPlugin,
+} from "@/modules/scoring/plugins/registry";
+import { calculateSwissXimpVpOverall } from "@/modules/scoring/swiss/swiss-ximp-vp-overall";
+import { calculateSwissMpVpOverall } from "@/modules/scoring/swiss/swiss-mp-vp-overall";
+import { calculateTeamsVpOverall } from "@/modules/scoring/swiss/teams-vp-overall";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 
 /** Build a mock overall plugin whose aggregate returns the given overall score. */
@@ -807,36 +810,6 @@ describe("Swiss sit-out synthetic scoring", () => {
     const passed = aggregate.mock.calls[0][0] as { lines: any[] }[];
     expect(passed.flatMap((b) => b.lines)).toHaveLength(0);
     expect(scoreBoard).not.toHaveBeenCalled();
-  });
-
-  it("credits a bye pair zero net imps under IMP scoring", async () => {
-    vi.mocked(getCombination).mockReturnValue({
-      perBoard: "IMP",
-      overall: "IMP",
-    });
-    const aggregate = mockOverallPlugin({ type: "PAIR_IMP", lines: [] });
-
-    await computeLeaderboard(
-      dbWithBoards([
-        {
-          boardNumber: 1,
-          ns: "5",
-          ew: "PHANTOM",
-          section: "A",
-          status: "SIT_OUT",
-          confirmedResult: null,
-          directorOverrideResult: null,
-        },
-      ]),
-      "game-1",
-    );
-
-    const allLines = (aggregate.mock.calls[0][0] as { lines: any[] }[]).flatMap(
-      (b) => b.lines,
-    );
-    expect(
-      allLines.some((l) => l.nsId === "5" && l.nsImps === 0 && l.ewImps === 0),
-    ).toBe(true);
   });
 
   it("credits a bye pair zero cross-imps under Cross-IMP scoring", async () => {

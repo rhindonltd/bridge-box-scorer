@@ -41,9 +41,9 @@ test.describe("Player join & seating detail", () => {
       await page.getByTestId("seat-A1NS").click();
 
       // Both searches are labelled for the NS direction.
-      await expect(
-        page.getByTestId("player-search-input-North"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(page.getByTestId("player-search-input-North")).toBeVisible({
+        timeout: 15000,
+      });
       await expect(page.getByTestId("player-search-input-South")).toBeVisible();
       await expect(page.getByTestId("player-search-input-East")).toHaveCount(0);
 
@@ -75,7 +75,9 @@ test.describe("Player join & seating detail", () => {
         timeout: 15000,
       });
       await expect(page.getByTestId("player-search-input-West")).toBeVisible();
-      await expect(page.getByTestId("player-search-input-North")).toHaveCount(0);
+      await expect(page.getByTestId("player-search-input-North")).toHaveCount(
+        0,
+      );
     } finally {
       await deleteGame(page, gameId);
       await page.context().close();
@@ -116,7 +118,9 @@ test.describe("Player join & seating detail", () => {
       await result.click();
       await expect(northInput).toHaveCount(0);
       // The card shows the chosen player's EBU number and a clear (X) button.
-      await expect(page.getByText(`EBU ${SEEDED_EBU.jacquelineCollier}`)).toBeVisible();
+      await expect(
+        page.getByText(`EBU ${SEEDED_EBU.jacquelineCollier}`),
+      ).toBeVisible();
 
       // Clear it (the X button) -> the search input returns.
       // The green card holds a single icon-only button (the X).

@@ -86,8 +86,8 @@ export function StepVoidMatch({ onSubmit, boardComparison = false }: Props) {
   return (
     <div className="flex-1 flex flex-col p-4 min-h-0 overflow-y-auto">
       <p className="text-sm text-gray-600 text-center mb-4">
-        Void this whole match. Choose why — this sets each team&apos;s {currency}{" "}
-        for the round.
+        Void this whole match. Choose why — this sets each team&apos;s{" "}
+        {currency} for the round.
       </p>
 
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">

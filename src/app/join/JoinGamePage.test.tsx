@@ -13,9 +13,7 @@ vi.mock("@/components/pages/SelectGamePage", () => ({
   }: {
     headerTitle: string;
     onGameSelected: (gameId: string) => void;
-  }) => (
-    <button onClick={() => onGameSelected("g1")}>{headerTitle}</button>
-  ),
+  }) => <button onClick={() => onGameSelected("g1")}>{headerTitle}</button>,
 }));
 
 import { JoinGamePage } from "./JoinGamePage";

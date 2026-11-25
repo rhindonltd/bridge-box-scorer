@@ -3,6 +3,67 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+// Packages the kernel and the pure modules must never import.
+const IO_AND_FRAMEWORKS = [
+  "react",
+  "react-dom",
+  "next",
+  "next/*",
+  "socket.io",
+  "socket.io-client",
+  "drizzle-orm",
+  "drizzle-orm/*",
+  "better-sqlite3",
+  "fs",
+  "fs/*",
+  "node:*",
+  "child_process",
+  "server-only",
+];
+
+// Unit and integration tests, exempt from the module boundary rules.
+const TEST_FILES = ["**/*.test.{ts,tsx}", "**/*.int.test.{ts,tsx}"];
+
+/**
+ * Boundary rule for one pure module (docs/design/modules.md §4): no framework
+ * or I/O, and no imports beyond the kernel (`@/model`) and the module itself.
+ * Inside a module, files import each other with `./` or `@/modules/<name>/…`,
+ * never by climbing out with `../`.
+ */
+function moduleBlock(name) {
+  return {
+    files: [`src/modules/${name}/**/*.{ts,tsx}`],
+    ignores: TEST_FILES,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../*"],
+              message: `Inside ${name} use ./ or @/modules/${name}/…; never climb out with ../`,
+            },
+            {
+              group: IO_AND_FRAMEWORKS,
+              message: `${name} is pure: no framework or I/O imports.`,
+            },
+            {
+              group: [
+                "@/*",
+                "!@/model",
+                "!@/modules",
+                "@/modules/*",
+                `!@/modules/${name}`,
+              ],
+              message: `${name} may import only the kernel (@/model) and itself. See docs/design/modules.md.`,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 const eslintConfig = defineConfig([
   globalIgnores([
     "**/node_modules/**",
@@ -136,22 +197,7 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: [
-                "react",
-                "react-dom",
-                "next",
-                "next/*",
-                "socket.io",
-                "socket.io-client",
-                "drizzle-orm",
-                "drizzle-orm/*",
-                "better-sqlite3",
-                "fs",
-                "fs/*",
-                "node:*",
-                "child_process",
-                "server-only",
-              ],
+              group: IO_AND_FRAMEWORKS,
               message:
                 "The kernel (src/model) is pure: no framework or I/O imports.",
             },
@@ -159,6 +205,32 @@ const eslintConfig = defineConfig([
               group: ["@/*", "!@/model", "../*"],
               message:
                 "The kernel (src/model) may import only itself. See docs/design/modules.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // Each pure module may import only the kernel and itself.
+  moduleBlock("rulings"),
+  moduleBlock("scoring"),
+
+  // The core reaches a module only through its entry point
+  // (`@/modules/<name>`), never its internal files. Tests may reach internals
+  // to drive a unit directly, so they are exempt.
+  {
+    files: ["src/**/*.{ts,tsx}", "tests/**/*.ts", ".storybook/**/*.{ts,tsx}"],
+    ignores: ["src/modules/**", "src/model/**", ...TEST_FILES],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/modules/*/*", "**/modules/*/*"],
+              message:
+                "Import a module through its entry point (@/modules/<name>) only. See docs/design/modules.md.",
             },
           ],
         },

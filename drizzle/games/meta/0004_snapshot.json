@@ -61,12 +61,7 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "board_submissions_section_round_number_table_number_side_pk": {
-          "columns": [
-            "section",
-            "round_number",
-            "table_number",
-            "side"
-          ],
+          "columns": ["section", "round_number", "table_number", "side"],
           "name": "board_submissions_section_round_number_table_number_side_pk"
         }
       },
@@ -175,12 +170,8 @@
           "name": "boards_match_id_matches_id_fk",
           "tableFrom": "boards",
           "tableTo": "matches",
-          "columnsFrom": [
-            "match_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -368,10 +359,7 @@
       "indexes": {
         "matches_section_round_idx": {
           "name": "matches_section_round_idx",
-          "columns": [
-            "section",
-            "round_number"
-          ],
+          "columns": ["section", "round_number"],
           "isUnique": false
         }
       },
@@ -551,24 +539,17 @@
       "indexes": {
         "seat_occupancy_seat_idx": {
           "name": "seat_occupancy_seat_idx",
-          "columns": [
-            "seat"
-          ],
+          "columns": ["seat"],
           "isUnique": false
         },
         "seat_occupancy_anchor_idx": {
           "name": "seat_occupancy_anchor_idx",
-          "columns": [
-            "anchor_id"
-          ],
+          "columns": ["anchor_id"],
           "isUnique": false
         },
         "seat_occupancy_player1_player2_unique": {
           "name": "seat_occupancy_player1_player2_unique",
-          "columns": [
-            "player1",
-            "player2"
-          ],
+          "columns": ["player1", "player2"],
           "isUnique": true
         }
       },
@@ -577,12 +558,8 @@
           "name": "seat_occupancy_player1_players_id_fk",
           "tableFrom": "seat_occupancy",
           "tableTo": "players",
-          "columnsFrom": [
-            "player1"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player1"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -590,12 +567,8 @@
           "name": "seat_occupancy_player2_players_id_fk",
           "tableFrom": "seat_occupancy",
           "tableTo": "players",
-          "columnsFrom": [
-            "player2"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["player2"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

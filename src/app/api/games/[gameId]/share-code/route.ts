@@ -16,6 +16,9 @@ export const POST = withDirectorRoute(async ({ gameId }) => {
     const code = await createShareCode(gameId);
     return success({ code });
   } catch (err) {
-    return respondToActionError(err, `Failed to generate share code for ${gameId}:`);
+    return respondToActionError(
+      err,
+      `Failed to generate share code for ${gameId}:`,
+    );
   }
 });

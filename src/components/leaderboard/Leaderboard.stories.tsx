@@ -142,13 +142,43 @@ export const SwissPairsHalfMatchRound: Story = {
         scoring: "SWISS_VP",
         lines: [
           // Anchor (A3NS): full /20 in the half-match round 1, strong round 2.
-          { tied: false, rank: 1, pairId: "A3NS", totalVP: 33.5, vpByRound: { 1: 18.5, 2: 15 } },
-          { tied: false, rank: 2, pairId: "A1NS", totalVP: 24, vpByRound: { 1: 12, 2: 12 } },
+          {
+            tied: false,
+            rank: 1,
+            pairId: "A3NS",
+            totalVP: 33.5,
+            vpByRound: { 1: 18.5, 2: 15 },
+          },
+          {
+            tied: false,
+            rank: 2,
+            pairId: "A1NS",
+            totalVP: 24,
+            vpByRound: { 1: 12, 2: 12 },
+          },
           // Non-anchor (A1EW): a played half + compensated half in round 1.
-          { tied: false, rank: 3, pairId: "A1EW", totalVP: 16.65, vpByRound: { 1: 6.65, 2: 10 } },
-          { tied: false, rank: 4, pairId: "A2NS", totalVP: 15, vpByRound: { 1: 8, 2: 7 } },
+          {
+            tied: false,
+            rank: 3,
+            pairId: "A1EW",
+            totalVP: 16.65,
+            vpByRound: { 1: 6.65, 2: 10 },
+          },
+          {
+            tied: false,
+            rank: 4,
+            pairId: "A2NS",
+            totalVP: 15,
+            vpByRound: { 1: 8, 2: 7 },
+          },
           // Non-anchor (A2EW): the other played + compensated half.
-          { tied: false, rank: 5, pairId: "A2EW", totalVP: 13.4, vpByRound: { 1: 6.4, 2: 7 } },
+          {
+            tied: false,
+            rank: 5,
+            pairId: "A2EW",
+            totalVP: 13.4,
+            vpByRound: { 1: 6.4, 2: 7 },
+          },
         ],
       },
     },

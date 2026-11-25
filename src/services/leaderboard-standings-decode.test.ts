@@ -5,10 +5,10 @@ import {
   pairLeaderboardDecoder,
   teamLeaderboardDecoder,
 } from "./leaderboard-standings-decode";
-import type { SectionLeaderboard } from "@/services/leaderboard-service";
+import type { SectionStandings } from "@/modules/scoring";
 
 /** A section leaderboard carrying just the given overall lines. */
-function boardWith(lines: Record<string, unknown>[]): SectionLeaderboard {
+function boardWith(lines: Record<string, unknown>[]): SectionStandings {
   return { section: "A", overallScore: { lines } } as never;
 }
 

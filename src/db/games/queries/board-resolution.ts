@@ -1,4 +1,5 @@
-import { isAbsentRow, type Absences } from "@/model/absence";
+import { isAbsentRow } from "@/modules/rulings";
+import type { Absences } from "@/model/absence";
 
 /** The board-row facts that decide whether a board still needs a result. */
 export interface ResolutionRow {

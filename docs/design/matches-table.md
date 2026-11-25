@@ -38,7 +38,7 @@ This document proposes a **universal** `matches` table: one row per committed
 match in every movement, with every board carrying a `matchId`. A match is a
 **structural / seating** record — "which participants met over which boards in
 which round" — and carries any match-level director ruling. Crucially, whether a
-match is *scored as a unit* is a **property of the format** (teams/Swiss: yes;
+match is _scored as a unit_ is a **property of the format** (teams/Swiss: yes;
 matchpoint/cross-IMP pairs: no — the field is the scoring unit). `matches`
 becomes authoritative for match **structure and rulings**; `boards` keeps only
 per-board **results**. The derivation code is then deleted, not kept as a
@@ -67,13 +67,13 @@ multiple readers. We discard structure we have, then pay to guess it back.
 
 ### 2.2 The re-derivation is where the fragile code lives
 
-| Derivation | Lives in | Why it is fragile |
-|---|---|---|
-| Triple detection (SHORT = a table with ≥2 opponents; LONG = merge two consecutive non-mutual 3-cycles for one trio) | `detectTriples` (`src/scoring/swiss/team-match.ts`) | Pure structural inference, no stored flag; the subtlest logic in the codebase |
-| Half-match **anchor** recovery ("faced two different opponents at one table in one round") | **duplicated** in `getSwissBoardHistory` (`swiss-board-history.ts`) and `getSwissCommittedRound` (`swiss-committed-seating.ts`) | A real bug already hit here — the per-table vs per-(table,pair) keying mistake |
-| Match-level rulings smeared as tokens across **every** board row of the match | `set-board-result.ts` writers; read by `matchVoidCause`, `matchMismatch`, `creditMismatch`, `voidPairRounds` | Home-relative side inversion + dedup-across-rows; a ruling has no single home |
-| A **second, independent** teams-match reducer | `board-service.buildTeamTravellerMatches` (does not reuse `groupTeamMatches`) | Classic duplicate-derivation drift risk |
-| Per-table pairing for the traveller ("who played whom") | `board-service.getBoardInstances` (pairs) + `buildTeamTravellerMatches` (teams) | Two separate reducers for the same question |
+| Derivation                                                                                                          | Lives in                                                                                                                        | Why it is fragile                                                              |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Triple detection (SHORT = a table with ≥2 opponents; LONG = merge two consecutive non-mutual 3-cycles for one trio) | `detectTriples` (`src/scoring/swiss/team-match.ts`)                                                                             | Pure structural inference, no stored flag; the subtlest logic in the codebase  |
+| Half-match **anchor** recovery ("faced two different opponents at one table in one round")                          | **duplicated** in `getSwissBoardHistory` (`swiss-board-history.ts`) and `getSwissCommittedRound` (`swiss-committed-seating.ts`) | A real bug already hit here — the per-table vs per-(table,pair) keying mistake |
+| Match-level rulings smeared as tokens across **every** board row of the match                                       | `set-board-result.ts` writers; read by `matchVoidCause`, `matchMismatch`, `creditMismatch`, `voidPairRounds`                    | Home-relative side inversion + dedup-across-rows; a ruling has no single home  |
+| A **second, independent** teams-match reducer                                                                       | `board-service.buildTeamTravellerMatches` (does not reuse `groupTeamMatches`)                                                   | Classic duplicate-derivation drift risk                                        |
+| Per-table pairing for the traveller ("who played whom")                                                             | `board-service.getBoardInstances` (pairs) + `buildTeamTravellerMatches` (teams)                                                 | Two separate reducers for the same question                                    |
 
 ### 2.3 A match row is the natural home for whole-table / whole-round rulings
 
@@ -84,7 +84,7 @@ board row of a table:
 - **Accidental arrow-switch of a whole table/round** — every board's NS/EW
   result at that table is swapped as a unit. With a match row (which names the
   seats and board range) this is one operation keyed on the match, not a sweep
-  across board rows. *(Primary motivator for going universal.)*
+  across board rows. _(Primary motivator for going universal.)_
 - A whole-table **adjusted score** or **cancel/foul** that spans the match's
   boards.
 - Carrying a ruling that is conceptually "about this encounter" rather than
@@ -112,7 +112,7 @@ board row of a table:
 > per-board RESULTS. Code reads `matches` for structure/seating and never
 > re-infers it from board seatings.**
 >
-> **Whether a match is *scored as a unit* is a property of the format, recorded
+> **Whether a match is _scored as a unit_ is a property of the format, recorded
 > on the match's `kind`/`scoredAsUnit`: teams/Swiss encounters, triple
 > comparisons and half-matches ARE scored as a unit; ordinary matchpoint /
 > cross-IMP pairs matches are NOT — the section field is the scoring unit, and
@@ -123,7 +123,7 @@ Two things this makes explicit, so no read site has to guess:
 
 1. **Structure is always a match row** (uniform write path, uniform traveller,
    uniform "who played whom"). A static-pairs match row is real and useful for
-   seating, rulings, and the traveller — it is simply not a *scoring* boundary.
+   seating, rulings, and the traveller — it is simply not a _scoring_ boundary.
 2. **Scoring-as-a-unit is format-specific**, and named on the row, so "is this
    match load-bearing for scoring here?" is a field lookup, not an implicit
    convention. Pairs field scoring reads boards, not matches; it never mistakes
@@ -146,12 +146,12 @@ within a match), so it stays on `boards` — see §6.3.
 every board has a `matchId`. The payoff differs by format, and that is captured
 by `scoredAsUnit`:
 
-| Movement family | Match rows (structure) | Scored as a unit? | Where the match row earns its keep |
-|---|---|---|---|
-| Swiss Teams | Yes | **Yes** (margin→VP per match; triples; byes) | Scoring + traveller + USEBIO + draw history + rulings |
-| Round Robin Teams | Yes | **Yes** | Scoring + traveller + USEBIO |
-| Swiss Pairs | Yes | **Yes** (per-round VP; half-matches; byes) | Scoring + draw history + §3.5 detection + rulings |
-| Mitchell / Howell / American Whist (static pairs) | Yes | **No** (field-scored) | Traveller ("who played whom") + whole-table rulings (arrow-switch, cancel) + uniform model. Scoring ignores it. |
+| Movement family                                   | Match rows (structure) | Scored as a unit?                            | Where the match row earns its keep                                                                              |
+| ------------------------------------------------- | ---------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Swiss Teams                                       | Yes                    | **Yes** (margin→VP per match; triples; byes) | Scoring + traveller + USEBIO + draw history + rulings                                                           |
+| Round Robin Teams                                 | Yes                    | **Yes**                                      | Scoring + traveller + USEBIO                                                                                    |
+| Swiss Pairs                                       | Yes                    | **Yes** (per-round VP; half-matches; byes)   | Scoring + draw history + §3.5 detection + rulings                                                               |
+| Mitchell / Howell / American Whist (static pairs) | Yes                    | **No** (field-scored)                        | Traveller ("who played whom") + whole-table rulings (arrow-switch, cancel) + uniform model. Scoring ignores it. |
 
 So the match row is universal for **seating, the traveller, and rulings**;
 **scoring** consults it only when `scoredAsUnit` is true. This is the shift from
@@ -171,47 +171,51 @@ One row per committed match in a round, for every movement; every board gains a
 
 ```ts
 // src/db/games/tables/matches.ts
-export const matches = sqliteTable("matches", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  section: text("section").notNull(),
-  roundNumber: integer("round_number").notNull(),
+export const matches = sqliteTable(
+  "matches",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    section: text("section").notNull(),
+    roundNumber: integer("round_number").notNull(),
 
-  // What kind of encounter this row represents.
-  kind: text("kind", {
-    enum: [
-      "PAIRS",            // ordinary pairs seated at one table (any pairs movement)
-      "TEAMS",            // teams ordinary two-room encounter
-      "TRIPLE",           // one comparison of a 3-way (teams)
-      "HALF_MATCH",       // a Swiss Pairs 2-half-matches comparison
-      "BYE",              // sit-out (one participant, no opponent)
-    ],
-  }).notNull(),
+    // What kind of encounter this row represents.
+    kind: text("kind", {
+      enum: [
+        "PAIRS", // ordinary pairs seated at one table (any pairs movement)
+        "TEAMS", // teams ordinary two-room encounter
+        "TRIPLE", // one comparison of a 3-way (teams)
+        "HALF_MATCH", // a Swiss Pairs 2-half-matches comparison
+        "BYE", // sit-out (one participant, no opponent)
+      ],
+    }).notNull(),
 
-  // Whether SCORING treats this match as a unit (teams/Swiss) or whether the
-  // section field is the scoring unit (matchpoint/cross-IMP pairs). The pairs
-  // scorers ignore the match row entirely when this is false.
-  scoredAsUnit: integer("scored_as_unit", { mode: "boolean" }).notNull(),
+    // Whether SCORING treats this match as a unit (teams/Swiss) or whether the
+    // section field is the scoring unit (matchpoint/cross-IMP pairs). The pairs
+    // scorers ignore the match row entirely when this is false.
+    scoredAsUnit: integer("scored_as_unit", { mode: "boolean" }).notNull(),
 
-  // Participants as stable home-seat ids (e.g. "A1NS") — the SAME ids
-  // findPairs/findTeams produce. `opponent` is null for a BYE.
-  home: text("home").notNull(),
-  opponent: text("opponent"),
+    // Participants as stable home-seat ids (e.g. "A1NS") — the SAME ids
+    // findPairs/findTeams produce. `opponent` is null for a BYE.
+    home: text("home").notNull(),
+    opponent: text("opponent"),
 
-  // Grouping for multi-comparison structures.
-  groupId: text("group_id"),   // half-match group / triple group key
-  slot: integer("slot"),       // triple slot (1/2) or comparison index
+    // Grouping for multi-comparison structures.
+    groupId: text("group_id"), // half-match group / triple group key
+    slot: integer("slot"), // triple slot (1/2) or comparison index
 
-  // Scoring hints currently re-derived (meaningful when scoredAsUnit).
-  vpPool: integer("vp_pool"),            // 20 ordinary, 10 triple-SHORT / half …
-  boardStart: integer("board_start").notNull(),
-  boardEnd: integer("board_end").notNull(),
+    // Scoring hints currently re-derived (meaningful when scoredAsUnit).
+    vpPool: integer("vp_pool"), // 20 ordinary, 10 triple-SHORT / half …
+    boardStart: integer("board_start").notNull(),
+    boardEnd: integer("board_end").notNull(),
 
-  // The match-level director ruling (replaces the smeared board tokens).
-  // One of VOID:<cause> | VOIDP:<cause> | MM:<side>:<dir>:<fault> | null.
-  ruling: text("ruling"),
-}, (t) => ({
-  byRound: index("matches_section_round_idx").on(t.section, t.roundNumber),
-}));
+    // The match-level director ruling (replaces the smeared board tokens).
+    // One of VOID:<cause> | VOIDP:<cause> | MM:<side>:<dir>:<fault> | null.
+    ruling: text("ruling"),
+  },
+  (t) => ({
+    byRound: index("matches_section_round_idx").on(t.section, t.roundNumber),
+  }),
+);
 ```
 
 And on `boards`:
@@ -222,6 +226,7 @@ matchId: integer("match_id").notNull().references(() => matches.id),
 ```
 
 Notes:
+
 - `boards.matchId` makes "which match does this board belong to" a foreign key,
   not a seat-parse + group-by. The traveller's per-table pairing becomes a join
   for pairs **and** teams — one path.
@@ -334,17 +339,17 @@ Labelled **SIMPLIFIED**, **UNCHANGED**, or **NEWLY COUPLED**.
 
 ### 6.7 Touch-point summary
 
-| Area | Effect |
-|---|---|
-| Swiss/teams `team-match.ts`, `swiss-vp-round.ts`, `swiss-half-match.ts` | SIMPLIFIED (delete `detectTriples`, anchor recovery, re-splitters) |
-| Teams/Swiss USEBIO assemblers | SIMPLIFIED |
-| `board-service` (`buildTeamTravellerMatches` **and** `getBoardInstances`) | SIMPLIFIED / unified (one match-join path for pairs + teams) |
-| DB history/committed-round queries | SIMPLIFIED (→ `SELECT`) |
-| Match-level ruling storage (`set-board-result`, statuses, `matchRuling`) | SIMPLIFIED (→ `matches.ruling`); unlocks whole-table rulings |
-| All materialisers + draw commits (incl. static pairs) | NEWLY COUPLED (write match rows + `matchId`) |
-| Broadcast layer (ruling changes) | NEWLY COUPLED |
-| Pairs field scoring, non-Swiss USEBIO | UNCHANGED (ignore `scoredAsUnit:false` match) |
-| Player submit/confirm, player traveller rendering, identity layer | UNCHANGED |
+| Area                                                                      | Effect                                                             |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Swiss/teams `team-match.ts`, `swiss-vp-round.ts`, `swiss-half-match.ts`   | SIMPLIFIED (delete `detectTriples`, anchor recovery, re-splitters) |
+| Teams/Swiss USEBIO assemblers                                             | SIMPLIFIED                                                         |
+| `board-service` (`buildTeamTravellerMatches` **and** `getBoardInstances`) | SIMPLIFIED / unified (one match-join path for pairs + teams)       |
+| DB history/committed-round queries                                        | SIMPLIFIED (→ `SELECT`)                                            |
+| Match-level ruling storage (`set-board-result`, statuses, `matchRuling`)  | SIMPLIFIED (→ `matches.ruling`); unlocks whole-table rulings       |
+| All materialisers + draw commits (incl. static pairs)                     | NEWLY COUPLED (write match rows + `matchId`)                       |
+| Broadcast layer (ruling changes)                                          | NEWLY COUPLED                                                      |
+| Pairs field scoring, non-Swiss USEBIO                                     | UNCHANGED (ignore `scoredAsUnit:false` match)                      |
+| Player submit/confirm, player traveller rendering, identity layer         | UNCHANGED                                                          |
 
 ---
 
@@ -376,7 +381,7 @@ must not change**.
 
 - **Two sources of truth.** The headline risk. Mitigated by the invariant
   (§3) + the step-1 parity check + deleting the derivation so there is nothing
-  to diverge *from* once migrated.
+  to diverge _from_ once migrated.
 - **Large blast radius.** Most of the Swiss/teams surface plus the materialisers
   and the traveller. Mitigated by the per-module sequencing and the test wall.
 - **Unused-row cost for static pairs.** A matchpoint pairs game writes match

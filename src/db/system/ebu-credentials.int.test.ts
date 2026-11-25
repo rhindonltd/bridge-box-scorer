@@ -23,14 +23,15 @@ describe("ebu credentials store", () => {
     fs.rmSync(keyDir, { recursive: true, force: true });
   });
   it("is unconfigured until saved, then round-trips decrypted", async () => {
-    const { saveEbuCredentials } = await import(
-      "@/db/system/actions/save-ebu-credentials"
-    );
-    const { getEbuCredentials, getEbuStatus } = await import(
-      "@/db/system/queries/ebu-credentials"
-    );
+    const { saveEbuCredentials } =
+      await import("@/db/system/actions/save-ebu-credentials");
+    const { getEbuCredentials, getEbuStatus } =
+      await import("@/db/system/queries/ebu-credentials");
     expect(await getEbuCredentials()).toBeNull();
-    expect(await getEbuStatus()).toEqual({ configured: false, ebuNumber: null });
+    expect(await getEbuStatus()).toEqual({
+      configured: false,
+      ebuNumber: null,
+    });
     await saveEbuCredentials("123456", "pw");
     expect(await getEbuCredentials()).toEqual({
       ebuNumber: "123456",
@@ -42,12 +43,10 @@ describe("ebu credentials store", () => {
     });
   });
   it("saveEbuNumber updates only the number and leaves the password", async () => {
-    const { saveEbuCredentials, saveEbuNumber } = await import(
-      "@/db/system/actions/save-ebu-credentials"
-    );
-    const { getEbuCredentials, getEbuStatus } = await import(
-      "@/db/system/queries/ebu-credentials"
-    );
+    const { saveEbuCredentials, saveEbuNumber } =
+      await import("@/db/system/actions/save-ebu-credentials");
+    const { getEbuCredentials, getEbuStatus } =
+      await import("@/db/system/queries/ebu-credentials");
     await saveEbuCredentials("111", "pw");
     await saveEbuNumber("222");
     expect(await getEbuCredentials()).toEqual({
@@ -57,12 +56,10 @@ describe("ebu credentials store", () => {
     expect((await getEbuStatus()).ebuNumber).toBe("222");
   });
   it("reports unconfigured when only the number is stored", async () => {
-    const { saveEbuNumber } = await import(
-      "@/db/system/actions/save-ebu-credentials"
-    );
-    const { getEbuCredentials, getEbuStatus } = await import(
-      "@/db/system/queries/ebu-credentials"
-    );
+    const { saveEbuNumber } =
+      await import("@/db/system/actions/save-ebu-credentials");
+    const { getEbuCredentials, getEbuStatus } =
+      await import("@/db/system/queries/ebu-credentials");
     await saveEbuNumber("333");
     expect(await getEbuCredentials()).toBeNull();
     expect(await getEbuStatus()).toEqual({

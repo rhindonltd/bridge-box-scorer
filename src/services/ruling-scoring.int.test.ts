@@ -155,7 +155,7 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
     const { markMismatch } =
       await import("@/db/games/actions/set-board-result");
     const { adjustMismatchVp } =
-      await import("@/scoring/swiss/mismatch-adjustment");
+      await import("@/modules/scoring/swiss/mismatch-adjustment");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
     const base = await teamVp();

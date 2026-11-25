@@ -1,7 +1,11 @@
 import { test, expect, Browser } from "@playwright/test";
 
 import { createGame } from "./fixtures/game-create";
-import { setTableCount, pickFirstMovement, startGame } from "./fixtures/game-setup";
+import {
+  setTableCount,
+  pickFirstMovement,
+  startGame,
+} from "./fixtures/game-setup";
 import { seatTwoTableField } from "./fixtures/join";
 import { deleteGame } from "./fixtures/delete-game";
 import { fetchAdminToken } from "./fixtures/settings";

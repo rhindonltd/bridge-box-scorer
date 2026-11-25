@@ -42,9 +42,7 @@ test.describe("Game API Endpoints", () => {
   test("GET /api/games/nonexistent/play-state/1NS returns 404", async ({
     request,
   }) => {
-    const response = await request.get(
-      "/api/games/nonexistent/play-state/1NS",
-    );
+    const response = await request.get("/api/games/nonexistent/play-state/1NS");
     expect(response.status()).toBe(404);
     const body = await response.json();
     expect(body.success).toBe(false);

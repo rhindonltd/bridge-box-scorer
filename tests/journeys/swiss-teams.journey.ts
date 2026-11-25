@@ -164,7 +164,10 @@ function materializedRounds(gameId: string, section = "A"): number {
  * proposed matches on the preview page, accept them (OK), and wait for the
  * confirmation notice. The draw only commits when OK is pressed.
  */
-async function drawNextRound(directorPage: Page, gameId: string): Promise<void> {
+async function drawNextRound(
+  directorPage: Page,
+  gameId: string,
+): Promise<void> {
   await gotoStable(directorPage, `/game/${gameId}/manage/movement`);
   const button = directorPage.getByTestId("draw-next-round");
   await expect(button).toBeEnabled({ timeout: 15000 });
@@ -321,17 +324,17 @@ test.describe("Swiss Teams draws round by round", () => {
       // shown as a selectable room row (traveller-row-{round}-{table}).
       await openDirectorTraveller(directorPage, gameId, 1);
 
-      await expect(
-        directorPage.getByText("Team A1 v Team A2"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByText("Team A1 v Team A2")).toBeVisible({
+        timeout: 15000,
+      });
       // Both rooms of the match are present as selectable rows (round 1,
       // tables 1 and 2 — the open and closed rooms).
-      await expect(
-        directorPage.getByTestId("traveller-row-1-1"),
-      ).toBeVisible({ timeout: 15000 });
-      await expect(
-        directorPage.getByTestId("traveller-row-1-2"),
-      ).toBeVisible({ timeout: 15000 });
+      await expect(directorPage.getByTestId("traveller-row-1-1")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(directorPage.getByTestId("traveller-row-1-2")).toBeVisible({
+        timeout: 15000,
+      });
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

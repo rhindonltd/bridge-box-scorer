@@ -81,7 +81,9 @@ export interface NewPlayerRow {
   lastName: string;
 }
 
-export function makePlayer(overrides: Partial<NewPlayerRow> = {}): NewPlayerRow {
+export function makePlayer(
+  overrides: Partial<NewPlayerRow> = {},
+): NewPlayerRow {
   return { firstName: "Alice", lastName: "Adams", ...overrides };
 }
 
