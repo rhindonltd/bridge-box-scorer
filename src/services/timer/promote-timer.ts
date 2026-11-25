@@ -1,17 +1,22 @@
 import "server-only";
 
-import { Server } from "socket.io";
 import {
   findAllTimerStates,
   findTimerState,
 } from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { createEngine } from "@/timer/game-store";
-import { scheduleGame } from "@/timer/scheduler";
+import { createEngine } from "@/services/timer/game-store";
+import { scheduleGame } from "@/services/timer/scheduler";
 import { SectionLetter } from "@/model/participants";
-import { TimerState } from "@/timer/timer-state";
-import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
+import { TimerState } from "@/modules/timer";
 import { logger } from "@/lib/log";
+
+/** Sends a section's timer state to its connected clients. */
+export type TimerBroadcast = (
+  gameId: string,
+  section: SectionLetter,
+  timerState: TimerState,
+) => void;
 
 /**
  * Promote a single section's saved timer configuration into a live, running
@@ -22,7 +27,7 @@ async function promoteSection(
   gameId: string,
   section: SectionLetter,
   saved: TimerState,
-  broadcast: ReturnType<typeof makeTimerBroadcaster>,
+  broadcast: TimerBroadcast,
 ): Promise<void> {
   // Already live (running or a real phase in progress): a timer that has been
   // started must not be reset. A configured-but-not-started timer has a null
@@ -63,17 +68,16 @@ async function promoteSection(
  * during setup (a "configured but not started" state — `phase: null`,
  * `isRunning: false`) begin running; sections with no saved timer, or whose
  * timer is already live, are left untouched. One section failing never affects
- * the others or the game start itself.
+ * the others or the game start itself. `broadcast` sends each promoted timer
+ * to its clients; the caller supplies it (e.g. `makeTimerBroadcaster(io)`).
  */
 export async function promoteTimerAtGameStart(
   gameId: string,
-  io: Server,
+  broadcast: TimerBroadcast,
 ): Promise<void> {
   try {
     const saved = await findAllTimerStates(gameId);
     if (saved.size === 0) return;
-
-    const broadcast = makeTimerBroadcaster(io);
 
     for (const [section, state] of saved) {
       await promoteSection(gameId, section, state, broadcast);

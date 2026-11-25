@@ -4,9 +4,10 @@ import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { startGame } from "@/services/start-game-service";
-import { promoteTimerAtGameStart } from "@/timer/promote-timer";
+import { promoteTimerAtGameStart } from "@/services/timer/promote-timer";
 import { broadcastGameStarted } from "@/socket/broadcast/game-broadcast";
 import { getIO } from "@/socket/websocket";
+import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
 
 /**
  * POST /api/games/[gameId]/start — start a game (director-only).
@@ -39,7 +40,7 @@ export const POST = withDirectorRoute(async ({ gameId }) => {
     // Best-effort and only when a live server is available; never blocks start.
     const io = getIO();
     if (io) {
-      await promoteTimerAtGameStart(gameId, io);
+      await promoteTimerAtGameStart(gameId, makeTimerBroadcaster(io));
     }
 
     await broadcastGameStarted(gameId);

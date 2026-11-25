@@ -1,7 +1,10 @@
-import { TimerState, getWarningSeconds } from "@/timer/timer-state";
-import { gapPhaseAfterRound, resolveBreakDurationMs } from "@/timer/breaks";
+import { TimerState, getWarningSeconds } from "@/modules/timer/timer-state";
+import {
+  gapPhaseAfterRound,
+  resolveBreakDurationMs,
+} from "@/modules/timer/breaks";
 
-export function useTimerDerived(state: TimerState | null, now: number) {
+export function deriveTimerView(state: TimerState | null, now: number) {
   if (!state) {
     return {
       remaining: 0,

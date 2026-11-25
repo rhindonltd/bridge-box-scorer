@@ -42,7 +42,7 @@ export default mergeConfig(
           // meaningfully unit-tested and would otherwise skew coverage.
           "src/model/leaderboard.ts",
           "src/model/traveller.ts",
-          "src/timer/timer-state.ts",
+          "src/modules/timer/timer-state.ts",
           "src/modules/scoring/plugins/types.ts",
           "src/modules/scoring/overall/scored-traveller.ts",
           "src/modules/scoring/traveller/pair/common.ts",

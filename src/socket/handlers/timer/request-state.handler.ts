@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
-import { getEngine } from "@/timer/game-store";
+import { getEngine } from "@/services/timer/game-store";
 import { Rooms } from "@/socket/rooms";
 import { registerHandler } from "@/socket/handlers/handler-wrapper";
 import { buildTimerSyncPayload } from "./broadcast-timer";

@@ -1,5 +1,4 @@
-import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { TimerState } from "@/timer/timer-state";
+import { BridgeTimerEngine, TimerState } from "@/modules/timer";
 import { SectionLetter } from "@/model/participants";
 import { logger } from "@/lib/log";
 
@@ -29,7 +28,7 @@ type ScheduledGame = {
  * (`promoteTimerAtGameStart`) schedules from the Next.js route bundle while the
  * live controls (start/pause/next/…) run in the custom-server bundle, and both
  * must operate on the same set of timeouts. A module-local map would live once
- * per bundle. (Same rationale as the engine store in `@/timer/game-store` and
+ * per bundle. (Same rationale as the engine store in `@/services/timer/game-store` and
  * the Socket.IO server in `@/socket/websocket`.)
  */
 const SCHEDULED_KEY = "__bridgeBoxScheduledGames" as const;

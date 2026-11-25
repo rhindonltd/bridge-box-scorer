@@ -5,7 +5,7 @@ vi.mock("@/socket/websocket", () => ({ getIO: () => mockGetIO() }));
 
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import { buildConfiguredTimerState } from "@/timer/timer-state";
+import { buildConfiguredTimerState } from "@/modules/timer/timer-state";
 import { broadcastTimerConfigSaved } from "./timer-broadcast";
 
 function fakeIo() {

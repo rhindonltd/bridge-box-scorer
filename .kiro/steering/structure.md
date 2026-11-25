@@ -26,11 +26,11 @@ public/                    # Static assets
 - `model/` — Pure domain types and logic (framework-agnostic).
 - `modules/` — Pure domain modules, each imported only through its entry (`@/modules/<name>`); see `docs/design/modules.md`. Each may import only the kernel (`src/model`) and itself, enforced by ESLint.
   - `modules/movement-catalog/` — Every movement fixed before play: Mitchell variants and Teams Round Robin generators, recommendations, preview display shapes, and planning a fixed movement for the start (`describeMovement` then `planMovement`). Pure entry `@/modules/movement-catalog` (browser-safe); server entry `@/modules/movement-catalog/server` (`server-only`) for the stored catalogue. `storage/` holds `movements.db` (`storage/db/`) and `PSMovements.txt` / `TSMovements.txt`; only `server.ts` and `storage/` may use I/O.
+  - `modules/timer/` — The bridge session timer: `TimerState` and its configuration, `BridgeTimerEngine` (play/move/break phases), break scheduling and validation, timeline projections and `deriveTimerView` (what a timer screen shows). The live engine store, phase scheduler and start-of-game promotion stay in the core under `services/timer/` because they hold `globalThis` state and use the games database.
   - `modules/swiss/` — The Swiss Pairs and Swiss Teams round-by-round draw (engines, director edits, history folds, round plans) and EBU §3.5 mismatch detection. The draw and mismatch services are adapters over it.
   - `modules/rulings/` — Every pre-scoring rewrite (handover ids, seat swaps, absences, standings); entry `applyRulings`, `ruledBoardInstances`.
   - `modules/scoring/` — Scoring algorithms (matchpoint, cross-IMP, Swiss VP, teams) and `scoreEvent` for whole-event standings. Returns numbers only.
   - `modules/results-views/` — Turns scoring's numbers into `ScoreTable`s (traveller, leaderboard, scorecard, teams board result); entry `travellerViews`, `leaderboardViews`. May import scoring's types only.
-- `timer/` — Bridge session timer engine and scheduler.
 - `socket/` — Socket.IO server: `handlers/`, `middleware/`, room/event maps (`rooms.ts`, `socket-event-map.ts`, `socket-events.ts`).
 - `db/` — Drizzle schemas, queries, and actions, split per database: `game-index/`, `games/`, `players/`, `system/`. `movements.db` is the exception: it lives in `modules/movement-catalog/storage/db/` (its migrations stay in `drizzle/movements`).
 - `scripts/` — Runtime scripts (migrations, EBU sync, movement seeding) run via `tsx`.
@@ -38,7 +38,7 @@ public/                    # Static assets
 
 ## Conventions
 
-- Keep pure domain logic (`model/`, `modules/` except the catalog's `server.ts` and `storage/`, `timer/`) free of React and I/O so it stays unit-testable.
+- Keep pure domain logic (`model/`, `modules/` except the catalog's `server.ts` and `storage/`) free of React and I/O so it stays unit-testable.
 - Co-locate tests and stories with their source: `Name.tsx`, `Name.test.tsx`, `Name.stories.tsx`; integration tests use `*.int.test.ts`.
 - Data flow (default): SWR fetches initial HTTP data, Socket.IO pushes real-time updates, and a socket→SWR sync hook merges those events into the SWR cache. Route new real-time state through this pattern rather than ad-hoc socket listeners in components.
 - Data flow (socket-only screens): for state that lives only over Socket.IO (no HTTP resource), use a feature-scoped context provider that (a) requests its initial slice on mount — and on reconnect — via an acknowledged request event whose data is returned on the callback (e.g. `timer:requestState` → `{ success, data }`), then (b) applies live update events on top. Keep `game:join` a dumb room-join: it must not replay feature state, so joining does not spray every feature's data at every client. The bridge session timer is the reference implementation (`src/context/TimerContext.tsx` + the `timer:requestState` handler).

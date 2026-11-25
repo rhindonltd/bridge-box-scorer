@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
 
 vi.mock("@/db/games/queries/find-timer-state", () => ({
   findAllTimerStates: vi.fn(),
@@ -9,20 +10,23 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   createEngine: vi.fn(),
 }));
 
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
 }));
 
 import { findAllTimerStates } from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { createEngine } from "@/timer/game-store";
-import { scheduleGame } from "@/timer/scheduler";
-import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { buildConfiguredTimerState, TimerState } from "@/timer/timer-state";
+import { createEngine } from "@/services/timer/game-store";
+import { scheduleGame } from "@/services/timer/scheduler";
+import { BridgeTimerEngine } from "@/modules/timer/bridge-timer-engine";
+import {
+  buildConfiguredTimerState,
+  TimerState,
+} from "@/modules/timer/timer-state";
 import { promoteTimerAtGameStart } from "./promote-timer";
 
 function makeIo() {
@@ -61,7 +65,7 @@ describe("promoteTimerAtGameStart", () => {
       ]),
     );
 
-    await promoteTimerAtGameStart("g1", makeIo());
+    await promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo()));
 
     expect(createEngine).toHaveBeenCalledTimes(2);
     expect(createEngine).toHaveBeenCalledWith(
@@ -88,7 +92,7 @@ describe("promoteTimerAtGameStart", () => {
   it("does nothing when no section has a configured timer", async () => {
     vi.mocked(findAllTimerStates).mockResolvedValue(new Map());
 
-    await promoteTimerAtGameStart("g1", makeIo());
+    await promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo()));
 
     expect(createEngine).not.toHaveBeenCalled();
     expect(scheduleGame).not.toHaveBeenCalled();
@@ -101,7 +105,7 @@ describe("promoteTimerAtGameStart", () => {
       new Map<string, TimerState>([["A", buildConfiguredTimerState(config)]]),
     );
 
-    await promoteTimerAtGameStart("g1", makeIo());
+    await promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo()));
 
     expect(createEngine).toHaveBeenCalledTimes(1);
     expect(createEngine).toHaveBeenCalledWith(
@@ -130,7 +134,7 @@ describe("promoteTimerAtGameStart", () => {
       ]),
     );
 
-    await promoteTimerAtGameStart("g1", makeIo());
+    await promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo()));
 
     // Only A (configured) is promoted; B (already live) is skipped.
     expect(createEngine).toHaveBeenCalledTimes(1);
@@ -158,7 +162,7 @@ describe("promoteTimerAtGameStart", () => {
       .mockImplementationOnce(async () => readyEngine());
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    await promoteTimerAtGameStart("g1", makeIo());
+    await promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo()));
 
     expect(createEngine).toHaveBeenCalledTimes(2);
     // B was still scheduled despite A throwing.
@@ -171,7 +175,7 @@ describe("promoteTimerAtGameStart", () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(
-      promoteTimerAtGameStart("g1", makeIo()),
+      promoteTimerAtGameStart("g1", makeTimerBroadcaster(makeIo())),
     ).resolves.toBeUndefined();
 
     errSpy.mockRestore();

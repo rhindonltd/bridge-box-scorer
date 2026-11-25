@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockGetEngine = vi.fn();
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   getEngine: (...a: unknown[]) => mockGetEngine(...a),
 }));
 const mockScheduleGame = vi.fn();
 const mockCancelGameSchedule = vi.fn();
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: (...a: unknown[]) => mockScheduleGame(...a),
   cancelGameSchedule: (...a: unknown[]) => mockCancelGameSchedule(...a),
 }));

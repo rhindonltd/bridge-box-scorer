@@ -4,7 +4,7 @@ import type { Server } from "socket.io";
 
 import { getIO } from "@/socket/websocket";
 import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
-import type { TimerState } from "@/timer/timer-state";
+import type { TimerState } from "@/modules/timer";
 import type { SectionLetter } from "@/model/participants";
 
 /**

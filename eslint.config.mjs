@@ -246,6 +246,7 @@ const eslintConfig = defineConfig([
   moduleBlock("swiss"),
   moduleBlock("rulings"),
   moduleBlock("scoring"),
+  moduleBlock("timer"),
   // Results views lay out scoring's numbers, so they read scoring's types.
   moduleBlock("results-views", { allowTypesFrom: ["scoring"] }),
   // The movement catalog's pure side (its main entry and everything outside

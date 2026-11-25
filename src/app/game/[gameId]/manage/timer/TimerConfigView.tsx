@@ -1,7 +1,7 @@
 "use client";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { BreakProblem } from "@/timer/breaks";
+import { BreakProblem } from "@/modules/timer";
 import { TimerConfigFields } from "./TimerConfigFields";
 import { TimerBreaksEditor } from "./TimerBreaksEditor";
 import { TimerConfig, TimerConfigHandlers } from "./timer-view-types";

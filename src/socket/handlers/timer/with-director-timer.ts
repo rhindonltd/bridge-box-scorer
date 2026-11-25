@@ -1,8 +1,8 @@
 import { Server } from "socket.io";
-import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { getEngine } from "@/timer/game-store";
+import { BridgeTimerEngine } from "@/modules/timer";
+import { getEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { scheduleGame, cancelGameSchedule } from "@/timer/scheduler";
+import { scheduleGame, cancelGameSchedule } from "@/services/timer/scheduler";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { HandlerError } from "@/socket/handlers/handler-wrapper";
 import { assertNotFinalised } from "@/socket/middleware/finalised-guard";

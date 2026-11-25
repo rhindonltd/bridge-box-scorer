@@ -1,5 +1,8 @@
-import { TimerState } from "@/timer/timer-state";
-import { gapPhaseAfterRound, resolveBreakDurationMs } from "@/timer/breaks";
+import { TimerState } from "@/modules/timer/timer-state";
+import {
+  gapPhaseAfterRound,
+  resolveBreakDurationMs,
+} from "@/modules/timer/breaks";
 
 export class BridgeTimerEngine {
   private readonly state: TimerState;

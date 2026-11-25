@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   getEngine: vi.fn(),
 }));
 
@@ -8,7 +8,7 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { getEngine } from "@/timer/game-store";
+import { getEngine } from "@/services/timer/game-store";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerRequestStateHandler } from "./request-state.handler";
 

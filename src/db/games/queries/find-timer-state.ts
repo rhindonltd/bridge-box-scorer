@@ -1,4 +1,4 @@
-import { TimerState } from "@/timer/timer-state";
+import { TimerState } from "@/modules/timer";
 import { requireGameDb } from "@/db/games";
 import { metadata } from "@/db/games/tables/metadata";
 import { SectionLetter } from "@/model/participants";

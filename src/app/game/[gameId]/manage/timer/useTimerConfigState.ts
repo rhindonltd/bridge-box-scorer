@@ -1,19 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { TimerState } from "@/timer/timer-state";
+import { TimerState, computePlayEndByRound } from "@/modules/timer";
 import { TimerConfig } from "./timer-view-types";
-import { computePlayEndByRound, formatDuration } from "./timer-format";
+import { formatDuration } from "./timer-format";
 import { useBreakEditor } from "./useBreakEditor";
 
 // Re-exported for existing consumers/tests that import these from the hook
 // module. The implementations now live in the framework-free `timer-format`.
-export {
-  computePlayEndByRound,
-  msToLabel,
-  msToResumeAt,
-  resumeAtToMs,
-} from "./timer-format";
+export { msToLabel, msToResumeAt, resumeAtToMs } from "./timer-format";
 
 /**
  * Owns the editable timer configuration (durations, timing mode, breaks,

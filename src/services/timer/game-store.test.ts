@@ -11,7 +11,7 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
 import { findTimerState } from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { createEngine, getEngine, getAllEngines } from "./game-store";
-import type { TimerState } from "./timer-state";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 describe("game-store", () => {
   beforeEach(() => {

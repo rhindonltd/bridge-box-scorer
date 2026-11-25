@@ -6,7 +6,7 @@ import {
 } from "./broadcast-timer";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import type { TimerState } from "@/timer/timer-state";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 function state(): TimerState {
   return {

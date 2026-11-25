@@ -1,7 +1,6 @@
-import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
+import { BridgeTimerEngine, TimerState } from "@/modules/timer";
 import { findTimerState } from "@/db/games/queries/find-timer-state";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { TimerState } from "@/timer/timer-state";
 import { SectionLetter } from "@/model/participants";
 
 /**

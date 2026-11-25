@@ -5,7 +5,7 @@ import { waitForEvent, emitWithAck } from "@/socket/test/socket-helpers";
 import { SocketEvents } from "@/socket/socket-events";
 
 // ---- mocks ----
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   getEngine: vi.fn(),
 }));
 
@@ -13,7 +13,7 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
 }));
 
@@ -21,14 +21,14 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { getEngine } from "@/timer/game-store";
+import { getEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerStartTimerHandler } from "./start-timer.handler";
 import { registerRequestStateHandler } from "./request-state.handler";
 import { registerJoinGameHandler } from "@/socket/handlers/game/join-game/join-game.handler";
-import { BridgeTimerEngine } from "@/timer/bridge-timer-engine";
-import { TimerState } from "@/timer/timer-state";
+import { BridgeTimerEngine } from "@/modules/timer/bridge-timer-engine";
+import { TimerState } from "@/modules/timer/timer-state";
 
 describe("registerStartTimerHandler (integration)", () => {
   let closeServer: () => Promise<void>;

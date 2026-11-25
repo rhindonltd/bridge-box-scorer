@@ -22,8 +22,8 @@ vi.mock("@/context/TimerContext", () => ({
 }));
 
 const mockDerived = vi.fn();
-vi.mock("@/hooks/timer-derived", () => ({
-  useTimerDerived: (...args: unknown[]) => mockDerived(...args),
+vi.mock("@/modules/timer/timer-derived", () => ({
+  deriveTimerView: (...args: unknown[]) => mockDerived(...args),
 }));
 
 const displaySpy = vi.fn();

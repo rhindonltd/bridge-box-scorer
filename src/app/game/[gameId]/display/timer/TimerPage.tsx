@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TimerProvider, useTimerContext } from "@/context/TimerContext";
-import { useTimerDerived } from "@/hooks/timer-derived";
+import { deriveTimerView } from "@/modules/timer";
 import { useRequiredGame } from "@/context/GameContext";
 import { useSections } from "@/hooks/sections";
 import { DisplayTimerPage } from "@/app/game/[gameId]/display/timer/DisplayTimerPage";
@@ -20,7 +20,7 @@ function TimerPageContent({ onBack }: { onBack?: () => void }) {
     isRunning,
     projectedEndDate,
     warningSeconds,
-  } = useTimerDerived(timerState, now());
+  } = deriveTimerView(timerState, now());
 
   /* ---------------- LOCAL TICK (render only) ---------------- */
 

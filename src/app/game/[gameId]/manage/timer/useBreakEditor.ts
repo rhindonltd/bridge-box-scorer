@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { BreakConfig } from "@/timer/timer-state";
+import { computePlayEndByRound, BreakConfig } from "@/modules/timer";
 import { BreakDraft } from "./timer-view-types";
 import {
   breakConfigToDraft,
-  computePlayEndByRound,
   msToLabel,
   msToResumeAt,
   resumeAtToMs,

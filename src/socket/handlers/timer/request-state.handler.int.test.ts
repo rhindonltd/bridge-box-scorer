@@ -14,7 +14,7 @@ vi.mock("@/db/games/queries/find-timer-state", () => ({
   findTimerState: vi.fn(),
 }));
 
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
   cancelGameSchedule: vi.fn(),
 }));

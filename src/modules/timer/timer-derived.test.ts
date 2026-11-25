@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { useTimerDerived } from "./timer-derived";
-import type { TimerState } from "@/timer/timer-state";
+import { deriveTimerView } from "./timer-derived";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 function makeState(overrides: Partial<TimerState> = {}): TimerState {
   return {
@@ -19,9 +19,9 @@ function makeState(overrides: Partial<TimerState> = {}): TimerState {
   };
 }
 
-describe("useTimerDerived", () => {
+describe("deriveTimerView", () => {
   it("returns defaults when state is null", () => {
-    const result = useTimerDerived(null, Date.now());
+    const result = deriveTimerView(null, Date.now());
     expect(result.remaining).toBe(0);
     expect(result.phase).toBeNull();
     expect(result.round).toBeNull();
@@ -32,13 +32,13 @@ describe("useTimerDerived", () => {
 
   it("returns full play duration when not running and no remainingMs", () => {
     const state = makeState();
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.remaining).toBe(420);
   });
 
   it("returns remaining seconds from remainingMs when paused", () => {
     const state = makeState({ remainingMs: 150_000 });
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.remaining).toBe(150); // ceil(150000/1000)
   });
 
@@ -49,7 +49,7 @@ describe("useTimerDerived", () => {
       phaseStartedAt: now - 60_000,
       playDuration: 420,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     expect(result.remaining).toBe(360); // 420 - 60
   });
 
@@ -60,32 +60,32 @@ describe("useTimerDerived", () => {
       phaseStartedAt: now - 500_000,
       playDuration: 420,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     expect(result.remaining).toBe(0);
   });
 
   it("uses moveDuration in move phase", () => {
     const state = makeState({ phase: "move", moveDuration: 60 });
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.remaining).toBe(60);
   });
 
   it("returns 0 remaining in finished phase", () => {
     const state = makeState({ phase: "finished" });
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.remaining).toBe(0);
   });
 
   describe("title", () => {
     it("shows round info during play", () => {
       const state = makeState({ phase: "play", round: 3, totalRounds: 7 });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.title).toBe("Round 3 of 7");
     });
 
     it("shows move info during move", () => {
       const state = makeState({ phase: "move", round: 3 });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.title).toBe("Move for Round 3");
     });
 
@@ -94,14 +94,14 @@ describe("useTimerDerived", () => {
       // null) at the very start of round 1. It must not fall through to the
       // move label — the players are seated and about to play round 1.
       const state = makeState({ phase: null, round: 1, totalRounds: 7 });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.title).toBe("Round 1 of 7");
       expect(result.title).not.toBe("Move for Round 1");
     });
 
     it("shows session complete when finished", () => {
       const state = makeState({ phase: "finished" });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.title).toBe("Session Complete");
     });
   });
@@ -113,13 +113,13 @@ describe("useTimerDerived", () => {
         board: 2,
         boardsPerRound: 4,
       });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.boardLabel).toBe("Board 2 of 4");
     });
 
     it("is null during move phase", () => {
       const state = makeState({ phase: "move" });
-      const result = useTimerDerived(state, Date.now());
+      const result = deriveTimerView(state, Date.now());
       expect(result.boardLabel).toBeNull();
     });
   });
@@ -135,7 +135,7 @@ describe("useTimerDerived", () => {
         moveDuration: 60,
         isRunning: false,
       });
-      const result = useTimerDerived(state, now);
+      const result = deriveTimerView(state, now);
       // remaining: full play (420s) + 1 future round of play (420s) + 1 move (60s)
       // = 420000 + 420000 + 60000 = 900000ms
       expect(result.projectedEndDate.getTime()).toBeGreaterThan(now);
@@ -154,22 +154,22 @@ describe("useTimerDerived", () => {
         isRunning: false,
         remainingMs: null,
       });
-      const result = useTimerDerived(state, now);
+      const result = deriveTimerView(state, now);
       // Two rounds of play (2 * 420s) + one move (60s) = 900s ahead of now.
       expect(result.projectedEndDate.getTime()).toBe(now + 900_000);
     });
   });
 });
 
-describe("useTimerDerived - breaks and warning", () => {
+describe("deriveTimerView - breaks and warning", () => {
   it("returns the configured warning threshold", () => {
     const state = makeState({ warningSeconds: 30 });
-    expect(useTimerDerived(state, Date.now()).warningSeconds).toBe(30);
+    expect(deriveTimerView(state, Date.now()).warningSeconds).toBe(30);
   });
 
   it("defaults the warning threshold to 60 when absent", () => {
     const state = makeState({ warningSeconds: undefined });
-    expect(useTimerDerived(state, Date.now()).warningSeconds).toBe(60);
+    expect(deriveTimerView(state, Date.now()).warningSeconds).toBe(60);
   });
 
   it("shows Break title and break remaining in a break phase", () => {
@@ -180,7 +180,7 @@ describe("useTimerDerived - breaks and warning", () => {
       remainingMs: 300_000,
       isRunning: false,
     });
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.title).toBe("Break");
     expect(result.remaining).toBe(300);
     expect(result.boardLabel).toBeNull();
@@ -195,7 +195,7 @@ describe("useTimerDerived - breaks and warning", () => {
       phaseStartedAt: now - 60_000,
       remainingMs: 300_000,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     // 300s break, 60s elapsed -> 240s remaining.
     expect(result.remaining).toBe(240);
   });
@@ -208,7 +208,7 @@ describe("useTimerDerived - breaks and warning", () => {
       phaseStartedAt: null,
       remainingMs: 180_000,
     });
-    const result = useTimerDerived(state, Date.now());
+    const result = deriveTimerView(state, Date.now());
     expect(result.remaining).toBe(180);
   });
 
@@ -222,7 +222,7 @@ describe("useTimerDerived - breaks and warning", () => {
       moveDuration: 60,
       isRunning: false,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     // move branch: current move (60s) + play for round 1 (420s) +
     // gap after round 1 (60s) + play for round 2 (420s) = 960s.
     expect(result.projectedEndDate.getTime()).toBe(now + 960_000);
@@ -239,7 +239,7 @@ describe("useTimerDerived - breaks and warning", () => {
       isRunning: true,
       phaseStartedAt: now - 30_000,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     // running move: 30s left of move + play for round 2 (420s) = 450s
     // (round === totalRounds so the loop does not add further rounds).
     expect(result.projectedEndDate.getTime()).toBe(now + 450_000);
@@ -259,7 +259,7 @@ describe("useTimerDerived - breaks and warning", () => {
       isRunning: false,
       remainingMs: null,
     });
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
     // Walk from round 3: play(420) + for rounds 3..6 a move(60) + play(420)
     // each = 420 + 4 * 480 = 2340s ahead of now.
     expect(result.projectedEndDate.getTime()).toBe(now + 2_340_000);
@@ -272,7 +272,7 @@ describe("useTimerDerived - breaks and warning", () => {
       isRunning: false,
       remainingMs: null,
     });
-    expect(useTimerDerived(state, Date.now()).remaining).toBe(0);
+    expect(deriveTimerView(state, Date.now()).remaining).toBe(0);
   });
 
   it("treats a running break (no phaseStartedAt, no remainingMs) as zero remaining", () => {
@@ -283,7 +283,7 @@ describe("useTimerDerived - breaks and warning", () => {
       phaseStartedAt: null,
       remainingMs: null,
     });
-    expect(useTimerDerived(state, Date.now()).remaining).toBe(0);
+    expect(deriveTimerView(state, Date.now()).remaining).toBe(0);
   });
 
   it("treats a running break with elapsed time but no remainingMs as zero remaining", () => {
@@ -296,7 +296,7 @@ describe("useTimerDerived - breaks and warning", () => {
       remainingMs: null,
     });
     // durationMs falls back to 0, so remaining is clamped to 0.
-    expect(useTimerDerived(state, now).remaining).toBe(0);
+    expect(deriveTimerView(state, now).remaining).toBe(0);
   });
 
   it("returns the full duration for a running play phase with no phaseStartedAt", () => {
@@ -306,7 +306,7 @@ describe("useTimerDerived - breaks and warning", () => {
       phaseStartedAt: null,
       playDuration: 420,
     });
-    expect(useTimerDerived(state, Date.now()).remaining).toBe(420);
+    expect(deriveTimerView(state, Date.now()).remaining).toBe(420);
   });
 
   it("includes break time in the projected session end", () => {
@@ -331,11 +331,11 @@ describe("useTimerDerived - breaks and warning", () => {
       isRunning: false,
     });
 
-    const endNoBreak = useTimerDerived(
+    const endNoBreak = deriveTimerView(
       withoutBreak,
       now,
     ).projectedEndDate.getTime();
-    const endWithBreak = useTimerDerived(
+    const endWithBreak = deriveTimerView(
       withBreak,
       now,
     ).projectedEndDate.getTime();
@@ -345,7 +345,7 @@ describe("useTimerDerived - breaks and warning", () => {
   });
 });
 
-describe("useTimerDerived — Swiss awaitingDraw", () => {
+describe("deriveTimerView — Swiss awaitingDraw", () => {
   it("shows the waiting title with no countdown or projected end", () => {
     const state = makeState({
       phase: "awaitingDraw",
@@ -353,7 +353,7 @@ describe("useTimerDerived — Swiss awaitingDraw", () => {
       requiresDrawBetweenRounds: true,
     });
     const now = Date.now();
-    const result = useTimerDerived(state, now);
+    const result = deriveTimerView(state, now);
 
     expect(result.phase).toBe("awaitingDraw");
     expect(result.title).toBe("Waiting for next round");

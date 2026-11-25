@@ -11,8 +11,8 @@ vi.mock("@/lib/log", () => ({
 }));
 
 import { scheduleGame, cancelGameSchedule } from "./scheduler";
-import { BridgeTimerEngine } from "./bridge-timer-engine";
-import type { TimerState } from "./timer-state";
+import { BridgeTimerEngine } from "@/modules/timer/bridge-timer-engine";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 describe("scheduleGame", () => {
   beforeEach(() => {

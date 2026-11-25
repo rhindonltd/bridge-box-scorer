@@ -6,7 +6,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { getDb } from "@/db/games";
 import { findSections } from "@/db/games/queries/find-sections";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
-import { clearEngine } from "@/timer/game-store";
+import { clearEngine } from "@/services/timer/game-store";
 import { broadcastTimerCleared } from "@/socket/handlers/timer/broadcast-timer";
 import {
   SelectedMovement,
