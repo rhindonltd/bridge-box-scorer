@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { SwissPreviewAck } from "@/lib/swiss-service";
-import type { NamedSeating } from "@/services/swiss-seating-names";
+import type { NamedSeating } from "@/model/swiss-seating";
 import {
   evaluateSwissSeating,
   reassignBye,
@@ -10,7 +10,7 @@ import {
   swapPairs,
   type SwissPairId,
   type SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
+} from "@/modules/swiss";
 
 const primaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";

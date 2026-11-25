@@ -6,14 +6,14 @@ import type {
   TeamsMatchEntry,
   TeamsTripleEntry,
 } from "@/lib/swiss-service";
-import type { NamedTeam } from "@/services/swiss-teams-seating-names";
+import type { NamedTeam } from "@/model/swiss-seating";
 import type { TeamId } from "@/model/teams-match-layout";
 import {
   evaluateSwissTeamsRound,
   swapTeams,
   teamOpponentKey,
   type SwissTeamsRound,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+} from "@/modules/swiss";
 
 const primaryButtonClass =
   "w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50";

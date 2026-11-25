@@ -3,7 +3,7 @@ import {
   type SwissDrawInput,
   type SwissSeating,
   type SwissPairId,
-} from "@/movement/swiss/swiss-pairing";
+} from "@/modules/swiss/pairs/swiss-pairing";
 import { MismatchDirection } from "@/model/swiss-mismatch";
 
 /**

@@ -4,7 +4,7 @@ import {
   detectTripleMismatches,
 } from "./detect-teams-mismatch";
 import type { TeamId } from "@/model/teams-match-layout";
-import { drawSwissTeamsRound } from "@/movement/swiss-teams/swiss-teams-pairing";
+import { drawSwissTeamsRound } from "@/modules/swiss/teams/swiss-teams-pairing";
 
 /** The ordinary pairing the teams engine gives for an even standings order. */
 function correctOpponents(order: TeamId[]): Map<TeamId, TeamId> {

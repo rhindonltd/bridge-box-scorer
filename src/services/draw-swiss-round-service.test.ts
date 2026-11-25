@@ -9,15 +9,9 @@ vi.mock("@/services/leaderboard-service", () => ({
 }));
 vi.mock("@/db/games/queries/swiss-board-history", () => ({
   getSwissBoardHistory: vi.fn(),
-  swissPairIdFromParticipant: vi.fn(),
-  swissPairIdFromSeat: vi.fn(),
 }));
 vi.mock("@/services/materialize-swiss-round", () => ({
   materializeSwissRound: vi.fn(),
-  // The real swissPairMovementId is pure; keep it so resolveSwissSeatingNames
-  // (mocked below) isn't needed to import it. Not used directly here. The real
-  // one returns the bare pair id.
-  swissPairMovementId: (_t: number, id: number) => `${id}`,
 }));
 // Preview resolves player names; stub it so the service test stays DB-free.
 vi.mock("@/services/swiss-seating-names", () => ({
@@ -38,36 +32,8 @@ import {
 import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { computeSectionLeaderboards } from "@/services/leaderboard-service";
-import {
-  getSwissBoardHistory,
-  swissPairIdFromParticipant,
-  swissPairIdFromSeat,
-} from "@/db/games/queries/swiss-board-history";
+import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
 import { materializeSwissRound } from "@/services/materialize-swiss-round";
-
-/**
- * Decode a seat id (qualified "A1NS" or unqualified "1NS") to a stable pair id
- * for a 2-table event: 1NS→1, 2NS→2, 1EW→3, 2EW→4. Stands in for the real
- * swissPairIdFromSeat (physical seats, e.g. the seated set from occupancy.seat).
- */
-function decodeSeat(id: string): number | null {
-  const m = /(\d+)(NS|EW)$/.exec(id);
-  if (!m) return null;
-  const table = Number(m[1]);
-  return m[2] === "NS" ? table : 2 + table;
-}
-
-/**
- * Decode a BARE board id (section letter + pair number, e.g. "A1" or "1") to
- * its pair id. Stands in for the real swissPairIdFromParticipant (board ids /
- * leaderboard pairIds, which carry no compass direction).
- */
-function decodeBareId(id: string): number | null {
-  const m = /^[A-Z]*(\d+)$/.exec(id);
-  if (!m) return null;
-  const n = Number(m[1]);
-  return n > 0 ? n : null;
-}
 
 /** A minimal Swiss board history for 2 tables (4 pairs), nothing played yet. */
 function emptyHistory(highestRound: number) {
@@ -125,14 +91,12 @@ function seedDrawable(over: { stationaryPairs?: number[] } = {}) {
       section: "A",
       overallScore: {
         lines: [
-          { pairId: "1", totalVP: 30, rank: 1, tied: false },
-          { pairId: "3", totalVP: 25, rank: 2, tied: false },
+          { pairId: "A1", totalVP: 30, rank: 1, tied: false },
+          { pairId: "A3", totalVP: 25, rank: 2, tied: false },
         ],
       },
     },
   ] as never);
-  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
-  vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 }
 
 /**
@@ -165,15 +129,13 @@ function seedHalfMatch() {
       section: "A",
       overallScore: {
         lines: [
-          { pairId: "1", totalVP: 30, rank: 1, tied: false },
-          { pairId: "2", totalVP: 20, rank: 2, tied: false },
-          { pairId: "3", totalVP: 10, rank: 3, tied: false },
+          { pairId: "A1", totalVP: 30, rank: 1, tied: false },
+          { pairId: "A2", totalVP: 20, rank: 2, tied: false },
+          { pairId: "A3", totalVP: 10, rank: 3, tied: false },
         ],
       },
     },
   ] as never);
-  vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
-  vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 }
 
 describe("previewNextSwissRound", () => {
@@ -294,21 +256,22 @@ describe("previewNextSwissRound", () => {
     } as never);
     vi.mocked(getSwissBoardHistory).mockResolvedValue(emptyHistory(0) as never);
     vi.mocked(computeSectionLeaderboards).mockResolvedValue([
-      { section: "B", overallScore: { lines: [{ pairId: "1" }] } },
+      { section: "B", overallScore: { lines: [{ pairId: "A1" }] } },
     ] as never);
-    vi.mocked(swissPairIdFromParticipant).mockImplementation(decodeBareId);
-    vi.mocked(swissPairIdFromSeat).mockImplementation(decodeSeat);
 
     const result = await previewNextSwissRound("g1", "A");
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.roundNumber).toBe(1);
-    // The section-"B" leaderboard line is never decoded for section "A".
-    expect(swissPairIdFromParticipant).not.toHaveBeenCalledWith(
-      "1",
-      expect.anything(),
-    );
+    // The section-"B" leaderboard line is ignored for section "A": the whole
+    // field comes from the append loop, every pair on a zero total.
+    expect(result.standings.map((e) => [e.id, e.total])).toEqual([
+      [1, 0],
+      [2, 0],
+      [3, 0],
+      [4, 0],
+    ]);
   });
 
   it("previews a 2-half-matches group for an odd field with a HALF_MATCHES round", async () => {
@@ -342,7 +305,7 @@ describe("previewNextSwissRound", () => {
         { seat: null },
         { seat: "not-a-seat" },
         { seat: "B1NS" },
-        // Parses as a seat but the (stubbed) decoder yields no pair id.
+        // Not a plain seat (a handover suffix): it adds no new pair.
         { seat: "A1NS#7" },
         ...assignmentsFor(["A1NS", "A2NS", "A1EW", "A2EW"]),
       ] as never) as never,
@@ -357,7 +320,7 @@ describe("previewNextSwissRound", () => {
     vi.mocked(computeSectionLeaderboards).mockResolvedValue([
       {
         section: "A",
-        overallScore: { lines: [{ pairId: "1" }, { pairId: "3" }] },
+        overallScore: { lines: [{ pairId: "A1" }, { pairId: "A3" }] },
       },
     ] as never);
     const result = await previewNextSwissRound("g1", "A");
@@ -377,7 +340,7 @@ describe("previewNextSwissRound", () => {
             { pairId: "A1", totalVP: 30, rank: 1, tied: false },
             { pairId: "A1", totalVP: 30, rank: 1, tied: false },
             { pairId: "zzz", totalVP: 20, rank: 2, tied: false },
-            { pairId: "9", totalVP: 10, rank: 3, tied: false },
+            { pairId: "A9", totalVP: 10, rank: 3, tied: false },
           ],
         },
       },
@@ -567,12 +530,6 @@ describe("commitNextSwissRound", () => {
   describe("a seven-pair field (four tables)", () => {
     function seedSeven() {
       seedHalfMatch();
-      const decode = (id: string): number | null => {
-        const m = /(\d+)(NS|EW)$/.exec(id);
-        if (!m) return null;
-        return m[2] === "NS" ? Number(m[1]) : 4 + Number(m[1]);
-      };
-      vi.mocked(swissPairIdFromSeat).mockImplementation(decode);
       vi.mocked(getDb).mockResolvedValue(
         stubDb(
           [{ status: "CONFIRMED" }],

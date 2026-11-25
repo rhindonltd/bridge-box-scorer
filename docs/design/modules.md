@@ -1051,6 +1051,49 @@ the database reads, name lookups (`swiss-seating-names.ts:73`,
 | `src/app/game/[gameId]/manage/movement/SwissDrawPreview.tsx`                                      | `evaluateSwissSeating`, `reassignBye`, `rehydrateAdvisoryInputs`, `swapPairs`, types; `NamedSeating`                                                                                                                                                                       | swiss entry (browser-safe)                                                                                                   |
 | `src/app/game/[gameId]/manage/movement/SwissTeamsDrawPreview.tsx`                                 | `evaluateSwissTeamsRound`, `swapTeams`, `teamOpponentKey`, types; `NamedTeam`                                                                                                                                                                                              | swiss entry (browser-safe)                                                                                                   |
 
+### 7.6 As built (step 4)
+
+`src/modules/swiss/` holds `pairs/`, `teams/`, `detection/`, `board-ranges.ts`,
+`standings-decode.ts` and `swiss-standings.ts`, behind `index.ts`. Its lint
+block lets it import the kernel and itself only. The core adapters keep their
+paths and exported names (the draw services, `detect-swiss-mismatch-service`,
+`materialize-swiss-*-round`, and the `swiss-board-history`,
+`swiss-committed-seating` and `swiss-teams-committed` queries), so the socket
+handlers, API routes, route-test mock and integration tests are unchanged.
+Differences from 7.1 and 7.2:
+
+- The engines and detectors moved whole (`pairs/swiss-pairing.ts`,
+  `teams/swiss-teams-pairing.ts`, `detection/`). The planners kept their names
+  (`swissRoundToMaterializable`, `swissTeamsRoundToMaterializable`) rather than
+  becoming `planSwissRound` / `planSwissTeamsRound`.
+- The history folds are `swissPairsHistory(matchRows, boardRows, tables)` and
+  `swissTeamsHistory(matchRows)`; the committed-round folds are
+  `swissCommittedRound` and `swissTeamsCommittedRound`. The two teams history
+  folds (the draw's and the §3.5 "prior history") were the same rules, so
+  `swissTeamsHistory` replaces both. The adapters still filter rows by round in
+  the query.
+- Draw-input building: `swissPairsField` / `swissTeamsField` (the field in draw
+  order; pairs only counts seated pairs, from `seatedSwissPairIds`),
+  `pairsDrawInput` (stationary pairs and odd-round handling for a round, used
+  by both the next draw and the §3.5 replay), `resolveTeamsOddRound`, and the
+  commit checks `isValidHalfMatchCommit` and `isStructurallyValidTeamsRound`.
+- The standings decoders take a structural `RankedStandings` (`{ overallScore:
+{ lines } }`), so swiss never imports scoring.
+- §3.5: `detectSwissPairsMismatches` and `detectSwissTeamsMismatches` take
+  plain per-round data (standings order as of the round, prior history,
+  committed round), the current VP totals and the decoded rulings
+  (`ruledMismatches`). They return `SectionMismatchCandidate`, which now lives
+  in the module. The adapter keeps every read, including the as-of standings
+  from `computeSectionLeaderboardsAsOf` and the teams highest round from the
+  board rows.
+- `stationaryPairsForRound` and `withStationaryHistory` stay in the kernel
+  (`src/model/selected-movement.ts`), next to the schema they read.
+- The `Named*` seating types moved to the kernel (`src/model/swiss-seating.ts`)
+  using `PlayerRecord`, so the client no longer imports types from server-only
+  files. `TeamTripleKind` is no longer used outside scoring; the teams draw
+  uses the engine's identical `TripleKind`.
+- Q16 is answered by the above.
+
 ## 8. rulings
 
 Owns every rewrite of results that happens before scoring: who a board is
@@ -1834,6 +1877,7 @@ Behaviour changes and tidy-ups found during the design are in
 - **Q16.** The exact pure/I-O split inside `getSwissBoardHistory`,
   `getSwissTeamsPriorHistory`, the draw services' input building and the
   detection loop. I read their signatures and callers, not every line.
+  **Answered** in step 4 (7.6).
 - **Q17.** `scripts/dump-db-movements.mjs` was not read.
 - **Q20.** That a teams game can only choose Swiss Teams or Round Robin. If
   so, the pairs IMP error path is unreachable (D11), and the stored team
@@ -1876,8 +1920,9 @@ landing with its lint block switched on:
    table is built in results-views, and the screens get them through
    `travellerViews`, `leaderboardViews`, the scorecard builders and
    `teamBoardResultTable`. D5 followed as its own step (**done**, 14.1).
-4. **swiss**, including §3.5 detection, which by then can call `scoreEvent`
-   through its adapter.
+4. **swiss**, including §3.5 detection. **Done** (see 7.6). The draw services,
+   the mismatch service and the Swiss queries are now adapters over
+   `@/modules/swiss`.
 5. **movement-catalog**, including the `movements.db` move (D12).
 6. Then revisit the further candidates (D14).
 

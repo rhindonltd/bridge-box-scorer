@@ -10,12 +10,12 @@ import {
   swissRoundToMaterializable,
   swissHalfMatchBoardSplit,
   swissHalfMatchToMaterializable,
-  materializeSwissRound,
-} from "./materialize-swiss-round";
+} from "@/modules/swiss";
+import { materializeSwissRound } from "./materialize-swiss-round";
 import type {
   SwissHalfMatchGroup,
   SwissSeating,
-} from "@/movement/swiss/swiss-pairing";
+} from "@/modules/swiss/pairs/swiss-pairing";
 import { buildSectionRows } from "./materialize-movement";
 import { segmentsForPair } from "@/modules/scoring/swiss/swiss-half-match";
 import type { SwissVpBoardRow } from "@/modules/scoring/swiss/swiss-vp-overall";

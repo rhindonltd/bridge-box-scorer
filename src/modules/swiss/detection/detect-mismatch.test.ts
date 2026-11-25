@@ -7,7 +7,7 @@ import {
   drawSwissRound,
   type SwissDrawInput,
   type SwissPairId,
-} from "@/movement/swiss/swiss-pairing";
+} from "@/modules/swiss/pairs/swiss-pairing";
 
 /**
  * A clean 3-table (6-pair) corrected input with a given standings order and no

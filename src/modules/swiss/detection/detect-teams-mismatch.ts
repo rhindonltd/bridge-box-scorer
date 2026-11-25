@@ -1,7 +1,7 @@
 import type { TeamId } from "@/model/teams-match-layout";
-import { drawSwissTeamsRound } from "@/movement/swiss-teams/swiss-teams-pairing";
+import { drawSwissTeamsRound } from "@/modules/swiss/teams/swiss-teams-pairing";
 import { MismatchDirection } from "@/model/swiss-mismatch";
-import { MISMATCH_VP_THRESHOLD } from "@/movement/swiss/detect-mismatch";
+import { MISMATCH_VP_THRESHOLD } from "@/modules/swiss/detection/detect-mismatch";
 
 /**
  * EBU White Book §3.5 mismatch DETECTION for Swiss TEAMS.

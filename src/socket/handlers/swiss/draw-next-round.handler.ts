@@ -17,12 +17,12 @@ import {
   DEFAULT_DRAW_REJECTION,
 } from "@/socket/handlers/swiss/broadcast-after-draw-commit";
 import type { SectionLetter } from "@/model/participants";
-import type { NamedSeating } from "@/services/swiss-seating-names";
+import type { NamedSeating } from "@/model/swiss-seating";
 import type {
   SerializableAdvisoryInputs,
   SwissHalfMatchSeating,
-} from "@/movement/swiss/swiss-pairing";
-import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
+  SwissStandingEntry,
+} from "@/modules/swiss";
 
 /** A single table's seating as pair ids (the shape echoed back on commit). */
 const seatingSchema = z.array(

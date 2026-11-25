@@ -17,12 +17,12 @@ import {
   DEFAULT_DRAW_REJECTION,
 } from "@/socket/handlers/swiss/broadcast-after-draw-commit";
 import type { SectionLetter } from "@/model/participants";
-import type { NamedTeamsSeating } from "@/services/swiss-teams-seating-names";
-import type { SwissStandingEntry } from "@/movement/swiss/swiss-standings";
+import type { NamedTeamsSeating } from "@/model/swiss-seating";
 import type {
   SerializableTeamsAdvisoryInputs,
   TeamsTriple,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+  SwissStandingEntry,
+} from "@/modules/swiss";
 
 const matchesSchema = z.array(
   z.object({ a: z.number().int().min(1), b: z.number().int().min(1) }),

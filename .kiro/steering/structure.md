@@ -26,6 +26,7 @@ public/                    # Static assets
 - `model/` — Pure domain types and logic (framework-agnostic).
 - `movement/` — Movement generation algorithms (Mitchell, Howell, American Whist).
 - `modules/` — Pure domain modules, each imported only through its entry (`@/modules/<name>`); see `docs/design/modules.md`. Each may import only the kernel (`src/model`) and itself, enforced by ESLint.
+  - `modules/swiss/` — The Swiss Pairs and Swiss Teams round-by-round draw (engines, director edits, history folds, round plans) and EBU §3.5 mismatch detection. The draw and mismatch services are adapters over it.
   - `modules/rulings/` — Every pre-scoring rewrite (handover ids, seat swaps, absences, standings); entry `applyRulings`, `ruledBoardInstances`.
   - `modules/scoring/` — Scoring algorithms (matchpoint, cross-IMP, Swiss VP, teams) and `scoreEvent` for whole-event standings. Returns numbers only.
   - `modules/results-views/` — Turns scoring's numbers into `ScoreTable`s (traveller, leaderboard, scorecard, teams board result); entry `travellerViews`, `leaderboardViews`. May import scoring's types only.

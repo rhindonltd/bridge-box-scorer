@@ -1,7 +1,15 @@
 import { parseSeat } from "@/model/participants";
-import { swissPairIdFromParticipant } from "@/db/games/queries/swiss-board-history";
-import type { SectionStandings } from "@/modules/scoring";
-import type { SwissPairId } from "@/movement/swiss/swiss-pairing";
+import { swissPairIdFromParticipant } from "@/modules/swiss/pairs/pair-ids";
+import type { SwissPairId } from "@/modules/swiss/pairs/swiss-pairing";
+
+/**
+ * The part of a section's standings the decoders read: its ranked lines. Kept
+ * structural so the swiss module never imports scoring; a scoring
+ * `SectionStandings` fits it as is.
+ */
+export interface RankedStandings {
+  overallScore: { lines: readonly unknown[] };
+}
 
 /**
  * Reads a section leaderboard's already-ranked `overallScore.lines` into the
@@ -24,7 +32,7 @@ type Line = Record<string, unknown> & { totalVP?: number };
  * Mirrors the order the overall plugin ranked the field on.
  */
 export function decodeStandingsOrder<Id extends number>(
-  board: SectionStandings | undefined,
+  board: RankedStandings | undefined,
   { decode }: LeaderboardDecoder<Id>,
 ): Id[] {
   if (!board) return [];
@@ -42,7 +50,7 @@ export function decodeStandingsOrder<Id extends number>(
 
 /** Each id's current total VP (0 when a line carries none). */
 export function decodeVpById<Id extends number>(
-  board: SectionStandings | undefined,
+  board: RankedStandings | undefined,
   { decode }: LeaderboardDecoder<Id>,
 ): Map<Id, number> {
   const map = new Map<Id, number>();

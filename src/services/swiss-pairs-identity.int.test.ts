@@ -202,7 +202,7 @@ describe("Swiss Pairs pair identity across rounds", () => {
 
     // The standings the draw ranks on cover every pair, once.
     const { decodeStandingsOrder, pairLeaderboardDecoder } =
-      await import("@/services/leaderboard-standings-decode");
+      await import("@/modules/swiss");
     const { computeSectionLeaderboards } =
       await import("@/services/leaderboard-service");
     const games = await import("@/db/games");

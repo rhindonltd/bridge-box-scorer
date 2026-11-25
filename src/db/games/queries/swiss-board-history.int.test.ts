@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
-import { opponentKey } from "@/movement/swiss/swiss-pairing";
+import { opponentKey } from "@/modules/swiss/pairs/swiss-pairing";
 
 /**
  * Integration coverage for getSwissBoardHistory against a real migrated per-game
