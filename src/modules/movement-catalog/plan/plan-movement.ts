@@ -118,16 +118,6 @@ export function tablesToMaterializableMovement(
 }
 
 /**
- * Convert the generateMitchell output (Tables) into the MovementPlan
- * shape. Thin alias over {@link tablesToMaterializableMovement}, kept for its
- * existing Mitchell call sites. No match descriptor → the default ordinary
- * (field-scored) pairs match.
- */
-export function mitchellToPairMovement(tables: Tables): MovementPlan {
-  return tablesToMaterializableMovement(tables);
-}
-
-/**
  * The home-table number encoded in a teams seat id ("3NS" / "3EW" → 3). A teams
  * RR seat is the home team's NS pair ("${T}NS") or an away pair that travelled
  * from its own home table ("${T}EW"), so the number is the room's home table.

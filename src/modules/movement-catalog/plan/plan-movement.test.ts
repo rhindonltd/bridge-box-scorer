@@ -6,12 +6,12 @@ import {
   type MovementDescription,
 } from "./describe-movement";
 import {
-  mitchellToPairMovement,
   planMovement,
   roundRobinTeamsToMaterializable,
+  tablesToMaterializableMovement,
 } from "./plan-movement";
 
-describe("mitchellToPairMovement", () => {
+describe("tablesToMaterializableMovement", () => {
   it("maps table/round shape and derives boardStart/boardEnd from the boards array", () => {
     const tables: Tables = {
       tables: [
@@ -34,7 +34,7 @@ describe("mitchellToPairMovement", () => {
       ],
     };
 
-    expect(mitchellToPairMovement(tables)).toEqual([
+    expect(tablesToMaterializableMovement(tables)).toEqual([
       {
         tableNumber: 1,
         rounds: [

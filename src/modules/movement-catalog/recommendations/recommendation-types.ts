@@ -71,7 +71,7 @@ export type RecommendedMovement = {
 
 /**
  * Numeric MovementType codes as persisted in the pairmovementspec.type column
- * (see src/movement/shared.ts MovementType enum, stringified at seed time).
+ * (see the MovementType enum in movement-catalog/shared.ts, stringified at seed time).
  */
 const MOVEMENT_TYPE_MITCHELL = "0";
 const MOVEMENT_TYPE_SWITCHED_MITCHELL = "1";
