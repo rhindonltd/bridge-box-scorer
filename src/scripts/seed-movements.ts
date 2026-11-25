@@ -1,7 +1,9 @@
 import "server-only";
 
-import { runMovementsMigrations } from "@/db/movements/migrate";
-import { refreshMovements } from "@/db/movements/actions/refresh-movements";
+import {
+  refreshCatalog,
+  runCatalogMigrations,
+} from "@/modules/movement-catalog/server";
 
 /**
  * DEPRECATED: retained for backward compatibility with the `seed-movements`
@@ -9,14 +11,14 @@ import { refreshMovements } from "@/db/movements/actions/refresh-movements";
  * entry compiled to dist/sync-movements.js).
  *
  * The former append-only seed has been replaced by the shared, idempotent
- * `refreshMovements` action: it migrates the movements database first, then
+ * `refreshCatalog` action: it migrates the movements database first, then
  * wipes and re-seeds the catalogue from PSMovements.txt / TSMovements.txt.
  * Re-running no longer duplicates rows.
  */
 async function main() {
   try {
-    await runMovementsMigrations();
-    const { pairs, teams } = await refreshMovements();
+    await runCatalogMigrations();
+    const { pairs, teams } = await refreshCatalog();
     console.log(
       `✅ Seed complete — ${pairs} pair movements, ${teams} team movements.`,
     );

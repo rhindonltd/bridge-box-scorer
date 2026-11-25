@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MovementDetailView } from "./MovementDetailView";
-import type { MovementByTable } from "@/movement/movementData";
+import type { MovementByTable } from "@/modules/movement-catalog/display/movementData";
 
 const tables: MovementByTable[] = [
   {

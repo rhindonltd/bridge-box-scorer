@@ -70,7 +70,7 @@ const DESCRIPTORS: Record<DbName, DbDescriptor> = {
     envVar: "DATABASE_URL",
     migrationsFolder: "./drizzle/movements",
     fileName: "movements.db",
-    importIndex: () => import("@/db/movements"),
+    importIndex: () => import("@/modules/movement-catalog/storage/db"),
   },
   players: {
     envVar: "DATABASE_URL",

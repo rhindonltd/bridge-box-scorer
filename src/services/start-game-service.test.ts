@@ -2,16 +2,19 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ---- mocks for the movements DB layer used by rehydration ----
 
-vi.mock("@/db/movements/queries/get-movement", () => ({
+vi.mock("@/modules/movement-catalog/storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
 }));
 
-vi.mock("@/db/movements/queries/get-movement-spec", () => ({
-  getPairMovementSpecById: vi.fn(),
-}));
+vi.mock(
+  "@/modules/movement-catalog/storage/db/queries/get-movement-spec",
+  () => ({
+    getPairMovementSpecById: vi.fn(),
+  }),
+);
 
-import { getPairMovement } from "@/db/movements/queries/get-movement";
-import { getPairMovementSpecById } from "@/db/movements/queries/get-movement-spec";
+import { getPairMovement } from "@/modules/movement-catalog/storage/db/queries/get-movement";
+import { getPairMovementSpecById } from "@/modules/movement-catalog/storage/db/queries/get-movement-spec";
 import { resolveSectionStart } from "./start-game-service";
 import { PairSeat } from "@/model/participants";
 

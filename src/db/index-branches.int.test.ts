@@ -40,7 +40,10 @@ afterEach(() => {
 
 describe.each([
   { name: "game-index", importIndex: () => import("@/db/game-index") },
-  { name: "movements", importIndex: () => import("@/db/movements") },
+  {
+    name: "movements",
+    importIndex: () => import("@/modules/movement-catalog/storage/db"),
+  },
   { name: "players", importIndex: () => import("@/db/players") },
   { name: "system", importIndex: () => import("@/db/system") },
 ])("$name index module", ({ name, importIndex }) => {
@@ -67,7 +70,10 @@ describe.each([
 
 describe.each([
   { name: "game-index", importIndex: () => import("@/db/game-index") },
-  { name: "movements", importIndex: () => import("@/db/movements") },
+  {
+    name: "movements",
+    importIndex: () => import("@/modules/movement-catalog/storage/db"),
+  },
   { name: "players", importIndex: () => import("@/db/players") },
   { name: "system", importIndex: () => import("@/db/system") },
 ])("$name index module (default data dir fallback)", ({ importIndex }) => {

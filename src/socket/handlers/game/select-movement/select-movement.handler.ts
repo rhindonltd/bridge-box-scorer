@@ -4,7 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
-import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { MitchellMovementSpec } from "@/modules/movement-catalog";
 import { setSelectedMovement } from "@/db/game-index/actions/set-selected-movement";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { SelectedMovement } from "@/model/selected-movement";

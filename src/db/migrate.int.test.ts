@@ -29,8 +29,9 @@ describe("database migrate entry points", () => {
     harness = createDbHarness("movements");
     await harness.setup();
 
-    const { runMovementsMigrations } = await import("@/db/movements/migrate");
-    await expect(runMovementsMigrations()).resolves.toBeUndefined();
+    const { runCatalogMigrations } =
+      await import("@/modules/movement-catalog/storage/db/migrate");
+    await expect(runCatalogMigrations()).resolves.toBeUndefined();
   });
 
   it("runs the players migrations against a provisioned db", async () => {

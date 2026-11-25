@@ -1,4 +1,4 @@
-import { MovementByRound } from "@/movement/movementData";
+import { MovementByRound } from "@/modules/movement-catalog";
 import { stripSectionPrefix } from "@/model/pair-label";
 
 // The movement is shown one section at a time (selected via the section

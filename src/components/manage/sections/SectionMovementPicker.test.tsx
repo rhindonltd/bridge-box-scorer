@@ -16,10 +16,12 @@ vi.mock("@/lib/section-service", () => ({
 }));
 
 const mockRecommendations = vi.fn();
-vi.mock("@/movement/recommendations/spec-map-recommendations", () => ({
-  recommendationsFromSpecMap: (...args: unknown[]) =>
-    mockRecommendations(...args),
-}));
+vi.mock(
+  "@/modules/movement-catalog/recommendations/spec-map-recommendations",
+  () => ({
+    recommendMovements: (...args: unknown[]) => mockRecommendations(...args),
+  }),
+);
 
 // The picker renders its own content only — it is embedded in the setup page's
 // layout, so there is no nested page header to stub.
@@ -45,7 +47,7 @@ import {
   setSectionSwissMovement,
   setSectionSwissTeamsMovement,
 } from "@/lib/section-service";
-import type { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import type { RecommendedMovement } from "@/modules/movement-catalog/recommendations/recommendation-types";
 import { SectionMovementPicker } from "./SectionMovementPicker";
 
 function generatedRec(): RecommendedMovement {
@@ -431,7 +433,7 @@ describe("SectionMovementPicker", () => {
     mockUseSWR.mockReturnValue({ data: undefined });
     mockRecommendations.mockReturnValue([]);
     render(<SectionMovementPicker gameId="g1" section="A" tables={8} />);
-    // recommendationsFromSpecMap is called with an empty array fallback.
+    // recommendMovements is called with an empty array fallback.
     expect(mockRecommendations).toHaveBeenCalledWith(8, []);
     expect(
       screen.getByText(/No recommended movements are available/),

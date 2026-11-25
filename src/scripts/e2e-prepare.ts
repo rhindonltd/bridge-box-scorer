@@ -18,11 +18,13 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { runMigrations as runGameIndexMigrations } from "@/db/game-index/migrate";
-import { runMovementsMigrations } from "@/db/movements/migrate";
+import {
+  refreshCatalog,
+  runCatalogMigrations,
+} from "@/modules/movement-catalog/server";
 import { runPlayersMigrations } from "@/db/players/migrate";
 import { runSystemMigrations } from "@/db/system/migrate";
 import { seedAdminKey } from "@/db/system/seed-admin-key";
-import { refreshMovements } from "@/db/movements/actions/refresh-movements";
 import { syncPlayers } from "@/db/players/actions/sync-ebu-players";
 import { E2E_PLAYERS } from "@/scripts/e2e-seed/e2e-players";
 
@@ -61,11 +63,11 @@ async function main() {
   fs.mkdirSync(gamesDir, { recursive: true });
 
   await runGameIndexMigrations();
-  await runMovementsMigrations();
+  await runCatalogMigrations();
   await runPlayersMigrations();
   await runSystemMigrations();
   await seedAdminKey();
-  const { pairs, teams } = await refreshMovements();
+  const { pairs, teams } = await refreshCatalog();
   await syncPlayers(
     E2E_PLAYERS.map((p) => ({
       ebuNumber: p.ebuNumber,

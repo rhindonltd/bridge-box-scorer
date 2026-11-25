@@ -1,7 +1,7 @@
 import type { Config } from "drizzle-kit";
 
 export default {
-  schema: "./src/db/movements/schema.ts",
+  schema: "./src/modules/movement-catalog/storage/db/schema.ts",
   out: "./drizzle/movements",
   dialect: "sqlite",
   dbCredentials: {

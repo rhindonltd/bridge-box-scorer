@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
 
-vi.mock("@/db/movements/queries", () => ({
+vi.mock("@/modules/movement-catalog/storage/db/queries/get-movements", () => ({
   getPairMovementSpecsForTables: vi.fn(),
 }));
 vi.mock("@/lib/log", () => ({
@@ -14,7 +14,7 @@ vi.mock("@/lib/log", () => ({
   }),
 }));
 
-import { getPairMovementSpecsForTables } from "@/db/movements/queries";
+import { getPairMovementSpecsForTables } from "@/modules/movement-catalog/storage/db/queries/get-movements";
 import * as appHandler from "./route";
 
 describe("GET /api/movements/pairs/[tables]", () => {

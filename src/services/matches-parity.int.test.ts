@@ -70,9 +70,12 @@ describe("matches table — parity with board-derivation", () => {
   it("static Mitchell pairs: one PAIRS match per table-round, not scored as a unit", async () => {
     const db = (await harness.getDb()) as Db;
     const { createSection } = await import("@/db/games/actions/create-section");
-    const { materializeSections, tablesToMaterializableMovement } =
+    const { materializeSections } =
       await import("@/services/materialize-movement");
-    const { generateMitchell } = await import("@/movement/mitchell/mitchell");
+    const { tablesToMaterializableMovement } =
+      await import("@/modules/movement-catalog/plan/plan-movement");
+    const { generateMitchell } =
+      await import("@/modules/movement-catalog/generation/mitchell/mitchell");
 
     await createSection(harness.gameId, { section: "A", tables: 3 });
     const movement = tablesToMaterializableMovement(

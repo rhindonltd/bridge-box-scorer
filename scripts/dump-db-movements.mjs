@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const raw = fs.readFileSync(
-  path.join(root, "src/movement/PSMovements.txt"),
+  path.join(root, "src/modules/movement-catalog/storage/PSMovements.txt"),
   "utf-8",
 );
 const groups = raw

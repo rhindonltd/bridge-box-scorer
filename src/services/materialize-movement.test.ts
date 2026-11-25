@@ -8,14 +8,10 @@ import type { MovementPlan } from "@/model/movement-plan";
 import {
   buildSectionRows,
   sectionParticipantId,
-  mitchellToPairMovement,
-  roundRobinTeamsToMaterializable,
   materializePairLikeMovement,
   materializeSections,
   resolveMatchIds,
 } from "./materialize-movement";
-import type { Tables } from "@/model/movement";
-import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 import { getDb } from "@/db/games";
 
 describe("sectionParticipantId", () => {
@@ -150,88 +146,6 @@ describe("resolveMatchIds", () => {
     ).toThrow("No match row for board key other");
   });
 });
-describe("mitchellToPairMovement", () => {
-  it("maps table/round shape and derives boardStart/boardEnd from the boards array", () => {
-    const tables: Tables = {
-      tables: [
-        {
-          table: 1,
-          rounds: [
-            {
-              round: 1,
-              boards: [1, 2, 3],
-              boardCopy: "A",
-              participants: { nsId: "1NS", ewId: "1EW" },
-            },
-            {
-              round: 2,
-              boards: [4, 5, 6],
-              participants: { nsId: "1NS", ewId: "2EW" },
-            },
-          ],
-        },
-      ],
-    };
-
-    expect(mitchellToPairMovement(tables)).toEqual([
-      {
-        tableNumber: 1,
-        rounds: [
-          {
-            roundNumber: 1,
-            ns: "1NS",
-            ew: "1EW",
-            boardStart: 1,
-            boardEnd: 3,
-            boardCopy: "A",
-          },
-          {
-            roundNumber: 2,
-            ns: "1NS",
-            ew: "2EW",
-            boardStart: 4,
-            boardEnd: 6,
-            boardCopy: undefined,
-          },
-        ],
-      },
-    ]);
-  });
-});
-
-describe("roundRobinTeamsToMaterializable", () => {
-  it("maps a generated round robin to every table's per-round board rows", () => {
-    const teams = 6;
-    const rounds = teams - 1;
-    const boardsPerRound = 4;
-
-    const movement = roundRobinTeamsToMaterializable(
-      generateRoundRobinTeams({ teams, rounds, boardsPerRound }),
-    );
-
-    // One materializable table per team, each carrying every round.
-    expect(movement.map((t) => t.tableNumber)).toEqual([1, 2, 3, 4, 5, 6]);
-
-    for (const table of movement) {
-      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
-
-      for (const round of table.rounds) {
-        // Board range comes straight from boardsPerRound (round r plays set r).
-        expect(round.boardStart).toBe(
-          (round.roundNumber - 1) * boardsPerRound + 1,
-        );
-        expect(round.boardEnd).toBe(round.roundNumber * boardsPerRound);
-
-        // Home NS pair is this table's own team; away EW pair is another team.
-        expect(round.ns).toBe(`${table.tableNumber}NS`);
-        expect(round.ew).toMatch(/^\d+EW$/);
-        const away = Number(round.ew.replace(/EW$/, ""));
-        expect(away).not.toBe(table.tableNumber);
-      }
-    }
-  });
-});
-
 describe("materializePairLikeMovement", () => {
   it("throws when the game db does not exist", async () => {
     vi.mocked(getDb).mockResolvedValue(undefined as any);

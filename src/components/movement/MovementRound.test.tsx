@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MovementRound } from "./MovementRound";
-import type { MovementByRound } from "@/movement/movementData";
+import type { MovementByRound } from "@/modules/movement-catalog/display/movementData";
 
 describe("MovementRound", () => {
   const roundMock: MovementByRound = {

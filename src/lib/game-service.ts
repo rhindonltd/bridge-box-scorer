@@ -12,7 +12,7 @@ import {
   getPlayerToken,
   clearPlayerToken,
 } from "./player-token";
-import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { MitchellMovementSpec } from "@/modules/movement-catalog";
 
 /**
  * Create a game over HTTP. The creator becomes the game's director; the

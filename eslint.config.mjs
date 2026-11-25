@@ -30,10 +30,20 @@ const TEST_FILES = ["**/*.test.{ts,tsx}", "**/*.int.test.{ts,tsx}"];
  * Inside a module, files import each other with `./` or `@/modules/<name>/…`,
  * never by climbing out with `../`.
  */
-function moduleBlock(name, { allowTypesFrom = [] } = {}) {
+function moduleBlock(
+  name,
+  {
+    allowTypesFrom = [],
+    files = [`src/modules/${name}/**/*.{ts,tsx}`],
+    ignores = [],
+    io = false,
+    allowPatterns = [],
+    extraPatterns = [],
+  } = {},
+) {
   return {
-    files: [`src/modules/${name}/**/*.{ts,tsx}`],
-    ignores: TEST_FILES,
+    files,
+    ignores: [...TEST_FILES, ...ignores],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -49,10 +59,14 @@ function moduleBlock(name, { allowTypesFrom = [] } = {}) {
               group: ["../*"],
               message: `Inside ${name} use ./ or @/modules/${name}/…; never climb out with ../`,
             },
-            {
-              group: IO_AND_FRAMEWORKS,
-              message: `${name} is pure: no framework or I/O imports.`,
-            },
+            ...(io
+              ? []
+              : [
+                  {
+                    group: IO_AND_FRAMEWORKS,
+                    message: `${name} is pure: no framework or I/O imports.`,
+                  },
+                ]),
             {
               group: [
                 "@/*",
@@ -61,6 +75,7 @@ function moduleBlock(name, { allowTypesFrom = [] } = {}) {
                 "@/modules/*",
                 `!@/modules/${name}`,
                 ...allowTypesFrom.map((other) => `!@/modules/${other}`),
+                ...allowPatterns,
               ],
               message: `${name} may import only the kernel (@/model) and itself${allowTypesFrom.length ? `, plus types from ${allowTypesFrom.map((o) => `@/modules/${o}`).join(", ")}` : ""}. See docs/design/modules.md.`,
             },
@@ -70,6 +85,7 @@ function moduleBlock(name, { allowTypesFrom = [] } = {}) {
               group: [`@/modules/${other}/*`],
               message: `${name} may import ${other} only through its entry (@/modules/${other}).`,
             })),
+            ...extraPatterns,
           ],
         },
       ],
@@ -155,6 +171,7 @@ const eslintConfig = defineConfig([
       "src/scripts/**/*.ts",
       "scripts/**/*.{ts,mjs,cjs}",
       "src/db/**/migrate.ts",
+      "src/modules/movement-catalog/storage/db/migrate.ts",
     ],
     rules: {
       "no-console": "off",
@@ -231,6 +248,39 @@ const eslintConfig = defineConfig([
   moduleBlock("scoring"),
   // Results views lay out scoring's numbers, so they read scoring's types.
   moduleBlock("results-views", { allowTypesFrom: ["scoring"] }),
+  // The movement catalog's pure side (its main entry and everything outside
+  // server.ts and storage/) is browser-safe, so it must not reach the stored
+  // catalogue either.
+  moduleBlock("movement-catalog", {
+    ignores: [
+      "src/modules/movement-catalog/server.ts",
+      "src/modules/movement-catalog/storage/**",
+    ],
+    extraPatterns: [
+      {
+        group: [
+          "./server",
+          "./storage/*",
+          "@/modules/movement-catalog/server",
+          "@/modules/movement-catalog/storage/*",
+        ],
+        message:
+          "The movement catalog's pure side may not import server.ts or storage/ (movements.db, the movement files).",
+      },
+    ],
+  }),
+  // The catalog's server side owns movements.db and the movement files, so it
+  // may use I/O and open its database.
+  moduleBlock("movement-catalog", {
+    files: [
+      "src/modules/movement-catalog/server.ts",
+      "src/modules/movement-catalog/storage/**/*.{ts,tsx}",
+    ],
+    io: true,
+    // Re-include @/db, block the rest of it, then re-include the one file
+    // (a negation cannot reach inside an excluded folder).
+    allowPatterns: ["!@/db", "@/db/*", "!@/db/open-database"],
+  }),
 
   // The core reaches a module only through its entry point
   // (`@/modules/<name>`), never its internal files. Tests may reach internals
@@ -244,9 +294,14 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             {
-              group: ["@/modules/*/*", "**/modules/*/*"],
+              group: [
+                "@/modules/*/*",
+                "!@/modules/movement-catalog/server",
+                "**/modules/*/*",
+                "!**/modules/movement-catalog/server",
+              ],
               message:
-                "Import a module through its entry point (@/modules/<name>) only. See docs/design/modules.md.",
+                "Import a module through its entry point (@/modules/<name>, or @/modules/movement-catalog/server) only. See docs/design/modules.md.",
             },
           ],
         },

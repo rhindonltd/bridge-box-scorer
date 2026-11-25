@@ -38,8 +38,11 @@ await build({
 
 // Copy the movement source files next to the bundle so the runtime
 // `fs.readFileSync(path.join(__dirname, "PSMovements.txt"))` in
-// src/movement/shared.ts resolves against dist/ at runtime.
+// src/modules/movement-catalog/storage/movement-file.ts resolves against dist/ at runtime.
 for (const file of ["PSMovements.txt", "TSMovements.txt"]) {
-  copyFileSync(path.join("src", "movement", file), path.join("dist", file));
+  copyFileSync(
+    path.join("src", "modules", "movement-catalog", "storage", file),
+    path.join("dist", file),
+  );
   console.log(`copied ${file} -> dist/${file}`);
 }

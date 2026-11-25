@@ -1,5 +1,5 @@
 import { runMigrations as runGameIndexMigrations } from "@/db/game-index/migrate";
-import { runMovementsMigrations } from "@/db/movements/migrate";
+import { runCatalogMigrations } from "@/modules/movement-catalog/server";
 import { runPlayersMigrations } from "@/db/players/migrate";
 import { runSystemMigrations } from "@/db/system/migrate";
 import { seedAdminKey } from "@/db/system/seed-admin-key";
@@ -11,7 +11,7 @@ async function run() {
   // be migrated here — otherwise a freshly provisioned appliance throws
   // "no such table: games" the first time a game is created.
   await runGameIndexMigrations();
-  await runMovementsMigrations();
+  await runCatalogMigrations();
   await runPlayersMigrations();
   await runSystemMigrations();
 

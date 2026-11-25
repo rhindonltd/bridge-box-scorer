@@ -1,7 +1,9 @@
 import "server-only";
 
-import { runMovementsMigrations } from "@/db/movements/migrate";
-import { refreshMovements } from "@/db/movements/actions/refresh-movements";
+import {
+  refreshCatalog,
+  runCatalogMigrations,
+} from "@/modules/movement-catalog/server";
 
 /**
  * Standalone movement-catalogue refresh.
@@ -25,10 +27,10 @@ import { refreshMovements } from "@/db/movements/actions/refresh-movements";
  */
 async function main() {
   console.log("Running movement migrations...");
-  await runMovementsMigrations();
+  await runCatalogMigrations();
 
   console.log("Refreshing movement catalogue...");
-  const { pairs, teams } = await refreshMovements();
+  const { pairs, teams } = await refreshCatalog();
 
   console.log(
     `✅ Movement refresh complete — ${pairs} pair movements, ${teams} team movements.`,

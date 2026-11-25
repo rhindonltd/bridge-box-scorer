@@ -4,13 +4,13 @@ import { Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
-import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import {
+  RecommendedMovement,
   MovementByTable,
   generatedToMovementByTable,
-} from "@/movement/movementData";
-import { generateMitchell } from "@/movement/mitchell/mitchell";
+  generateMitchell,
+} from "@/modules/movement-catalog";
+import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { Spinner } from "@/components/common/Spinner";
 
 /**

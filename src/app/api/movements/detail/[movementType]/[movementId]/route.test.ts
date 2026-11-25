@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
 
-vi.mock("@/db/movements/queries/get-movement", () => ({
+vi.mock("@/modules/movement-catalog/storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
   getTeamMovement: vi.fn(),
 }));
-vi.mock("@/db/movements/queries/get-movement-spec", () => ({
-  getPairMovementSpecById: vi.fn(),
-  getTeamMovementSpecById: vi.fn(),
-}));
+vi.mock(
+  "@/modules/movement-catalog/storage/db/queries/get-movement-spec",
+  () => ({
+    getPairMovementSpecById: vi.fn(),
+    getTeamMovementSpecById: vi.fn(),
+  }),
+);
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
   childLogger: () => ({
@@ -22,11 +25,11 @@ vi.mock("@/lib/log", () => ({
 import {
   getPairMovement,
   getTeamMovement,
-} from "@/db/movements/queries/get-movement";
+} from "@/modules/movement-catalog/storage/db/queries/get-movement";
 import {
   getPairMovementSpecById,
   getTeamMovementSpecById,
-} from "@/db/movements/queries/get-movement-spec";
+} from "@/modules/movement-catalog/storage/db/queries/get-movement-spec";
 import * as appHandler from "./route";
 
 describe("GET /api/movements/detail/[movementType]/[movementId]", () => {

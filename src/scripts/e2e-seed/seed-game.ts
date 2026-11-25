@@ -29,8 +29,8 @@ import { handoverSeat } from "@/db/games/actions/handover-seat";
 import { setAbsenceTreatment } from "@/db/games/actions/set-absence-treatment";
 import { addExpectedLateSeat } from "@/db/games/queries/expected-late-seats";
 import { findParticipantSecret } from "@/db/games/queries/find-participant-secret";
-import { getPairMovementSpecsForTables } from "@/db/movements/queries";
-import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
+import { listPairMovements } from "@/modules/movement-catalog/server";
+import { recommendMovements } from "@/modules/movement-catalog";
 import { requireGameDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
 import { and, eq, isNotNull, max, or } from "drizzle-orm";
@@ -359,8 +359,8 @@ async function resolveMovement(
         `movement: "recommended" is only for standard pairs fixtures (MP / XIMP).`,
       );
     }
-    const specs = await getPairMovementSpecsForTables(opts.tables);
-    const [first] = recommendationsFromSpecMap(opts.tables, specs);
+    const specs = await listPairMovements(opts.tables);
+    const [first] = recommendMovements(opts.tables, specs);
     if (!first) {
       throw new Error(`No recommended movement for ${opts.tables} tables.`);
     }

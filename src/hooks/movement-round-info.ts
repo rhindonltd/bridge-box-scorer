@@ -6,7 +6,7 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import type { GameType } from "@/model/game-types";
 import type { SelectedMovement } from "@/model/selected-movement";
-import type { MovementByTable } from "@/movement/movementData";
+import type { MovementByTable } from "@/modules/movement-catalog";
 
 /** The round structure derived from a selected movement. */
 export interface MovementRoundInfo {

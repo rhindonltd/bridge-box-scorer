@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import { RecommendedMovement } from "@/modules/movement-catalog/recommendations/recommendation-types";
 
 const movement: RecommendedMovement = {
   family: "HOWELL",

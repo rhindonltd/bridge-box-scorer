@@ -1,4 +1,4 @@
-import { MovementByTable } from "@/movement/movementData";
+import { MovementByTable } from "@/modules/movement-catalog";
 import { stripSectionPrefix } from "@/model/pair-label";
 
 // The movement is shown one section at a time (selected via the section

@@ -6,13 +6,8 @@ import { boards, NewBoard } from "@/db/games/tables/boards";
 import { matches, NewMatch } from "@/db/games/tables/matches";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
-import { Tables } from "@/model/movement";
 import type { MatchKind } from "@/model/game-types";
-import type {
-  MatchDescriptor,
-  MovementPlan,
-  PlannedRound,
-} from "@/model/movement-plan";
+import type { MovementPlan, PlannedRound } from "@/model/movement-plan";
 import { PairSeat, SectionLetter, seatFor } from "@/model/participants";
 
 /**
@@ -336,102 +331,4 @@ async function insertSectionRows(
   }
 
   insertSectionDrafts(db, matchRows, boardRows, anchors);
-}
-
-/**
- * Convert a generated, fully-expanded {@link Tables} movement (board numbers
- * already applied) into the {@link MovementPlan} shape the DB writers
- * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
- * every generator that emits `Tables` — Mitchell-family pairs and Teams Round
- * Robin alike — shares it.
- */
-export function tablesToMaterializableMovement(
-  tables: Tables,
-  /**
-   * Optional per-round match descriptor builder. When omitted every round gets
-   * the default ordinary-pairs match (`PAIRS`, `scoredAsUnit: false`) — correct
-   * for a static matchpoint/XIMP pairs movement. Teams Round Robin supplies one
-   * so its rooms group into `TEAMS` matches scored as a unit.
-   */
-  describeMatch?: (round: {
-    roundNumber: number;
-    tableNumber: number;
-    ns: string;
-    ew: string;
-    boardStart: number;
-    boardEnd: number;
-  }) => MatchDescriptor,
-): MovementPlan {
-  return tables.tables.map((table) => ({
-    tableNumber: table.table,
-    rounds: table.rounds.map((round) => {
-      const boardStart = round.boards[0];
-      const boardEnd = round.boards[round.boards.length - 1];
-      const ns = round.participants.nsId;
-      const ew = round.participants.ewId;
-      return {
-        roundNumber: round.round,
-        ns,
-        ew,
-        boardStart,
-        boardEnd,
-        boardCopy: round.boardCopy,
-        match: describeMatch?.({
-          roundNumber: round.round,
-          tableNumber: table.table,
-          ns,
-          ew,
-          boardStart,
-          boardEnd,
-        }),
-      };
-    }),
-  }));
-}
-
-/**
- * Convert the generateMitchell output (Tables) into the MovementPlan
- * shape. Thin alias over {@link tablesToMaterializableMovement}, kept for its
- * existing Mitchell call sites. No match descriptor → the default ordinary
- * (field-scored) pairs match.
- */
-export function mitchellToPairMovement(tables: Tables): MovementPlan {
-  return tablesToMaterializableMovement(tables);
-}
-
-/**
- * The home-table number encoded in a teams seat id ("3NS" / "3EW" → 3). A teams
- * RR seat is the home team's NS pair ("${T}NS") or an away pair that travelled
- * from its own home table ("${T}EW"), so the number is the room's home table.
- */
-function teamsSeatTable(seatId: string): number {
-  return parseInt(seatId, 10);
-}
-
-/**
- * Convert a generated Teams Round Robin (`generateRoundRobinTeams` output) into
- * the MovementPlan shape, tagging each room with its `TEAMS` match so
- * the two rooms of an encounter group into ONE match scored as a unit.
- *
- * A room at table T sits the home team ("${T}NS") against an away pair whose id
- * encodes the opponent's home table. The encounter's two rooms are at the two
- * teams' home tables; the match is keyed by the unordered home-table pair in
- * the round, and its participants are the two teams' stable ids ("${lo}NS" /
- * "${hi}NS"). `vpPool` is the ordinary 20 and `scoredAsUnit` is true.
- */
-export function roundRobinTeamsToMaterializable(tables: Tables): MovementPlan {
-  return tablesToMaterializableMovement(tables, (round) => {
-    const homeTable = teamsSeatTable(round.ns);
-    const oppTable = teamsSeatTable(round.ew);
-    const lo = Math.min(homeTable, oppTable);
-    const hi = Math.max(homeTable, oppTable);
-    return {
-      kind: "TEAMS",
-      scoredAsUnit: true,
-      key: `${round.roundNumber}|teams|${lo}-${hi}`,
-      home: `${lo}NS`,
-      opponent: `${hi}NS`,
-      vpPool: 20,
-    };
-  });
 }

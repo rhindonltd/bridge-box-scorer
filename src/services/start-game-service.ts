@@ -17,23 +17,18 @@ import {
 } from "@/model/start-validator";
 import { AllSectionsValidationResult } from "@/model/validate-sections";
 
-import {
-  rehydrateSelectedMovement,
-  RehydratedMovement,
-  RehydratedTable,
-} from "@/services/movement-rehydration";
 import { MovementPlan } from "@/model/movement-plan";
 import {
   materializeSections,
-  roundRobinTeamsToMaterializable,
   sectionParticipantId,
   type SeatAnchor,
 } from "@/services/materialize-movement";
-import { generateStandardMitchellWithSitOut } from "@/movement/mitchell/sit-out";
 import {
-  applySpecSitOutNoMissingPair,
-  alignSpecMissingPair,
-} from "@/movement/spec-sit-out";
+  planMovement,
+  type FixedSelectedMovement,
+  type MovementDescription,
+} from "@/modules/movement-catalog";
+import { describeMovement } from "@/modules/movement-catalog/server";
 import {
   drawSwissRound,
   swissPairHomeSeat,
@@ -48,8 +43,9 @@ import {
   swissTeamsRoundOneSeed,
   swissTeamsRoundToMaterializable,
   swissPairIdFromSeat,
+  swissRoundBoardRange,
+  swissRoundOne,
 } from "@/modules/swiss";
-import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
 
 /**
  * Resolution of a single section: its validation and, when valid, the concrete
@@ -65,42 +61,6 @@ export interface ResolvedStart {
    * Absent → the materializer derives them from the round-1 layout.
    */
   anchors?: SeatAnchor[];
-}
-
-/**
- * Apply the appropriate sit-out transformation for a one-pair-short section.
- * Returns a MovementPlan with the dormant rounds flagged sitOut.
- *
- * `sitOutSeat` is section-qualified (e.g. "A3EW"); the sit-out helpers derive
- * the within-section phantom position id from its table + direction, so the
- * section prefix is harmless here.
- */
-function applySitOut(
-  selected: SelectedMovement,
-  rehydrated: RehydratedMovement,
-  sitOutSeat: PairSeat,
-): MovementPlan {
-  // Swiss Pairs resolves its own round-1 sit-out in resolveSwissPairsStart (it
-  // also owns the half-match group guard), so it never reaches here.
-  if (selected.source === "MITCHELL") {
-    if (!rehydrated.isStandardMitchell) {
-      throw new Error(
-        "Sit-out handling is only supported for Standard Mitchell movements.",
-      );
-    }
-    return generateStandardMitchellWithSitOut(selected.mitchell, sitOutSeat);
-  }
-
-  // Database spec.
-  if (rehydrated.missingPair !== null) {
-    return alignSpecMissingPair(
-      rehydrated.movement,
-      rehydrated.missingPair,
-      sitOutSeat,
-    );
-  }
-
-  return applySpecSitOutNoMissingPair(rehydrated.movement, sitOutSeat);
 }
 
 /**
@@ -126,51 +86,92 @@ export async function resolveSectionStart(
     };
   }
 
-  const rehydrated = await rehydrateSelectedMovement(selected);
+  // Swiss rounds are drawn live, so the catalog has no schedule for them; only
+  // their positional round 1 is checked against the seating here.
+  if (selected.source === "SWISS" || selected.source === "SWISS_TEAMS") {
+    const { tables, boardsPerRound } =
+      selected.source === "SWISS"
+        ? selected.swiss
+        : {
+            tables: selected.swissTeams.teams,
+            boardsPerRound: selected.swissTeams.boardsPerRound,
+          };
+    const expected = deriveExpectedSeats(
+      section,
+      pairMovementToTables(swissRoundOneLayout(tables, boardsPerRound)),
+      null,
+    );
+    const validation = validateStart(expected, seatedSeats, expectedLateSeats);
+
+    // Swiss Teams has extra structural requirements the generic validator does
+    // not know about: every table must be a complete team (no sit-out — that
+    // would be half a team) and the team count must be even (odd counts need
+    // three-way handling, which is out of scope). Layer these on top.
+    if (selected.source === "SWISS_TEAMS") {
+      return resolveSwissTeamsStart(section, selected, validation, gameId);
+    }
+
+    // Swiss Pairs with "2 half matches" odd handling needs a group-size guard
+    // the generic validator doesn't know about (a group needs three pairs), and
+    // when round 1 itself is a half-match round it materializes the group
+    // rather than a bye. A BYE round (or an even field) falls through to the
+    // ordinary positional round 1.
+    return resolveSwissPairsStart(section, selected, validation);
+  }
+
+  const description = await describeMovement(selected);
 
   // Derive expected seats from the movement's round-1 layout (no sit-out yet),
   // excluding any built-in phantom, qualified to this section.
   const expected = deriveExpectedSeats(
     section,
-    pairMovementToTables(rehydrated.movement),
-    rehydrated.missingPair != null ? Number(rehydrated.missingPair) : null,
+    pairMovementToTables(description.layout),
+    description.missingPair,
   );
 
   const validation = validateStart(expected, seatedSeats, expectedLateSeats);
-
-  // Swiss Teams has extra structural requirements the generic validator does
-  // not know about: every table must be a complete team (no sit-out — that
-  // would be half a team) and the team count must be even (odd counts need
-  // three-way handling, which is out of scope). Layer these on top.
-  if (selected.source === "SWISS_TEAMS") {
-    return resolveSwissTeamsStart(section, selected, validation, gameId);
-  }
 
   // Teams Round Robin shares Swiss Teams' structural requirements (a full team
   // at every table, an even team count) but, unlike Swiss Teams, its whole
   // fixed schedule is materialized at start rather than drawn round by round.
   if (selected.source === "ROUND_ROBIN_TEAMS") {
-    return resolveRoundRobinTeamsStart(selected, validation);
-  }
-
-  // Swiss Pairs with "2 half matches" odd handling needs a group-size guard the
-  // generic validator doesn't know about (a group needs three pairs), and when
-  // round 1 itself is a half-match round it materializes the group rather than a
-  // bye. A BYE round (or an even field) falls through to the generic path.
-  if (selected.source === "SWISS") {
-    return resolveSwissPairsStart(section, selected, validation);
+    return resolveRoundRobinTeamsStart(selected, description, validation);
   }
 
   if (!validation.canStart) {
     return { validation, movement: null };
   }
 
-  const movement =
-    validation.sitOutSeat !== null
-      ? applySitOut(selected, rehydrated, validation.sitOutSeat)
-      : toMaterializable(rehydrated.movement);
+  return {
+    validation,
+    movement: planMovement(description, { sitOutSeat: validation.sitOutSeat }),
+  };
+}
 
-  return { validation, movement };
+/**
+ * Round 1 of a Swiss event as a positional layout, for the expected-seat check:
+ * table T seats pair T NS against pair tables+T EW, i.e. seats "${T}NS" and
+ * "${T}EW". A pair's participant id is its round-1 home seat (unqualified);
+ * deriveExpectedSeats qualifies it with the section.
+ */
+function swissRoundOneLayout(
+  tables: number,
+  boardsPerRound: number,
+): MovementPlan {
+  const { boardStart, boardEnd } = swissRoundBoardRange(1, boardsPerRound);
+  return swissRoundOne(tables).map((seat) => ({
+    tableNumber: seat.tableNumber,
+    rounds: [
+      {
+        roundNumber: 1,
+        ns: `${seat.tableNumber}NS`,
+        ew: `${seat.tableNumber}EW`,
+        boardStart,
+        boardEnd,
+        boardCopy: "A",
+      },
+    ],
+  }));
 }
 
 /**
@@ -494,10 +495,11 @@ function validateTeamsStructure(
  * front. There is no live draw: the schedule is deterministic from the spec.
  */
 function resolveRoundRobinTeamsStart(
-  selected: Extract<SelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>,
+  selected: Extract<FixedSelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>,
+  description: MovementDescription,
   baseValidation: StartValidationResult,
 ): ResolvedStart {
-  const { teams, rounds, boardsPerRound } = selected.roundRobinTeams;
+  const { teams } = selected.roundRobinTeams;
   // Round Robin has no odd handling: an odd team count is always rejected.
   const validation = validateTeamsStructure(baseValidation, teams, {
     label: "Round Robin Teams",
@@ -507,10 +509,10 @@ function resolveRoundRobinTeamsStart(
     return { validation, movement: null };
   }
 
-  const generated = generateRoundRobinTeams({ teams, rounds, boardsPerRound });
-  const movement = roundRobinTeamsToMaterializable(generated);
-
-  return { validation, movement };
+  return {
+    validation,
+    movement: planMovement(description, { sitOutSeat: null }),
+  };
 }
 
 /**
@@ -559,7 +561,7 @@ async function resolveAllSections(
   }
 
   // Sections are independent, so resolve them concurrently (each reads its own
-  // movement and rehydrates it). Promise.all preserves `sections` order.
+  // movement and describes it). Promise.all preserves `sections` order.
   const resolutions: SectionResolution[] = await Promise.all(
     sections.map(async (s) => {
       const selected = await getSectionMovement(db, s.section);
@@ -634,11 +636,11 @@ function flattenAggregate(
 }
 
 /**
- * Convert a rehydrated movement into the round-oriented Tables shape
+ * Convert a round-1 layout into the round-oriented Tables shape
  * used by deriveExpectedSeats. Only round 1 participants matter for expected seats,
  * but we map all rounds for completeness.
  */
-function pairMovementToTables(movement: RehydratedTable[]): {
+function pairMovementToTables(movement: MovementPlan): {
   tables: {
     table: number;
     rounds: {
@@ -653,9 +655,9 @@ function pairMovementToTables(movement: RehydratedTable[]): {
       table: table.tableNumber,
       rounds: table.rounds.map((round) => ({
         round: round.roundNumber,
-        // Rehydrated rounds always carry a valid inclusive board range
-        // (Mitchell uses boardsForSet, DB specs use boardRangeForSet, both with
-        // a positive boardsPerRound), so boardEnd is never below boardStart;
+        // Layout rounds always carry a valid inclusive board range (Mitchell
+        // uses boardsForSet, stored specs and Swiss round 1 a set range, all
+        // with a positive boardsPerRound), so boardEnd is never below boardStart;
         // the `: []` arm is defensive only.
         /* v8 ignore next 3 */
         boards:
@@ -670,24 +672,6 @@ function pairMovementToTables(movement: RehydratedTable[]): {
 
 function rangeInclusive(start: number, end: number): number[] {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-}
-
-/**
- * Convert a rehydrated DB movement to a MovementPlan with no sit-out
- * flags (used when the movement is exactly filled).
- */
-function toMaterializable(movement: RehydratedTable[]): MovementPlan {
-  return movement.map((table) => ({
-    tableNumber: table.tableNumber,
-    rounds: table.rounds.map((round) => ({
-      roundNumber: round.roundNumber,
-      ns: round.ns,
-      ew: round.ew,
-      boardStart: round.boardStart,
-      boardEnd: round.boardEnd,
-      boardCopy: round.boardCopy,
-    })),
-  }));
 }
 
 /**
