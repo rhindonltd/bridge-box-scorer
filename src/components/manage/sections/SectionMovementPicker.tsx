@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import { PairMovementSpec } from "@/db/movements/schema";
+import {
+  CatalogMovementSummary,
+  RecommendedMovement,
+  recommendMovements,
+} from "@/modules/movement-catalog";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
 import { SelectedMovement } from "@/model/selected-movement";
-import { recommendationsFromSpecMap } from "@/movement/recommendations/spec-map-recommendations";
 import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
@@ -100,13 +102,13 @@ export function SectionMovementPicker({
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
   // concrete id/type at selection time (recommendations reference specs by
   // name, not id).
-  const { data: pairMovements } = useSWR<PairMovementSpec[]>(
+  const { data: pairMovements } = useSWR<CatalogMovementSummary[]>(
     `/api/movements/pairs/${tables}`,
     fetcher,
   );
 
   const recommendations = useMemo<RecommendedMovement[]>(
-    () => recommendationsFromSpecMap(tables, pairMovements ?? []),
+    () => recommendMovements(tables, pairMovements ?? []),
     [tables, pairMovements],
   );
 

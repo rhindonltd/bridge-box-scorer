@@ -9,7 +9,7 @@ import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { MovementByTable } from "@/movement/movementData";
+import { MovementByTable } from "@/modules/movement-catalog";
 import { useSections } from "@/hooks/sections";
 import { SectionPills } from "@/components/manage/sections/SectionPills";
 import { useResultsComplete } from "@/hooks/results-complete";

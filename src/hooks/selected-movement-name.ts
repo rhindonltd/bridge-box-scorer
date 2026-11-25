@@ -6,7 +6,7 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import type { GameType } from "@/model/game-types";
 import type { SelectedMovement } from "@/model/selected-movement";
-import type { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import type { MitchellMovementSpec } from "@/modules/movement-catalog";
 
 type MovementDetailResult = {
   type: GameType;

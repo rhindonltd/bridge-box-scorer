@@ -1,7 +1,7 @@
 import {
   RecommendedMovement,
   RecommendedMovementSpecRef,
-} from "@/movement/recommendations/recommendation-types";
+} from "@/modules/movement-catalog";
 import { SelectedMovement } from "@/model/selected-movement";
 
 /**

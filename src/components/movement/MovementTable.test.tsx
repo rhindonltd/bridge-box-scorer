@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MovementTable } from "./MovementTable";
-import type { MovementByTable } from "@/movement/movementData";
+import type { MovementByTable } from "@/modules/movement-catalog/display/movementData";
 
 describe("MovementTable", () => {
   const tableMock: MovementByTable = {

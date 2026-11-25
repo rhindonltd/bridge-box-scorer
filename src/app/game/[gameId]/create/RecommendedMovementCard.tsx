@@ -1,5 +1,5 @@
 import { Check, Minus, Info } from "lucide-react";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import { RecommendedMovement } from "@/modules/movement-catalog";
 
 type Props = {
   movement: RecommendedMovement;

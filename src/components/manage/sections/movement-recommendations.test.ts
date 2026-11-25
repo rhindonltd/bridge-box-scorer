@@ -3,7 +3,7 @@ import {
   movementMatchesSelection,
   groupByBoardsPerPair,
 } from "./movement-recommendations";
-import type { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import type { RecommendedMovement } from "@/modules/movement-catalog/recommendations/recommendation-types";
 
 const genSpecRef = (
   spec: Partial<{

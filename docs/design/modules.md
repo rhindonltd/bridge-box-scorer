@@ -763,6 +763,66 @@ Unchanged: `src/app/api/games/[gameId]/movement/route.ts` and
 `src/services/movement-service.ts:17` read the movement already written to the
 game database, so they do not touch the catalog.
 
+### 6.6 As built (step 5)
+
+`src/modules/movement-catalog/` has a pure `index.ts` and a `server.ts` that
+starts with `import "server-only"`:
+
+- `generation/` holds the Mitchell variants (`mitchell/`, including the
+  Standard Mitchell sit-out) and Teams Round Robin (`round-robin-teams/`).
+- `display/` holds `movementData.ts` and `table-placement.ts`.
+- `recommendations/` holds the pure recommendation code and the committed
+  `recommendation-spec-map.json`.
+- `plan/` holds `describe-movement.ts`, `plan-movement.ts` and
+  `spec-sit-out.ts`.
+- `shared.ts` holds the movement-file parsing helpers, with no `fs`.
+  `catalog-summary.ts` defines `CatalogMovementSummary`.
+- `storage/` holds the two movement files and `movement-file.ts`
+  (`splitLinesOfFile`). It also holds the pairs and teams file parsers, the
+  maintenance recommendation code (`spec-catalog.ts`,
+  `recommendation-spec-map.ts`) and `db/`, which was `src/db/movements`.
+  `drizzle.config.movements.ts` points at `storage/db/schema.ts`.
+
+The catalog has two lint blocks. The pure side may import only the kernel and
+itself. It may not import `server.ts` or `storage/`, and may not use I/O.
+`server.ts` and `storage/` may also use I/O and `@/db/open-database`. The core
+rule allows `@/modules/movement-catalog/server` as a second entry. The
+`movements.db` migration script keeps its CLI `console` exemption.
+
+Differences from 6.2 and 6.3:
+
+- **Planning is two calls, not one.** The start check needs round 1's
+  expected seats before it knows the sit-out, so it cannot be one call.
+  `describeMovement(selected)` (server) lays the movement out with every seat
+  filled. It returns `{ selected, layout, missingPair }`, reading
+  `movements.db` only for a stored spec. `planMovement(description,
+{ sitOutSeat })` (pure entry) then returns the `MovementPlan`. It applies
+  the Mitchell or stored-spec sit-out, or generates the whole Round Robin
+  schedule. `RehydratedTable` is gone: the layout is a `MovementPlan`. The
+  error "Sit-out handling is only supported for Standard Mitchell
+  movements." and the variant check are unchanged.
+- **Swiss is not described by the catalog.** Swiss round 1's positional
+  layout for the expected-seat check is built in `start-game-service.ts`
+  from `swissRoundOne` and `swissRoundBoardRange`.
+- **Round Robin round 1** for the expected-seat check is built in the catalog
+  (table T seats "${T}NS" v "${T}EW"), so the catalog does not import swiss.
+- **Migrations stay in `./drizzle/movements`.** Drizzle reads them relative to
+  the working directory at runtime, and the appliance's provisioning uses
+  that path, so only the code moved.
+- **Names.** `recommendationsFromSpecMap` is now `recommendMovements`,
+  `refreshMovements` is now `refreshCatalog` and `runMovementsMigrations` is
+  now `runCatalogMigrations`. `getMovementDetail(kind, id)` takes
+  `"PAIRS" | "TEAMS"`, the route's own values, and has no `boardsPerRound`
+  argument because the preview uses the movement's default.
+  `boardRangeForSet` is not on the pure entry: only `getMovementDetail` uses
+  it now.
+- **Not added:** `buildRecommendationSnapshot` and `recommendationCoverage`.
+  `scripts/coverage-report.mjs` still imports the two files directly, with
+  paths updated. Scripts are outside the lint rules.
+- **Dead code removed:** `mitchellToPairMovement` (its test now covers
+  `tablesToMaterializableMovement`) and `MovementCategories` had no callers
+  outside their tests.
+
 ## 7. swiss
 
 Owns the round-by-round draw for Swiss Pairs and Swiss Teams: the draw
@@ -1878,7 +1938,9 @@ Behaviour changes and tidy-ups found during the design are in
   `getSwissTeamsPriorHistory`, the draw services' input building and the
   detection loop. I read their signatures and callers, not every line.
   **Answered** in step 4 (7.6).
-- **Q17.** `scripts/dump-db-movements.mjs` was not read.
+- **Q17.** `scripts/dump-db-movements.mjs` was not read. **Answered:** it is a
+  maintenance script that parses `PSMovements.txt` itself and prints a
+  summary. It needed a path update only (6.6).
 - **Q20.** That a teams game can only choose Swiss Teams or Round Robin. If
   so, the pairs IMP error path is unreachable (D11), and the stored team
   movements (`TSMovements.txt`, `getTeamMovement`) may be unused. Still open;
@@ -1923,7 +1985,9 @@ landing with its lint block switched on:
 4. **swiss**, including §3.5 detection. **Done** (see 7.6). The draw services,
    the mismatch service and the Swiss queries are now adapters over
    `@/modules/swiss`.
-5. **movement-catalog**, including the `movements.db` move (D12).
+5. **movement-catalog**, including the `movements.db` move (D12). **Done**
+   (see 6.6). The start service describes a fixed movement, validates the
+   seating, then plans it, all through the catalog's entries.
 6. Then revisit the further candidates (D14).
 
 The follow-ups in [`modules-follow-ups.md`](modules-follow-ups.md) can be slotted in

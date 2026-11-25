@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { fn } from "storybook/test";
 import { RecommendedMovementCard } from "@/app/game/[gameId]/create/RecommendedMovementCard";
-import { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import { RecommendedMovement } from "@/modules/movement-catalog";
 
 const generatedMitchell: RecommendedMovement = {
   family: "MITCHELL",

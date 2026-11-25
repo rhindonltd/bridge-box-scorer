@@ -28,9 +28,9 @@ vi.mock("@/db/games/queries/expected-late-seats", () => ({
 }));
 
 vi.mock("@/services/materialize-movement", async (importActual) => {
-  // Mock only the DB write (materializeSections); keep the real pure mappers
-  // (e.g. roundRobinTeamsToMaterializable) so the resolver produces its real
-  // materializable movement, which the tests below assert on.
+  // Mock only the DB write (materializeSections); keep the rest real so the
+  // resolver produces its real materializable movement, which the tests below
+  // assert on.
   const actual =
     await importActual<typeof import("@/services/materialize-movement")>();
   return {

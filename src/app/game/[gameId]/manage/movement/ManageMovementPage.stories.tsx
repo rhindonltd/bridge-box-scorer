@@ -6,7 +6,7 @@ import { ManageMovementPage } from "@/app/game/[gameId]/manage/movement/ManageMo
 import { withGame } from "@storybook/decorators/GameDecorator";
 import { mockGame } from "@/mocks/fixtures/game";
 import { swrKeys } from "@/swr/swr-keys";
-import type { MovementByTable } from "@/movement/movementData";
+import type { MovementByTable } from "@/modules/movement-catalog";
 // Imported with the full relative path + extension so the mocked() call below
 // targets the same module instance registered for mocking in
 // .storybook/preview.tsx (used by the embedded SwissDrawControl).

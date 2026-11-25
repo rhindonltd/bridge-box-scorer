@@ -10,14 +10,14 @@ import type {
   SwissMovementSpec,
 } from "@/model/selected-movement";
 import { swissPairHomeSeat } from "@/modules/swiss";
-import type { MovementByTable } from "@/movement/movementData";
-import { generatedToMovementByTable } from "@/movement/movementData";
-import { generateMitchell } from "@/movement/mitchell/mitchell";
 import {
+  type MovementByTable,
+  generatedToMovementByTable,
+  generateMitchell,
   buildTablePlacement,
   withRelay,
   type TablePlacement,
-} from "@/movement/table-placement";
+} from "@/modules/movement-catalog";
 
 /** Which directions of a table stay put for the whole movement. */
 export interface StationaryDirections {

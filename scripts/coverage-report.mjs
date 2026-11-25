@@ -1,8 +1,8 @@
 // Print a coverage report of the recommendation-to-spec mapping.
 // Run: npx tsx --require ./scripts/allow-server-only.cjs scripts/coverage-report.mjs
 import fs from "node:fs";
-import { buildSpecCatalog } from "../src/movement/recommendations/spec-catalog.ts";
-import { resolveRecommendationDescriptor } from "../src/movement/recommendations/resolve-recommendation.ts";
+import { buildSpecCatalog } from "../src/modules/movement-catalog/storage/recommendations/spec-catalog.ts";
+import { resolveRecommendationDescriptor } from "../src/modules/movement-catalog/recommendations/resolve-recommendation.ts";
 
 const j = JSON.parse(fs.readFileSync("scripts/recommendations.json", "utf8"));
 const catalog = buildSpecCatalog();

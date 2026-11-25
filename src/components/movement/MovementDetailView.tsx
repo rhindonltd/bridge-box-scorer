@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { buildRounds, MovementByTable } from "@/movement/movementData";
+import { buildRounds, MovementByTable } from "@/modules/movement-catalog";
 import { MovementTable } from "./MovementTable";
 import { MovementRound } from "./MovementRound";
 

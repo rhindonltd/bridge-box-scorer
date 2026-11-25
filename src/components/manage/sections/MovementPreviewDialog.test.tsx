@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import type { RecommendedMovement } from "@/movement/recommendations/recommendation-types";
+import type { RecommendedMovement } from "@/modules/movement-catalog/recommendations/recommendation-types";
 
 // SWR is driven per-test so the db-detail fetch can supply (or withhold) layout.
 const mockUseSWR = vi.fn();
@@ -13,12 +13,12 @@ vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 // The Mitchell generator is mocked so a test can force it to throw, exercising
 // the preview's defensive catch -> null (spinner) path.
 const mockGenerateMitchell = vi.fn();
-vi.mock("@/movement/mitchell/mitchell", () => ({
+vi.mock("@/modules/movement-catalog/generation/mitchell/mitchell", () => ({
   generateMitchell: (...a: unknown[]) => mockGenerateMitchell(...a),
 }));
 
 const mockGeneratedToMovementByTable = vi.fn();
-vi.mock("@/movement/movementData", () => ({
+vi.mock("@/modules/movement-catalog/display/movementData", () => ({
   generatedToMovementByTable: (...a: unknown[]) =>
     mockGeneratedToMovementByTable(...a),
 }));

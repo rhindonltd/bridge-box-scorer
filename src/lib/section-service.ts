@@ -1,5 +1,5 @@
 import { getDirectorToken } from "@/lib/director-token";
-import { MitchellMovementSpec } from "@/movement/mitchell/mitchell-utils";
+import { MitchellMovementSpec } from "@/modules/movement-catalog";
 import {
   SwissMovementSpec,
   SwissTeamsMovementSpec,

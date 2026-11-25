@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getPairMovementSpecsForTables } from "@/db/movements/queries";
+import { listPairMovements } from "@/modules/movement-catalog/server";
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { success } from "@/lib/api/success";
 
@@ -17,5 +17,5 @@ export const GET = withBasicRoute<{ tables: string }>(async ({ params }) => {
   }
 
   // Query failures fall through to withBasicRoute's try/catch → 500.
-  return success(await getPairMovementSpecsForTables(parsed.data));
+  return success(await listPairMovements(parsed.data));
 });
