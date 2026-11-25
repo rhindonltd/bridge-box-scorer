@@ -777,44 +777,12 @@ describe("ShowTablesPage", () => {
     expect(screen.queryByText(/Relay/)).not.toBeInTheDocument();
   });
 
-  it("shows a 'select a movement' banner when the section has no movement", () => {
-    // Default section has selectedMovement: null. A single-section event omits
-    // the "for this section" qualifier.
-    const onEditMovement = vi.fn();
-    render(<ShowTablesPage onEditMovement={onEditMovement} />);
-
-    const banner = screen.getByTestId("movement-warning-banner");
-    expect(banner).toHaveTextContent("Select a movement.");
-    expect(banner).not.toHaveTextContent("for this section");
-
-    fireEvent.click(banner);
-    expect(onEditMovement).toHaveBeenCalledOnce();
-  });
-
-  it("qualifies the 'select a movement' banner with the section when multi-section", () => {
-    // Two sections → the prompt disambiguates which section needs a movement.
-    currentSections = [
-      {
-        section: "A",
-        label: "A",
-        tables: 2,
-        ordinal: 0,
-        selectedMovement: null,
-      },
-      {
-        section: "B",
-        label: "B",
-        tables: 2,
-        ordinal: 1,
-        selectedMovement: null,
-      },
-    ];
-
+  it("does not prompt for a movement when the section has none", () => {
+    // Default section has selectedMovement: null. The movement is chosen from
+    // the setup menu's Movement page, not from Tables.
     render(<ShowTablesPage />);
-
-    expect(screen.getByTestId("movement-warning-banner")).toHaveTextContent(
-      "Select a movement for this section.",
-    );
+    expect(screen.queryByTestId("movement-warning-banner")).toBeNull();
+    expect(screen.queryByText(/Select a movement/)).toBeNull();
   });
 
   it("shows an 'update the movement' banner when the movement no longer fits the table count", () => {
@@ -830,14 +798,15 @@ describe("ShowTablesPage", () => {
     // Movement resolves to a different table count than the section (2).
     mockMovementTables = 3;
 
-    const onEditMovement = vi.fn();
-    render(<ShowTablesPage onEditMovement={onEditMovement} />);
+    render(<ShowTablesPage />);
 
     const banner = screen.getByTestId("movement-warning-banner");
-    expect(banner).toHaveTextContent("no longer fits its table count");
-
-    fireEvent.click(banner);
-    expect(onEditMovement).toHaveBeenCalledOnce();
+    expect(banner).toHaveTextContent(
+      "This section’s movement no longer fits its table count. Update the movement.",
+    );
+    // Information only: the movement is changed from the Movement page.
+    expect(banner.tagName).toBe("P");
+    expect(screen.queryByRole("button", { name: /no longer fits/ })).toBeNull();
   });
 
   it("hides the banner when a movement is selected and fits the table count", () => {
@@ -875,14 +844,13 @@ describe("ShowTablesPage", () => {
     ];
     mockMovementTables = 2;
 
-    const onEditMovement = vi.fn();
-    render(<ShowTablesPage onEditMovement={onEditMovement} />);
+    render(<ShowTablesPage />);
 
     const summary = screen.getByTestId("selected-movement-summary");
     expect(summary).toHaveTextContent("Standard Mitchell");
-
-    fireEvent.click(summary);
-    expect(onEditMovement).toHaveBeenCalledOnce();
+    // Information only: no Change link to the Movement page.
+    expect(summary.tagName).toBe("P");
+    expect(summary).not.toHaveTextContent("Change");
   });
 
   it("hides the movement summary while a warning is shown", () => {

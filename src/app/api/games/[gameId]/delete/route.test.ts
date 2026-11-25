@@ -7,7 +7,7 @@ const del = vi.fn(() => ({ where: vi.fn() }));
 // @/db/game-index, called synchronously), then removes the per-game .db file.
 // `withGameRoute` (under withDirectorRoute) still resolves a per-game db via
 // @/db/games#getDb, so that must be mocked truthy for the route to proceed.
-vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
+vi.mock("@/db/games", () => ({ getDb: vi.fn(), closeDb: vi.fn() }));
 vi.mock("@/db/game-index", () => ({ getDb: vi.fn() }));
 vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
@@ -22,7 +22,7 @@ vi.mock("@/socket/broadcast/game-deleted-broadcast", () => ({
 }));
 
 import fs from "fs";
-import { getDb as getGamesDb } from "@/db/games";
+import { getDb as getGamesDb, closeDb } from "@/db/games";
 import { getDb as getIndexDb } from "@/db/game-index";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import * as appHandler from "./route";
@@ -83,6 +83,33 @@ describe("DELETE /api/games/[gameId]/delete", () => {
     });
   });
 
+  it("closes the game's connection, then removes the db and its -wal and -shm files", async () => {
+    vi.mocked(fs.existsSync).mockReturnValue(true);
+    vi.stubEnv("DATABASE_GAMES_URL", "/tmp/games-dir");
+    const order: string[] = [];
+    vi.mocked(closeDb).mockImplementation(() => void order.push("close"));
+    vi.mocked(fs.unlinkSync).mockImplementation(
+      (f) => void order.push(String(f)),
+    );
+
+    await testApiHandler({
+      appHandler,
+      params: { gameId: "g1" },
+      test: async ({ fetch }) => {
+        const res = await fetch({ method: "DELETE", headers });
+        expect(res.status).toBe(200);
+        expect(order).toEqual([
+          "close",
+          "/tmp/games-dir/g1.db",
+          "/tmp/games-dir/g1.db-wal",
+          "/tmp/games-dir/g1.db-shm",
+        ]);
+      },
+    });
+
+    vi.unstubAllEnvs();
+  });
+
   it("deletes the sqlite file when it exists using DATABASE_GAMES_URL", async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
     vi.stubEnv("DATABASE_GAMES_URL", "/tmp/games-dir");
@@ -113,6 +140,12 @@ describe("DELETE /api/games/[gameId]/delete", () => {
         expect(res.status).toBe(200);
         expect(fs.existsSync).toHaveBeenCalledWith(
           "/home/bridgebox/data/games/g1.db",
+        );
+        expect(fs.existsSync).toHaveBeenCalledWith(
+          "/home/bridgebox/data/games/g1.db-wal",
+        );
+        expect(fs.existsSync).toHaveBeenCalledWith(
+          "/home/bridgebox/data/games/g1.db-shm",
         );
         expect(fs.unlinkSync).not.toHaveBeenCalled();
       },

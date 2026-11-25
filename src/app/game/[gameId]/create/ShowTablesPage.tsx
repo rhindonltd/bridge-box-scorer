@@ -54,13 +54,11 @@ async function expectedLateFetcher(url: string): Promise<string[]> {
 type Props = {
   /** Setup navigation menu rendered in the header's right-hand slot. */
   menu?: ReactNode;
-  /** Navigate to the movement-selection step (e.g. from the movement banner). */
-  onEditMovement?: () => void;
   /** Back-arrow action — returns to the create form. Omit to hide the arrow. */
   backAction?: () => void;
 };
 
-export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
+export function ShowTablesPage({ menu, backAction }: Props) {
   const { game } = useRequiredGame();
   const { mutate } = useSWRConfig();
 
@@ -129,24 +127,23 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
     currentSection?.tables ?? 0,
   );
 
-  // Movement warning for the currently-selected section:
-  //  - no movement chosen yet, or
-  //  - a movement is chosen but its table count no longer matches the section
-  //    as laid out (resized away from the movement's size).
+  // Movement warning for the currently-selected section: a movement is chosen
+  // but its table count no longer matches the section as laid out (resized
+  // away from the movement's size). No movement at all is not flagged here: a
+  // movement is chosen from the setup menu's Movement page, and Start Game
+  // lists it as outstanding.
   // `movementTables` is 0 when nothing is resolved (no movement, or a SPEC
   // lookup still loading), so we only flag a mismatch once it is known (> 0).
-  const noMovement =
-    !!currentSection && currentSection.selectedMovement == null;
   const invalidMovement =
     !!currentSection &&
     currentSection.selectedMovement != null &&
     movementTables > 0 &&
     movementTables !== currentSection.tables;
-  const showMovementWarning = noMovement || invalidMovement;
+  const showMovementWarning = invalidMovement;
 
   // Display name of the section's selected movement (null when none is chosen
-  // or a SPEC lookup is still loading). Shown as a clickable summary so the
-  // director sees their choice and can jump back to change it.
+  // or a SPEC lookup is still loading). Shown as a summary so the director
+  // sees their choice.
   const selectedMovementName = useSelectedMovementName(
     currentSection?.selectedMovement ?? null,
     game.gameType,
@@ -340,27 +337,18 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
       hideBack={!backAction}
     >
       <div className="flex h-full min-h-0 flex-col">
-        {/* Yellow, clickable warning pinned under the header when the selected
-            section has no movement, or a movement that no longer fits its table
-            count. Tapping it jumps to the movement-selection step. */}
+        {/* Yellow warning pinned under the header when the selected section's
+            movement no longer fits its table count. Information only: the
+            movement is changed from the setup menu's Movement page. */}
         {showMovementWarning && (
-          <button
-            type="button"
-            onClick={() => onEditMovement?.()}
+          <p
+            role="status"
             data-testid="movement-warning-banner"
-            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-yellow-300 bg-yellow-50 px-4 py-3 text-left text-sm font-medium text-yellow-900 hover:bg-yellow-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
+            className="shrink-0 border-b border-yellow-300 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-900"
           >
-            <span>
-              {noMovement
-                ? multiSection
-                  ? "Select a movement for this section."
-                  : "Select a movement."
-                : "This section’s movement no longer fits its table count. Update the movement."}
-            </span>
-            <span aria-hidden="true" className="shrink-0 font-semibold">
-              →
-            </span>
-          </button>
+            This section’s movement no longer fits its table count. Update the
+            movement.
+          </p>
         )}
 
         {/* Section pills pick which section is shown, pinned in a grey bar
@@ -391,25 +379,18 @@ export function ShowTablesPage({ menu, onEditMovement, backAction }: Props) {
         )}
 
         {/* Selected-movement summary. Shown when the section has a movement that
-            still fits (no warning) and its name has resolved. A button that
-            jumps to the movement step to change the choice. */}
+            still fits (no warning) and its name has resolved. Information only:
+            the movement is changed from the setup menu's Movement page. */}
         {!showMovementWarning && selectedMovementName && (
-          <button
-            type="button"
-            onClick={() => onEditMovement?.()}
+          <p
             data-testid="selected-movement-summary"
-            className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700"
           >
-            <span>
-              <span className="text-gray-500">Movement: </span>
-              <span className="font-semibold text-gray-900">
-                {selectedMovementName}
-              </span>
+            <span className="text-gray-500">Movement: </span>
+            <span className="font-semibold text-gray-900">
+              {selectedMovementName}
             </span>
-            <span className="shrink-0 text-xs font-medium text-blue-600">
-              Change
-            </span>
-          </button>
+          </p>
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">

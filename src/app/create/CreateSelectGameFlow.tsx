@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isDirectorFor } from "@/lib/director-token";
+import {
+  isDirectorFor,
+  verifyDirectorTokenWithServer,
+} from "@/lib/director-token";
 import { ClaimDirectorCode } from "@/app/manage/ClaimDirectorCode";
 import CreateSelectGamePage from "@/app/create/CreateSelectGamePage";
 
@@ -21,8 +24,14 @@ export function CreateSelectGameFlow() {
 
   const setupHref = (gameId: string) => `/game/${gameId}/create`;
 
-  function onGameSelected(gameId: string, gameName?: string) {
-    if (isDirectorFor(gameId)) {
+  async function onGameSelected(gameId: string, gameName?: string) {
+    // A stored token is only a hint: the server must still accept it. An
+    // out-of-date one is cleared by the check, and the device is offered
+    // Become Director instead.
+    if (
+      isDirectorFor(gameId) &&
+      (await verifyDirectorTokenWithServer(gameId))
+    ) {
       router.push(setupHref(gameId));
       return;
     }

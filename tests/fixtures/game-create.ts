@@ -54,7 +54,7 @@ export async function createGame(
     handEntry?: boolean;
   },
 ): Promise<CreatedGame> {
-  await page.goto("/create/new");
+  await page.goto("/create/new?step=details");
 
   // The create page fires a BridgeWebs-events fetch on mount; when it resolves
   // it re-renders the form. Filling before that settles can drop the first
@@ -66,12 +66,6 @@ export async function createGame(
   await page
     .getByLabel("Director Name")
     .fill(opts.directorName ?? "E2E Director");
-
-  // The create form is a two-step wizard: step 1 collects the event + director
-  // name (gated behind "Next"), step 2 the event type / scoring / toggles with
-  // the final "Create Game" action. Advance past the details step before
-  // touching any options-step control.
-  await page.getByRole("button", { name: "Next", exact: true }).click();
 
   // Event Type is a native <select> (Pairs / Teams / Swiss Pairs / Swiss Teams),
   // defaulting to Pairs. Switching to Teams re-renders the Scoring dropdown

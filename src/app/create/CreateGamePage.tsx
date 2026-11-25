@@ -24,25 +24,30 @@ import type { BridgewebsEventsResponse } from "@/app/api/games/bridgewebs/events
 
 const DEFAULT_TABLES = 5;
 
-// The create flow is split across two steps so neither screen feels crowded:
-//   1. "details"  — event name (free text or BridgeWebs picker) + director name
-//   2. "options"  — event type, scoring, and the per-game toggles
-// All form state lives here; `step` only decides which fields/actions render,
-// so the single createGame submit still carries the full payload.
-type Step = "details" | "options";
-
 function todayDateOnly(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export function CreateGamePage() {
+interface Props {
+  /**
+   * Back arrow on the first step. The new-game menu passes this to return to
+   * itself; without it the arrow pops the history stack.
+   */
+  onBack?: () => void;
+}
+
+/**
+ * The details for a new game (name, director, type, scoring and options). It is
+ * opened from Game Details on the new-game menu, and saving it creates the game
+ * and opens that game's Set Up Game menu.
+ */
+export function CreateGamePage({ onBack }: Props = {}) {
   const t = useTranslations();
-  const [step, setStep] = useState<Step>("details");
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
-  // Set once the director tries to advance from the details step with a
-  // required field still blank. Drives the red highlight on the empty field(s)
+  // Set once the director tries to create the game with a required field still
+  // blank. Drives the red highlight on the empty field(s)
   // in place of a standing instruction; cleared as soon as the details are
   // complete so the highlight never lingers once fixed.
   const [showDetailsErrors, setShowDetailsErrors] = useState(false);
@@ -154,10 +159,8 @@ export function CreateGamePage() {
     });
   }
 
-  const isDetailsStep = step === "details";
-
-  // The details step requires both a (non-blank) event name and director before
-  // the director can advance. The event name is whatever is in the text field,
+  // Both a (non-blank) event name and director are required before the game
+  // can be created. The event name is whatever is in the text field,
   // or the chosen BridgeWebs event's mirrored title; either way it lives in
   // `eventName`, so a single trim check covers both input modes.
   const detailsComplete =
@@ -165,189 +168,165 @@ export function CreateGamePage() {
 
   return (
     <PageLayout
-      headerTitle="Create Game"
-      centerContent={true}
-      // On step 2 the back arrow returns to step 1 rather than leaving the
-      // flow; step 1 keeps the default "pop the stack" behaviour, falling back
-      // to the Create Game screen this form opens from.
-      backAction={isDetailsStep ? undefined : () => setStep("details")}
-      backFallbackHref="/create"
+      headerTitle="Game Details"
+      // Back returns to the new-game menu (or pops the stack).
+      backAction={onBack}
+      backFallbackHref="/create/new"
       actions={
-        isDetailsStep ? (
-          <button
-            type="submit"
-            form="create-game-form"
-            className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            type="submit"
-            form="create-game-form"
-            disabled={isSubmitting}
-            className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
-          >
-            {isSubmitting ? "Creating..." : "Create Game"}
-          </button>
-        )
+        <button
+          type="submit"
+          form="create-game-form"
+          disabled={isSubmitting}
+          className="w-full py-3.5 text-lg font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-[0.98] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
+        >
+          {isSubmitting ? "Creating..." : "Create Game"}
+        </button>
       }
     >
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          // Step 1 advances to step 2 once both details are filled. If either
-          // is still blank, surface the empty field(s) with a red highlight
-          // (rather than a standing instruction) and stay on the step.
-          // Step 2 submits the game.
-          if (isDetailsStep) {
-            if (detailsComplete) {
-              setStep("options");
-            } else {
-              setShowDetailsErrors(true);
-            }
-          } else {
+          // A blank event name or director is surfaced with a red highlight
+          // (rather than a standing instruction) and nothing is created.
+          if (detailsComplete) {
             handleCreate();
+          } else {
+            setShowDetailsErrors(true);
           }
         }}
         id="create-game-form"
-        className="flex flex-col w-full max-w-md p-4"
+        // Laid out like the Game Details edit page: one scrolling column.
+        className="mx-auto flex w-full max-w-md flex-col p-4"
       >
-        <div className="flex flex-col flex-1 justify-center gap-5">
-          {isDetailsStep ? (
-            <>
-              <div className="flex flex-col gap-1">
-                {eventPickerAvailable && (
-                  <div className="flex items-center justify-between">
-                    <span
-                      id={eventNameModeLabelId}
-                      className="text-sm font-semibold text-gray-700"
-                    >
-                      Use BridgeWebs Event
-                    </span>
-                    <Toggle
-                      value={useBridgewebsEvent}
-                      offLabel="No"
-                      onLabel="Yes"
-                      labelledBy={eventNameModeLabelId}
-                      onChange={handleToggleEventMode}
-                    />
-                  </div>
-                )}
-
-                {showEventPicker ? (
-                  <SelectField
-                    label="Event Name"
-                    value={bridgewebsEventId}
-                    options={[
-                      { label: "— Select an event —", value: "" },
-                      ...bridgewebs!.events.map((e) => ({
-                        label: e.title,
-                        value: e.id,
-                      })),
-                    ]}
-                    onSelect={handleSelectBridgewebsEvent}
-                  />
-                ) : (
-                  <TextField
-                    label="Event Name"
-                    value={eventName}
-                    onChange={setEventName}
-                    invalid={showDetailsErrors && eventName.trim().length === 0}
-                  />
-                )}
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1">
+            {eventPickerAvailable && (
+              <div className="flex items-center justify-between">
+                <span
+                  id={eventNameModeLabelId}
+                  className="text-sm font-semibold text-gray-700"
+                >
+                  Use BridgeWebs Event
+                </span>
+                <Toggle
+                  value={useBridgewebsEvent}
+                  offLabel="No"
+                  onLabel="Yes"
+                  labelledBy={eventNameModeLabelId}
+                  onChange={handleToggleEventMode}
+                />
               </div>
+            )}
 
-              <TextField
-                label="Director Name"
-                value={director}
-                onChange={setDirector}
-                invalid={showDetailsErrors && director.trim().length === 0}
-              />
-            </>
-          ) : (
-            <>
+            {showEventPicker ? (
               <SelectField
-                label="Event Type"
-                value={eventType}
-                options={EVENT_TYPE_OPTIONS}
-                onSelect={setEventType}
-                inline
+                label="Event Name"
+                value={bridgewebsEventId}
+                options={[
+                  { label: "— Select an event —", value: "" },
+                  ...bridgewebs!.events.map((e) => ({
+                    label: e.title,
+                    value: e.id,
+                  })),
+                ]}
+                onSelect={handleSelectBridgewebsEvent}
               />
+            ) : (
+              <TextField
+                label="Event Name"
+                value={eventName}
+                onChange={setEventName}
+                invalid={showDetailsErrors && eventName.trim().length === 0}
+              />
+            )}
+          </div>
 
-              {eventType === "SWISS_TEAMS" ? (
-                // Swiss Teams is always scored by IMP (Victory Points) — the
-                // round-by-round draw depends on VP standings, so no other
-                // scoring method applies. No dropdown needed, but the row still
-                // mirrors the inline SelectField layout (bold label left, value
-                // right) so it lines up with the other scoring choices.
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Scoring
-                  </span>
-                  <span className="text-lg text-gray-700">
-                    IMP (Victory Points)
-                  </span>
-                </div>
-              ) : isPairsChoice(eventType) ? (
-                <SelectField
-                  label="Scoring"
-                  value={pairsScoring}
-                  options={[
-                    { label: "Matchpoints", value: "MP" as const },
-                    { label: "Cross-IMPs", value: "XIMP" as const },
-                  ]}
-                  onSelect={setPairsScoring}
-                  inline
-                />
-              ) : (
-                <SelectField
-                  label="Scoring"
-                  value={teamsScoring}
-                  options={t.teamsScoringOptions}
-                  onSelect={setTeamsScoring}
-                  inline
-                />
-              )}
+          <TextField
+            label="Director Name"
+            value={director}
+            onChange={setDirector}
+            invalid={showDetailsErrors && director.trim().length === 0}
+          />
 
-              <div className="flex items-center justify-between">
-                <label
-                  id={leadCardLabelId}
-                  className="text-sm font-semibold text-gray-700"
-                >
-                  Record Opening Lead
-                </label>
-                <Toggle
-                  value={leadCardRequired}
-                  offLabel="No"
-                  onLabel="Yes"
-                  labelledBy={leadCardLabelId}
-                  onChange={(isOn) => setLeadCardRequired(isOn)}
-                />
-              </div>
+          <SelectField
+            label="Event Type"
+            value={eventType}
+            options={EVENT_TYPE_OPTIONS}
+            onSelect={setEventType}
+            inline
+          />
 
-              <div className="flex items-center justify-between">
-                <label
-                  id={handEntryLabelId}
-                  className="text-sm font-semibold text-gray-700"
-                >
-                  Allow Hand Entry
-                </label>
-                <Toggle
-                  value={handEntryEnabled}
-                  offLabel="No"
-                  onLabel="Yes"
-                  labelledBy={handEntryLabelId}
-                  onChange={(isOn) => setHandEntryEnabled(isOn)}
-                />
-              </div>
+          {eventType === "SWISS_TEAMS" ? (
+            // Swiss Teams is always scored by IMP (Victory Points) — the
+            // round-by-round draw depends on VP standings, so no other
+            // scoring method applies. No dropdown needed, but the row still
+            // mirrors the inline SelectField layout (bold label left, value
+            // right) so it lines up with the other scoring choices.
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold text-gray-700">
+                Scoring
+              </span>
+              <span className="text-lg text-gray-700">
+                IMP (Victory Points)
+              </span>
+            </div>
+          ) : isPairsChoice(eventType) ? (
+            <SelectField
+              label="Scoring"
+              value={pairsScoring}
+              options={[
+                { label: "Matchpoints", value: "MP" as const },
+                { label: "Cross-IMPs", value: "XIMP" as const },
+              ]}
+              onSelect={setPairsScoring}
+              inline
+            />
+          ) : (
+            <SelectField
+              label="Scoring"
+              value={teamsScoring}
+              options={t.teamsScoringOptions}
+              onSelect={setTeamsScoring}
+              inline
+            />
+          )}
 
-              {error && (
-                <p role="alert" className="text-sm font-medium text-red-600">
-                  {error}
-                </p>
-              )}
-            </>
+          <div className="flex items-center justify-between">
+            <label
+              id={leadCardLabelId}
+              className="text-sm font-semibold text-gray-700"
+            >
+              Record Opening Lead
+            </label>
+            <Toggle
+              value={leadCardRequired}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={leadCardLabelId}
+              onChange={(isOn) => setLeadCardRequired(isOn)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label
+              id={handEntryLabelId}
+              className="text-sm font-semibold text-gray-700"
+            >
+              Allow Hand Entry
+            </label>
+            <Toggle
+              value={handEntryEnabled}
+              offLabel="No"
+              onLabel="Yes"
+              labelledBy={handEntryLabelId}
+              onChange={(isOn) => setHandEntryEnabled(isOn)}
+            />
+          </div>
+
+          {error && (
+            <p role="alert" className="text-sm font-medium text-red-600">
+              {error}
+            </p>
           )}
         </div>
       </form>

@@ -7,8 +7,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 const mockIsDirectorFor = vi.fn();
+const mockVerify = vi.fn();
 vi.mock("@/lib/director-token", () => ({
   isDirectorFor: (...args: unknown[]) => mockIsDirectorFor(...args),
+  verifyDirectorTokenWithServer: (...args: unknown[]) => mockVerify(...args),
 }));
 
 // Capture ManageSelectGamePage's onGameSelected so tests can drive it.
@@ -50,49 +52,69 @@ describe("ManageSelectGameFlow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     selectHandler = null;
+    mockVerify.mockResolvedValue(true);
   });
 
-  it("navigates straight to manage when already a director", () => {
+  it("navigates straight to manage when already a director", async () => {
     mockIsDirectorFor.mockReturnValue(true);
     render(<ManageSelectGameFlow />);
 
-    selectHandler!("g1");
+    await act(async () => selectHandler!("g1"));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage");
   });
 
-  it("shows the claim screen with the game name when not a director", () => {
+  it("shows the claim screen with the game name when not a director", async () => {
     mockIsDirectorFor.mockReturnValue(false);
     render(<ManageSelectGameFlow />);
 
-    act(() => selectHandler!("g1", "Tuesday Pairs"));
+    await act(async () => selectHandler!("g1", "Tuesday Pairs"));
     expect(screen.getByText("claim-g1-Tuesday Pairs")).toBeInTheDocument();
   });
 
-  it("falls back to a default game name when none is provided", () => {
+  it("falls back to a default game name when none is provided", async () => {
     mockIsDirectorFor.mockReturnValue(false);
     render(<ManageSelectGameFlow />);
 
-    act(() => selectHandler!("g1"));
+    await act(async () => selectHandler!("g1"));
     expect(screen.getByText("claim-g1-this game")).toBeInTheDocument();
   });
 
-  it("navigates to manage after a successful claim", () => {
+  it("navigates to manage after a successful claim", async () => {
     mockIsDirectorFor.mockReturnValue(false);
     render(<ManageSelectGameFlow />);
 
-    act(() => selectHandler!("g1", "Tuesday"));
+    await act(async () => selectHandler!("g1", "Tuesday"));
     fireEvent.click(screen.getByText("claim-success"));
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage");
   });
 
-  it("returns to the game list when the claim is cancelled", () => {
+  it("returns to the game list when the claim is cancelled", async () => {
     mockIsDirectorFor.mockReturnValue(false);
     render(<ManageSelectGameFlow />);
 
-    act(() => selectHandler!("g1", "Tuesday"));
+    await act(async () => selectHandler!("g1", "Tuesday"));
     expect(screen.getByText("claim-g1-Tuesday")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("claim-cancel"));
     expect(screen.getByText("select-game-page")).toBeInTheDocument();
+  });
+
+  it("shows the claim screen when the server no longer accepts the stored token", async () => {
+    mockIsDirectorFor.mockReturnValue(true);
+    mockVerify.mockResolvedValue(false);
+    render(<ManageSelectGameFlow />);
+
+    await act(async () => selectHandler!("g1", "Tuesday"));
+    expect(mockVerify).toHaveBeenCalledWith("g1");
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByText("claim-g1-Tuesday")).toBeInTheDocument();
+  });
+
+  it("does not ask the server when no token is stored", async () => {
+    mockIsDirectorFor.mockReturnValue(false);
+    render(<ManageSelectGameFlow />);
+
+    await act(async () => selectHandler!("g1"));
+    expect(mockVerify).not.toHaveBeenCalled();
   });
 });

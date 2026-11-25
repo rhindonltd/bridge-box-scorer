@@ -59,7 +59,7 @@ describe("CreateSelectGamePage", () => {
     expect(
       screen.getByRole("heading", { name: "Create Game" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Create Game" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "New Game" })).toHaveAttribute(
       "href",
       "/create/new",
     );

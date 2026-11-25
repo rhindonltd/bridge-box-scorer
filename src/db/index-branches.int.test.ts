@@ -105,7 +105,9 @@ describe("games index module", () => {
     const { drizzle } = await import("drizzle-orm/better-sqlite3");
     const { migrate } = await import("drizzle-orm/better-sqlite3/migrator");
     const schema = await import("@/db/games/schema");
-    const db = drizzle(new Database(path.join(dir, `${gameId}.db`)), { schema });
+    const db = drizzle(new Database(path.join(dir, `${gameId}.db`)), {
+      schema,
+    });
     migrate(db, { migrationsFolder: "./drizzle/games" });
   }
 
@@ -134,6 +136,37 @@ describe("games index module", () => {
     expect(createdDb).toBeTruthy();
     // The created instance is now cached, so getDb returns the same object.
     expect(await games.getDb(newGameId)).toBe(createdDb);
+  });
+
+  it("closeDb closes and forgets a cached connection, and ignores unknown or already-closed ones", async () => {
+    const dir = freshDir("bbs-idx-games-close-");
+    process.env.DATABASE_GAMES_URL = dir;
+    vi.resetModules();
+
+    const gameId = `game-${Math.random().toString(16).slice(2)}`;
+    await buildMigratedGameDb(dir, gameId);
+    const games = await import("@/db/games");
+
+    const opened = (await games.getDb(gameId))!;
+    // Write something so there is a WAL to fold back in.
+    opened.$client.exec(
+      "create table t (x integer); insert into t values (1);",
+    );
+    games.closeDb(gameId);
+    expect(opened.$client.open).toBe(false);
+    // The WAL was checkpointed into the main file before closing.
+    expect(fs.existsSync(path.join(dir, `${gameId}.db-wal`))).toBe(false);
+
+    // A fresh getDb opens a new connection rather than the closed one.
+    const reopened = await games.getDb(gameId);
+    expect(reopened).not.toBe(opened);
+
+    // Unknown game: nothing to do.
+    expect(() => games.closeDb("never-opened")).not.toThrow();
+
+    // A connection closed elsewhere: the checkpoint throws and is swallowed.
+    reopened!.$client.close();
+    expect(() => games.closeDb(gameId)).not.toThrow();
   });
 
   it("createDb creates the games data dir when it does not exist yet", async () => {

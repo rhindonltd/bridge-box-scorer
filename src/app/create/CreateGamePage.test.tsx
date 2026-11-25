@@ -34,26 +34,18 @@ function todayDateOnly(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-// The form is a two-step wizard: step 1 ("Next") collects the event + director
-// name, step 2 ("Create Game") the type/scoring/toggles. Most tests exercise
-// step 2, so advance past step 1 first. Next only advances once both details
-// are present (tapping it while blank highlights the empty field and stays
-// put), so fill them unless the caller already did (e.g. via the BridgeWebs
-// picker, which supplies the event name itself).
-function goToOptionsStep({
-  fillDetails = true,
-}: { fillDetails?: boolean } = {}) {
-  if (fillDetails) {
-    const eventName = screen.getByLabelText("Event Name");
-    if ((eventName as HTMLInputElement).value.trim() === "") {
-      fireEvent.change(eventName, { target: { value: "Test Event" } });
-    }
-    const director = screen.getByLabelText("Director Name") as HTMLInputElement;
-    if (director.value.trim() === "") {
-      fireEvent.change(director, { target: { value: "Test Director" } });
-    }
+// Every field is on one page. Creating needs both an event name and a
+// director, so most tests fill whichever is still blank first (the BridgeWebs
+// picker tests supply the event name themselves).
+function fillDetails() {
+  const eventName = screen.getByLabelText("Event Name") as HTMLInputElement;
+  if (eventName.value.trim() === "") {
+    fireEvent.change(eventName, { target: { value: "Test Event" } });
   }
-  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  const director = screen.getByLabelText("Director Name") as HTMLInputElement;
+  if (director.value.trim() === "") {
+    fireEvent.change(director, { target: { value: "Test Director" } });
+  }
 }
 
 describe("CreateGamePage", () => {
@@ -66,34 +58,39 @@ describe("CreateGamePage", () => {
     });
   });
 
-  it("starts on the details step with event and director name only", () => {
+  it("shows every field on one page, with Create Game and no Next", () => {
     render(<CreateGamePage />);
 
     expect(screen.getByLabelText("Event Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Director Name")).toBeInTheDocument();
-    // Options-step fields are not mounted until the second step.
-    expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Event Type")).toBeInTheDocument();
+    expect(screen.getByLabelText("Scoring")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Create Game" }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("group", { name: "Record Opening Lead" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Allow Hand Entry" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create Game" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
   });
 
-  it("highlights the empty field(s) when Next is tapped with details missing", () => {
+  it("highlights the empty field(s) and creates nothing when details are missing", () => {
     render(<CreateGamePage />);
 
     const eventName = screen.getByLabelText("Event Name");
     const director = screen.getByLabelText("Director Name");
 
-    // Nothing highlighted until the director tries to continue.
+    // Nothing highlighted until the director tries to create the game.
     expect(eventName).not.toHaveAttribute("aria-invalid");
     expect(director).not.toHaveAttribute("aria-invalid");
 
-    // Tap Next with both blank: both fields are flagged and we stay on step 1.
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
     expect(eventName).toHaveAttribute("aria-invalid", "true");
     expect(director).toHaveAttribute("aria-invalid", "true");
-    expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
+    expect(mockCreateGame).not.toHaveBeenCalled();
 
     // Filling the event name clears its flag; the director is still flagged.
     fireEvent.change(eventName, { target: { value: "Tuesday Pairs" } });
@@ -101,10 +98,9 @@ describe("CreateGamePage", () => {
     expect(director).toHaveAttribute("aria-invalid", "true");
   });
 
-  it("does not highlight fields before Next is tapped", () => {
+  it("does not highlight fields before Create Game is tapped", () => {
     render(<CreateGamePage />);
 
-    // No standing instruction, and no field flagged, on first render.
     expect(
       screen.queryByText("Enter an event name and director to continue."),
     ).not.toBeInTheDocument();
@@ -116,21 +112,7 @@ describe("CreateGamePage", () => {
     );
   });
 
-  it("advances once both details are filled", () => {
-    render(<CreateGamePage />);
-
-    fireEvent.change(screen.getByLabelText("Event Name"), {
-      target: { value: "Tuesday Pairs" },
-    });
-    fireEvent.change(screen.getByLabelText("Director Name"), {
-      target: { value: "Jane" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
-
-    expect(screen.getByLabelText("Event Type")).toBeInTheDocument();
-  });
-
-  it("does not advance when the fields hold only whitespace", () => {
+  it("does not create when the fields hold only whitespace", () => {
     render(<CreateGamePage />);
 
     fireEvent.change(screen.getByLabelText("Event Name"), {
@@ -139,45 +121,29 @@ describe("CreateGamePage", () => {
     fireEvent.change(screen.getByLabelText("Director Name"), {
       target: { value: "   " },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
-    // Still on the details step; options fields never mounted, fields flagged.
-    expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
+    expect(mockCreateGame).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Event Name")).toHaveAttribute(
       "aria-invalid",
       "true",
     );
   });
 
-  it("does not advance on Enter while the details are incomplete", () => {
+  it("does not create on Enter while the details are incomplete", () => {
     render(<CreateGamePage />);
 
     fireEvent.change(screen.getByLabelText("Event Name"), {
       target: { value: "Tuesday Pairs" },
     });
-    // Director still blank: submitting the form (e.g. Enter) must not advance.
+    // Director still blank: submitting the form (e.g. Enter) must not create.
     fireEvent.submit(screen.getByLabelText("Event Name").closest("form")!);
 
-    expect(screen.queryByLabelText("Event Type")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Event Name")).toBeInTheDocument();
-  });
-
-  it("advances to the options step and shows the options fields", () => {
-    render(<CreateGamePage />);
-    goToOptionsStep();
-
-    expect(screen.getByLabelText("Event Type")).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Record Opening Lead" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Allow Hand Entry" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Create Game" }),
-    ).toBeInTheDocument();
-    // Details fields are no longer mounted on the options step.
-    expect(screen.queryByLabelText("Event Name")).not.toBeInTheDocument();
+    expect(mockCreateGame).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Director Name")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
   });
 
   it("carries the entered event and director name into the create payload", async () => {
@@ -189,7 +155,7 @@ describe("CreateGamePage", () => {
     fireEvent.change(screen.getByLabelText("Director Name"), {
       target: { value: "Jane" },
     });
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
@@ -200,20 +166,20 @@ describe("CreateGamePage", () => {
 
   it("does not render a tables field", () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
     expect(screen.queryByText("Initial Tables")).not.toBeInTheDocument();
   });
 
   it("does not render a Date Played field", () => {
     render(<CreateGamePage />);
     expect(screen.queryByLabelText("Date Played")).not.toBeInTheDocument();
-    goToOptionsStep();
+    fillDetails();
     expect(screen.queryByLabelText("Date Played")).not.toBeInTheDocument();
   });
 
   it("submits with tables defaulted to 5 and today's date", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
@@ -228,7 +194,7 @@ describe("CreateGamePage", () => {
 
   it("navigates to the game create page after creating", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() =>
@@ -238,7 +204,7 @@ describe("CreateGamePage", () => {
 
   it("toggles the lead-card requirement and submits it", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     const leadGroup = screen.getByRole("group", {
       name: "Record Opening Lead",
@@ -254,7 +220,7 @@ describe("CreateGamePage", () => {
 
   it("defaults hand entry off and submits it off", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
@@ -266,7 +232,7 @@ describe("CreateGamePage", () => {
 
   it("toggles hand entry on and submits it", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     const handEntryGroup = screen.getByRole("group", {
       name: "Allow Hand Entry",
@@ -329,7 +295,7 @@ describe("CreateGamePage", () => {
 
     fireEvent.change(picker, { target: { value: "2" } });
 
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
@@ -370,7 +336,7 @@ describe("CreateGamePage", () => {
     );
     expect(screen.getByLabelText("Event Name")).toHaveValue("Afternoon Teams");
 
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
@@ -384,7 +350,7 @@ describe("CreateGamePage", () => {
 
   it("submits a null bridgewebsEventId when no event is chosen", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
@@ -428,7 +394,7 @@ describe("CreateGamePage", () => {
     fireEvent.change(picker, { target: { value: "2" } });
     fireEvent.change(picker, { target: { value: "" } });
 
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     await waitFor(() => expect(mockCreateGame).toHaveBeenCalledTimes(1));
@@ -444,7 +410,7 @@ describe("CreateGamePage", () => {
 
   it("reveals a Scoring selector for a Pairs game, defaulting to MP", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     const scoring = screen.getByLabelText("Scoring") as HTMLSelectElement;
     expect(scoring.tagName).toBe("SELECT");
@@ -461,7 +427,7 @@ describe("CreateGamePage", () => {
 
   it("submits a Swiss Pairs game as PAIRS + SWISS, keeping pairs scoring", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "SWISS_PAIRS" },
@@ -485,7 +451,7 @@ describe("CreateGamePage", () => {
 
   it("submits a Swiss Teams game as TEAMS + SWISS with IMP_VP scoring (fixed)", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "SWISS_TEAMS" },
@@ -508,7 +474,7 @@ describe("CreateGamePage", () => {
 
   it("submits XIMP when a Pairs game selects Cross-IMPs", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Scoring"), {
       target: { value: "XIMP" },
@@ -524,7 +490,7 @@ describe("CreateGamePage", () => {
 
   it("reveals a Scoring selector for a Teams game, defaulting to IMP", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "TEAMS" },
@@ -544,7 +510,7 @@ describe("CreateGamePage", () => {
 
   it("offers Point-a-Board (not Board-a-Match) for a Teams game in the default en-GB locale", async () => {
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "TEAMS" },
@@ -574,7 +540,7 @@ describe("CreateGamePage", () => {
     vi.stubEnv("NEXT_PUBLIC_BRIDGE_LOCALE", "en-US");
 
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
 
     fireEvent.change(screen.getByLabelText("Event Type"), {
       target: { value: "TEAMS" },
@@ -602,23 +568,13 @@ describe("CreateGamePage", () => {
     vi.unstubAllEnvs();
   });
 
-  it("preserves entered details when stepping back from options to details", () => {
-    render(<CreateGamePage />);
+  it("is titled Game Details and its back arrow calls onBack", () => {
+    const onBack = vi.fn();
+    render(<CreateGamePage onBack={onBack} />);
 
-    fireEvent.change(screen.getByLabelText("Event Name"), {
-      target: { value: "Tuesday Pairs" },
-    });
-    fireEvent.change(screen.getByLabelText("Director Name"), {
-      target: { value: "Jane" },
-    });
-    goToOptionsStep();
-
-    // Step back via the header back control, then confirm the fields kept
-    // their values.
+    expect(screen.getByText("Game Details")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
-
-    expect(screen.getByLabelText("Event Name")).toHaveValue("Tuesday Pairs");
-    expect(screen.getByLabelText("Director Name")).toHaveValue("Jane");
+    expect(onBack).toHaveBeenCalledTimes(1);
   });
 
   it("shows an error and re-enables the button when creation fails", async () => {
@@ -626,7 +582,7 @@ describe("CreateGamePage", () => {
     mockCreateGame.mockRejectedValue(new Error("boom"));
 
     render(<CreateGamePage />);
-    goToOptionsStep();
+    fillDetails();
     fireEvent.click(screen.getByRole("button", { name: "Create Game" }));
 
     const alert = await screen.findByRole("alert");

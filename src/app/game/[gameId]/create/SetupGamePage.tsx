@@ -92,13 +92,7 @@ export function SetupGamePage() {
   }
 
   if (step === "tables") {
-    return (
-      <ShowTablesPage
-        menu={menu}
-        onEditMovement={() => goTo("movements")}
-        backAction={handleSetupBack}
-      />
-    );
+    return <ShowTablesPage menu={menu} backAction={handleSetupBack} />;
   }
 
   if (step === "movements") {
