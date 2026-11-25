@@ -1,0 +1,97 @@
+import { describe, it, expect } from "vitest";
+import { mpPerBoardPlugin } from "@/modules/scoring/plugins/per-board/mp";
+import { mpBoard1 } from "@/mocks/fixtures/mp-travellers";
+import type { PairTraveller } from "@/model/traveller";
+import { mpTravellerViews } from "./mp";
+
+describe("mp per-board views", () => {
+  it("has percentage and matchpoints views", () => {
+    expect(mpTravellerViews.map((v) => v.id)).toEqual([
+      "percentage",
+      "matchpoints",
+    ]);
+  });
+
+  it("matchpoints view produces MP columns sorted by NS score descending", () => {
+    const scored = mpPerBoardPlugin.score(mpBoard1);
+    const view = mpTravellerViews.find((v) => v.id === "matchpoints")!;
+    const table = view.toTable(scored);
+
+    expect(table.columns.map((c) => c.label)).toEqual([
+      "NS",
+      "EW",
+      "Contract",
+      "NS Score",
+      "NS MP",
+      "EW MP",
+    ]);
+
+    // Rows are ordered by NS score descending: the NS Score column (index 3)
+    // is non-increasing.
+    const nsScore = table.rows.map((r) => {
+      const cell = r.cells[3];
+      if (cell.kind !== "number") throw new Error("expected number cell");
+      return cell.value;
+    });
+    const sorted = [...nsScore].sort((a, b) => b - a);
+    expect(nsScore).toEqual(sorted);
+
+    // Each row carries its NS/EW ids for highlighting.
+    for (const row of table.rows) {
+      expect(row.highlightIds).toHaveLength(2);
+    }
+  });
+
+  it("percentage view converts matchpoints to a percentage with 2 decimals", () => {
+    const scored = mpPerBoardPlugin.score(mpBoard1);
+    const view = mpTravellerViews.find((v) => v.id === "percentage")!;
+    const table = view.toTable(scored);
+
+    expect(table.columns.map((c) => c.label)).toEqual([
+      "NS",
+      "EW",
+      "Contract",
+      "NS Score",
+      "NS %",
+      "EW %",
+    ]);
+
+    const maxMP = 2 * (scored.length - 1);
+    // The first displayed row is the highest NS score; its % must match
+    // that line's matchpoints / max * 100.
+    const topLine = [...scored]
+      .filter((l) => l.score !== null)
+      .sort((a, b) => b.score! - a.score!)[0];
+    const nsPercentCell = table.rows[0].cells[4];
+    if (nsPercentCell.kind !== "number") {
+      throw new Error("expected number cell");
+    }
+    expect(nsPercentCell.decimals).toBe(2);
+    expect(nsPercentCell.value).toBeCloseTo(
+      (topLine.nsMatchPoints / maxMP) * 100,
+      5,
+    );
+  });
+
+  it("percentage view yields 0% when there is a single comparison line (maxMP = 0)", () => {
+    // One line means maxMP = 2 * (1 - 1) = 0, exercising the divide-by-zero
+    // guard in the percentage view.
+    const single = {
+      type: "PAIR",
+      mode: "PAIR",
+      board: 1,
+      section: "A",
+      lines: [{ nsId: "1", ewId: "2", outcome: "3NTN=" }],
+    } as PairTraveller;
+
+    const scored = mpPerBoardPlugin.score(single);
+    const view = mpTravellerViews.find((v) => v.id === "percentage")!;
+    const table = view.toTable(scored);
+
+    const nsPercentCell = table.rows[0].cells[4];
+    if (nsPercentCell.kind !== "number") {
+      throw new Error("expected number cell");
+    }
+    expect(nsPercentCell.value).toBe(0);
+  });
+});

@@ -6,9 +6,16 @@ vi.mock("./useRoundResults", () => ({
   useRoundResults: (...a: unknown[]) => mockUseRoundResults(...a),
 }));
 const mockBuild = vi.fn();
-vi.mock("@/modules/scoring/swiss/team-board-result-view", () => ({
-  buildTeamBoardResultTable: (...a: unknown[]) => mockBuild(...a),
+vi.mock("@/modules/scoring/swiss/team-board-result", () => ({
+  teamBoardResult: (...a: unknown[]) => mockBuild(...a),
 }));
+// The table layout passes the (stubbed) result straight through.
+vi.mock(
+  "@/modules/results-views/team-board-result/team-board-result-table",
+  () => ({
+    teamBoardResultTable: (result: unknown) => result,
+  }),
+);
 vi.mock("@/components/scoring/ScoreTableView", () => ({
   ScoreTableView: () => <div data-testid="score-table" />,
 }));

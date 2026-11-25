@@ -27,7 +27,8 @@ public/                    # Static assets
 - `movement/` — Movement generation algorithms (Mitchell, Howell, American Whist).
 - `modules/` — Pure domain modules, each imported only through its entry (`@/modules/<name>`); see `docs/design/modules.md`. Each may import only the kernel (`src/model`) and itself, enforced by ESLint.
   - `modules/rulings/` — Every pre-scoring rewrite (handover ids, seat swaps, absences, standings); entry `applyRulings`, `ruledBoardInstances`.
-  - `modules/scoring/` — Scoring algorithms (matchpoint, cross-IMP, Swiss VP, teams) and `scoreEvent` for whole-event standings.
+  - `modules/scoring/` — Scoring algorithms (matchpoint, cross-IMP, Swiss VP, teams) and `scoreEvent` for whole-event standings. Returns numbers only.
+  - `modules/results-views/` — Turns scoring's numbers into `ScoreTable`s (traveller, leaderboard, scorecard, teams board result); entry `travellerViews`, `leaderboardViews`. May import scoring's types only.
 - `timer/` — Bridge session timer engine and scheduler.
 - `socket/` — Socket.IO server: `handlers/`, `middleware/`, room/event maps (`rooms.ts`, `socket-event-map.ts`, `socket-events.ts`).
 - `db/` — Drizzle schemas, queries, and actions, split per database: `game-index/`, `games/`, `movements/`, `players/`, `system/`.

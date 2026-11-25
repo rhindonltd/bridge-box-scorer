@@ -3,8 +3,8 @@ import {
   multilineCell,
   numberCell,
   textCell,
-} from "@/modules/scoring/table/score-table";
-import { OverallView } from "@/modules/scoring/plugins/types";
+} from "@/modules/results-views/table/score-table";
+import type { OverallView } from "@/modules/results-views/view-types";
 import { pairNameLines } from "./pair-names";
 
 /** A leaderboard line that carries a rank and a tie flag. */

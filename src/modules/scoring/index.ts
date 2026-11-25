@@ -25,6 +25,7 @@ export type { RuledEvent } from "@/model/ruled-event";
 export { scoreBoard, type ScoredBoard } from "./traveller/score-traveller";
 export { outcomeToScore, computeImps } from "./traveller/common";
 export { scoreMP, type MatchpointLine } from "./traveller/pair/mp";
+export type { ImpLine } from "./traveller/pair/imp";
 export { scoreXIMP, type XimpLine } from "./traveller/pair/x-imp";
 
 /* ---------- board-pooled pairs passes (USEBIO export ranking) ---------- */
@@ -34,7 +35,7 @@ export { applyBetterThanAverageXimpBoards } from "./traveller/pair/better-than-a
 export { roundMpBoards } from "./traveller/pair/round-mp-boards";
 export { rank } from "./overall/rank";
 
-/* ---------- plugins (per-board and overall views) ---------- */
+/* ---------- plugins (per-board and overall scoring) ---------- */
 export {
   getCombination,
   getOverallPlugin,
@@ -44,11 +45,6 @@ export type {
   OverallScoringPlugin,
   PerBoardScoringPlugin,
 } from "./plugins/types";
-export { getTeamOverallPlugin } from "./plugins/team-overall/registry";
-export type {
-  TeamOverallScoreOf,
-  TeamOverallScoreType,
-} from "./plugins/team-overall/types";
 
 /* ---------- Swiss and teams matches ---------- */
 export {
@@ -80,24 +76,10 @@ export {
   type TeamTripleKind,
 } from "./swiss/team-match";
 
-/* ---------- tables (views; move to results-views in step 3) ---------- */
+/* ---------- teams board result (shown by results-views) ---------- */
 export {
-  contractCell,
-  expandableCell,
-  formatNumberCell,
-  multilineCell,
-  numberCell,
-  textCell,
-  type ScoreCell,
-  type ScoreTable,
-} from "./table/score-table";
-export {
-  buildScorecardTable,
-  buildScorecardVpTable,
-  scorecardViews,
-} from "./scorecard/scorecard-table";
-export { buildSwissVpTable } from "./swiss/swiss-vp-view";
-export {
-  buildTeamBoardResultTable,
+  teamBoardResult,
+  type TeamBoardResult,
   type TeamBoardResultLine,
-} from "./swiss/team-board-result-view";
+  type TeamBoardRoomResult,
+} from "./swiss/team-board-result";

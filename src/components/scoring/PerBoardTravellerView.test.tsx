@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 import { PerBoardTravellerView } from "./PerBoardTravellerView";
-import type { ScoreTable } from "@/modules/scoring/table/score-table";
-import type { PerBoardScoringPlugin } from "@/modules/scoring/plugins/types";
+import type { ScoreTable } from "@/modules/results-views/table/score-table";
+import type { TableView } from "@/modules/results-views/view-types";
 
 function tableWith(label: string): ScoreTable {
   return {
@@ -12,8 +12,8 @@ function tableWith(label: string): ScoreTable {
   };
 }
 
-function plugin(viewCount: 1 | 2): PerBoardScoringPlugin<unknown> {
-  const views = [
+function views(viewCount: 1 | 2): TableView<unknown>[] {
+  return [
     { id: "v1", label: "First", toTable: vi.fn(() => tableWith("first-cell")) },
     {
       id: "v2",
@@ -21,18 +21,17 @@ function plugin(viewCount: 1 | 2): PerBoardScoringPlugin<unknown> {
       toTable: vi.fn(() => tableWith("second-cell")),
     },
   ].slice(0, viewCount);
-  return { id: "MP", score: vi.fn(), views } as never;
 }
 
 describe("PerBoardTravellerView", () => {
-  it("renders a single-view plugin directly without a toggle", () => {
-    render(<PerBoardTravellerView plugin={plugin(1)} scored={[]} />);
+  it("renders a single view directly without a toggle", () => {
+    render(<PerBoardTravellerView views={views(1)} scored={[]} />);
     expect(screen.getByText("first-cell")).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("shows a toggle for a two-view plugin and switches the active view", () => {
-    render(<PerBoardTravellerView plugin={plugin(2)} scored={[]} />);
+  it("shows a toggle for two views and switches the active view", () => {
+    render(<PerBoardTravellerView views={views(2)} scored={[]} />);
 
     // Default = first view.
     expect(screen.getByText("first-cell")).toBeInTheDocument();

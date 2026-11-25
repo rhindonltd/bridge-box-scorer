@@ -1,9 +1,3 @@
-import {
-  ScoreTable,
-  contractCell,
-  numberCell,
-  textCell,
-} from "@/modules/scoring/table/score-table";
 import { BoardOutcome } from "@/model/score";
 import { parseSeat } from "@/model/participants";
 import { computeImps } from "@/modules/scoring/traveller/common";
@@ -61,19 +55,36 @@ function toMatchRow(
   };
 }
 
-/** A contract-or-dash cell: the contract when played, otherwise an em dash. */
-function resultCell(result: BoardOutcome | null) {
-  return result != null ? contractCell(result) : textCell("—");
+/** One room's line in a team board result. */
+export interface TeamBoardRoomResult {
+  /** The room's seats, as the traveller holds them (for row highlighting). */
+  ns: string;
+  ew: string;
+  /** The final result in this room, or null when not entered. */
+  result: BoardOutcome | null;
+  /** The room's score for the team at NS there, or null when not scored. */
+  score: number | null;
+}
+
+/** One board's team result: the viewing team's two rooms and its net IMPs. */
+export interface TeamBoardResult {
+  /** The viewing player's own table. */
+  home: TeamBoardRoomResult;
+  /** The teammates' table, or null when it has no line for the board. */
+  away: TeamBoardRoomResult | null;
+  /** Net IMPs to the team on the board, or null until both rooms have scored. */
+  netImps: number | null;
 }
 
 /**
- * Build the "Team Result" table for one board, from the viewing player's team's
- * perspective.
+ * The team result for one board, from the viewing player's team's
+ * perspective. Results-views lays it out as the "Team Result" table
+ * (`teamBoardResultTable`).
  *
  * A team match spans two rooms sharing the same boards: the player's pair sits
  * at their own table, and their teammates sit at the opponent's table (as the
- * away pair). This table shows the two rooms' results on the board side by
- * side and the net IMPs the team gained or lost:
+ * away pair). The result gives the two rooms' results and scores on the board
+ * and the net IMPs the team gained or lost:
  *
  *   Room        Contract   Score
  *   Your table  4♠=        +620
@@ -83,14 +94,13 @@ function resultCell(result: BoardOutcome | null) {
  * the traveller already holds). `viewingSeat` is the player's section-qualified
  * seat. Returns null when the viewing seat's table has no line for the board
  * (nothing to compare from the player's side yet). When the opponent room has
- * not entered its result, the teammates' row shows a dash and the IMP figure is
- * omitted (shown as "—").
+ * not entered its result, its result and score are null and so is `netImps`.
  */
-export function buildTeamBoardResultTable(
+export function teamBoardResult(
   instances: TeamBoardResultLine[],
   boardNumber: number,
   viewingSeat: string,
-): ScoreTable | null {
+): TeamBoardResult | null {
   const myTable = parseSeat(viewingSeat).tableNumber;
 
   // This client-side view holds only the board's flat per-table lines (no
@@ -173,41 +183,20 @@ export function buildTeamBoardResultTable(
       : null;
 
   return {
-    columns: [{ label: "Table" }, { label: "Contract" }, { label: "Score" }],
-    rows: [
-      {
-        highlightIds: [myRow.ns, myRow.ew],
-        cells: [
-          textCell("Home"),
-          resultCell(myResult),
-          myScore != null ? numberCell(myScore) : textCell("—"),
-        ],
-      },
-      {
-        highlightIds: otherRow ? [otherRow.ns, otherRow.ew] : [],
-        cells: [
-          textCell("Away"),
-          resultCell(otherResult),
-          otherScore != null ? numberCell(otherScore) : textCell("—"),
-        ],
-      },
-      {
-        // The single team swing for the board, spanning the score column so it
-        // reads as a total rather than another per-room figure.
-        highlightIds: [],
-        cells: [
-          textCell("Team result"),
-          textCell(""),
-          netImps != null
-            ? textCell(`${formatImps(netImps)} IMP`)
-            : textCell("—"),
-        ],
-      },
-    ],
+    home: {
+      ns: myRow.ns,
+      ew: myRow.ew,
+      result: myResult,
+      score: myScore,
+    },
+    away: otherRow
+      ? {
+          ns: otherRow.ns,
+          ew: otherRow.ew,
+          result: otherResult,
+          score: otherScore,
+        }
+      : null,
+    netImps,
   };
-}
-
-/** Format a signed IMP total with an explicit leading + for a gain. */
-function formatImps(imps: number): string {
-  return imps > 0 ? `+${imps}` : `${imps}`;
 }

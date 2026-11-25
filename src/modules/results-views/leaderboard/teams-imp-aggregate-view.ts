@@ -2,14 +2,14 @@ import {
   ScoreTable,
   numberCell,
   textCell,
-} from "@/modules/scoring/table/score-table";
+} from "@/modules/results-views/table/score-table";
 import { TeamImpAggOverallScore } from "@/model/leaderboard";
 import { AssignedTeam } from "@/model/participants";
 import {
   rankCell,
   roundColumnNumbers,
-} from "@/modules/scoring/plugins/overall/overall-view";
-import { teamNameCell } from "@/modules/scoring/plugins/overall/team-names";
+} from "@/modules/results-views/leaderboard/overall-view";
+import { teamNameCell } from "@/modules/results-views/leaderboard/team-names";
 
 /**
  * Build the aggregate-IMP teams leaderboard table: Rank, Team, Total, then one

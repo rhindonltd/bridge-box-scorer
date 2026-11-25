@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mpOverallPlugin } from "./mp";
-import { ximpOverallPlugin } from "./x-imp";
+import { mpLeaderboardViews } from "./pairs-mp";
+import { ximpLeaderboardViews } from "./pairs-x-imp";
 import { AssignedPair } from "@/model/participants";
 
 const participants: AssignedPair[] = [
@@ -13,10 +13,9 @@ const participants: AssignedPair[] = [
   } as any,
 ];
 
-describe("mp overall plugin", () => {
-  it("has id MP with percentage and matchpoints views", () => {
-    expect(mpOverallPlugin.id).toBe("MP");
-    expect(mpOverallPlugin.views.map((v) => v.id)).toEqual([
+describe("mp leaderboard views", () => {
+  it("has percentage and matchpoints views", () => {
+    expect(mpLeaderboardViews.map((v) => v.id)).toEqual([
       "percentage",
       "matchpoints",
     ]);
@@ -30,7 +29,7 @@ describe("mp overall plugin", () => {
       lines: [{ pairId: "1", totalMP: 10, maxMP: 20, rank: 1, tied: false }],
     } as any;
 
-    const view = mpOverallPlugin.views.find((v) => v.id === "matchpoints")!;
+    const view = mpLeaderboardViews.find((v) => v.id === "matchpoints")!;
     const table = view.toTable(leaderboard, participants);
 
     expect(table.columns.map((c) => c.label)).toEqual(["Rank", "Pair", "MP"]);
@@ -49,7 +48,7 @@ describe("mp overall plugin", () => {
       lines: [{ pairId: "1", totalMP: 10, maxMP: 20, rank: 1, tied: false }],
     } as any;
 
-    const view = mpOverallPlugin.views.find((v) => v.id === "percentage")!;
+    const view = mpLeaderboardViews.find((v) => v.id === "percentage")!;
     const table = view.toTable(leaderboard, participants);
 
     const pctCell = table.rows[0].cells[2];
@@ -63,15 +62,14 @@ describe("mp overall plugin", () => {
       scoring: "MP",
       lines: [{ pairId: "1", totalMP: 10, maxMP: 20, rank: 1, tied: true }],
     } as any;
-    const view = mpOverallPlugin.views.find((v) => v.id === "matchpoints")!;
+    const view = mpLeaderboardViews.find((v) => v.id === "matchpoints")!;
     const table = view.toTable(leaderboard, participants);
     expect(table.rows[0].cells[0]).toEqual({ kind: "text", value: "1=" });
   });
 });
 
-describe("ximp overall plugin", () => {
-  it("has id XIMP with a single X-IMP view rendering Rank/Pair/X-IMP", () => {
-    expect(ximpOverallPlugin.id).toBe("XIMP");
+describe("ximp leaderboard views", () => {
+  it("has a single X-IMP view rendering Rank/Pair/X-IMP", () => {
     const leaderboard = {
       type: "PAIR_XIMP",
       mode: "PAIR",
@@ -79,7 +77,7 @@ describe("ximp overall plugin", () => {
       lines: [{ pairId: "1", crossImps: 7, rank: 1, tied: false }],
     } as any;
 
-    const table = ximpOverallPlugin.views[0].toTable(leaderboard, participants);
+    const table = ximpLeaderboardViews[0].toTable(leaderboard, participants);
     expect(table.columns.map((c) => c.label)).toEqual([
       "Rank",
       "Pair",

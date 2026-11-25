@@ -14,8 +14,8 @@ describe("combination registry", () => {
       perBoard: "XIMP",
       overall: "XIMP",
     });
-    // Teams scorings declare only a per-board plugin; their standings are shown
-    // via the team overall registry, so no pairs `overall` plugin is set.
+    // Teams scorings declare only a per-board plugin; their standings come from
+    // the dedicated teams scorers, so no pairs `overall` plugin is set.
     expect(getCombination("IMP")).toEqual({ perBoard: "IMP" });
     expect(getCombination("IMP_VP")).toEqual({ perBoard: "IMP" });
     expect(getCombination("BAM")).toEqual({ perBoard: "IMP" });
