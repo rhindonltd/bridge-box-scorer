@@ -6,16 +6,18 @@ import { computeSectionLeaderboards } from "@/services/leaderboard-service";
 import { isSwissRoundComplete } from "@/services/swiss-round-completion";
 import { materializeSwissTeamsRound } from "@/services/materialize-swiss-teams-round";
 import {
+  teamIds,
+  type TeamId,
+  type TeamsMatch,
+} from "@/model/teams-match-layout";
+import {
   continueLongTriple,
   drawSwissTeamsRound,
   roundOddResolution,
-  teamIds,
   teamOpponentKey,
   type OddHandling,
   type OddRoundResolution,
   type SerializableTeamsAdvisoryInputs,
-  type TeamId,
-  type TeamsMatch,
   type TeamsTriple,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 import { type TeamTripleKind } from "@/scoring/swiss/team-match";
@@ -33,10 +35,7 @@ import { SectionLetter, parseSeat } from "@/model/participants";
  * "Draw next round" control can explain the block.
  */
 export type DrawSwissTeamsRejection =
-  | "NOT_SWISS_TEAMS"
-  | "ROUND_INCOMPLETE"
-  | "EVENT_COMPLETE"
-  | "ODD_TEAM_COUNT";
+  "NOT_SWISS_TEAMS" | "ROUND_INCOMPLETE" | "EVENT_COMPLETE" | "ODD_TEAM_COUNT";
 
 /**
  * A previewed (but NOT committed) Swiss Teams draw: the proposed matches (stable
@@ -159,13 +158,11 @@ async function getSwissTeamsHistory(
     }
 
     if (m.kind === "TRIPLE" && m.groupId != null) {
-      const entry =
-        tripleByGroup.get(m.groupId) ??
-        {
-          kind: (m.vpPool === 20 ? "LONG" : "SHORT") as TeamTripleKind,
-          teams: new Set<number>(),
-          rounds: new Set<number>(),
-        };
+      const entry = tripleByGroup.get(m.groupId) ?? {
+        kind: (m.vpPool === 20 ? "LONG" : "SHORT") as TeamTripleKind,
+        teams: new Set<number>(),
+        rounds: new Set<number>(),
+      };
       if (home != null) entry.teams.add(home);
       if (away != null) entry.teams.add(away);
       entry.rounds.add(m.roundNumber);
@@ -339,7 +336,9 @@ function resolveOddRound(
 
   const prev = plan?.[nextRound - 2];
   const isSecondSlot =
-    typeof prev === "object" && prev.kind === "LONG" && prev.group === oddRound.group;
+    typeof prev === "object" &&
+    prev.kind === "LONG" &&
+    prev.group === oddRound.group;
   if (!isSecondSlot) {
     return { oddRound, fixedTriple: null };
   }
@@ -410,7 +409,10 @@ async function resolveTeamsDrawContext(
     return { reason: "EVENT_COMPLETE" };
   }
 
-  if (currentRound >= 1 && !(await isRoundComplete(db, section, currentRound))) {
+  if (
+    currentRound >= 1 &&
+    !(await isRoundComplete(db, section, currentRound))
+  ) {
     return { reason: "ROUND_INCOMPLETE" };
   }
 

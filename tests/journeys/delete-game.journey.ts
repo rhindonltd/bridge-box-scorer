@@ -1,8 +1,11 @@
+import fs from "node:fs";
+import { E2E_GAMES_DIR } from "../e2e-env";
 import { test, expect } from "@playwright/test";
 
 import { createGame } from "../fixtures/game-create";
 import { deleteGame } from "../fixtures/delete-game";
 import { newParticipant } from "./support";
+import { closeDevices, newDevice, seedGame } from "../fixtures/seeded-game";
 
 /**
  * Delete-game journey.
@@ -13,7 +16,7 @@ import { newParticipant } from "./support";
  */
 
 test.describe("Delete game", () => {
-  test("an out-of-date director token on a game being set up goes back to Create Game, not Manage Game", async ({
+  test("an out-of-date director token on a game being set up offers Become Director, never Manage Game", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
@@ -32,20 +35,21 @@ test.describe("Delete game", () => {
       await page.goto(`/create`);
       await page.getByRole("button", { name: new RegExp(eventName) }).click();
 
-      // The setup screens check the token with the server and send the device
-      // back to the list it came from, with the bad token cleared.
-      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
-      await expect(
-        page.getByRole("button", { name: new RegExp(eventName) }),
-      ).toBeVisible({ timeout: 15000 });
-
-      // Picking the game again now asks the device to become a director.
-      await page.getByRole("button", { name: new RegExp(eventName) }).click();
+      // The list checks the token with the server, so the first tap goes
+      // straight to Become Director rather than into the setup screens.
       await expect(page.locator("#share-code")).toBeVisible({ timeout: 15000 });
 
+      // The setup screens and Delete Game check too, if opened directly: they
+      // send the device back to Create Game, not Manage Game.
+      await page.goto(`/game/${gameId}/create`);
+      await expect(page).toHaveURL((url) => url.pathname === "/create", {
+        timeout: 15000,
+      });
       // The Delete Game screen does the same if opened directly.
       await page.goto(`/game/${gameId}/manage/delete-game`);
-      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
+      await expect(page).toHaveURL((url) => url.pathname === "/create", {
+        timeout: 15000,
+      });
     } finally {
       await page.evaluate(
         ({ id, token }) => localStorage.setItem(`director:${id}`, token),
@@ -53,6 +57,24 @@ test.describe("Delete game", () => {
       );
       await deleteGame(page, gameId);
       await page.context().close();
+    }
+  });
+
+  test("an out-of-date director token on a started game offers Become Director from Manage Game", async ({
+    browser,
+  }) => {
+    test.setTimeout(60_000);
+    const eventName = `Stale Manage ${Date.now()}`;
+    const game = await seedGame({ scoring: "MP", tables: 3, eventName });
+    const page = await (
+      await newDevice(browser, { [`director:${game.gameId}`]: "out-of-date" })
+    ).newPage();
+    try {
+      await page.goto("/manage");
+      await page.getByRole("button", { name: new RegExp(eventName) }).click();
+      await expect(page.locator("#share-code")).toBeVisible({ timeout: 15000 });
+    } finally {
+      await closeDevices(page);
     }
   });
 
@@ -127,6 +149,14 @@ test.describe("Delete game", () => {
         { timeout: 15000 },
       )
       .toBeNull();
+
+    // The game's database and its -wal and -shm side files are all gone.
+    await expect
+      .poll(
+        () => fs.readdirSync(E2E_GAMES_DIR).filter((f) => f.startsWith(gameId)),
+        { timeout: 15000 },
+      )
+      .toEqual([]);
 
     await page.context().close();
   });

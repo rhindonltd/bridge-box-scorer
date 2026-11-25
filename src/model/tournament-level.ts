@@ -1,7 +1,4 @@
-import {
-  TournamentLevel,
-  TournamentLevels,
-} from "@/db/games/types/tournament-level";
+import { TournamentLevel, TournamentLevels } from "@/model/game-types";
 
 /**
  * The three USEBIO EVENT fields a tournament level resolves to. The EBU reads

@@ -10,10 +10,8 @@ import {
   tripleBoardSets,
   materializeSwissTeamsRound,
 } from "./materialize-swiss-teams-round";
-import type {
-  TeamsMatch,
-  TeamsTriple,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamsMatch } from "@/model/teams-match-layout";
+import type { TeamsTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
 import { getDb } from "@/db/games";
 
 /**
@@ -139,7 +137,14 @@ describe("swissTeamsRoundToMaterializable", () => {
       slot: null,
     };
     // One board per round cannot be split into two halves.
-    const out = swissTeamsRoundToMaterializable(1, 1, 4, [{ a: 1, b: 2 }], null, triple);
+    const out = swissTeamsRoundToMaterializable(
+      1,
+      1,
+      4,
+      [{ a: 1, b: 2 }],
+      null,
+      triple,
+    );
     expect(out.map((t) => t.tableNumber).sort()).toEqual([1, 2]);
   });
   it("lays a SHORT triple out as three head-to-head comparisons on sets A/B/C", () => {
@@ -154,7 +159,14 @@ describe("swissTeamsRoundToMaterializable", () => {
       group: null,
       slot: null,
     };
-    const out = swissTeamsRoundToMaterializable(1, 6, 4, [{ a: 1, b: 2 }], null, triple);
+    const out = swissTeamsRoundToMaterializable(
+      1,
+      6,
+      4,
+      [{ a: 1, b: 2 }],
+      null,
+      triple,
+    );
 
     // Collect every (table, ns, ew, boardStart, boardEnd) row for the triple
     // tables (3, 4, 5).
@@ -171,18 +183,56 @@ describe("swissTeamsRoundToMaterializable", () => {
       );
 
     // Comparison x-y (3-4) on set A (1..3): rooms 3-NS/4-EW and 4-NS/3-EW.
-    expect(tripleRows).toContainEqual({ table: 3, ns: "3NS", ew: "4EW", start: 1, end: 3 });
-    expect(tripleRows).toContainEqual({ table: 4, ns: "4NS", ew: "3EW", start: 1, end: 3 });
+    expect(tripleRows).toContainEqual({
+      table: 3,
+      ns: "3NS",
+      ew: "4EW",
+      start: 1,
+      end: 3,
+    });
+    expect(tripleRows).toContainEqual({
+      table: 4,
+      ns: "4NS",
+      ew: "3EW",
+      start: 1,
+      end: 3,
+    });
     // Comparison y-z (4-5) on set B (4..6): rooms 4-NS/5-EW and 5-NS/4-EW.
-    expect(tripleRows).toContainEqual({ table: 4, ns: "4NS", ew: "5EW", start: 4, end: 6 });
-    expect(tripleRows).toContainEqual({ table: 5, ns: "5NS", ew: "4EW", start: 4, end: 6 });
+    expect(tripleRows).toContainEqual({
+      table: 4,
+      ns: "4NS",
+      ew: "5EW",
+      start: 4,
+      end: 6,
+    });
+    expect(tripleRows).toContainEqual({
+      table: 5,
+      ns: "5NS",
+      ew: "4EW",
+      start: 4,
+      end: 6,
+    });
     // Comparison z-x (3-5) on set C (25..27): rooms 5-NS/3-EW and 3-NS/5-EW.
-    expect(tripleRows).toContainEqual({ table: 5, ns: "5NS", ew: "3EW", start: 25, end: 27 });
-    expect(tripleRows).toContainEqual({ table: 3, ns: "3NS", ew: "5EW", start: 25, end: 27 });
+    expect(tripleRows).toContainEqual({
+      table: 5,
+      ns: "5NS",
+      ew: "3EW",
+      start: 25,
+      end: 27,
+    });
+    expect(tripleRows).toContainEqual({
+      table: 3,
+      ns: "3NS",
+      ew: "5EW",
+      start: 25,
+      end: 27,
+    });
 
     // Exactly six triple rows, none a sit-out.
     expect(tripleRows).toHaveLength(6);
-    expect(out.every((t) => t.rounds.every((r) => r.sitOut === undefined))).toBe(true);
+    expect(
+      out.every((t) => t.rounds.every((r) => r.sitOut === undefined)),
+    ).toBe(true);
 
     // No (table, board) is used twice across the whole round (no board repeat).
     const seen = new Set<string>();
@@ -210,7 +260,14 @@ describe("swissTeamsRoundToMaterializable", () => {
       group: 1,
       slot: 1,
     };
-    const out = swissTeamsRoundToMaterializable(1, 6, 4, [{ a: 1, b: 2 }], null, triple);
+    const out = swissTeamsRoundToMaterializable(
+      1,
+      6,
+      4,
+      [{ a: 1, b: 2 }],
+      null,
+      triple,
+    );
 
     const tripleRows = out
       .filter((t) => t.tableNumber >= 3)
@@ -247,7 +304,14 @@ describe("swissTeamsRoundToMaterializable", () => {
       group: 1,
       slot: 2,
     };
-    const out = swissTeamsRoundToMaterializable(2, 6, 4, [{ a: 1, b: 2 }], null, triple);
+    const out = swissTeamsRoundToMaterializable(
+      2,
+      6,
+      4,
+      [{ a: 1, b: 2 }],
+      null,
+      triple,
+    );
 
     const tripleRows = out
       .filter((t) => t.tableNumber >= 3)
@@ -339,7 +403,14 @@ describe("materializeSwissTeamsRound", () => {
     const { db, transaction } = stubDb([{ n: 1 }]);
     vi.mocked(getDb).mockResolvedValue(db as any);
 
-    const result = await materializeSwissTeamsRound("g1", "A", 1, 3, 5, matches);
+    const result = await materializeSwissTeamsRound(
+      "g1",
+      "A",
+      1,
+      3,
+      5,
+      matches,
+    );
 
     expect(result).toEqual({ written: false });
     expect(transaction).not.toHaveBeenCalled();
@@ -349,7 +420,14 @@ describe("materializeSwissTeamsRound", () => {
     const { db, insert, values, run, transaction } = stubDb([]);
     vi.mocked(getDb).mockResolvedValue(db as any);
 
-    const result = await materializeSwissTeamsRound("g1", "A", 1, 3, 5, matches);
+    const result = await materializeSwissTeamsRound(
+      "g1",
+      "A",
+      1,
+      3,
+      5,
+      matches,
+    );
 
     expect(result).toEqual({ written: true });
     expect(transaction).toHaveBeenCalledTimes(1);

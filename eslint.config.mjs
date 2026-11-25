@@ -122,6 +122,50 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // Module boundaries (docs/design/modules.md §4). The shared kernel
+  // (src/model) is plain types and pure helpers that every module and the core
+  // depend on, so it must depend on nothing but itself: no framework, no I/O,
+  // and no other part of the app. Tests may use the app's generators as
+  // fixtures, so they are exempt.
+  {
+    files: ["src/model/**/*.{ts,tsx}"],
+    ignores: ["src/model/**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "react",
+                "react-dom",
+                "next",
+                "next/*",
+                "socket.io",
+                "socket.io-client",
+                "drizzle-orm",
+                "drizzle-orm/*",
+                "better-sqlite3",
+                "fs",
+                "fs/*",
+                "node:*",
+                "child_process",
+                "server-only",
+              ],
+              message:
+                "The kernel (src/model) is pure: no framework or I/O imports.",
+            },
+            {
+              group: ["@/*", "!@/model", "../*"],
+              message:
+                "The kernel (src/model) may import only itself. See docs/design/modules.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Allow `any` in test files, mock factories, storybook decorators, and test helpers
   // where precise typing of mock returns adds no value.
   {

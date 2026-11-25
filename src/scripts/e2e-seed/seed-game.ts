@@ -42,9 +42,7 @@ import {
   type Play,
 } from "@/scripts/seed-e2e-scenario";
 import type { SelectedMovement } from "@/model/selected-movement";
-import type { GameType } from "@/db/games/types/game-type";
-import type { EventFormat } from "@/db/games/types/event-format";
-import type { ScoringType } from "@/db/games/types/scoring-type";
+import type { GameType, GameFormat, ScoringType } from "@/model/game-types";
 import type { BoardOutcome } from "@/model/score";
 import type { PairSeat } from "@/model/participants";
 
@@ -63,7 +61,7 @@ export type FixtureKey =
 
 interface FixtureSpec {
   gameType: GameType;
-  eventFormat: EventFormat;
+  eventFormat: GameFormat;
   scoringType: ScoringType;
   /** Build the stored movement selection from the resolved sizes. */
   movement: (sizes: {
@@ -285,7 +283,7 @@ export interface SeedGameResult {
   directorToken: string;
   fixtureLabel: string;
   gameType: GameType;
-  eventFormat: EventFormat;
+  eventFormat: GameFormat;
   scoringType: ScoringType;
   tables: number;
   rounds: number;

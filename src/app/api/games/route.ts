@@ -2,9 +2,7 @@ import { z } from "zod";
 
 import { withBasicRoute } from "@/lib/api/basicRoute";
 import { ClientError, respondToActionError } from "@/lib/api/client-error";
-import { GameTypes } from "@/db/games/types/game-type";
-import { EventFormats } from "@/db/games/types/event-format";
-import { ScoringTypes } from "@/db/games/types/scoring-type";
+import { GameTypes, GameFormats, ScoringTypes } from "@/model/game-types";
 import { createBridgeGame } from "@/db/game-index/actions/create-game";
 import { createGameDb } from "@/db/games/actions/create-game";
 import { createLoginSession } from "@/db/system/actions/create-login-session";
@@ -15,7 +13,7 @@ const bodySchema = z.object({
   eventName: z.string().min(1),
   director: z.string().nullish(),
   gameType: z.enum(GameTypes),
-  eventFormat: z.enum(EventFormats).optional(),
+  eventFormat: z.enum(GameFormats).optional(),
   scoringType: z.enum(ScoringTypes).optional(),
   sectionName: z.string(),
   eventDate: z.string().min(1),

@@ -1,5 +1,20 @@
-import { NewPlayer, Player } from "@/db/games/tables/players";
 import { PairDirection } from "@/model/common";
+
+/** A player as stored on a seat (the `players` table's columns). */
+export interface PlayerRecord {
+  id: number;
+  firstName: string;
+  lastName: string;
+  nationalId: string | null;
+}
+
+/** A player being added; the id is assigned when it is stored. */
+export interface NewPlayerRecord {
+  id?: number;
+  firstName: string;
+  lastName: string;
+  nationalId?: string | null;
+}
 
 export interface ParticipantsByMode {
   PAIR: {
@@ -166,8 +181,8 @@ export function deriveTeamId(seat: Seat): string {
 export type NewPair = {
   type: "PAIR";
   initialSeat: PairSeat;
-  player1: NewPlayer;
-  player2: NewPlayer;
+  player1: NewPlayerRecord;
+  player2: NewPlayerRecord;
 };
 
 /**
@@ -205,8 +220,8 @@ export type Pair = {
    * boards carry the seat itself.
    */
   anchorId?: string | null;
-  player1: Player;
-  player2: Player;
+  player1: PlayerRecord;
+  player2: PlayerRecord;
   /**
    * §2.4.7 one-line handover DUAL-NAMING. For a seat shared by two pairs that
    * score as ONE merged line (`split = 0`), the LOCAL leaderboard shows BOTH

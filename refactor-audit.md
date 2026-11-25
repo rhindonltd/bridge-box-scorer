@@ -1,5 +1,9 @@
 # Refactor Audit — bridge-box-scorer
 
+> See also [`docs/design/modules.md`](docs/design/modules.md), the draft module
+> interfaces. It takes up findings 4–6 (Swiss twins and §3.5 detection) and the
+> leaderboard parameter tunnel (Priority 4).
+
 Where functionality has been bolted on over time and a clean refactor would improve readability and maintainability. Findings are grounded in files read directly plus two targeted surveys of the socket/service and context/component layers.
 
 Overall the codebase is deliberately factored and unusually well-commented. The smells cluster around one recurring theme: **features were added by copy-pasting a sibling rather than extracting a shared seam** — most visibly as "pairs vs teams" twin modules, and as per-ruling handler clones. The client side already shows the target state (`useFeatureSnapshot`); the server side and a few components never got the same treatment.

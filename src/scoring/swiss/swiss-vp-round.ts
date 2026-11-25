@@ -7,7 +7,6 @@ import { boardResult } from "./team-match";
 import {
   COMPENSATION_SEGMENT,
   PairSegment,
-  PairVoidFault,
   compensationMpFractions,
   compensationXimpPerComparison,
   isHalfMatchRound,
@@ -15,11 +14,16 @@ import {
   voidMpFractions,
   voidXimpPerComparison,
 } from "./swiss-half-match";
-import { parsePairVoid, pairVoidFaults } from "@/model/pairs-match-void";
+import {
+  parsePairVoid,
+  pairVoidFaults,
+  type PairVoidFault,
+} from "@/model/pairs-match-void";
 import { ScoredMpBoard } from "@/scoring/traveller/pair/neuberg-across-boards";
 import { applyBetterThanAverage } from "@/scoring/traveller/pair/better-than-average";
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
-import { parseMismatches, adjustMismatchVp } from "@/model/swiss-mismatch";
+import { parseMismatches } from "@/model/swiss-mismatch";
+import { adjustMismatchVp } from "./mismatch-adjustment";
 
 /**
  * The minimal `matches`-row shape the Swiss Pairs VP scorer needs for the
@@ -353,7 +357,8 @@ function buildMpByBoard(byBoard: Map<number, SwissVpBoardRow[]>): {
     applyBetterThanAverage(scoredBoards),
   )) {
     for (const line of lines) {
-      if (line.maxMatchPoints > 0) topByBoard.set(boardNumber, line.maxMatchPoints);
+      if (line.maxMatchPoints > 0)
+        topByBoard.set(boardNumber, line.maxMatchPoints);
       ensure(line.nsId).set(boardNumber, {
         mp: line.nsMatchPoints,
         max: line.maxMatchPoints,
@@ -517,9 +522,7 @@ function buildMatches(
         ewId,
         nsVp,
         ewVp,
-        boardNumbers: rows
-          .map((r) => r.boardNumber)
-          .sort((a, b) => a - b),
+        boardNumbers: rows.map((r) => r.boardNumber).sort((a, b) => a - b),
       });
     }
   }
@@ -584,7 +587,11 @@ export function scoreSwissVpRound(
   // mismatched side's VP afterwards. Both are read off the match rows.
   const voidedMatchIds = new Set<number>();
   for (const m of matchRows) {
-    if (m.kind === "PAIRS" && m.ruling != null && parsePairVoid(m.ruling) != null) {
+    if (
+      m.kind === "PAIRS" &&
+      m.ruling != null &&
+      parsePairVoid(m.ruling) != null
+    ) {
       voidedMatchIds.add(m.id);
     }
   }
@@ -595,7 +602,14 @@ export function scoreSwissVpRound(
   // §3.3.8/§3.3.9 voided pairs: credited an AVE+/AVE−/AVE half-board blend,
   // scored off the (void-excluded) field top, and added to `pairVp`. Their
   // rows were kept out of `byBoard` so they never skew the field.
-  creditVoidPairs(rows, byBoard, mode, expectedBoards, result.pairVp, matchRows);
+  creditVoidPairs(
+    rows,
+    byBoard,
+    mode,
+    expectedBoards,
+    result.pairVp,
+    matchRows,
+  );
 
   // §3.5 mismatch: the match was played for real (its rows stay in the field),
   // but the director has ruled the mismatched side's round VP be adjusted per
@@ -654,7 +668,10 @@ function voidPairRounds(
   rows: SwissVpBoardRow[],
   matchRows: SwissVpMatchRow[],
 ): VoidPairRound[] {
-  const byPair = new Map<string, { fault: PairVoidFault; boards: Set<number> }>();
+  const byPair = new Map<
+    string,
+    { fault: PairVoidFault; boards: Set<number> }
+  >();
 
   const add = (pairId: string, fault: PairVoidFault, board: number) => {
     const entry = byPair.get(pairId) ?? { fault, boards: new Set<number>() };
@@ -732,9 +749,10 @@ function voidMpVp(
   topByBoard: Map<number, number>,
   expectedBoards: number | undefined,
 ): number {
-  const boards = expectedBoards && expectedBoards > 0
-    ? expectedBoards
-    : v.boardNumbers.length;
+  const boards =
+    expectedBoards && expectedBoards > 0
+      ? expectedBoards
+      : v.boardNumbers.length;
   /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
@@ -743,8 +761,7 @@ function voidMpVp(
   // top of the round, so the AVE blend has a scale even for a board nobody else
   // played. We approximate an unknown top with the max known top of the round.
   const knownTops = Array.from(topByBoard.values());
-  const fallbackTop =
-    knownTops.length > 0 ? Math.max(...knownTops) : 0;
+  const fallbackTop = knownTops.length > 0 ? Math.max(...knownTops) : 0;
 
   let mp = 0;
   let max = 0;
@@ -771,9 +788,10 @@ function voidXimpVp(
   fieldByBoard: Map<number, XimpField>,
   expectedBoards: number | undefined,
 ): number {
-  const boards = expectedBoards && expectedBoards > 0
-    ? expectedBoards
-    : v.boardNumbers.length;
+  const boards =
+    expectedBoards && expectedBoards > 0
+      ? expectedBoards
+      : v.boardNumbers.length;
   /* v8 ignore next -- unreachable: a void pair always has >= 1 voided board, so boards >= 1 */
   if (boards <= 0) return NEUTRAL_VP;
 
@@ -782,7 +800,8 @@ function voidXimpVp(
   let boardsScored = 0;
   for (let i = 0; i < boards; i++) {
     const boardNumber = v.boardNumbers[i];
-    const field = boardNumber != null ? fieldByBoard.get(boardNumber) : undefined;
+    const field =
+      boardNumber != null ? fieldByBoard.get(boardNumber) : undefined;
     if (!field) continue;
     ximpq += (perComparison[i] * field.comparisons) / field.normaliser;
     boardsScored += 1;

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { games } from "@/db/game-index/schema";
 import { getDb as getIndexDb } from "@/db/game-index";
+import { closeDb } from "@/db/games";
 import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { broadcastGameDeleted } from "@/socket/broadcast/game-deleted-broadcast";
@@ -20,13 +21,18 @@ export const DELETE = withDirectorEditRoute(async ({ gameId }) => {
   const indexDb = getIndexDb();
   await indexDb.delete(games).where(eq(games.gameId, gameId));
 
+  // Close our connection first so SQLite doesn't recreate the side files,
+  // then remove the database and its WAL (-wal) and shared-memory (-shm)
+  // files. Removing only the .db would leave those two behind for good.
+  closeDb(gameId);
   const dbFile = path.join(
     process.env.DATABASE_GAMES_URL ?? "/home/bridgebox/data/games",
     `${gameId}.db`,
   );
-
-  if (fs.existsSync(dbFile)) {
-    fs.unlinkSync(dbFile);
+  for (const file of [dbFile, `${dbFile}-wal`, `${dbFile}-shm`]) {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+    }
   }
 
   return success({});

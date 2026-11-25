@@ -3,10 +3,8 @@ import {
   detectTeamsRoundMismatches,
   detectTripleMismatches,
 } from "./detect-teams-mismatch";
-import {
-  drawSwissTeamsRound,
-  type TeamId,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamId } from "@/model/teams-match-layout";
+import { drawSwissTeamsRound } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 /** The ordinary pairing the teams engine gives for an even standings order. */
 function correctOpponents(order: TeamId[]): Map<TeamId, TeamId> {
@@ -283,7 +281,10 @@ describe("detectTeamsRoundMismatches — edge cases", () => {
       committedOpponentByTeam: new Map([[1, 4]]),
       currentVpByTeam: new Map([[4, 10]]),
     });
-    expect(higher[0]).toMatchObject({ correctOpponentVp: 0, direction: "HIGHER" });
+    expect(higher[0]).toMatchObject({
+      correctOpponentVp: 0,
+      direction: "HIGHER",
+    });
   });
 });
 
@@ -315,7 +316,10 @@ describe("detectTripleMismatches — edge cases", () => {
       currentVpByTeam: new Map([[6, 18]]),
     });
     expect(candidates).toHaveLength(2);
-    expect(candidates[0]).toMatchObject({ actualOpponentVp: 0, direction: "LOWER" });
+    expect(candidates[0]).toMatchObject({
+      actualOpponentVp: 0,
+      direction: "LOWER",
+    });
   });
 
   it("skips a swap when no committed comparison covers the two teams", () => {
@@ -324,7 +328,10 @@ describe("detectTripleMismatches — edge cases", () => {
       committedMembers: [3, 4, 5],
       correctMembers: [4, 5, 6],
       comparisons: [{ low: 4, high: 5, boardStart: 30, boardEnd: 32 }],
-      currentVpByTeam: new Map([[3, 2], [6, 18]]),
+      currentVpByTeam: new Map([
+        [3, 2],
+        [6, 18],
+      ]),
     });
     expect(candidates).toEqual([]);
   });
@@ -344,7 +351,9 @@ describe("detectTripleMismatches — edge cases", () => {
       ]),
     });
     expect(candidates).toHaveLength(2);
-    expect(candidates.map((c) => [c.actualOpponent, c.correctOpponent])).toEqual([
+    expect(
+      candidates.map((c) => [c.actualOpponent, c.correctOpponent]),
+    ).toEqual([
       [3, 6],
       [4, 7],
     ]);

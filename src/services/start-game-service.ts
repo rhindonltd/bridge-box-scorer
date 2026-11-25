@@ -22,10 +22,10 @@ import {
   RehydratedMovement,
   RehydratedTable,
 } from "@/services/movement-rehydration";
+import { MovementPlan } from "@/model/movement-plan";
 import {
   materializeSections,
   roundRobinTeamsToMaterializable,
-  MaterializableMovement,
   sectionParticipantId,
   type SeatAnchor,
 } from "@/services/materialize-movement";
@@ -62,7 +62,7 @@ import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robi
 export interface ResolvedStart {
   validation: StartValidationResult;
   /** The movement to materialize, present only when validation.canStart. */
-  movement: MaterializableMovement | null;
+  movement: MovementPlan | null;
   /**
    * Explicit seat → anchor ids for the materializer (Swiss Pairs only, where a
    * pair's board id is its stable number rather than its round-1 position).
@@ -73,7 +73,7 @@ export interface ResolvedStart {
 
 /**
  * Apply the appropriate sit-out transformation for a one-pair-short section.
- * Returns a MaterializableMovement with the dormant rounds flagged sitOut.
+ * Returns a MovementPlan with the dormant rounds flagged sitOut.
  *
  * `sitOutSeat` is section-qualified (e.g. "A3EW"); the sit-out helpers derive
  * the within-section phantom position id from its table + direction, so the
@@ -83,7 +83,7 @@ function applySitOut(
   selected: SelectedMovement,
   rehydrated: RehydratedMovement,
   sitOutSeat: PairSeat,
-): MaterializableMovement {
+): MovementPlan {
   // Swiss Pairs resolves its own round-1 sit-out in resolveSwissPairsStart (it
   // also owns the half-match group guard), so it never reaches here.
   if (selected.source === "MITCHELL") {
@@ -231,10 +231,7 @@ function resolveSwissPairsStart(
   if (roundOneIsHalfMatch && baseValidation.sitOutSeat !== null) {
     return {
       validation: baseValidation,
-      movement: resolveRoundOneHalfMatch(
-        selected,
-        baseValidation.sitOutSeat,
-      ),
+      movement: resolveRoundOneHalfMatch(selected, baseValidation.sitOutSeat),
       anchors: swissPairAnchors(section, tables),
     };
   }
@@ -258,11 +255,17 @@ function resolveSwissPairsStart(
  * id whatever chair it sits in, so the schedule, travellers and standings all
  * see one pair. An empty seat has no occupancy, so its entry updates nothing.
  */
-function swissPairAnchors(section: SectionLetter, tables: number): SeatAnchor[] {
+function swissPairAnchors(
+  section: SectionLetter,
+  tables: number,
+): SeatAnchor[] {
   const anchors: SeatAnchor[] = [];
   for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
     for (const direction of ["NS", "EW"] as const) {
-      const pairId = swissPairIdFromHomeSeat(tables, { tableNumber, direction });
+      const pairId = swissPairIdFromHomeSeat(tables, {
+        tableNumber,
+        direction,
+      });
       anchors.push({
         seat: `${section}${tableNumber}${direction}` as PairSeat,
         anchorId: sectionParticipantId(section, `${pairId}`),
@@ -287,8 +290,9 @@ function swissRoundOnePositional(
   tables: number,
   boardsPerRound: number,
   sitOutSeat: PairSeat | null,
-): MaterializableMovement {
-  const byeTable = sitOutSeat !== null ? parseSeat(sitOutSeat).tableNumber : null;
+): MovementPlan {
+  const byeTable =
+    sitOutSeat !== null ? parseSeat(sitOutSeat).tableNumber : null;
   const byePairId =
     sitOutSeat !== null
       ? swissPairIdFromHomeSeat(tables, {
@@ -336,7 +340,7 @@ function swissRoundOnePositional(
 function resolveRoundOneHalfMatch(
   selected: Extract<SelectedMovement, { source: "SWISS" }>,
   sitOutSeat: PairSeat,
-): MaterializableMovement {
+): MovementPlan {
   const { tables, boardsPerRound, stationaryPairs } = selected.swiss;
 
   // The phantom position is the empty seat (a physical round-1 home chair);
@@ -364,7 +368,9 @@ function resolveRoundOneHalfMatch(
   // >= 3 pairs (guaranteed here by the earlier tables >= 2 gate).
   /* v8 ignore next 3 */
   if (draw.halfMatch == null) {
-    throw new Error("Expected a half-match group for a round-1 HALF_MATCHES odd field");
+    throw new Error(
+      "Expected a half-match group for a round-1 HALF_MATCHES odd field",
+    );
   }
 
   return swissRoundToMaterializable(
@@ -671,10 +677,10 @@ function rangeInclusive(start: number, end: number): number[] {
 }
 
 /**
- * Convert a rehydrated DB movement to a MaterializableMovement with no sit-out
+ * Convert a rehydrated DB movement to a MovementPlan with no sit-out
  * flags (used when the movement is exactly filled).
  */
-function toMaterializable(movement: RehydratedTable[]): MaterializableMovement {
+function toMaterializable(movement: RehydratedTable[]): MovementPlan {
   return movement.map((table) => ({
     tableNumber: table.tableNumber,
     rounds: table.rounds.map((round) => ({
@@ -747,7 +753,7 @@ export async function startGame(
     .filter((r) => r.resolved.movement !== null)
     .map((r) => ({
       section: r.section,
-      movement: r.resolved.movement as MaterializableMovement,
+      movement: r.resolved.movement as MovementPlan,
       anchors: r.resolved.anchors,
     }));
 

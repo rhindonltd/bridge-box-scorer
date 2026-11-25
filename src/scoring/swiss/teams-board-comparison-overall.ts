@@ -1,7 +1,4 @@
-import {
-  TeamBamOverallScore,
-  TeamPabOverallScore,
-} from "@/model/leaderboard";
+import { TeamBamOverallScore, TeamPabOverallScore } from "@/model/leaderboard";
 import { rank } from "@/scoring/overall/rank";
 import { SwissVpBoardRow } from "./swiss-vp-overall";
 import {
@@ -13,7 +10,7 @@ import {
   tripleTeamStakes,
   type TeamMatchStructureRow,
 } from "./team-match";
-import { voidMatchWon } from "@/model/teams-match-void";
+import { voidMatchWon } from "@/scoring/swiss/team-match-void-score";
 
 /**
  * The fraction of a round's boards a bye team is credited (average-plus, i.e.
@@ -92,7 +89,10 @@ export function calculateTeamsBoardComparisonOverall(
     // a real board comparison — the board-win analogue of the teams-VP void.
     const voidCause = matchVoidCause(match);
     if (voidCause != null) {
-      const { home, opponent, boards } = voidMatchWon(voidCause, expectedBoards);
+      const { home, opponent, boards } = voidMatchWon(
+        voidCause,
+        expectedBoards,
+      );
       credit(totals, homeTeamId, round, home, boards);
       credit(totals, opponentTeamId, round, opponent, boards);
       continue;

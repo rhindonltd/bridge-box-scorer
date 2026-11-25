@@ -2,7 +2,7 @@ import { Board } from "@/db/games/tables/boards";
 import { AssignedTeam, sectionOf } from "@/model/participants";
 import { BridgeGame } from "@/db/game-index/schema";
 import { Club } from "@/db/system/schema";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { impVpWinner } from "@/scoring/swiss/imp-vp-table";
@@ -17,7 +17,7 @@ import {
   type TeamMatchRow,
   type TeamMatchStructureRow,
 } from "@/scoring/swiss/team-match";
-import { voidMatchVp } from "@/model/teams-match-void";
+import { voidMatchVp } from "@/scoring/swiss/team-match-void-score";
 import { rank } from "@/scoring/overall/rank";
 import { buildTravellerLine } from "./traveller-line";
 import { applySeatSwap } from "@/model/seat-swap";

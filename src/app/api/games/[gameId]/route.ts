@@ -7,9 +7,7 @@ import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateCombinedRanking } from "@/db/game-index/actions/update-combined-ranking";
 import { updateEventDetails } from "@/db/game-index/actions/update-event-details";
-import { GameTypes } from "@/db/games/types/game-type";
-import { EventFormats } from "@/db/games/types/event-format";
-import { ScoringTypes } from "@/db/games/types/scoring-type";
+import { GameTypes, GameFormats, ScoringTypes } from "@/model/game-types";
 import { broadcastGameUpdated } from "@/socket/broadcast/game-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
 import { getIO } from "@/socket/websocket";
@@ -39,7 +37,7 @@ const bodySchema = z
     eventName: z.string().min(1).optional(),
     director: z.string().nullish(),
     gameType: z.enum(GameTypes).optional(),
-    eventFormat: z.enum(EventFormats).optional(),
+    eventFormat: z.enum(GameFormats).optional(),
     scoringType: z.enum(ScoringTypes).optional(),
     leadCardRequired: z.boolean().optional(),
     handEntryEnabled: z.boolean().optional(),

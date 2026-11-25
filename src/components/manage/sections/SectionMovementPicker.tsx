@@ -26,8 +26,7 @@ import type {
   SwissMovementSpec,
   SwissTeamsMovementSpec,
 } from "@/model/selected-movement";
-import type { GameType } from "@/db/games/types/game-type";
-import type { EventFormat } from "@/db/games/types/event-format";
+import type { GameType, GameFormat } from "@/model/game-types";
 
 interface Props {
   gameId: string;
@@ -68,7 +67,7 @@ interface Props {
    * draw-as-you-go movement is the only option); a STANDARD game shows only the
    * normal movement recommendations. Defaults to STANDARD.
    */
-  eventFormat?: EventFormat;
+  eventFormat?: GameFormat;
   /**
    * The game's event type. For a SWISS game this picks Swiss Teams (each
    * table's two pairs form a team) vs Swiss Pairs. Defaults to PAIRS.
@@ -158,7 +157,11 @@ export function SectionMovementPicker({
     setSaving(true);
     try {
       if (movement.specRef.source === "generated") {
-        await setSectionMitchellMovement(gameId, section, movement.specRef.spec);
+        await setSectionMitchellMovement(
+          gameId,
+          section,
+          movement.specRef.spec,
+        );
       } else {
         await setSectionMovementSpec(
           gameId,
@@ -284,7 +287,6 @@ export function SectionMovementPicker({
         }}
         onConfirm={handleConfirm}
       />
-
     </div>
   );
 }

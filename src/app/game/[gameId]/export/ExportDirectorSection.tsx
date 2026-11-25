@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { TournamentLevelSelect } from "@/components/common/TournamentLevelSelect";
 import { useRequiredGame } from "@/context/GameContext";
-import type { TournamentLevel } from "@/db/games/types/tournament-level";
+import type { TournamentLevel } from "@/model/game-types";
 import type { BridgewebsStatus } from "@/db/system/queries/bridgewebs-credentials";
 import type { EbuStatus } from "@/db/system/queries/ebu-credentials";
 import { errorMessage } from "@/lib/error-message";

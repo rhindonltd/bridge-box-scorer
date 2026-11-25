@@ -30,17 +30,14 @@ vi.mock("@/hooks/flow", () => ({
 vi.mock("./ShowTablesPage", () => ({
   ShowTablesPage: ({
     menu,
-    onEditMovement,
     backAction,
   }: {
     menu?: React.ReactNode;
-    onEditMovement?: () => void;
     backAction?: () => void;
   }) => (
     <div>
       {menu}
       <div>tables-view</div>
-      <button onClick={() => onEditMovement?.()}>edit-movement</button>
       <button onClick={() => backAction?.()} disabled={!backAction}>
         tables-back
       </button>
@@ -134,15 +131,6 @@ describe("SetupGamePage step pages", () => {
     currentStep = "timer";
     render(<SetupGamePage />);
     expect(screen.getByText(/timer-view/)).toHaveTextContent("embedded");
-  });
-
-  it("jumps to the movements step from the Tables view's edit-movement action", async () => {
-    render(<SetupGamePage />);
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "edit-movement" }),
-    );
-    expect(mockGoTo).toHaveBeenCalledWith("movements");
   });
 
   it("only offers Share Director Access in the hamburger", async () => {

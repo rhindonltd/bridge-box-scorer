@@ -16,8 +16,7 @@ import { RoundInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/RoundInfoP
 import { GameComplete } from "@/app/game/[gameId]/play/[initialSeat]/GameComplete";
 import { BoardResultsPage } from "@/app/game/[gameId]/play/[initialSeat]/BoardResultsPage";
 import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDealsPage";
-import { ScoringType } from "@/db/games/types/scoring-type";
-import { GameType } from "@/db/games/types/game-type";
+import { ScoringType, GameType } from "@/model/game-types";
 import { buildTeamBoardResultTable } from "@/scoring/swiss/team-board-result-view";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";

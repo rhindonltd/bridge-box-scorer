@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { TournamentLevels } from "@/db/games/types/tournament-level";
+import { TournamentLevels } from "@/model/game-types";
 import {
   TOURNAMENT_LEVEL_INFO,
   TOURNAMENT_LEVEL_OPTIONS,

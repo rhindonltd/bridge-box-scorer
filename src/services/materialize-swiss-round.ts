@@ -5,10 +5,14 @@ import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
 import { PHANTOM_SEAT } from "@/model/phantom-seat";
+import type {
+  MovementPlan,
+  PlannedRound,
+  PlannedTable,
+} from "@/model/movement-plan";
 import {
   buildSectionRows,
   insertSectionDrafts,
-  type MaterializableMovement,
 } from "@/services/materialize-movement";
 import {
   type SwissHalfMatchGroup,
@@ -16,10 +20,6 @@ import {
   type SwissSeating,
 } from "@/movement/swiss/swiss-pairing";
 import { PairDirection } from "@/model/common";
-import type {
-  MaterializableRound,
-  MaterializableTable,
-} from "@/services/materialize-movement";
 
 /**
  * Phantom participant id for the empty seat on a Swiss sit-out / HALF_AVERAGE
@@ -137,7 +137,7 @@ export function swissHalfMatchToMaterializable(
   group: SwissHalfMatchGroup,
   seat: SwissHalfMatchSeat,
   firstFreeCompensationTable: number,
-): MaterializableTable[] | null {
+): PlannedTable[] | null {
   const split = swissHalfMatchBoardSplit(roundNumber, boardsPerRound);
   if (!split) return null;
 
@@ -150,10 +150,7 @@ export function swissHalfMatchToMaterializable(
   const groupId = `hm|r${roundNumber}|t${seat.tableNumber}`;
 
   // Seat the anchor in its fixed direction; the opponent takes the opposite.
-  const seatHalf = (
-    opponentId: string,
-    span: BoardSpan,
-  ): MaterializableRound => {
+  const seatHalf = (opponentId: string, span: BoardSpan): PlannedRound => {
     const ns = seat.anchorDirection === "NS" ? anchorId : opponentId;
     const ew = seat.anchorDirection === "NS" ? opponentId : anchorId;
     return {
@@ -177,7 +174,7 @@ export function swissHalfMatchToMaterializable(
   };
 
   // Both real halves sit at the anchor's one table.
-  const anchorTable: MaterializableTable = {
+  const anchorTable: PlannedTable = {
     tableNumber: seat.tableNumber,
     rounds: [
       seatHalf(oppOneId, split.halfOne),
@@ -190,7 +187,7 @@ export function swissHalfMatchToMaterializable(
     nonAnchorId: string,
     missed: BoardSpan,
     tableNumber: number,
-  ): MaterializableTable => ({
+  ): PlannedTable => ({
     tableNumber,
     rounds: [
       {
@@ -236,7 +233,7 @@ export interface SwissHalfMatchMaterialization {
 }
 
 /**
- * Turn a drawn Swiss round into the {@link MaterializableMovement} shape (one
+ * Turn a drawn Swiss round into the {@link MovementPlan} shape (one
  * "table" per seating entry, each with the single round R). Pair ids become the
  * movement participant ids (later section-qualified by buildSectionRows), so a
  * pair's stable integer id round-trips through the boards rows.
@@ -259,13 +256,13 @@ export function swissRoundToMaterializable(
   seating: SwissSeating[],
   sitOutPairId: SwissPairId | null,
   halfMatch: SwissHalfMatchMaterialization | null = null,
-): MaterializableMovement {
+): MovementPlan {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
     boardsPerRound,
   );
 
-  const tablesOut: MaterializableMovement = seating.map((seat) => {
+  const tablesOut: MovementPlan = seating.map((seat) => {
     const ns = swissPairMovementId(tables, seat.ns);
     const ew = swissPairMovementId(tables, seat.ew);
     return {
@@ -331,7 +328,11 @@ export function swissRoundToMaterializable(
     // Park the two compensation blocks above every other table used this round
     // (played tables, the anchor's table, and any sit-out table).
     const firstFreeCompensationTable =
-      Math.max(maxPlayedTable, halfMatch.seat.tableNumber, sitOutPairId != null ? maxPlayedTable + 1 : 0) + 1;
+      Math.max(
+        maxPlayedTable,
+        halfMatch.seat.tableNumber,
+        sitOutPairId != null ? maxPlayedTable + 1 : 0,
+      ) + 1;
 
     const halfMatchTables = swissHalfMatchToMaterializable(
       tables,
@@ -385,7 +386,9 @@ export async function materializeSwissRound(
   const existing = await db
     .select({ n: boards.boardNumber })
     .from(boards)
-    .where(and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)))
+    .where(
+      and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
+    )
     .limit(1);
 
   if (existing.length > 0) {

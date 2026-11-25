@@ -4,7 +4,7 @@ import {
   getOverallPlugin,
   getPerBoardPlugin,
 } from "./registry";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/model/game-types";
 
 describe("combination registry", () => {
   it("maps each ScoringType to its per-board and overall plugin ids", () => {

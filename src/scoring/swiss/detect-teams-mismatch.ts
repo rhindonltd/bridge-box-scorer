@@ -1,7 +1,5 @@
-import {
-  drawSwissTeamsRound,
-  type TeamId,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamId } from "@/model/teams-match-layout";
+import { drawSwissTeamsRound } from "@/movement/swiss-teams/swiss-teams-pairing";
 import { MismatchDirection } from "@/model/swiss-mismatch";
 import { MISMATCH_VP_THRESHOLD } from "@/scoring/swiss/detect-mismatch";
 

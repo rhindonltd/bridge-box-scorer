@@ -45,8 +45,7 @@ describe("game-index actions and queries", () => {
   it("updateTournamentLevel persists the level", async () => {
     const { updateTournamentLevel } =
       await import("@/db/game-index/actions/update-tournament-level");
-    const { TournamentLevels } =
-      await import("@/db/games/types/tournament-level");
+    const { TournamentLevels } = await import("@/model/game-types");
     const g = await seedGame();
     const level = TournamentLevels[TournamentLevels.length - 1];
     await updateTournamentLevel(g.gameId, level);

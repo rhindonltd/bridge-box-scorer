@@ -1,6 +1,4 @@
-import { GameType } from "@/db/games/types/game-type";
-import { EventFormat } from "@/db/games/types/event-format";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { GameType, GameFormat, ScoringType } from "@/model/game-types";
 
 /**
  * The four event types a director picks on the create form. Each is a
@@ -17,7 +15,7 @@ export type EventTypeChoice = "PAIRS" | "TEAMS" | "SWISS_PAIRS" | "SWISS_TEAMS";
 /** The (gameType × eventFormat) pair each event-type choice maps to. */
 export const EVENT_TYPE_MAP: Record<
   EventTypeChoice,
-  { gameType: GameType; eventFormat: EventFormat }
+  { gameType: GameType; eventFormat: GameFormat }
 > = {
   PAIRS: { gameType: "PAIRS", eventFormat: "STANDARD" },
   TEAMS: { gameType: "TEAMS", eventFormat: "STANDARD" },
@@ -46,7 +44,7 @@ export function isPairsChoice(choice: EventTypeChoice): boolean {
  */
 export function eventTypeChoiceOf(
   gameType: GameType,
-  eventFormat: EventFormat,
+  eventFormat: GameFormat,
 ): EventTypeChoice {
   if (gameType === "TEAMS") {
     return eventFormat === "SWISS" ? "SWISS_TEAMS" : "TEAMS";
@@ -74,7 +72,10 @@ export function scoringTypeFor(
 /** The pairs scoring choices (MP / XIMP) a stored type splits back into. */
 export type PairsScoring = Extract<ScoringType, "MP" | "XIMP">;
 /** The teams scoring choices a stored type splits back into. */
-export type TeamsScoring = Extract<ScoringType, "IMP" | "IMP_VP" | "BAM" | "PAB">;
+export type TeamsScoring = Extract<
+  ScoringType,
+  "IMP" | "IMP_VP" | "BAM" | "PAB"
+>;
 
 /**
  * Split a stored `scoringType` back into the pairs and teams scoring selections

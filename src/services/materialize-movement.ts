@@ -3,83 +3,17 @@ import "server-only";
 import { getDb, type Db } from "@/db/games";
 
 import { boards, NewBoard } from "@/db/games/tables/boards";
-import { matches, NewMatch, MatchKind } from "@/db/games/tables/matches";
+import { matches, NewMatch } from "@/db/games/tables/matches";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { Tables } from "@/model/movement";
+import type { MatchKind } from "@/model/game-types";
+import type {
+  MatchDescriptor,
+  MovementPlan,
+  PlannedRound,
+} from "@/model/movement-plan";
 import { PairSeat, SectionLetter, seatFor } from "@/model/participants";
-
-/**
- * A round in a movement ready to be materialized. Mirrors the DB round spec
- * but adds an optional `sitOut` flag: when true, this (table, round) is the
- * dormant position for a one-pair-short session — its boards are written with
- * status SIT_OUT (not played anywhere at that table that round) and the pair
- * scheduled there sits the round out.
- */
-/**
- * How a {@link MaterializableRound}'s boards group into a first-class match,
- * supplied by the materialiser (which knows the real structure) so the generic
- * row builder never has to RE-INFER it. All fields but `kind`/`scoredAsUnit`
- * are optional; when a round carries no descriptor the builder synthesises a
- * default ordinary-pairs match (one match per table-round seating).
- *
- * `key` is a stable per-section grouping key: all rounds sharing a `key` within
- * a section belong to the SAME match row (so a teams triple comparison's two
- * rooms, or any multi-room encounter, collapse into one match). When omitted,
- * the builder keys the match by the round's own `(table, round, ns, ew)`.
- */
-export interface MatchDescriptor {
-  kind: MatchKind;
-  scoredAsUnit: boolean;
-  /** Stable grouping key within a section; defaults to the round's own seat. */
-  key?: string;
-  /** Match participants (home-seat ids, pre section-qualification). */
-  home?: string;
-  opponent?: string | null;
-  groupId?: string | null;
-  slot?: number | null;
-  vpPool?: number | null;
-  boardStart?: number;
-  boardEnd?: number;
-}
-
-export interface MaterializableRound {
-  roundNumber: number;
-  ns: string;
-  ew: string;
-  boardStart: number;
-  boardEnd: number;
-  /**
-   * The first-class match these boards belong to. Optional: when absent the
-   * row builder synthesises an ordinary {@link MatchKind} `PAIRS` match
-   * (`scoredAsUnit: false`) keyed by this round's `(table, round, ns, ew)` —
-   * the right default for a static matchpoint/XIMP pairs movement. Swiss and
-   * teams materialisers supply an explicit descriptor.
-   */
-  match?: MatchDescriptor;
-  sitOut?: boolean;
-  /**
-   * When true, this (table, round) is the compensated (unplayed) half of a
-   * Swiss Pairs "2 half matches" group: its boards are written with status
-   * HALF_AVERAGE (never played or submittable) and the half-match scorer
-   * recomputes the AVE+/AVE credit across them. `ns` is the non-anchor pair
-   * being compensated; `ew` is a phantom. Mutually exclusive with `sitOut`.
-   */
-  halfAverage?: boolean;
-  /**
-   * Physical duplicate copy of the board set (Web Mitchell only). Optional in
-   * this in-memory shape; every persisted board row still gets a definite copy
-   * because the boards.copy column defaults to "A".
-   */
-  boardCopy?: string;
-}
-
-export interface MaterializableTable {
-  tableNumber: number;
-  rounds: MaterializableRound[];
-}
-
-export type MaterializableMovement = MaterializableTable[];
 
 /**
  * A board row before its match id is known. The row builder produces these
@@ -98,7 +32,7 @@ export type MatchDraft = NewMatch & { tempKey: string };
 /** The transient key linking a round's boards to the match they belong to. */
 function matchKeyFor(
   section: SectionLetter,
-  r: MaterializableRound,
+  r: PlannedRound,
   tableNumber: number,
 ): string {
   const explicit = r.match?.key;
@@ -112,7 +46,7 @@ function matchKeyFor(
 /** Build the match draft for a round's descriptor (or the default pairs match). */
 function matchDraftFor(
   section: SectionLetter,
-  r: MaterializableRound,
+  r: PlannedRound,
   tableNumber: number,
   tempKey: string,
 ): MatchDraft {
@@ -128,7 +62,9 @@ function matchDraftFor(
     scoredAsUnit: d?.scoredAsUnit ?? false,
     home: sectionParticipantId(section, homeMovementId),
     opponent:
-      oppMovementId == null ? null : sectionParticipantId(section, oppMovementId),
+      oppMovementId == null
+        ? null
+        : sectionParticipantId(section, oppMovementId),
     groupId: d?.groupId == null ? null : `${section}|${d.groupId}`,
     slot: d?.slot ?? null,
     vpPool: d?.vpPool ?? null,
@@ -179,7 +115,7 @@ export interface SeatAnchor {
  */
 export function buildSectionRows(
   section: SectionLetter,
-  movement: MaterializableMovement,
+  movement: MovementPlan,
 ): {
   boardRows: BoardDraft[];
   matchRows: MatchDraft[];
@@ -341,7 +277,7 @@ export function sectionParticipantId(
  */
 export async function materializePairLikeMovement(
   section: SectionLetter,
-  movement: MaterializableMovement,
+  movement: MovementPlan,
   gameId: string,
 ) {
   const { boardRows, matchRows, anchors } = buildSectionRows(section, movement);
@@ -350,13 +286,13 @@ export async function materializePairLikeMovement(
 
 /**
  * Materialize every section of a game in one transaction. Each entry pairs a
- * section letter with its already-resolved MaterializableMovement.
+ * section letter with its already-resolved MovementPlan.
  */
 export async function materializeSections(
   gameId: string,
   sections: {
     section: SectionLetter;
-    movement: MaterializableMovement;
+    movement: MovementPlan;
     /**
      * The seat → anchor id each occupancy should carry, when the round-1
      * layout can't say. By default each seat is stamped with the id on its
@@ -404,7 +340,7 @@ async function insertSectionRows(
 
 /**
  * Convert a generated, fully-expanded {@link Tables} movement (board numbers
- * already applied) into the {@link MaterializableMovement} shape the DB writers
+ * already applied) into the {@link MovementPlan} shape the DB writers
  * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
  * every generator that emits `Tables` — Mitchell-family pairs and Teams Round
  * Robin alike — shares it.
@@ -425,7 +361,7 @@ export function tablesToMaterializableMovement(
     boardStart: number;
     boardEnd: number;
   }) => MatchDescriptor,
-): MaterializableMovement {
+): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
     rounds: table.rounds.map((round) => {
@@ -454,14 +390,12 @@ export function tablesToMaterializableMovement(
 }
 
 /**
- * Convert the generateMitchell output (Tables) into the MaterializableMovement
+ * Convert the generateMitchell output (Tables) into the MovementPlan
  * shape. Thin alias over {@link tablesToMaterializableMovement}, kept for its
  * existing Mitchell call sites. No match descriptor → the default ordinary
  * (field-scored) pairs match.
  */
-export function mitchellToPairMovement(
-  tables: Tables,
-): MaterializableMovement {
+export function mitchellToPairMovement(tables: Tables): MovementPlan {
   return tablesToMaterializableMovement(tables);
 }
 
@@ -476,7 +410,7 @@ function teamsSeatTable(seatId: string): number {
 
 /**
  * Convert a generated Teams Round Robin (`generateRoundRobinTeams` output) into
- * the MaterializableMovement shape, tagging each room with its `TEAMS` match so
+ * the MovementPlan shape, tagging each room with its `TEAMS` match so
  * the two rooms of an encounter group into ONE match scored as a unit.
  *
  * A room at table T sits the home team ("${T}NS") against an away pair whose id
@@ -485,9 +419,7 @@ function teamsSeatTable(seatId: string): number {
  * the round, and its participants are the two teams' stable ids ("${lo}NS" /
  * "${hi}NS"). `vpPool` is the ordinary 20 and `scoredAsUnit` is true.
  */
-export function roundRobinTeamsToMaterializable(
-  tables: Tables,
-): MaterializableMovement {
+export function roundRobinTeamsToMaterializable(tables: Tables): MovementPlan {
   return tablesToMaterializableMovement(tables, (round) => {
     const homeTable = teamsSeatTable(round.ns);
     const oppTable = teamsSeatTable(round.ew);

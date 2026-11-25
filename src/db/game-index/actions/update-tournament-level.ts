@@ -2,7 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/game-index";
 import { games } from "@/db/game-index/schema";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 import { eq } from "drizzle-orm";
 
 /**

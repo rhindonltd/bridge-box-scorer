@@ -2,9 +2,7 @@ import "server-only";
 
 import { getDb } from "@/db/game-index";
 import { games } from "@/db/game-index/schema";
-import { GameType } from "@/db/games/types/game-type";
-import { EventFormat } from "@/db/games/types/event-format";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { GameType, GameFormat, ScoringType } from "@/model/game-types";
 import { eq } from "drizzle-orm";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 
@@ -13,7 +11,7 @@ export interface EventDetailsUpdate {
   eventName?: string;
   director?: string | null;
   gameType?: GameType;
-  eventFormat?: EventFormat;
+  eventFormat?: GameFormat;
   scoringType?: ScoringType;
   leadCardRequired?: boolean;
   handEntryEnabled?: boolean;
@@ -55,7 +53,9 @@ export async function updateEventDetails(
   await db
     .update(games)
     .set({
-      ...(update.eventName !== undefined ? { eventName: update.eventName } : {}),
+      ...(update.eventName !== undefined
+        ? { eventName: update.eventName }
+        : {}),
       ...(update.director !== undefined ? { director: update.director } : {}),
       ...(update.gameType !== undefined ? { gameType: update.gameType } : {}),
       ...(update.eventFormat !== undefined

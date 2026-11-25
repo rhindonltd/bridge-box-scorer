@@ -65,10 +65,10 @@ test.describe("Navigation & selection", () => {
       gameId = created.gameId;
 
       // The game hasn't started, so it is listed under Create Game (below its
-      // "Create Game" button), not under Manage Game.
+      // "New Game" button), not under Manage Game.
       await gotoStable(page, "/create");
       await expect(
-        page.getByRole("link", { name: "Create Game", exact: true }),
+        page.getByRole("link", { name: "New Game", exact: true }),
       ).toHaveAttribute("href", "/create/new", { timeout: 15000 });
       const createRow = page.getByRole("button", {
         name: new RegExp(eventName),

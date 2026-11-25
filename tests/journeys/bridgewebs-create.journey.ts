@@ -2,7 +2,10 @@ import { test, expect, type APIRequestContext } from "@playwright/test";
 
 import { deleteGame } from "../fixtures/delete-game";
 import { fetchAdminToken } from "../fixtures/settings";
-import { startBridgewebsMock, type BridgewebsMock } from "../fixtures/bridgewebs-mock";
+import {
+  startBridgewebsMock,
+  type BridgewebsMock,
+} from "../fixtures/bridgewebs-mock";
 import { newParticipant } from "./support";
 
 /**
@@ -76,16 +79,18 @@ test.describe("Create-page BridgeWebs event picker", () => {
     let gameId: string | null = null;
 
     try {
-      await page.goto("/create/new");
+      await page.goto("/create/new?step=details");
       // Wait for the on-mount events fetch to settle so the picker renders.
       await page.waitForLoadState("networkidle");
 
-      // With BridgeWebs configured and events available, the details step
+      // With BridgeWebs configured and events available, the form
       // offers a "Use BridgeWebs Event" Yes/No toggle (default No). Switching
       // it on swaps the Event Name text field for a dropdown of the events.
       const useBridgewebs = page.getByLabel("Use BridgeWebs Event");
       await expect(useBridgewebs).toBeVisible({ timeout: 15000 });
-      await useBridgewebs.getByRole("button", { name: "Yes", exact: true }).click();
+      await useBridgewebs
+        .getByRole("button", { name: "Yes", exact: true })
+        .click();
 
       await page.getByLabel("Director Name").fill("E2E Director");
 
@@ -95,8 +100,9 @@ test.describe("Create-page BridgeWebs event picker", () => {
       await picker.selectOption({ label: "Afternoon Teams" });
       await expect(picker).toHaveValue("8", { timeout: 10000 });
 
-      await page.getByRole("button", { name: "Next", exact: true }).click();
-      await page.getByRole("button", { name: "Create Game", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Create Game", exact: true })
+        .click();
       await page.waitForURL(/\/game\/.+\/create/, { timeout: 15000 });
       gameId = /\/game\/([^/]+)\/create/.exec(page.url())?.[1] ?? null;
       expect(gameId).toBeTruthy();

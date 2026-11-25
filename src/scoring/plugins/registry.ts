@@ -1,4 +1,4 @@
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/model/game-types";
 import {
   CombinationRegistry,
   OverallPluginId,

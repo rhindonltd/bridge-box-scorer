@@ -41,7 +41,7 @@ export default meta;
 
 type Story = StoryObj<typeof CreateSelectGamePage>;
 
-/** A game still being set up is listed below the Create Game button. */
+/** A game still being set up is listed below the New Game button. */
 export const WithGamesInSetup: Story = {
   parameters: {
     msw: {
@@ -54,7 +54,7 @@ export const WithGamesInSetup: Story = {
   },
 };
 
-/** Nothing waiting to start: just the Create Game button. */
+/** Nothing waiting to start: just the New Game button. */
 export const NoGamesInSetup: Story = {
   parameters: {
     msw: {

@@ -4,7 +4,7 @@ import {
   type Absences,
   type AbsenceBoardRow,
 } from "@/model/absence";
-import type { ParticipantStandingRow } from "@/db/games/queries/ranking-exclusions";
+import type { ParticipantStandingRow } from "@/model/standings";
 
 /**
  * PAIRS withdrawals / late arrivals (design §11.4). Rewrite each board row a

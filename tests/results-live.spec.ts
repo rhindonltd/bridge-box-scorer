@@ -9,8 +9,7 @@ import { test, expect, Browser, Page } from "@playwright/test";
  * feature room) and applies pushed snapshots on top. A shared, occupancy-gated
  * broadcaster fans out recomputed snapshots when a board result changes.
  *
- * This spec uses the current `/game/[id]/...` routes and its own game-creation
- * helper (the shared fixtures target an older route layout). It verifies the
+ * This spec uses its own game-creation helper. It verifies the
  * socket-backed leaderboard display resolves via the request-on-mount path
  * (past its loading spinner) rather than hanging or crashing.
  */
@@ -22,7 +21,7 @@ async function newContextPage(browser: Browser): Promise<Page> {
 }
 
 async function createGame(page: Page, eventName: string): Promise<string> {
-  await page.goto("/create/new");
+  await page.goto("/create/new?step=details");
   // Let the on-mount BridgeWebs fetch settle before filling; its re-render can
   // otherwise drop the first field's value in WebKit (see fixtures/game-create).
   await page.waitForLoadState("networkidle");
@@ -38,10 +37,7 @@ async function createGame(page: Page, eventName: string): Promise<string> {
 
 async function deleteGame(page: Page, gameId: string): Promise<void> {
   try {
-    await page.goto(`/game/${gameId}/manage/menu`);
-    await page
-      .getByRole("button", { name: "Delete Game" })
-      .click({ timeout: 5000 });
+    await page.goto(`/game/${gameId}/manage/delete-game`);
     await page
       .getByRole("button", { name: "Yes, Delete Game" })
       .click({ timeout: 5000 });
@@ -58,17 +54,24 @@ test.describe("Live results displays (socket-only)", () => {
     const directorPage = await newContextPage(browser);
     const displayPage = await newContextPage(browser);
 
-    const gameId = await createGame(directorPage, `Live Results ${Date.now()}`);
+    const eventName = `Live Results ${Date.now()}`;
+    const gameId = await createGame(directorPage, eventName);
 
     try {
       await displayPage.goto(`/game/${gameId}/display/leaderboard`);
       await displayPage.waitForLoadState("networkidle");
 
       // The context requests its snapshot on mount and resolves past the
-      // loading spinner; the page header confirms the leaderboard rendered.
+      // loading spinner: the full-screen standings appear, headed by the event
+      // name, with their column headings.
       await expect(
-        displayPage.getByText("Leaderboard", { exact: true }),
+        displayPage.getByRole("heading", { level: 1, name: eventName }),
       ).toBeVisible({ timeout: 15000 });
+      for (const column of ["Rank", "Pair", "%"]) {
+        await expect(
+          displayPage.getByRole("columnheader", { name: column, exact: true }),
+        ).toBeVisible();
+      }
     } finally {
       await deleteGame(directorPage, gameId);
       await directorPage.context().close();

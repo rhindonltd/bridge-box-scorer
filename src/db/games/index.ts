@@ -48,6 +48,24 @@ export async function requireGameDb(gameId: string): Promise<Db> {
   return db;
 }
 
+/**
+ * Close this bundle's cached connection to a game's database, if it has one, so
+ * the files can be removed (Delete Game). The WAL is folded back first so
+ * SQLite has nothing left to write. Best-effort: a failure here must not stop
+ * the deletion.
+ */
+export function closeDb(gameId: string): void {
+  const db = dbInstances.get(gameId);
+  if (!db) return;
+  dbInstances.delete(gameId);
+  try {
+    db.$client.pragma("wal_checkpoint(TRUNCATE)");
+    db.$client.close();
+  } catch {
+    // Already closed, or the file is unreadable: nothing more to do.
+  }
+}
+
 export async function getDb(gameId: string): Promise<Db | null> {
   if (dbInstances.has(gameId)) {
     return dbInstances.get(gameId)!;

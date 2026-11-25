@@ -1,5 +1,4 @@
-import { GameType } from "@/db/games/types/game-type";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { GameType, ScoringType } from "@/model/game-types";
 import { SelectedMovement } from "@/model/selected-movement";
 
 /**
@@ -23,7 +22,7 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - TEAMS_PAB: a teams event scored Point-a-Board — identical to BAM but on a
  *   0/1/2 scale. Chosen when a teams game's scoring type is "PAB".
  */
-export type EventFormat =
+export type ScoringFormat =
   | "PAIRS_BOARD"
   | "SWISS_PAIRS_VP"
   | "TEAMS_VP"
@@ -46,7 +45,7 @@ export type SwissVpMode = "XIMP" | "MP" | null;
  * (for Swiss Pairs) the VP sub-mode.
  */
 export interface EventClassification {
-  format: EventFormat;
+  format: ScoringFormat;
   scoringType: ScoringType;
   /** Only meaningful for SWISS_PAIRS_VP; null for every other format. */
   swissVpMode: SwissVpMode;
@@ -155,11 +154,7 @@ export function classifyEvent(
     // cross-IMP (Butler, "XIMP"). Any other scoring type has no Swiss Pairs VP
     // mapping, so the leaderboard falls back to the board-pooled overall.
     const swissVpMode: SwissVpMode =
-      scoringType === "XIMP"
-        ? "XIMP"
-        : scoringType === "MP"
-          ? "MP"
-          : null;
+      scoringType === "XIMP" ? "XIMP" : scoringType === "MP" ? "MP" : null;
     return { format: "SWISS_PAIRS_VP", scoringType, swissVpMode };
   }
 

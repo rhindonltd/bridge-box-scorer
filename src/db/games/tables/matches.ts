@@ -1,9 +1,5 @@
-import {
-  sqliteTable,
-  text,
-  integer,
-  index,
-} from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { MatchKinds } from "@/model/game-types";
 
 /**
  * A first-class record of ONE committed match in a round, for EVERY movement.
@@ -42,7 +38,7 @@ export const matches = sqliteTable(
      *   - BYE         sit-out (one participant, no opponent)
      */
     kind: text("kind", {
-      enum: ["PAIRS", "TEAMS", "TRIPLE", "HALF_MATCH", "BYE"],
+      enum: MatchKinds,
     }).notNull(),
 
     /**
@@ -99,6 +95,3 @@ export const matches = sqliteTable(
 
 export type NewMatch = typeof matches.$inferInsert;
 export type Match = typeof matches.$inferSelect;
-
-/** What kind of encounter a match row represents. */
-export type MatchKind = Match["kind"];

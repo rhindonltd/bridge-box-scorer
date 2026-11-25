@@ -6,7 +6,7 @@ import { newParticipant } from "./support";
 /**
  * Create-game form journey.
  *
- * Exercises the two-step `/create` wizard directly: details (event + director
+ * Exercises the one-page `/create` form directly: details (event + director
  * name, blank values refused), then options (event type, lead toggle),
  * successful navigation to the setup route, and the failure path (the create is
  * an HTTP POST to /api/games; failing that request surfaces the inline error).
@@ -25,7 +25,31 @@ test.describe("Create game form", () => {
     let gameId: string | null = null;
 
     try {
-      await page.goto("/create/new");
+      // New Game opens the Set Up Game menu with only Game Details available.
+      await page.goto("/create");
+      await page.getByRole("link", { name: "New Game", exact: true }).click();
+      await expect(page).toHaveURL(/\/create\/new$/, { timeout: 15000 });
+      for (const name of [
+        "Tables",
+        "Movement",
+        "Timer",
+        "Start Game",
+        "Delete Game",
+      ]) {
+        await expect(
+          page.getByRole("button", { name, exact: true }),
+        ).toBeDisabled();
+      }
+      // Game Details opens the form; its back arrow returns to the menu.
+      await page.getByRole("button", { name: "Game Details" }).click();
+      await expect(page.getByLabel("Event Name")).toBeVisible({
+        timeout: 15000,
+      });
+      await page.getByRole("button", { name: "Go back" }).click();
+      await expect(
+        page.getByRole("button", { name: "Tables", exact: true }),
+      ).toBeDisabled({ timeout: 15000 });
+      await page.getByRole("button", { name: "Game Details" }).click();
       // Let the on-mount BridgeWebs fetch settle before filling; its re-render
       // can otherwise drop the field values by submit time (WebKit).
       await page.waitForLoadState("networkidle");
@@ -38,8 +62,10 @@ test.describe("Create game form", () => {
         "Jane Director",
       );
 
-      // The form is a two-step wizard: details first, then options.
-      await page.getByRole("button", { name: "Next", exact: true }).click();
+      // Every option is on the same page: there is no Next step.
+      await expect(
+        page.getByRole("button", { name: "Next", exact: true }),
+      ).toHaveCount(0);
 
       // Event Type offers the four choices; default Pairs.
       const eventType = page.getByLabel("Event Type");
@@ -94,21 +120,22 @@ test.describe("Create game form", () => {
     }
   });
 
-  test("blank details are rejected and the form stays on the details step", async ({
+  test("blank details are rejected and no game is created", async ({
     browser,
   }) => {
     test.setTimeout(60_000);
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create/new");
+      await page.goto("/create/new?step=details");
       // The page fires a BridgeWebs-events fetch on mount that re-renders the
       // form; let it settle before submitting so the click isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
-      // Advance with both names blank. The details step refuses to move on:
-      // the empty fields are flagged invalid and the options step (with its
-      // "Create Game" action) never appears.
-      await page.getByRole("button", { name: "Next", exact: true }).click();
+      // Create with both names blank: the empty fields are flagged invalid and
+      // the form stays put.
+      await page
+        .getByRole("button", { name: "Create Game", exact: true })
+        .click();
       await expect(page.getByLabel("Event Name")).toHaveAttribute(
         "aria-invalid",
         "true",
@@ -117,10 +144,7 @@ test.describe("Create game form", () => {
         "aria-invalid",
         "true",
       );
-      await expect(
-        page.getByRole("button", { name: "Create Game", exact: true }),
-      ).toHaveCount(0);
-      await expect(page).toHaveURL(/\/create\/new$/);
+      await expect(page).toHaveURL(/\/create\/new\?step=details$/);
     } finally {
       await page.context().close();
     }
@@ -133,12 +157,11 @@ test.describe("Create game form", () => {
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create/new");
+      await page.goto("/create/new?step=details");
       // Let the on-mount fetch settle so the field fill isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
       await page.getByLabel("Event Name").fill("Doomed Game");
       await page.getByLabel("Director Name").fill("E2E Director");
-      await page.getByRole("button", { name: "Next", exact: true }).click();
 
       // The create is an HTTP POST to /api/games. Fail that request so the
       // client's create call rejects and surfaces the inline error. Installed

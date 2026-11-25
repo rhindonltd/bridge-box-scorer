@@ -168,9 +168,8 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
 
   it("credits the opponent AVE+ and the withdrawer AVE− on the unplayed round", async () => {
     await setup();
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     // Team 1 (home of the round-2 1 v 2 match) withdraws, PENALISED so it stays
     // in the ranking and its round-2 void VP is observable.
     const updated = await withdrawParticipant(gameId, "A1NS", {
@@ -181,7 +180,8 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
     });
     expect(updated).toBe(true);
 
-    const { voidMatchVp } = await import("@/model/teams-match-void");
+    const { voidMatchVp } =
+      await import("@/scoring/swiss/team-match-void-score");
     const { r2, ids } = await round2Vp();
 
     // The §3.3.9 split over the 2 expected boards: home (withdrawer) AVE−,
@@ -201,16 +201,16 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
 
   it("drops a REMOVE withdrawer from the ranking (opponent still indemnified)", async () => {
     await setup();
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     await withdrawParticipant(gameId, "A1NS", {
       standing: "WITHDRAWN",
       withdrawnInRound: 2,
       treatment: "REMOVE",
     });
 
-    const { voidMatchVp } = await import("@/model/teams-match-void");
+    const { voidMatchVp } =
+      await import("@/scoring/swiss/team-match-void-score");
     const { r2, ids } = await round2Vp();
 
     // REMOVE drops team 1 from the ranking entirely.
@@ -222,9 +222,8 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
 
   it("does NOT void the unplayed match of a LATE team that retained standing (§2.4.7)", async () => {
     await setup();
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     // Team 1 played round 1 (its 2 boards = ceil(4/2) half of the event) before
     // being marked LATE, so it RETAINS standing: its unplayed round-2 match is
     // NOT voided — it scores as an ordinary unplayed round (neutral 10/10),
@@ -248,16 +247,16 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
   });
   it("applies the same void when scored per section", async () => {
     await setup();
-    const { withdrawParticipant } = await import(
-      "@/db/games/actions/withdraw-participant"
-    );
+    const { withdrawParticipant } =
+      await import("@/db/games/actions/withdraw-participant");
     await withdrawParticipant(gameId, "A1NS", {
       standing: "WITHDRAWN",
       withdrawnInRound: 2,
       treatment: "PENALISED",
       finePercent: 0,
     });
-    const { computeSectionLeaderboards } = await import("./leaderboard-service");
+    const { computeSectionLeaderboards } =
+      await import("./leaderboard-service");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
     const sections = await computeSectionLeaderboards(db, gameId);
@@ -266,7 +265,8 @@ describe("whole-team withdrawal voids a team's unplayed teams matches", () => {
       vpByRound: Record<number, number>;
     }[];
     const r2 = (id: string) => lines.find((l) => l.teamId === id)!.vpByRound[2];
-    const { voidMatchVp } = await import("@/model/teams-match-void");
+    const { voidMatchVp } =
+      await import("@/scoring/swiss/team-match-void-score");
     const expected = voidMatchVp("SHORT_OFFENDER_NS", 20, 2);
     expect(r2("A1NS")).toBe(expected.home);
     expect(r2("A2NS")).toBe(expected.opponent);

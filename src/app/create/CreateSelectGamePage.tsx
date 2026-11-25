@@ -33,7 +33,7 @@ export default function CreateSelectGamePage({ onGameSelected }: Props) {
           href="/create/new"
           className="block w-full rounded-xl bg-blue-600 py-3.5 text-center text-lg font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
-          Create Game
+          New Game
         </Link>
       }
       listHeading="Not started yet"

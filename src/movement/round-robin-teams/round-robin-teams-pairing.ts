@@ -33,7 +33,7 @@ import {
   TeamsMatch,
   expandTeamMatches,
   teamIds,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+} from "@/model/teams-match-layout";
 
 /** Setup parameters for a Teams Round Robin. */
 export interface RoundRobinTeamsSpec {

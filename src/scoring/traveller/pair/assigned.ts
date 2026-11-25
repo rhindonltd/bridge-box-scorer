@@ -1,4 +1,4 @@
-import { ARTIFICIAL_IMP_AWARD } from "@/scoring/artificial-score";
+import { ARTIFICIAL_IMP_AWARD } from "@/model/artificial-score";
 import {
   isAdjustedScore,
   isWeightedScore,

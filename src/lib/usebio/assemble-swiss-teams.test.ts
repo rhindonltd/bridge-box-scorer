@@ -362,7 +362,7 @@ describe("assembleSwissTeams", () => {
   });
 });
 
-import { voidMatchVp } from "@/model/teams-match-void";
+import { voidMatchVp } from "@/scoring/swiss/team-match-void-score";
 import type { TeamMatchStructureRow } from "@/scoring/swiss/team-match";
 
 describe("assembleSwissTeams — triple edge cases", () => {

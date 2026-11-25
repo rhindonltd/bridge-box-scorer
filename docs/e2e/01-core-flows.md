@@ -28,17 +28,17 @@ The create form is **two steps**: details, then options.
 
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
-| ☐ CREATE-1 | From home tap **Create New Game**, then **Create Game** at the top of that screen. | The first screen shows a **Create Game** button and a **Not started yet** list of games created but not started. The button opens **"Create Game"**, step 1: **Event Name** + **Director Name**, **Next** at the bottom. | Y | |
+| ☐ CREATE-1 | From home tap **Create New Game**, then **New Game** at the top of that screen. | The first screen shows a **New Game** button and a **Not started yet** list of games created but not started. The button opens the **Set Up Game** menu with only **Game Details** enabled (Tables, Movement, Timer, Start Game and Delete Game greyed out). **Game Details** opens one page with every field: **Event Name**, **Director Name**, **Event Type**, **Scoring**, **Record Opening Lead**, **Allow Hand Entry**, and **Create Game** at the bottom (no **Next**). Its back arrow returns to the menu. | Y | |
 | ☐ CREATE-2 | Type Event Name `Manual Test Pairs`, Director Name `Test Director`. | Both entered. | Y | |
-| ☐ CREATE-3 | **Validation:** clear Event Name (or Director). | **Next** is disabled; a hint to enter an event name and director shows. | Y | Field outlined in Red, field not disabled but does nothing when clicked |
-| ☐ CREATE-4 | Refill both, tap **Next**. | Step 2: **Event Type**, **Scoring**, **Tournament Level**, **Record Opening Lead**, **Allow Hand Entry**. | Y | |
+| ☐ CREATE-3 | **Validation:** clear Event Name (or Director), then tap **Create Game**. | The empty field is outlined in red and no game is created. | Y | Field outlined in Red, field not disabled but does nothing when clicked |
+| ☐ CREATE-4 | Refill both. | The red outline clears. | Y | |
 | ☐ CREATE-5 | Confirm **Event Type** options: **Pairs**, **Teams**, **Swiss Pairs**, **Swiss Teams**. Leave on **Pairs**. | Four options; Pairs selected. | Y | |
 | ☐ CREATE-6 | With **Pairs** selected, confirm **Scoring** options are **Matchpoints** and **Cross-IMPs**. Leave **Matchpoints**. | Correct options. | Y | |
 | ☐ CREATE-7 | Switch **Event Type** to **Teams**. | **Scoring** now offers the teams methods: **IMP (Victory Points)**, **IMP (aggregate)**, and a board-comparison option (**Point-a-Board** UK / **Board-a-Match** US). | Y | |
 | ☐ CREATE-8 | Switch **Event Type** to **Swiss Teams**. | Scoring shows fixed text **"IMP (Victory Points)"** — no dropdown. | Y | TODO: Scoring type should remain on the right (replaces dropdown).  Label text to stay bold. |
 | ☐ CREATE-9 | Switch back to **Pairs**. Set **Record Opening Lead** = **No**, **Allow Hand Entry** = **Yes**. | Toggles update. | Y | |
-| ☐ CREATE-10 | **Back-nav:** tap the back arrow. | Returns to step 1 with Event Name + Director still filled. | Y | |
-| ☐ CREATE-11 | Tap **Next**, then **Create Game**. | Lands on the **Set Up Game** menu for the new game: **Tables**, **Movement**, **Timer**, **Start Game** and a red **Delete Game**. | | |
+| ☐ CREATE-10 | **Back-nav:** tap the back arrow, then **Game Details** again. | Back on the **Set Up Game** menu (nothing created); the form opens again. Refill it as in CREATE-2 and CREATE-9. | Y | |
+| ☐ CREATE-11 | Tap **Create Game**. | Lands on the **Set Up Game** menu for the new game, now with everything enabled: **Game Details**, **Tables**, **Movement**, **Timer**, **Start Game** and a red **Delete Game**. | | |
 | ☐ CREATE-12 | Back arrow twice to the main menu, then **Create New Game** again. | `Manual Test Pairs` is listed under **Not started yet**; tapping it opens its **Set Up Game** menu. It is **not** listed under **Manage Games**. | | |
 
 > **BridgeWebs (optional):** if the club has BridgeWebs configured with events
@@ -67,7 +67,7 @@ menu on those pages only has **Share Director Access**.
 | Check | Step | Expected | Actual | Comments |
 |---|---|---|---|---|
 | ☐ SETUP-1 | On **Tables**, use the stepper to set **3** tables. | Card reads "3 tables". | | |
-| ☐ SETUP-2 | Confirm a banner prompts to choose a movement. | "Select a movement for this section." visible. | | |
+| ☐ SETUP-2 | Before a movement is chosen, look under the header. | No "Select a movement" banner: the movement is chosen on the **Movement** page. | | |
 | ☐ SETUP-3 | Tap a table card to open the **"Table {n}"** dialog, then **Done**. | Dialog shows **North / South** and **East / West** rows. Each empty row has an **"Expected late"** toggle (No / Yes) with "Start without this pair; seat them when they arrive." (full coverage in [file 11](11-withdrawals-late-arrivals.md) `EL-*`). **Done** closes it. | | |
 
 ### 3b. Movement

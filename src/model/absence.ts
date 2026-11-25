@@ -1,8 +1,5 @@
 import { baseSeatOf } from "@/model/participants";
-import {
-  AVE_MINUS_PERCENT,
-  AVE_PLUS_PERCENT,
-} from "@/scoring/artificial-score";
+import { AVE_MINUS_PERCENT, AVE_PLUS_PERCENT } from "@/model/artificial-score";
 
 /**
  * PAIRS withdrawals and late arrivals (design `withdrawals-late-arrivals.md`

@@ -2,10 +2,8 @@ import { Db } from "@/db/games";
 import { matches } from "@/db/games/tables/matches";
 import { and, eq, lt } from "drizzle-orm";
 import { SectionLetter, parseSeat } from "@/model/participants";
-import {
-  teamOpponentKey,
-  type TeamId,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamId } from "@/model/teams-match-layout";
+import { teamOpponentKey } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 /**
  * Swiss TEAMS history reduced to what the draw engine needs, over the rounds
@@ -156,7 +154,10 @@ export async function getSwissTeamsCommittedRound(
   const opponentByTeam = new Map<TeamId, TeamId>();
   const homeTableByTeam = new Map<TeamId, number>();
   // Committed triple comparisons, grouped by the triple's groupId.
-  const tripleComparisonsByGroup = new Map<string, CommittedTripleComparison[]>();
+  const tripleComparisonsByGroup = new Map<
+    string,
+    CommittedTripleComparison[]
+  >();
   const tripleMembersByGroup = new Map<string, Set<TeamId>>();
 
   for (const m of matchRows) {
@@ -182,7 +183,8 @@ export async function getSwissTeamsCommittedRound(
           boardEnd: m.boardEnd,
         });
         tripleComparisonsByGroup.set(m.groupId, comps);
-        const members = tripleMembersByGroup.get(m.groupId) ?? new Set<TeamId>();
+        const members =
+          tripleMembersByGroup.get(m.groupId) ?? new Set<TeamId>();
         members.add(home);
         members.add(away);
         tripleMembersByGroup.set(m.groupId, members);
@@ -218,11 +220,15 @@ export async function getSwissTeamsCommittedRound(
     );
     triples.push({
       members,
-      comparisons: comps.sort(
-        (a, b) => a.low - b.low || a.high - b.high,
-      ),
+      comparisons: comps.sort((a, b) => a.low - b.low || a.high - b.high),
     });
   }
 
-  return { roundNumber, opponentByTeam, homeTableByTeam, excludedTeams, triples };
+  return {
+    roundNumber,
+    opponentByTeam,
+    homeTableByTeam,
+    excludedTeams,
+    triples,
+  };
 }

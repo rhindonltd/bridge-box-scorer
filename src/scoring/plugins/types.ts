@@ -1,7 +1,7 @@
 import { ScoreTable } from "@/scoring/table/score-table";
 import { Traveller } from "@/model/traveller";
 import { AssignedPair } from "@/model/participants";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/model/game-types";
 
 /**
  * Plugin identifiers. Per-board and overall scoring are two independent

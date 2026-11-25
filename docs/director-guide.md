@@ -16,26 +16,30 @@ share a code (see [Sharing director access](#sharing-director-access)).
 
 ### Step 1: Open the create form
 
-From the home screen, tap **Create Game**. This screen has a **Create Game**
+From the home screen, tap **Create Game**. This screen has a **New Game**
 button at the top and, below it, the games that have been created but not
 started yet (**Not started yet**). Tap one of those to carry on setting it up;
 from a different device you are asked for a share code first (see
 [Sharing director access](#sharing-director-access)).
 
-To set up a new game, tap **Create Game** at the top.
+To set up a new game, tap **New Game** at the top. This opens the **Set Up
+Game** menu with only **Game Details** available: the other buttons stay greyed
+out until the game exists. Tap **Game Details** and fill it in. Tapping
+**Create Game** at the end creates the game and returns you to its Set Up Game
+menu, now with every option available.
 
-The create form is split across two pages so neither screen is crowded.
+### Step 2: Fill in Game Details
 
-### Step 2: Name the event and director
+Everything is on one page: the event name and director, then the event
+options.
 
 | Field             | Description                                   |
 | ----------------- | --------------------------------------------- |
 | **Event Name**    | The name of your event (e.g. "Monday Pairs"). |
 | **Director Name** | Your name.                                     |
 
-Both are required. If you tap **Next** with either box empty, the empty box is
-highlighted so you can see what's missing; fill both in and tap **Next** again
-to continue.
+Both are required. If you tap **Create Game** with either box empty, the empty
+box is highlighted so you can see what's missing and nothing is created.
 
 The session is always dated today, so there is no date to set.
 
@@ -47,9 +51,7 @@ name for you. Turn it **off** to type the name yourself. The switch is hidden
 when BridgeWebs isn't set up or there are no events for today, so you just type
 the name as normal.
 
-Tap **Next**.
-
-### Step 3: Choose the event options
+Below those are the event options:
 
 | Field                   | Description                                                       |
 | ----------------------- | ----------------------------------------------------------------- |
@@ -57,9 +59,6 @@ Tap **Next**.
 | **Scoring**             | How the event is scored. For **Pairs** and **Swiss Pairs**: **Matchpoints** or **Cross-IMPs**. For **Teams**: **IMP (Aggregate)** (teams ranked on their total IMPs across all boards), **IMP (Victory Points)** (each match's IMP result converted to Victory Points, then totalled), or the board-comparison method for your region — shown as **Point-a-Board** on UK boxes and **Board-a-Match** on US boxes (the same method under each region's usual name). **Swiss Teams** is always scored by **IMP (Victory Points)** — the only method that fits the round-by-round draw — so no scoring choice is shown for it. Defaults to Matchpoints for Pairs and IMP for Teams. |
 | **Record Opening Lead** | **Yes/No** — whether players are asked to enter the opening lead. |
 | **Allow Hand Entry**    | **Yes/No** — whether players can enter the hands (the four players' cards) at the end of a round. |
-
-Need to change the name or director? Tap the back arrow to return to the first
-page — what you entered is kept.
 
 Tap **Create Game**.
 

@@ -3,7 +3,7 @@ import {
   AVE_MINUS_PERCENT,
   AVE_PLUS_FRACTION,
   AVE_PLUS_PERCENT,
-} from "@/scoring/artificial-score";
+} from "@/model/artificial-score";
 import { MatchpointLine } from "./mp";
 import { ScoredMpBoard } from "./neuberg-across-boards";
 import { classifyOutcome } from "./assigned";
@@ -92,12 +92,14 @@ function overriddenSideMp(
   if (sidePercent === AVE_PLUS) {
     // Clamp the average into [0,1]: a pair's board average cannot exceed the
     // top, and clamping guards against a floating-point overshoot above 100%.
-    const clamped = avg === undefined ? AVE_PLUS_FRACTION : Math.min(1, Math.max(0, avg));
+    const clamped =
+      avg === undefined ? AVE_PLUS_FRACTION : Math.min(1, Math.max(0, avg));
     const fraction = Math.max(AVE_PLUS_FRACTION, clamped);
     return fraction * max;
   }
   if (sidePercent === AVE_MINUS) {
-    const clamped = avg === undefined ? AVE_MINUS_FRACTION : Math.min(1, Math.max(0, avg));
+    const clamped =
+      avg === undefined ? AVE_MINUS_FRACTION : Math.min(1, Math.max(0, avg));
     const fraction = Math.min(AVE_MINUS_FRACTION, clamped);
     return fraction * max;
   }
