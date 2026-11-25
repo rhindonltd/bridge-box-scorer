@@ -3,7 +3,7 @@ import { withDirectorRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateTournamentLevel } from "@/db/game-index/actions/update-tournament-level";
-import { TournamentLevels } from "@/db/games/types/tournament-level";
+import { TournamentLevels } from "@/model/game-types";
 import { broadcastGameUpdated } from "@/socket/broadcast/game-broadcast";
 
 const bodySchema = z.object({

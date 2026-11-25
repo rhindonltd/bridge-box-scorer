@@ -1,10 +1,7 @@
 import { RehydratedTable } from "@/services/movement-rehydration";
 import { PairSeat, parseSeat } from "@/model/participants";
 import { PairDirection } from "@/model/common";
-import {
-  MaterializableMovement,
-  MaterializableRound,
-} from "@/services/materialize-movement";
+import { MovementPlan, PlannedRound } from "@/model/movement-plan";
 
 /**
  * Sit-out handling for hard-coded (database) pair movements.
@@ -33,10 +30,10 @@ import {
 export function flagPhantomRounds(
   movement: RehydratedTable[],
   phantomId: string,
-): MaterializableMovement {
+): MovementPlan {
   return movement.map((table) => ({
     tableNumber: table.tableNumber,
-    rounds: table.rounds.map((round): MaterializableRound => {
+    rounds: table.rounds.map((round): PlannedRound => {
       const involvesPhantom = round.ns === phantomId || round.ew === phantomId;
       return {
         roundNumber: round.roundNumber,
@@ -74,7 +71,7 @@ function positionAtSeat(
 export function applySpecSitOutNoMissingPair(
   movement: RehydratedTable[],
   sitOutSeat: PairSeat,
-): MaterializableMovement {
+): MovementPlan {
   const phantomId = positionAtSeat(movement, sitOutSeat);
   if (phantomId === null) {
     return flagPhantomRounds(movement, "");
@@ -109,7 +106,7 @@ export function alignSpecMissingPair(
   movement: RehydratedTable[],
   missingPair: string,
   sitOutSeat: PairSeat,
-): MaterializableMovement {
+): MovementPlan {
   const { tableNumber: targetTable, direction: targetDirection } =
     parseSeat(sitOutSeat);
 

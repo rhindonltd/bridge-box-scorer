@@ -2,12 +2,15 @@ import "server-only";
 
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 import { findClub } from "@/db/system/queries/find-club";
 import { getBridgewebsCredentials } from "@/db/system/queries/bridgewebs-credentials";
 import { generateUsebio } from "@/services/usebio-service";
 import { generatePbnExport } from "@/services/pbn-service";
-import { postToBridgewebs, type BridgewebsReply } from "@/lib/bridgewebs/client";
+import {
+  postToBridgewebs,
+  type BridgewebsReply,
+} from "@/lib/bridgewebs/client";
 
 /** Why an upload could not even be attempted (missing prerequisites). */
 export type BridgewebsUploadBlockedReason = "club" | "credentials";

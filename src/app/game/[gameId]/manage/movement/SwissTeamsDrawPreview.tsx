@@ -7,12 +7,12 @@ import type {
   TeamsTripleEntry,
 } from "@/lib/swiss-service";
 import type { NamedTeam } from "@/services/swiss-teams-seating-names";
+import type { TeamId } from "@/model/teams-match-layout";
 import {
   evaluateSwissTeamsRound,
   swapTeams,
   teamOpponentKey,
   type SwissTeamsRound,
-  type TeamId,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
 
 const primaryButtonClass =

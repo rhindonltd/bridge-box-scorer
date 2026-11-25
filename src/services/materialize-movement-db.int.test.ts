@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
-import type { MaterializableMovement } from "@/services/materialize-movement";
+import type { MovementPlan } from "@/model/movement-plan";
 
 /**
  * Integration coverage for the DB-writing paths of materialize-movement:
@@ -23,7 +23,7 @@ describe("materialize-movement DB writers", () => {
     harness.teardown();
   });
 
-  const oneTableTwoRounds: MaterializableMovement = [
+  const oneTableTwoRounds: MovementPlan = [
     {
       tableNumber: 1,
       rounds: [
@@ -34,14 +34,11 @@ describe("materialize-movement DB writers", () => {
   ];
 
   it("materializePairLikeMovement writes boards and stamps round-1 anchors", async () => {
-    const { materializePairLikeMovement } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializePairLikeMovement } =
+      await import("@/services/materialize-movement");
     const db = (await harness.getDb()) as Db;
     const { boards } = await import("@/db/games/tables/boards");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { players } = await import("@/db/games/tables/players");
     const { eq } = await import("drizzle-orm");
 
@@ -91,9 +88,8 @@ describe("materialize-movement DB writers", () => {
   });
 
   it("materializeSections writes rows for every section in one call", async () => {
-    const { materializeSections } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializeSections } =
+      await import("@/services/materialize-movement");
     const db = (await harness.getDb()) as Db;
     const { boards } = await import("@/db/games/tables/boards");
 
@@ -109,9 +105,8 @@ describe("materialize-movement DB writers", () => {
   });
 
   it("throws when the game db does not exist", async () => {
-    const { materializeSections } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializeSections } =
+      await import("@/services/materialize-movement");
     await expect(
       materializeSections("no-such-game", [
         { section: "A", movement: oneTableTwoRounds },

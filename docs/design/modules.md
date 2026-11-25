@@ -427,13 +427,17 @@ export interface MatchRow {
   vpPool: number | null;
   boardStart: number;
   boardEnd: number;
-  /** Decoded once by the adapter with decodeMatchRuling (5.3). */
-  ruling: MatchRuling | null;
+  /** As stored for now; decoded once by the adapter in step 2 (5.3). */
+  ruling: string | null;
 }
 ```
 
-The seven structural row types that exist today become `Pick`s of these, so no
-module defines its own row shape:
+The seven structural row types that exist today are meant to become `Pick`s of
+these. Step 1 left them as they are: they do not import the database layer,
+and several are deliberately looser than the table (`status: string`,
+optional `matchId`, `unknown` results) so tests and column-selection queries can
+pass partial rows. They are tightened in step 2, when rulings and scoring take
+`ResultRow` and `MatchRow` directly:
 
 | Today                                                              | Becomes                                              |
 | ------------------------------------------------------------------ | ---------------------------------------------------- |
@@ -524,8 +528,10 @@ export type GameFormat = "STANDARD" | "SWISS";            // db/games/types/even
 export type TournamentLevel = /* tournament-level.ts */;
 ```
 
-The database type files re-export from the kernel, so the Drizzle schema keeps
-using them and the dependency points the right way (db → model).
+The database type files are removed, not kept as re-exports: the Drizzle
+schemas import the value lists from the kernel, so the dependency points the
+right way (db → model). Done in step 1 as `src/model/game-types.ts`, which also
+holds `BoardStatus` and `MatchKind`.
 
 Two different types are both called `EventFormat` today: the game's
 STANDARD/SWISS column (`src/db/games/types/event-format.ts`) and the scoring
@@ -1723,9 +1729,21 @@ Behaviour changes and tidy-ups found during the design are in
 Implementation will be planned separately. A workable order, each step
 landing with its lint block switched on:
 
-1. **Kernel.** Row types, plan type, event types, codecs, teams match layout.
-   This removes the cycles and database-type leaks and unblocks everything
-   else.
+1. **Kernel.** **Done.** Row types (`src/model/result-row.ts`), plan types
+   (`movement-plan.ts`), event types (`game-types.ts`), standing types
+   (`standings.ts`), teams match layout (`teams-match-layout.ts`) and the AVE
+   constants (`artificial-score.ts`) are in the kernel. The void VP maths
+   (`scoring/swiss/team-match-void-score.ts`) and the §3.5.2 adjustment
+   (`scoring/swiss/mismatch-adjustment.ts`) moved out of it. The kernel lint
+   block is on and the kernel imports nothing outside `src/model` (tests
+   excepted). Left for later steps, as they belong there:
+   - tightening the structural row types and decoding `MatchRow.ruling`
+     (step 2);
+   - `RehydratedTable` and the `Movement` → `MovementFileEntry` rename
+     (catalog step);
+   - the `Named*` seating types (swiss step);
+   - moving the `teamIds` / `expandTeamMatches` tests out of
+     `swiss-teams-pairing.test.ts` into a kernel test file.
 2. **Rulings**, then **scoring**, with the leaderboard and export adapters.
    Do these as a pair, because `scoreEvent` takes `RuledEvent`. Use the
    temporary `legacyExport` options so output is unchanged. Remove the dead

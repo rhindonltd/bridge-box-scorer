@@ -1,4 +1,5 @@
 import { SwissVpBoardRow } from "./swiss-vp-overall";
+import type { PairVoidFault } from "@/model/pairs-match-void";
 
 /**
  * Shared structure + conversions for Swiss Pairs **"2 half matches"** rounds
@@ -160,7 +161,6 @@ export function compensationXimpPerComparison(boards: number): number[] {
   );
 }
 
-
 /* ============================================================
    §3.3.9 VOID-MATCH COMPENSATION (per-pair, with an AVE− offender side)
 
@@ -170,9 +170,6 @@ export function compensationXimpPerComparison(boards: number): number[] {
    nor penalised is AVE throughout. This extends the half-match compensation
    with the AVE− side the benign (bye) compensation never needed.
 ============================================================ */
-
-/** A voided pair's standing on the §3.3.9 half-board split. */
-export type PairVoidFault = "AVE_PLUS" | "AVE_MINUS" | "AVE";
 
 /**
  * The per-board matchpoint fraction (0–1 of top) a voided pair earns over

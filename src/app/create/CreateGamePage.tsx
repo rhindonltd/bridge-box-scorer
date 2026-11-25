@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";
 import useSWR from "swr";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/model/game-types";
 import {
   type EventTypeChoice,
   EVENT_TYPE_MAP,

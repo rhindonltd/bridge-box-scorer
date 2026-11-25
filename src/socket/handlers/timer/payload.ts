@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GameTypes } from "@/db/games/types/game-type";
+import { GameTypes } from "@/model/game-types";
 import { BreakConfig } from "@/timer/timer-state";
 
 /**

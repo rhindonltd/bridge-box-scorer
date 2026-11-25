@@ -1,15 +1,14 @@
 import { describe, it, expect } from "vitest";
+import { expandTeamMatches, teamIds } from "@/model/teams-match-layout";
 import {
   chooseTeamTriple,
   continueLongTriple,
   drawSwissTeamsRound,
   evaluateSwissTeamsRound,
-  expandTeamMatches,
   expandTeamTriple,
   roundOddResolution,
   roundTeamIds,
   swapTeams,
-  teamIds,
   swissTeamsRoundOne,
   teamOpponentKey,
   type SwissTeamsRound,
@@ -301,11 +300,7 @@ describe("roundOddResolution", () => {
   });
 
   it("reads the per-round plan entry for a TRIPLE event (1-indexed)", () => {
-    const plan = [
-      "BYE",
-      "SHORT",
-      { kind: "LONG", group: 1 },
-    ] as const;
+    const plan = ["BYE", "SHORT", { kind: "LONG", group: 1 }] as const;
     expect(roundOddResolution("TRIPLE", plan, 1)).toBe("BYE");
     expect(roundOddResolution("TRIPLE", plan, 2)).toBe("SHORT");
     expect(roundOddResolution("TRIPLE", plan, 3)).toEqual({
@@ -371,16 +366,12 @@ describe("expandTeamTriple", () => {
       group: 1,
       slot: 1,
     });
-    const edges = comparisons
-      .map((c) => `${c.low}-${c.high}`)
-      .sort();
+    const edges = comparisons.map((c) => `${c.low}-${c.high}`).sort();
     expect(edges).toEqual(["1-2", "1-3", "2-3"]);
     // Each comparison is two rooms (open + closed) of the same two teams.
     for (const c of comparisons) {
       expect(c.rows).toHaveLength(2);
-      const teamsInRooms = new Set(
-        c.rows.flatMap((r) => [r.nsTeam, r.ewTeam]),
-      );
+      const teamsInRooms = new Set(c.rows.flatMap((r) => [r.nsTeam, r.ewTeam]));
       expect([...teamsInRooms].sort()).toEqual([c.low, c.high]);
     }
   });

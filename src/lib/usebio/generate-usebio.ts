@@ -19,8 +19,7 @@ import {
 import { roundMpBoards } from "@/scoring/traveller/pair/round-mp-boards";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
-import { ScoringType } from "@/db/games/types/scoring-type";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { ScoringType, TournamentLevel } from "@/model/game-types";
 import { masterPointFieldsFor } from "@/model/tournament-level";
 
 /**

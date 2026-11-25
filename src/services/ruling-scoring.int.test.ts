@@ -46,12 +46,10 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
   /** Materialise a 2-team, 1-board round (teams 1 v 2) and enter both rooms. */
   async function setupTeamsRound() {
     const { createGameDb } = await import("@/db/games/actions/create-game");
-    const { setSectionMovement } = await import(
-      "@/db/games/actions/set-section-movement"
-    );
-    const { materializeSwissTeamsRound } = await import(
-      "@/services/materialize-swiss-teams-round"
-    );
+    const { setSectionMovement } =
+      await import("@/db/games/actions/set-section-movement");
+    const { materializeSwissTeamsRound } =
+      await import("@/services/materialize-swiss-teams-round");
     const games = await import("@/db/games");
 
     await createGameDb(gameId, 2);
@@ -59,7 +57,16 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
       source: "SWISS_TEAMS",
       swissTeams: { teams: 2, rounds: 3, boardsPerRound: 1 },
     });
-    await materializeSwissTeamsRound(gameId, "A", 1, 1, 3, [{ a: 1, b: 2 }], null, null);
+    await materializeSwissTeamsRound(
+      gameId,
+      "A",
+      1,
+      1,
+      3,
+      [{ a: 1, b: 2 }],
+      null,
+      null,
+    );
 
     const db = (await games.getDb(gameId))!;
     const { boards } = await import("@/db/games/tables/boards");
@@ -97,14 +104,17 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
 
   it("a §3.3.6.1 void (acted from the home table) credits both teams 40%", async () => {
     await setupTeamsRound();
-    const { voidTeamsMatch } = await import(
-      "@/db/games/actions/set-board-result"
-    );
+    const { voidTeamsMatch } =
+      await import("@/db/games/actions/set-board-result");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
 
     // Act from table 1 (team 1's home = the match's home side).
-    await voidTeamsMatch(db, { roundNumber: 1, tableNumber: 1 }, "VOID:SEATING_STANDARD");
+    await voidTeamsMatch(
+      db,
+      { roundNumber: 1, tableNumber: 1 },
+      "VOID:SEATING_STANDARD",
+    );
 
     const { team1, team2 } = await teamVp();
     // Flat 40% of the 20-VP pool → 8 each.
@@ -114,7 +124,8 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
 
   it("a §3.5 mismatch acted from the OPPONENT table flips to the right side", async () => {
     await setupTeamsRound();
-    const { markMismatch } = await import("@/db/games/actions/set-board-result");
+    const { markMismatch } =
+      await import("@/db/games/actions/set-board-result");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
 
@@ -141,27 +152,49 @@ describe("match-level rulings flow from matches.ruling to the leaderboard", () =
 
   it("both teams of one match can be ruled mismatched; ruling one keeps the other", async () => {
     await setupTeamsRound();
-    const { markMismatch } = await import("@/db/games/actions/set-board-result");
-    const { adjustMismatchVp } = await import("@/model/swiss-mismatch");
+    const { markMismatch } =
+      await import("@/db/games/actions/set-board-result");
+    const { adjustMismatchVp } =
+      await import("@/scoring/swiss/mismatch-adjustment");
     const games = await import("@/db/games");
     const db = (await games.getDb(gameId))!;
     const base = await teamVp();
 
     // Team 1 met a stronger opponent than it should have, not its own fault;
     // team 2 (acted from its own table) a weaker one, its own fault.
-    await markMismatch(db, { roundNumber: 1, tableNumber: 1 }, "MM:NS:HIGHER:NOT");
-    await markMismatch(db, { roundNumber: 1, tableNumber: 2 }, "MM:NS:LOWER:OWN");
+    await markMismatch(
+      db,
+      { roundNumber: 1, tableNumber: 1 },
+      "MM:NS:HIGHER:NOT",
+    );
+    await markMismatch(
+      db,
+      { roundNumber: 1, tableNumber: 2 },
+      "MM:NS:LOWER:OWN",
+    );
 
     // Each team is adjusted from its OWN actual VP, independently.
-    const team1Ruling = { side: "NS", direction: "HIGHER", fault: "NOT" } as const;
-    const team2Ruling = { side: "EW", direction: "LOWER", fault: "OWN" } as const;
+    const team1Ruling = {
+      side: "NS",
+      direction: "HIGHER",
+      fault: "NOT",
+    } as const;
+    const team2Ruling = {
+      side: "EW",
+      direction: "LOWER",
+      fault: "OWN",
+    } as const;
     const both = await teamVp();
     expect(both.team1).toBe(adjustMismatchVp(base.team1!, team1Ruling, 20));
     expect(both.team2).toBe(adjustMismatchVp(base.team2!, team2Ruling, 20));
 
     // Re-ruling team 2 (now not its fault: no change for a weaker opponent)
     // replaces only team 2's ruling; team 1's stands.
-    await markMismatch(db, { roundNumber: 1, tableNumber: 2 }, "MM:NS:LOWER:NOT");
+    await markMismatch(
+      db,
+      { roundNumber: 1, tableNumber: 2 },
+      "MM:NS:LOWER:NOT",
+    );
     const again = await teamVp();
     expect(again.team1).toBe(both.team1);
     expect(again.team2).toBe(base.team2);

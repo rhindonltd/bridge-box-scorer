@@ -5,24 +5,22 @@ import { boards } from "@/db/games/tables/boards";
 import { and, eq } from "drizzle-orm";
 import { SectionLetter } from "@/model/participants";
 import { PHANTOM_SEAT } from "@/model/phantom-seat";
+import type { MovementPlan, PlannedTable } from "@/model/movement-plan";
 import {
   buildSectionRows,
   insertSectionDrafts,
-  type MaterializableMovement,
 } from "@/services/materialize-movement";
 import {
   swissHalfMatchBoardSplit,
   swissRoundBoardRange,
   type BoardSpan,
 } from "@/services/materialize-swiss-round";
+import { expandTeamMatches, type TeamsMatch } from "@/model/teams-match-layout";
 import {
-  expandTeamMatches,
   expandTeamTriple,
-  type TeamsMatch,
   type TeamsTriple,
   type TripleBoardSet,
 } from "@/movement/swiss-teams/swiss-teams-pairing";
-import type { MaterializableTable } from "@/services/materialize-movement";
 
 /**
  * A stable per-section seed for the Swiss Teams round-1 random draw. Derived
@@ -144,7 +142,7 @@ function tripleTables(
   roundNumber: number,
   boardsPerRound: number,
   totalRounds: number,
-): MaterializableTable[] {
+): PlannedTable[] {
   const kind = triple.kind === "LONG" ? "LONG" : "SHORT";
   const isSecondSlot = kind === "LONG" && triple.slot === 2;
   const firstRound = isSecondSlot ? roundNumber - 1 : roundNumber;
@@ -159,7 +157,7 @@ function tripleTables(
 
   // A home table hosts its NS pair against two opponents on two DIFFERENT sets
   // (e.g. x hosts y on A and z on C), so a table can carry two round-entries —
-  // merge rows by table number into one MaterializableTable (like the Swiss
+  // merge rows by table number into one PlannedTable (like the Swiss
   // Pairs half-match anchor table) rather than emitting duplicate table objects.
   // Stable grouping id for the whole three-way (its three teams, order-free), so
   // every comparison row of the triple shares a groupId — and, for a LONG
@@ -169,7 +167,7 @@ function tripleTables(
   // A SHORT triple's comparisons are /10 half pools; a LONG triple's are /20.
   const vpPool = kind === "LONG" ? 20 : 10;
 
-  const byTable = new Map<number, MaterializableTable>();
+  const byTable = new Map<number, PlannedTable>();
   for (const comparison of expandTeamTriple(triple)) {
     const span = sets[comparison.boardSet];
     for (const roomIndex of roomIndices) {
@@ -205,7 +203,7 @@ function tripleTables(
 }
 
 /**
- * Turn a drawn Swiss Teams round into the {@link MaterializableMovement} shape.
+ * Turn a drawn Swiss Teams round into the {@link MovementPlan} shape.
  *
  * Each team match becomes two physical tables (open room + closed room) that
  * play the same boards. At a table hosting team H against team A:
@@ -235,13 +233,13 @@ export function swissTeamsRoundToMaterializable(
   matches: TeamsMatch[],
   byeTeamId: number | null = null,
   triple: TeamsTriple | null = null,
-): MaterializableMovement {
+): MovementPlan {
   const { boardStart, boardEnd } = swissRoundBoardRange(
     roundNumber,
     boardsPerRound,
   );
 
-  const tablesOut: MaterializableMovement = expandTeamMatches(matches).map(
+  const tablesOut: MovementPlan = expandTeamMatches(matches).map(
     (placement) => {
       // The encounter's two rooms are at the two teams' home tables; group them
       // into one TEAMS match keyed by the unordered home-table pair this round.
@@ -332,7 +330,9 @@ export async function materializeSwissTeamsRound(
   const existing = await db
     .select({ n: boards.boardNumber })
     .from(boards)
-    .where(and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)))
+    .where(
+      and(eq(boards.section, section), eq(boards.roundNumber, roundNumber)),
+    )
     .limit(1);
 
   if (existing.length > 0) {

@@ -1,7 +1,7 @@
 "use client";
 
 import SelectField from "@/components/common/SelectField";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 import {
   TOURNAMENT_LEVEL_OPTIONS,
   TOURNAMENT_LEVEL_INFO,

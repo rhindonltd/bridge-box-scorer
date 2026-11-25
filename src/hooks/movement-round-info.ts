@@ -4,7 +4,7 @@ import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
-import type { GameType } from "@/db/games/types/game-type";
+import type { GameType } from "@/model/game-types";
 import type { SelectedMovement } from "@/model/selected-movement";
 import type { MovementByTable } from "@/movement/movementData";
 

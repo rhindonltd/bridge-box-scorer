@@ -1,5 +1,5 @@
 import type { Locale } from "./locale";
-import type { ScoringType } from "@/db/games/types/scoring-type";
+import type { ScoringType } from "@/model/game-types";
 
 /** The scoring types offerable for a teams game. */
 export type TeamsScoringType = Extract<

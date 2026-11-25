@@ -29,10 +29,10 @@ import "@/scoring/plugins/register";
 import { getCombination, getOverallPlugin } from "@/scoring/plugins/registry";
 import { rank } from "@/scoring/overall/rank";
 import { applyRankingExclusion } from "@/scoring/overall/exclude-ranking";
+import type { WithdrawalRecord } from "@/model/standings";
 import {
   readParticipantStandings,
   resolveStandings,
-  type WithdrawalRecord,
 } from "@/db/games/queries/ranking-exclusions";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import { readAbsences } from "@/db/games/queries/absences";
@@ -47,7 +47,7 @@ import {
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { ScoringType } from "@/model/game-types";
 import {
   parseSelectedMovement,
   boardsPerRoundOf,

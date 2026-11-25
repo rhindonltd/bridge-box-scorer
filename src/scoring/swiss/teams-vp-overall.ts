@@ -14,8 +14,8 @@ import {
   tripleVpPool,
   type TeamMatchStructureRow,
 } from "./team-match";
-import { voidMatchVp } from "@/model/teams-match-void";
-import { adjustMismatchVp } from "@/model/swiss-mismatch";
+import { voidMatchVp } from "@/scoring/swiss/team-match-void-score";
+import { adjustMismatchVp } from "./mismatch-adjustment";
 
 /**
  * Victory Points awarded to a team that sits out a round (an odd-field bye).

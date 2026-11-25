@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
 
-import type { MaterializableMovement } from "@/services/materialize-movement";
+import type { MovementPlan } from "@/model/movement-plan";
 
 let tmpDir: string;
 let gameId: string;
@@ -35,26 +35,27 @@ describe("section-aware materialization", () => {
 
   // A tiny 2-table, 1-round movement: table 1 plays boards 1-2, table 2 plays
   // boards 3-4.
-  const twoTable: MaterializableMovement = [
+  const twoTable: MovementPlan = [
     {
       tableNumber: 1,
-      rounds: [{ roundNumber: 1, ns: "1", ew: "3", boardStart: 1, boardEnd: 2 }],
+      rounds: [
+        { roundNumber: 1, ns: "1", ew: "3", boardStart: 1, boardEnd: 2 },
+      ],
     },
     {
       tableNumber: 2,
-      rounds: [{ roundNumber: 1, ns: "2", ew: "4", boardStart: 3, boardEnd: 4 }],
+      rounds: [
+        { roundNumber: 1, ns: "2", ew: "4", boardStart: 3, boardEnd: 4 },
+      ],
     },
   ];
 
   it("writes section-tagged boards and stamps each occupancy's anchor id", async () => {
     const db = await setup();
-    const { materializePairLikeMovement } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializePairLikeMovement } =
+      await import("@/services/materialize-movement");
     const { boards } = await import("@/db/games/tables/boards");
-    const { seatOccupancy } = await import(
-      "@/db/games/tables/seat-occupancy"
-    );
+    const { seatOccupancy } = await import("@/db/games/tables/seat-occupancy");
     const { players } = await import("@/db/games/tables/players");
     const { eq } = await import("drizzle-orm");
 
@@ -112,9 +113,8 @@ describe("section-aware materialization", () => {
 
   it("defaults the board copy to 'A' when the round omits it", async () => {
     const db = await setup();
-    const { materializePairLikeMovement } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializePairLikeMovement } =
+      await import("@/services/materialize-movement");
     const { boards } = await import("@/db/games/tables/boards");
 
     await materializePairLikeMovement("A", twoTable, gameId);
@@ -125,13 +125,12 @@ describe("section-aware materialization", () => {
 
   it("persists per-round board copies for a Web movement", async () => {
     const db = await setup();
-    const { materializePairLikeMovement } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializePairLikeMovement } =
+      await import("@/services/materialize-movement");
     const { boards } = await import("@/db/games/tables/boards");
 
     // Table 1 on copy A, table 2 on copy B (mirrors the even-Web halves).
-    const webLike: MaterializableMovement = [
+    const webLike: MovementPlan = [
       {
         tableNumber: 1,
         rounds: [
@@ -163,19 +162,22 @@ describe("section-aware materialization", () => {
     await materializePairLikeMovement("A", webLike, gameId);
 
     const boardRows = db.select().from(boards).all();
-    expect(boardRows.filter((b) => b.tableNumber === 1).every((b) => b.copy === "A")).toBe(true);
-    expect(boardRows.filter((b) => b.tableNumber === 2).every((b) => b.copy === "B")).toBe(true);
+    expect(
+      boardRows.filter((b) => b.tableNumber === 1).every((b) => b.copy === "A"),
+    ).toBe(true);
+    expect(
+      boardRows.filter((b) => b.tableNumber === 2).every((b) => b.copy === "B"),
+    ).toBe(true);
   });
 
   it("marks sit-out rounds with SIT_OUT status", async () => {
     const db = await setup();
-    const { materializePairLikeMovement } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializePairLikeMovement } =
+      await import("@/services/materialize-movement");
     const { boards } = await import("@/db/games/tables/boards");
     const { eq } = await import("drizzle-orm");
 
-    const withSitOut: MaterializableMovement = [
+    const withSitOut: MovementPlan = [
       {
         tableNumber: 1,
         rounds: [
@@ -203,9 +205,8 @@ describe("section-aware materialization", () => {
 
   it("materializes multiple sections sharing board numbers in one transaction", async () => {
     const db = await setup();
-    const { materializeSections } = await import(
-      "@/services/materialize-movement"
-    );
+    const { materializeSections } =
+      await import("@/services/materialize-movement");
     const { boards } = await import("@/db/games/tables/boards");
 
     // Both sections play the same board numbers (1-4) at the same table

@@ -2,13 +2,10 @@ import { Tables } from "@/model/movement";
 import { PairSeat, parseSeat } from "@/model/participants";
 import { MitchellMovementSpec } from "./mitchell-utils";
 import { generateStandardMitchell } from "./standard-mitchell";
-import {
-  MaterializableMovement,
-  MaterializableRound,
-} from "@/services/materialize-movement";
+import { MovementPlan, PlannedRound } from "@/model/movement-plan";
 
 /**
- * Convert a generated Tables into the MaterializableMovement shape,
+ * Convert a generated Tables into the MovementPlan shape,
  * flagging the dormant (table, round) positions as sit-outs.
  *
  * A sit-out is modelled as a phantom pair occupying `sitOutSeat` in round 1.
@@ -20,13 +17,12 @@ import {
 export function applyMitchellSitOut(
   movement: Tables,
   sitOutSeat: PairSeat | null,
-): MaterializableMovement {
-  const phantomId =
-    sitOutSeat === null ? null : seatToPhantomId(sitOutSeat);
+): MovementPlan {
+  const phantomId = sitOutSeat === null ? null : seatToPhantomId(sitOutSeat);
 
   return movement.tables.map((table) => ({
     tableNumber: table.table,
-    rounds: table.rounds.map((round): MaterializableRound => {
+    rounds: table.rounds.map((round): PlannedRound => {
       const involvesPhantom =
         phantomId !== null &&
         (round.participants.nsId === phantomId ||
@@ -58,7 +54,7 @@ function seatToPhantomId(sitOutSeat: PairSeat): string {
 export function generateStandardMitchellWithSitOut(
   spec: MitchellMovementSpec,
   sitOutSeat: PairSeat | null,
-): MaterializableMovement {
+): MovementPlan {
   if (spec.skip || spec.shareAndRelay) {
     throw new Error(
       "Sit-out handling is only supported for Standard Mitchell movements.",

@@ -2,7 +2,7 @@ import { ImpLine } from "./imp";
 import { XimpLine } from "./x-imp";
 import { classifyOutcome } from "./assigned";
 import { parseAdjustedScore } from "@/model/adjusted-score";
-import { ARTIFICIAL_IMP_AWARD } from "@/scoring/artificial-score";
+import { ARTIFICIAL_IMP_AWARD } from "@/model/artificial-score";
 
 /**
  * EBU White Book §4.1.1.1 "better than average" override for IMP and Cross-IMP
@@ -68,7 +68,9 @@ interface SideAccess<L> {
  * part of "the other boards". A pair with no real boards is absent from the map
  * (→ flat ±3 fallback).
  */
-function windowedAverageImps<L extends { outcome?: unknown; score?: number | null }>(
+function windowedAverageImps<
+  L extends { outcome?: unknown; score?: number | null },
+>(
   boards: ScoredImpBoard<L>[],
   access: SideAccess<L>,
   idOf: (line: L) => { ns: string; ew: string },

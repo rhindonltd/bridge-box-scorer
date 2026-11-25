@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
-import {
-  resolveStandings,
-  type ParticipantStandingRow,
-  type StandingBoardRow,
-} from "./ranking-exclusions";
+import type { ParticipantStandingRow } from "@/model/standings";
+import { resolveStandings, type StandingBoardRow } from "./ranking-exclusions";
 
 /** A board row at (ns, ew) on a given board, with or without a result. */
 function board(
@@ -26,7 +23,10 @@ function board(
  * boards (the LATE arrival's post-arrival boards), facing opponent "A2NS". The
  * other boards are its unplayed early cells.
  */
-function fourBoardEvent(late: string, boardsPlayed: number): StandingBoardRow[] {
+function fourBoardEvent(
+  late: string,
+  boardsPlayed: number,
+): StandingBoardRow[] {
   const rows: StandingBoardRow[] = [];
   for (let b = 1; b <= 4; b++) {
     rows.push(board(b, late, "A2EW", b > 4 - boardsPlayed));
@@ -40,7 +40,12 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
   it("a LATE arrival present for at least half the boards RETAINS standing", () => {
     // 4 boards, played 2 (= half) → retains standing: not excluded, no credit.
     const rows: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "LATE", treatment: "REMOVE", finePercent: null },
+      {
+        seat: "A1NS",
+        standing: "LATE",
+        treatment: "REMOVE",
+        finePercent: null,
+      },
     ];
     const boards = fourBoardEvent("A1NS", 2);
 
@@ -53,7 +58,12 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
   it("a short LATE + REMOVE is excluded AND credited (unplayed early boards)", () => {
     // 4 boards, played 1 (< half) → scored per §2.4.6 like a REMOVE withdrawer.
     const rows: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "LATE", treatment: "REMOVE", finePercent: null },
+      {
+        seat: "A1NS",
+        standing: "LATE",
+        treatment: "REMOVE",
+        finePercent: null,
+      },
     ];
     const boards = fourBoardEvent("A1NS", 1);
 
@@ -67,7 +77,12 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
 
   it("a short LATE + PENALISED stays in the ranking but is credited with its fine", () => {
     const rows: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "LATE", treatment: "PENALISED", finePercent: 10 },
+      {
+        seat: "A1NS",
+        standing: "LATE",
+        treatment: "PENALISED",
+        finePercent: 10,
+      },
     ];
     const boards = fourBoardEvent("A1NS", 1);
 
@@ -81,9 +96,24 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
 
   it("still treats WITHDRAWN and WITHOUT_STANDING exactly as before", () => {
     const rows: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "WITHDRAWN", treatment: "REMOVE", finePercent: null },
-      { seat: "A2NS", standing: "WITHDRAWN", treatment: "PENALISED", finePercent: 20 },
-      { seat: "A3NS", standing: "WITHOUT_STANDING", treatment: null, finePercent: null },
+      {
+        seat: "A1NS",
+        standing: "WITHDRAWN",
+        treatment: "REMOVE",
+        finePercent: null,
+      },
+      {
+        seat: "A2NS",
+        standing: "WITHDRAWN",
+        treatment: "PENALISED",
+        finePercent: 20,
+      },
+      {
+        seat: "A3NS",
+        standing: "WITHOUT_STANDING",
+        treatment: null,
+        finePercent: null,
+      },
       { seat: "A4NS", standing: "ACTIVE", treatment: null, finePercent: null },
     ];
     const boards = fourBoardEvent("A1NS", 0);
@@ -120,7 +150,12 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
 
   it("an explicit INHERIT short LATE is neither excluded nor credited", () => {
     const rows: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "LATE", treatment: "INHERIT", finePercent: null },
+      {
+        seat: "A1NS",
+        standing: "LATE",
+        treatment: "INHERIT",
+        finePercent: null,
+      },
     ];
     const boards = fourBoardEvent("A1NS", 1);
 
@@ -141,15 +176,16 @@ describe("resolveStandings — §2.4.7 LATE half-boards gate", () => {
       return rows;
     };
     const late: ParticipantStandingRow[] = [
-      { seat: "A1NS", standing: "LATE", treatment: "REMOVE", finePercent: null },
+      {
+        seat: "A1NS",
+        standing: "LATE",
+        treatment: "REMOVE",
+        finePercent: null,
+      },
     ];
 
-    expect(
-      resolveStandings(late, threeBoards(2)).withdrawals,
-    ).toHaveLength(0); // 2 >= 2 → retains
-    expect(
-      resolveStandings(late, threeBoards(1)).withdrawals,
-    ).toHaveLength(1); // 1 < 2 → short
+    expect(resolveStandings(late, threeBoards(2)).withdrawals).toHaveLength(0); // 2 >= 2 → retains
+    expect(resolveStandings(late, threeBoards(1)).withdrawals).toHaveLength(1); // 1 < 2 → short
   });
 });
 describe("resolveStandings — defaults", () => {
@@ -157,7 +193,14 @@ describe("resolveStandings — defaults", () => {
     // A1NS has no result on any board, so it is absent from the played tally.
     const rows = fourBoardEvent("A1NS", 0);
     const { withdrawals } = resolveStandings(
-      [{ seat: "A1NS", standing: "LATE", treatment: "REMOVE", finePercent: null }],
+      [
+        {
+          seat: "A1NS",
+          standing: "LATE",
+          treatment: "REMOVE",
+          finePercent: null,
+        },
+      ],
       rows,
     );
     expect(withdrawals).toHaveLength(1);

@@ -2,7 +2,7 @@ import "server-only";
 
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 import { findClub } from "@/db/system/queries/find-club";
 import { getEbuCredentials } from "@/db/system/queries/ebu-credentials";
 import { generateUsebio } from "@/services/usebio-service";

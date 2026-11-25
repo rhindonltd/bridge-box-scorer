@@ -1,7 +1,5 @@
 import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
-import { GameType } from "@/db/games/types/game-type";
-import { EventFormat } from "@/db/games/types/event-format";
-import { ScoringType } from "@/db/games/types/scoring-type";
+import { GameType, GameFormat, ScoringType } from "@/model/game-types";
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";
 import { NewParticipant } from "@/model/participants";
@@ -269,7 +267,7 @@ export interface EventDetailsUpdate {
   eventName?: string;
   director?: string | null;
   gameType?: GameType;
-  eventFormat?: EventFormat;
+  eventFormat?: GameFormat;
   scoringType?: ScoringType;
   leadCardRequired?: boolean;
   handEntryEnabled?: boolean;

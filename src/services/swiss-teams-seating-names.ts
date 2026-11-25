@@ -2,11 +2,8 @@ import "server-only";
 
 import { Db } from "@/db/games";
 import { findTeams } from "@/db/games/queries/find-teams";
-import type {
-  TeamId,
-  TeamsMatch,
-  TeamsTriple,
-} from "@/movement/swiss-teams/swiss-teams-pairing";
+import type { TeamId, TeamsMatch } from "@/model/teams-match-layout";
+import type { TeamsTriple } from "@/movement/swiss-teams/swiss-teams-pairing";
 import type { SectionLetter } from "@/model/participants";
 
 /** A team identified by its stable id and resolved display name. */

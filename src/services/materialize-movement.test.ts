@@ -4,6 +4,7 @@ vi.mock("@/db/games", () => ({
   getDb: vi.fn(),
 }));
 
+import type { MovementPlan } from "@/model/movement-plan";
 import {
   buildSectionRows,
   sectionParticipantId,
@@ -12,7 +13,6 @@ import {
   materializePairLikeMovement,
   materializeSections,
   resolveMatchIds,
-  type MaterializableMovement,
 } from "./materialize-movement";
 import type { Tables } from "@/model/movement";
 import { generateRoundRobinTeams } from "@/movement/round-robin-teams/round-robin-teams-pairing";
@@ -27,7 +27,7 @@ describe("sectionParticipantId", () => {
 
 describe("buildSectionRows", () => {
   it("expands each round into one board row per board number", () => {
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 1,
         rounds: [
@@ -53,7 +53,7 @@ describe("buildSectionRows", () => {
   });
 
   it("only derives seat anchors from round 1, section-qualified and seated", () => {
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 2,
         rounds: [
@@ -74,7 +74,7 @@ describe("buildSectionRows", () => {
   });
 
   it("marks sit-out rounds with SIT_OUT status but still produces board rows", () => {
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 3,
         rounds: [
@@ -97,7 +97,7 @@ describe("buildSectionRows", () => {
   });
 
   it("honours an explicit board copy (Web Mitchell) and defaults to A otherwise", () => {
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 1,
         rounds: [
@@ -217,7 +217,9 @@ describe("roundRobinTeamsToMaterializable", () => {
 
       for (const round of table.rounds) {
         // Board range comes straight from boardsPerRound (round r plays set r).
-        expect(round.boardStart).toBe((round.roundNumber - 1) * boardsPerRound + 1);
+        expect(round.boardStart).toBe(
+          (round.roundNumber - 1) * boardsPerRound + 1,
+        );
         expect(round.boardEnd).toBe(round.roundNumber * boardsPerRound);
 
         // Home NS pair is this table's own team; away EW pair is another team.
@@ -234,10 +236,12 @@ describe("materializePairLikeMovement", () => {
   it("throws when the game db does not exist", async () => {
     vi.mocked(getDb).mockResolvedValue(undefined as any);
 
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 1,
-        rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
+        rounds: [
+          { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
+        ],
       },
     ];
 
@@ -265,10 +269,12 @@ describe("materializeSections", () => {
   it("throws when the game db does not exist", async () => {
     vi.mocked(getDb).mockResolvedValue(undefined as any);
 
-    const movement: MaterializableMovement = [
+    const movement: MovementPlan = [
       {
         tableNumber: 1,
-        rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 }],
+        rounds: [
+          { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 1 },
+        ],
       },
     ];
 

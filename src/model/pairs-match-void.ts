@@ -1,5 +1,3 @@
-import { PairVoidFault } from "@/scoring/swiss/swiss-half-match";
-
 /**
  * Voided Swiss-PAIRS matches — EBU White Book §3.3.8 / §3.3.9.
  *
@@ -33,11 +31,10 @@ const PREFIX = "VOIDP:";
  * - `BOTH` — both at fault → both AVE−.
  * - `NEITHER` — neither at fault → both AVE+.
  */
-export type PairsVoidCause =
-  | "OFFENDER_NS"
-  | "OFFENDER_EW"
-  | "BOTH"
-  | "NEITHER";
+/** A voided pair's standing on the §3.3.9 half-board split. */
+export type PairVoidFault = "AVE_PLUS" | "AVE_MINUS" | "AVE";
+
+export type PairsVoidCause = "OFFENDER_NS" | "OFFENDER_EW" | "BOTH" | "NEITHER";
 
 const CAUSES: readonly PairsVoidCause[] = [
   "OFFENDER_NS",

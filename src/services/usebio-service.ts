@@ -45,7 +45,7 @@ import {
 import { classifyEvent } from "@/model/event-format";
 import { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
-import { TournamentLevel } from "@/db/games/types/tournament-level";
+import { TournamentLevel } from "@/model/game-types";
 
 /**
  * Generate the USEBIO 1.2 XML for a game, choosing the event shape from the
