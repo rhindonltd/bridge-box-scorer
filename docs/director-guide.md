@@ -830,8 +830,20 @@ kind of event you ran: an ordinary pairs game exports as a pairs event, while
 with each match and its Victory Points), so a Swiss event imports correctly
 rather than looking like a plain pairs game.
 
-If the cards for a board have been entered (see **Entering the deals**), those
-hands are included in the exported file alongside that board's results.
+The file carries the same scores and placings as the final leaderboard,
+including any rulings you made:
+
+- **Sections**: with **Combined** ranking (the default), all sections are
+  published as one ranking. With **Separate**, each section is published with
+  its own ranking.
+- **Two-winner Mitchell**: North/South and East/West are published as two
+  separate rankings, each with its own winner.
+- **Cross-IMP pairs**: pairs are placed on their average cross-IMPs per board.
+- A pair or team that didn't play any boards is left out of the file.
+
+The hands are not in the USEBIO file. If the cards for the boards have been
+entered (see **Entering the deals**), download them with **Download PBN**;
+BridgeWebs takes both files.
 
 ---
 

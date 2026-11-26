@@ -179,6 +179,24 @@ describe("teamMatchStructureFromRows — short triples", () => {
     ]);
   });
 
+  it("spans every board a comparison covers", () => {
+    // Comparison 1-2 plays boards 1 and 4 in both rooms.
+    const out = teamMatchStructureFromRows(
+      tripleRows((rows) =>
+        rows.push(
+          row({ boardNumber: 4, ns: "A1NS", ew: "A2EW" }),
+          row({ boardNumber: 4, ns: "A2NS", ew: "A1EW" }),
+        ),
+      ),
+    );
+    expect(out[0]).toMatchObject({
+      home: "A1NS",
+      opponent: "A2NS",
+      boardStart: 1,
+      boardEnd: 4,
+    });
+  });
+
   it("lifts a ruling from the lower room as-is and inverts the higher room's", () => {
     const out = teamMatchStructureFromRows(
       tripleRows((rows) => {

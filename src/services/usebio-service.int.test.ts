@@ -152,7 +152,64 @@ describe("generateUsebio", () => {
     expect(xml).not.toContain("<CLUBS>");
   });
 
-  it("emits one SECTION per section with unprefixed pair numbers", async () => {
+  it("emits one SECTION per section with unprefixed pair numbers when combined ranking is off", async () => {
+    const { createSection } = await import("@/db/games/actions/create-section");
+    const { createBoard } = await import("@/db/games/actions/create-board");
+
+    // Two sections, each with a seated NS/EW pair playing board 1.
+    await createSection(harness.gameId, { section: "A", tables: 1 });
+    await createSection(harness.gameId, { section: "B", tables: 1 });
+
+    await seatPair("A1NS", "Alice");
+    await seatPair("A1EW", "Cara");
+    await seatPair("B1NS", "Bob");
+    await seatPair("B1EW", "Dana");
+
+    for (const section of ["A", "B"] as const) {
+      await createBoard(harness.gameId, {
+        section,
+        roundNumber: 1,
+        tableNumber: 1,
+        boardNumber: 1,
+        copy: "A",
+        ns: `${section}1NS`,
+        ew: `${section}1EW`,
+        status: "CONFIRMED",
+        confirmedResult: "3NTN=",
+        matchId: FIXTURE_MATCH_ID,
+      });
+    }
+
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+    const xml = await generateUsebio(
+      db,
+      { ...game, combinedRanking: false },
+      club,
+      "NORMAL_CLUB",
+    );
+
+    // Two SECTION elements under one SESSION, and the right count.
+    expect(xml).toContain("<SECTION_COUNT>2</SECTION_COUNT>");
+    expect(xml).toContain('<SECTION SECTION_ID="A">');
+    expect(xml).toContain('<SECTION SECTION_ID="B">');
+
+    // Pair numbers are UNPREFIXED — no "A1NS"/"B1NS" anywhere.
+    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
+    expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
+    expect(xml).not.toContain("A1NS");
+    expect(xml).not.toContain("B1NS");
+
+    // Each pair sits under its own section, with players kept separate.
+    const sectionA = xml.split('SECTION_ID="A"')[1].split('SECTION_ID="B"')[0];
+    const sectionB = xml.split('SECTION_ID="B"')[1];
+    expect(sectionA).toContain("Alice");
+    expect(sectionA).not.toContain("Bob");
+    expect(sectionB).toContain("Bob");
+    expect(sectionB).not.toContain("Alice");
+  });
+
+  it("emits one pooled SECTION with section-qualified pair numbers when combined ranking is on", async () => {
     const { createSection } = await import("@/db/games/actions/create-section");
     const { createBoard } = await import("@/db/games/actions/create-board");
 
@@ -184,24 +241,15 @@ describe("generateUsebio", () => {
     const db = (await harness.getDb()) as Db;
     const xml = await generateUsebio(db, game, club, "NORMAL_CLUB");
 
-    // Two SECTION elements under one SESSION, and the right count.
-    expect(xml).toContain("<SECTION_COUNT>2</SECTION_COUNT>");
-    expect(xml).toContain('<SECTION SECTION_ID="A">');
-    expect(xml).toContain('<SECTION SECTION_ID="B">');
-
-    // Pair numbers are UNPREFIXED — no "A1NS"/"B1NS" anywhere.
-    expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
-    expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
-    expect(xml).not.toContain("A1NS");
-    expect(xml).not.toContain("B1NS");
-
-    // Each pair sits under its own section, with players kept separate.
-    const sectionA = xml.split('SECTION_ID="A"')[1].split('SECTION_ID="B"')[0];
-    const sectionB = xml.split('SECTION_ID="B"')[1];
-    expect(sectionA).toContain("Alice");
-    expect(sectionA).not.toContain("Bob");
-    expect(sectionB).toContain("Bob");
-    expect(sectionB).not.toContain("Alice");
+    // The combined ranking pools both sections into one field (E4), so the
+    // pair numbers keep their section to stay distinct.
+    expect(xml).toContain("<SECTION_COUNT>1</SECTION_COUNT>");
+    expect(xml.match(/<SECTION /g)?.length).toBe(1);
+    expect(xml).toContain("<PAIR_NUMBER>A1NS</PAIR_NUMBER>");
+    expect(xml).toContain("<PAIR_NUMBER>B1NS</PAIR_NUMBER>");
+    expect(xml).toContain("<NS_PAIR_NUMBER>B1NS</NS_PAIR_NUMBER>");
+    // Four lines on one board: a top of 6 across the pooled field.
+    expect(xml.match(/<PLACE>/g)?.length).toBe(4);
   });
 
   async function seatPair(seat: string, first: string) {
@@ -332,6 +380,40 @@ describe("generateUsebio", () => {
     await db.delete(matches).where(notInArray(matches.id, keepIds));
   }
 
+  it("publishes a two-winner Mitchell as two rankings (WINNER_TYPE 2)", async () => {
+    await seatPair("A1NS", "Al");
+    await seatPair("A1EW", "Cy");
+    await seatPair("A2NS", "Bo");
+    await seatPair("A2EW", "Di");
+    await makeBoard(1, 1, 1, "A1NS", "A1EW", "4SN=");
+    await makeBoard(1, 2, 1, "A2NS", "A2EW", "3NTN=");
+    const mitchellGame: BridgeGame = {
+      ...game,
+      // No section name on the game: the file's section is "A".
+      sectionName: "",
+      selectedMovement: JSON.stringify({
+        source: "MITCHELL",
+        mitchell: { tables: 2, rounds: 1, boardsPerRound: 1 },
+      }),
+    };
+    const { generateUsebio } = await import("@/services/usebio-service");
+    const db = (await harness.getDb()) as Db;
+    const xml = await generateUsebio(db, mitchellGame, club, "NORMAL_CLUB");
+
+    expect(xml).toContain("<WINNER_TYPE>2</WINNER_TYPE>");
+    // Each direction has its own winner: one NS pair and one EW pair place 1.
+    const placeOf = (pair: string) => {
+      const block = xml.split(`<PAIR_NUMBER>${pair}</PAIR_NUMBER>`)[1];
+      return block
+        .slice(0, block.indexOf("</PAIR>"))
+        .match(/<PLACE>(\d+)/)?.[1];
+    };
+    expect(placeOf("1NS")).toBe("1");
+    expect(placeOf("2EW")).toBe("1");
+    expect(placeOf("2NS")).toBe("2");
+    expect(placeOf("1EW")).toBe("2");
+  });
+
   it("emits a SWISS_PAIRS file for a Swiss Pairs game", async () => {
     await seatPair("A1NS", "Al");
     await seatPair("A1EW", "Cy");
@@ -340,7 +422,8 @@ describe("generateUsebio", () => {
     const swissGame: BridgeGame = {
       ...game,
       gameType: "PAIRS",
-      scoringType: "IMP",
+      // A pairs game is scored on matchpoints or cross-IMPs only.
+      scoringType: "XIMP",
       selectedMovement: JSON.stringify({
         source: "SWISS",
         swiss: { tables: 1, rounds: 1, boardsPerRound: 1 },
@@ -1252,10 +1335,13 @@ describe("generateUsebio", () => {
         l.includes("<NS_PAIR_NUMBER>1NS</NS_PAIR_NUMBER>"),
       )!;
       expect(absent).toContain("<CONTRACT/>");
-      // AVE− (40%) to the withdrawn NS pair, AVE+ (60%) to its opponent, of a
-      // board top of 4 (three lines).
-      expect(absent).toContain("<NS_MATCH_POINTS>1.6</NS_MATCH_POINTS>");
-      expect(absent).toContain("<EW_MATCH_POINTS>2.4</EW_MATCH_POINTS>");
+      // AVE− (40%) to the withdrawn NS pair and AVE+ (60%) to its opponent of
+      // a board top of 4 (three lines) is 1.6 / 2.4. The file shows the figures
+      // the standings add up (E2), after rounding each board to a whole
+      // matchpoint (White Book §4.2.6.1): 2 / 2, as the leaderboard and the
+      // scorecard do.
+      expect(absent).toContain("<NS_MATCH_POINTS>2</NS_MATCH_POINTS>");
+      expect(absent).toContain("<EW_MATCH_POINTS>2</EW_MATCH_POINTS>");
       const pair1 = xml.slice(xml.indexOf("<PAIR_NUMBER>1NS</PAIR_NUMBER>"));
       expect(pair1.slice(0, pair1.indexOf("</PAIR>"))).toContain("<PLACE>");
     });

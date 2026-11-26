@@ -1,68 +1,38 @@
+import "server-only";
+
 import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
-import { findPairs } from "@/db/games/queries/find-pairs";
-import { findTeams } from "@/db/games/queries/find-teams";
-import { boards } from "@/db/games/tables/boards";
-import { matches } from "@/db/games/tables/matches";
-import { findSections } from "@/db/games/queries/find-sections";
-import {
-  applySeatSwaps,
-  applyAbsences,
-  pairsStandingsForRanking,
-  resolveStandings,
-  buildOccupantScoredIdResolver,
-} from "@/modules/rulings";
-import { readParticipantStandings } from "@/db/games/queries/ranking-exclusions";
-import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import {
   readSeatOccupancies,
   findNonPrimaryOccupantPairs,
 } from "@/db/games/queries/seat-occupancy";
 import { players } from "@/db/games/tables/players";
-import { applyTeamWithdrawalRulings } from "@/modules/scoring";
-import { readAbsences } from "@/db/games/queries/absences";
-import type { Absences } from "@/model/absence";
-import { sectionOf } from "@/model/participants";
-import { stripSectionPrefix } from "@/model/pair-label";
 import { Club } from "@/db/system/schema";
 import {
+  scoreEvent,
+  scoringNeedsTeams,
+  type Standings,
+} from "@/modules/scoring";
+import {
+  buildUsebioData,
   generateUsebioXml,
   type TeamOccupancy,
-  type UsebioPair,
+  type UsebioField,
+  type UsebioRosterPair,
 } from "@/modules/interchange/usebio";
-import {
-  scoreMpPairs,
-  type UnscoredPairsData,
-  type UnscoredPairsResult,
-} from "@/services/usebio/score-mp-pairs";
-import { assembleSwissPairs } from "@/services/usebio/assemble-swiss-pairs";
-import { assembleSwissTeams } from "@/services/usebio/assemble-swiss-teams";
-import { assembleImpAggregateTeams } from "@/services/usebio/assemble-imp-aggregate-teams";
-import { assembleBoardComparisonTeams } from "@/services/usebio/assemble-board-comparison-teams";
-import {
-  parseSelectedMovement,
-  boardsPerRoundOf,
-} from "@/model/selected-movement";
-import { classifyEvent } from "@/model/event-format";
-import { Card } from "@/model/common";
-import { BoardOutcome } from "@/model/score";
+import { readScoringInputs } from "@/services/leaderboard-service";
 import { TournamentLevel } from "@/model/game-types";
 
 /**
- * Generate the USEBIO 1.2 XML for a game, choosing the event shape from the
- * game type and its selected movement:
- *  - Swiss Pairs (movement source SWISS) -> a SWISS_PAIRS file (matches per
- *    round, integer Victory Points);
- *  - Swiss Teams (TEAMS + source SWISS_TEAMS) -> a SWISS_TEAMS file (team
- *    matches per round, board IMPs, integer Victory Points);
- *  - Board-comparison teams (TEAMS + a teams movement + BAM or PAB scoring) ->
- *    a board-comparison teams file (team matches per round, per-board points,
- *    ranked by points won): BAM uses a 0/0.5/1 scale, PAB a 0/1/2 scale;
- *  - everything else -> the standard MP/Butler/XIMP pairs file.
+ * The USEBIO export adapter. The game is scored exactly as the leaderboard
+ * scores it (the same read, rulings and `scoreEvent` run), and the interchange
+ * module lays the result out as a USEBIO 1.2 file. This file only reads.
  *
- * `tournamentLevel` is the EBU level chosen in the export flow (it is no longer
- * read off the game row); it resolves to the USEBIO masterpoint/charge EVENT
- * fields.
+ * Choices the file makes (docs/design/interchange.md):
+ * - A pair or team with no result is left out (scored with no baseline lines).
+ * - A multi-section game with a combined ranking is written as one SECTION
+ *   with the pooled field and section-qualified pair numbers; otherwise one
+ *   SECTION per section, ranked within the section.
  */
 export async function generateUsebio(
   db: Db,
@@ -70,159 +40,85 @@ export async function generateUsebio(
   club: Club,
   tournamentLevel: TournamentLevel,
 ) {
-  // The movement is stored PER SECTION for Swiss/Swiss-Teams games (not on the
-  // game-index row), so fall back to a section movement when the index copy is
-  // absent — matching the leaderboard's classification (and needed to size the
-  // §3.3.9 withdrawal void split).
-  const movement =
-    parseSelectedMovement(game.selectedMovement) ??
-    (await getAnySectionMovement(db));
-  const { format, swissVpMode } = classifyEvent(
-    game.gameType,
-    game.scoringType,
-    movement,
+  const { event, ruled, participants } = await readScoringInputs(db, game);
+  const score = scoreEvent(event, ruled, participants, { baseline: false });
+  const teamsGame = scoringNeedsTeams(score.classification);
+
+  const [standIns, occupancies] = await Promise.all([
+    teamsGame ? Promise.resolve([]) : findNonPrimaryOccupantPairs(db),
+    teamsGame ? readTeamOccupancies(db) : Promise.resolve([]),
+  ]);
+
+  // Every pair that can appear: the seated pairs, numbered by the id their
+  // results carry, and each split handover's stand-in under its own id.
+  const pairs: UsebioRosterPair[] = [
+    ...participants.pairs.map((p) => ({
+      id: p.id,
+      seat: p.initialSeat,
+      player1: p.player1,
+      player2: p.player2,
+    })),
+    ...standIns.map((p) => ({
+      id: p.scoredId,
+      seat: p.seat,
+      player1: p.player1,
+      player2: p.player2,
+    })),
+  ];
+
+  const sectionName = game.sectionName || "A";
+  const fields: UsebioField[] =
+    score.sections.length > 1 && score.overall
+      ? [fieldOf(score.overall, game.gameId, sectionName, true)]
+      : score.sections.map((s) => fieldOf(s, s.section, s.section, false));
+
+  return generateUsebioXml(
+    buildUsebioData({
+      format: score.classification.format,
+      scoringType: game.scoringType,
+      club: { name: club.name, clubNumber: club.clubNumber },
+      eventName: game.eventName,
+      eventDate: game.eventDate,
+      sectionName,
+      tournamentLevel,
+      fields,
+      pairs,
+      teams: participants.teams,
+      occupancies,
+      lines: score.lines,
+      pairsMatches: score.pairsMatches,
+      teamMatches: score.teamMatches,
+    }),
   );
+}
 
-  // The expected boards per teams match, to size the §3.3.9 void split; the
-  // void scorer falls back to the flat §3.3.6.1 40% when it is unknown.
-  const expectedBoards = boardsPerRoundOf(movement) ?? undefined;
-
-  // EBU §2.4.3–§2.4.9 — resolve the contestant standings once (needs the board
-  // rows for the §2.4.7 LATE half-boards test): the ids dropped from the
-  // ranking and the withdrawal credits. The same facts the live leaderboard
-  // uses, so the published file and the board agree.
-  const allBoards = await db.select().from(boards);
-  const standings = await readParticipantStandings(db);
-  const { excludedFromRanking, withdrawals } = resolveStandings(
-    standings,
-    allBoards,
-  );
-
-  switch (format) {
-    case "TEAMS_VP": {
-      const [teams, matchRows] = await Promise.all([
-        findTeams(db),
-        db.select().from(matches),
-      ]);
-      const boardRows = allBoards;
-      // §2.4.3–§2.4.7: void a withdrawn/short-late team's unplayed matches
-      // in-memory (never persisted), so the published file matches the live
-      // leaderboard.
-      const ruledMatches = applyTeamWithdrawalRulings(
-        matchRows,
-        withdrawals,
-        boardRows,
-      );
-      return generateUsebioXml(
-        assembleSwissTeams(
-          game,
-          club,
-          tournamentLevel,
-          teams,
-          boardRows,
-          ruledMatches,
-          excludedFromRanking,
-          expectedBoards,
-          await readTeamOccupancies(db),
-        ),
-      );
-    }
-    case "TEAMS_IMP_AGG": {
-      const [teams, matchRows] = await Promise.all([
-        findTeams(db),
-        db.select().from(matches),
-      ]);
-      const boardRows = allBoards;
-      return generateUsebioXml(
-        assembleImpAggregateTeams(
-          game,
-          club,
-          tournamentLevel,
-          teams,
-          boardRows,
-          matchRows,
-          excludedFromRanking,
-          await readTeamOccupancies(db),
-        ),
-      );
-    }
-    case "TEAMS_BAM":
-    case "TEAMS_PAB": {
-      const [teams, matchRows] = await Promise.all([
-        findTeams(db),
-        db.select().from(matches),
-      ]);
-      const boardRows = allBoards;
-      const scoring = format === "TEAMS_PAB" ? "PAB" : "BAM";
-      return generateUsebioXml(
-        assembleBoardComparisonTeams(
-          game,
-          club,
-          tournamentLevel,
-          teams,
-          boardRows,
-          matchRows,
-          scoring,
-          excludedFromRanking,
-          await readTeamOccupancies(db),
-        ),
-      );
-    }
-    case "SWISS_PAIRS_VP": {
-      const [pairs, matchRows] = await Promise.all([
-        findPairs(db),
-        db.select().from(matches),
-      ]);
-      // Swiss Pairs ids are plain pair identities, so a played-reversed board
-      // is exported with its ns/ew pairs exchanged (as the leaderboard scores
-      // it). Teams formats keep their ids and credit the flag via the scorers.
-      const boardRows = applySeatSwaps(allBoards);
-      // A matchpoint-scored Swiss exports in MP mode; cross-IMP and (null-mode)
-      // IMP-scored Swiss both export as cross-IMP vs the field, so the file
-      // agrees with how the leaderboard scores an XIMP/MP Swiss event.
-      const mode = swissVpMode === "MP" ? "MP" : "XIMP";
-      return generateUsebioXml(
-        assembleSwissPairs(
-          game,
-          club,
-          tournamentLevel,
-          pairs,
-          boardRows,
-          matchRows,
-          mode,
-          excludedFromRanking,
-        ),
-      );
-    }
-    case "PAIRS_BOARD": {
-      // Design §11: an absent pair stays ranked (its missed boards are scored
-      // or removed per the director's choice), so only §2.4.9 "without
-      // standing" excludes from the placings; an empty expected-late seat is
-      // not a contestant.
-      const absences = await readAbsences(db);
-      const pairsExcluded = resolveStandings(
-        pairsStandingsForRanking(standings),
-        allBoards,
-      ).excludedFromRanking;
-      for (const [boardId, absence] of absences) {
-        if (absence.kind === "EMPTY") pairsExcluded.add(boardId);
-      }
-      return generateMpPairsUsebio(
-        db,
-        game,
-        club,
-        tournamentLevel,
-        pairsExcluded,
-        absences,
-      );
-    }
-  }
+/** One scored field as written to the file. */
+function fieldOf(
+  standings: Standings,
+  field: string,
+  sectionId: string,
+  qualified: boolean,
+): UsebioField {
+  return {
+    field,
+    sectionId,
+    qualified,
+    standings: standings.overallScore,
+    ...(standings.directional
+      ? {
+          directional: {
+            ns: standings.directional.ns.overallScore,
+            ew: standings.directional.ew.overallScore,
+          },
+        }
+      : {}),
+  };
 }
 
 /**
  * Every seat occupancy as the plain {@link TeamOccupancy} the teams export
  * needs: the occupancy's seat/board-set/arrival flag joined to its two players.
- * The teams assemblers use it to declare a team's substitute pair (EBU §2.4.7)
+ * The teams layout uses it to declare a team's substitute pair (EBU §2.4.7)
  * and to tag each traveller line with which partnership played it.
  */
 async function readTeamOccupancies(db: Db): Promise<TeamOccupancy[]> {
@@ -247,127 +143,4 @@ async function readTeamOccupancies(db: Db): Promise<TeamOccupancy[]> {
     });
   }
   return result;
-}
-
-async function generateMpPairsUsebio(
-  db: Db,
-  game: BridgeGame,
-  club: Club,
-  tournamentLevel: TournamentLevel,
-  excludedFromRanking: ReadonlySet<string>,
-  absences: Absences = new Map(),
-) {
-  // Get participants (pairs) — one per seat (the primary occupant).
-  const pairs = await findPairs(db);
-
-  // Get all board results. Rows a pair missed through absence (design §11)
-  // are rewritten exactly as the leaderboard does: an AVERAGE row carries an
-  // AVE± artificial outcome, a REMOVED row is dropped.
-  // A board the director marked "played the wrong way round" is exported with
-  // its ns/ew pairs exchanged (same result, credited to the opposite pairs), as
-  // the leaderboard scores it.
-  const allBoards = applyAbsences(
-    applySeatSwaps(await db.select().from(boards)),
-    absences,
-  );
-
-  // §2.4.7 HANDOVER / SUBSTITUTION: resolve each board row's ns/ew to its
-  // OCCUPANT's scored-field id. A ONE-LINE seat folds onto the one bare-id pair;
-  // a SPLIT seat's non-anchor occupant gets a `#<occId>` id and its own `<PAIR>`
-  // block (so its TRAVELLER_LINEs resolve). Each such pair is PLACED unless it
-  // is "without standing" — that exclusion already lives in `excludedFromRanking`
-  // (keyed by scored id), so we do NOT force-exclude the split pairs here. All
-  // no-ops for an ordinary game (one occupancy per seat).
-  const occupancies = await readSeatOccupancies(db);
-  const resolveScoredId = buildOccupantScoredIdResolver(occupancies);
-  const splitPairs = await findNonPrimaryOccupantPairs(db);
-
-  // The ordered section ids to emit (one <SECTION> each). Each section is its
-  // own scoring field, so pair numbers are always emitted UNPREFIXED (e.g.
-  // "1NS", never "A1NS") — the enclosing SECTION carries the section id.
-  const sections = await findSections(db);
-  const sectionIds = sections.map((s) => s.section);
-
-  // Build USEBIO pairs data. The pair carries its section (derived from its
-  // section-qualified seat) so the builder can group it under the right
-  // SECTION; the pair number itself is unprefixed.
-  const usebioPairs: UsebioPair[] = pairs.map((pair) => {
-    // Parse direction from initialSeat (e.g., "A1NS" → direction NS → "N").
-    // The seat is only used for where the pair STARTED (direction + section);
-    // the pair is numbered by the id its boards carry (its anchor), so the
-    // <PAIR> block, its TRAVELLER_LINEs and the ranking exclusions all agree
-    // for movements that number pairs rather than seats (Howell, one-winner).
-    const direction = pair.initialSeat.endsWith("NS") ? "N" : "E";
-
-    return {
-      pairNumber: stripSectionPrefix(pair.anchorId ?? pair.initialSeat),
-      direction: direction as "N" | "E",
-      section: sectionOf(pair.initialSeat),
-      player1: pair.player1,
-      player2: pair.player2,
-    };
-  });
-
-  // A `<PAIR>` for each SPLIT seat's non-anchor occupant, keyed by its
-  // scored-field id (so its TRAVELLER_LINEs resolve). It is placed unless it is
-  // "without standing" (already captured in `excludedFromRanking`).
-  for (const splitPair of splitPairs) {
-    usebioPairs.push({
-      pairNumber: stripSectionPrefix(splitPair.scoredId),
-      direction: splitPair.seat.endsWith("NS") ? "N" : "E",
-      section: sectionOf(splitPair.seat),
-      player1: splitPair.player1,
-      player2: splitPair.player2,
-    });
-  }
-
-  // Build board results — each tagged with the section it was played in (from
-  // the board row), with unprefixed pair numbers.
-  const boardResults: UnscoredPairsResult[] = allBoards
-    .filter(
-      (b) =>
-        b.confirmedResult ||
-        // A director assignment / cancellation (fouled board, §3.3.2) has a
-        // directorOverrideResult but no confirmedResult — it must still be
-        // exported, not dropped as if it had no result.
-        b.directorOverrideResult ||
-        b.status === "NOT_PLAYED",
-    )
-    .map((b) => ({
-      table: b.tableNumber,
-      board: b.boardNumber,
-      round: b.roundNumber,
-      // Resolve to the occupant's scored-field id so a stand-in's boards carry
-      // its `#<occId>` pair number (unchanged bare id for an ordinary seat).
-      nsPairNumber: stripSectionPrefix(resolveScoredId(b.ns, b.boardNumber)),
-      ewPairNumber: stripSectionPrefix(resolveScoredId(b.ew, b.boardNumber)),
-      outcome: (b.directorOverrideResult ??
-        b.confirmedResult ??
-        "NP") as BoardOutcome,
-      lead: (b.confirmedLead ?? null) as Card | null,
-      section: b.section,
-    }));
-
-  // Count total distinct board numbers (sections share the same board set).
-  const boardNumbers = new Set(allBoards.map((b) => b.boardNumber));
-
-  const usebioData: UnscoredPairsData = {
-    club: {
-      name: club.name,
-      clubNumber: club.clubNumber,
-    },
-    eventName: game.eventName,
-    eventDate: game.eventDate,
-    tournamentLevel,
-    scoringType: game.scoringType,
-    tables: game.tables,
-    sectionName: game.sectionName || "A",
-    sections: sectionIds,
-    boards: boardNumbers.size,
-    pairs: usebioPairs,
-    boardResults,
-    excludedFromRanking,
-  };
-
-  return generateUsebioXml(scoreMpPairs(usebioData));
 }

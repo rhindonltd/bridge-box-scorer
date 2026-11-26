@@ -3,13 +3,10 @@ import path from "node:path";
 
 import {
   generateUsebioXml,
+  type UsebioPairsData,
   type UsebioSwissPairsData,
   type UsebioSwissTeamsData,
 } from "@/modules/interchange/usebio";
-import {
-  scoreMpPairs,
-  type UnscoredPairsData,
-} from "@/services/usebio/score-mp-pairs";
 
 /**
  * Generate example USEBIO 1.2 XML files for each supported event kind
@@ -27,13 +24,12 @@ const eventDate = "2024-11-18T00:00:00.000Z";
 
 /* ---------- MP Pairs ---------- */
 
-function mpPairs(): UnscoredPairsData {
+function mpPairs(): UsebioPairsData {
   return {
     club,
     eventName: "Monday Afternoon Pairs",
     eventDate,
     scoringType: "MP",
-    tables: 2,
     sectionName: "A",
     boards: 2,
     pairs: [
@@ -83,6 +79,8 @@ function mpPairs(): UnscoredPairsData {
         ewPairNumber: "A1EW",
         outcome: "3NTN+1",
         lead: "HK",
+        score: 430,
+        lineScore: { ns: 2, ew: 0 },
       },
       {
         table: 2,
@@ -92,6 +90,8 @@ function mpPairs(): UnscoredPairsData {
         ewPairNumber: "A2EW",
         outcome: "3NTN=",
         lead: "H5",
+        score: 400,
+        lineScore: { ns: 0, ew: 2 },
       },
       {
         table: 1,
@@ -101,6 +101,8 @@ function mpPairs(): UnscoredPairsData {
         ewPairNumber: "A1EW",
         outcome: "4SE-1",
         lead: "SA",
+        score: 50,
+        lineScore: { ns: 2, ew: 0 },
       },
       {
         table: 2,
@@ -110,7 +112,17 @@ function mpPairs(): UnscoredPairsData {
         ewPairNumber: "A2EW",
         outcome: "4SE=",
         lead: "CQ",
+        score: -420,
+        lineScore: { ns: 0, ew: 2 },
       },
+    ],
+    // The pairs file lays out finished figures: the export scores the game
+    // first (as the leaderboard does) and passes the placings in.
+    placings: [
+      { section: "A", pairNumber: "A1NS", percentage: "100.00", place: 1 },
+      { section: "A", pairNumber: "A2NS", percentage: "0.00", place: 3 },
+      { section: "A", pairNumber: "A1EW", percentage: "0.00", place: 3 },
+      { section: "A", pairNumber: "A2EW", percentage: "100.00", place: 1 },
     ],
   };
 }
@@ -405,7 +417,7 @@ function main() {
   mkdirSync(outDir, { recursive: true });
 
   const files: Array<[string, string]> = [
-    ["mp-pairs.xml", generateUsebioXml(scoreMpPairs(mpPairs()))],
+    ["mp-pairs.xml", generateUsebioXml(mpPairs())],
     ["swiss-pairs.xml", generateUsebioXml(swissPairs())],
     ["swiss-teams.xml", generateUsebioXml(swissTeams())],
   ];

@@ -8,6 +8,7 @@ import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import { readAbsences } from "@/db/games/queries/absences";
 import { readSeatOccupancies } from "@/db/games/queries/seat-occupancy";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
+import type { BridgeGame } from "@/db/game-index/schema";
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { findTeams } from "@/db/games/queries/find-teams";
 import type { AssignedPair, AssignedTeam } from "@/model/participants";
@@ -45,17 +46,33 @@ function toParticipant(
   return { ...p, type: "PAIR" as const, id: p.anchorId ?? p.initialSeat };
 }
 
+/** What scoring a game needs: its settings, ruled rows and participants. */
+export interface ScoringInputs {
+  event: EventSettings;
+  ruled: RuledEvent<Board, Match>;
+  participants: EventParticipants;
+}
+
 /** Read a game's settings, ruled rows and participants in one go. */
 async function readLeaderboardInputs(
   db: Db,
   gameId: string,
   asOfRoundExclusive?: number,
-): Promise<{
-  event: EventSettings;
-  ruled: RuledEvent<Board, Match>;
-  participants: EventParticipants;
-}> {
+): Promise<ScoringInputs> {
   const game = await findGameById(gameId);
+  return readScoringInputs(db, { ...game!, gameId }, asOfRoundExclusive);
+}
+
+/**
+ * Read the scoring inputs for a game whose index row is already in hand.
+ * Shared with the USEBIO export, so the published file is scored from exactly
+ * the inputs the leaderboard uses.
+ */
+export async function readScoringInputs(
+  db: Db,
+  game: BridgeGame,
+  asOfRoundExclusive?: number,
+): Promise<ScoringInputs> {
   // The movement drives event classification (teams VP / Swiss VP / board
   // pooled). It's stored PER SECTION in the games DB, not on the game-index
   // row, so prefer the game-index copy when present but fall back to the
@@ -63,14 +80,14 @@ async function readLeaderboardInputs(
   // only ever lives on the section) misclassifies as a plain board-pooled
   // pairs event, which for a teams IMP_VP game has no scorer and throws.
   const movement =
-    parseSelectedMovement(game?.selectedMovement) ??
+    parseSelectedMovement(game.selectedMovement) ??
     (await getAnySectionMovement(db));
 
   // Single classification point: what scoring format this game runs under and,
   // for Swiss Pairs, how its per-round VP is derived.
   const classification = classifyEvent(
-    game!.gameType,
-    game!.scoringType,
+    game.gameType,
+    game.scoringType,
     movement,
   );
 
@@ -115,13 +132,13 @@ async function readLeaderboardInputs(
 
   return {
     event: {
-      gameType: game!.gameType,
-      scoringType: game!.scoringType,
+      gameType: game.gameType,
+      scoringType: game.scoringType,
       movement,
-      combinedRanking: game!.combinedRanking,
+      combinedRanking: game.combinedRanking,
       // The combined standings pool every section into one field, labelled
       // with the game id.
-      combinedLabel: gameId,
+      combinedLabel: game.gameId,
     },
     ruled,
     participants: { pairs: pairs.map(toParticipant), teams },
