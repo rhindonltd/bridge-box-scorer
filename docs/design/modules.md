@@ -1799,9 +1799,9 @@ modules are done (D14).
 | 2    | **timer** engine (**done**, see below)                                           | ~830 / ~1,400       | `bridge-timer-engine.ts`, `breaks.ts`, `timer-state.ts` are, apart from `Date.now()` defaults, which are already parameters | `BridgeTimerEngine` `src/timer/bridge-timer-engine.ts:4`; `validateBreaks` `breaks.ts:152`; `buildConfiguredTimerState` `timer-state.ts:142`                                                                                         | the adapter (`game-store.ts`, `scheduler.ts`, `promote-timer.ts`) sits in the same folder; `promote-timer.ts` imports `makeTimerBroadcaster` from a socket handler, which points the wrong way (it should take a broadcast callback). The `globalThis` store and scheduler stay in the core adapter |
 | 3    | **play-flow** (**done**, see below)                                              | ~650 / ~1,700       | the reducer, reconcile and round status are                                                                                 | `reconcileSubmissions` `src/socket/handlers/game/submit-result/reconcile-submissions.ts:33`; `playStateFromResolved`, `playReducer` `src/hooks/play-state-machine.ts:233`, `:368`; `computeRoundStatus` `src/lib/round-status.ts:58` | `src/services/resolve-play-state.ts` imports the reconcile function from a handler folder (wrong direction); `BoardSubmission` is a Drizzle type; the server half (`resolve-play-state.ts` 340, `schedule-service.ts` 409) is database-bound                                                        |
 | 4    | **seating** (start checks, expected seats) (**done**, see below)                 | ~870 / large        | `start-validator.ts`, `expected-seats.ts` are                                                                               | `validateStart` `src/model/start-validator.ts:78`; `deriveExpectedSeats` `src/model/expected-seats.ts:32`; teams structure checks (`validateTeamsStructure`, `start-game-service.ts:449`)                                            | `model/participants.ts` is used everywhere and is better as kernel; the database side (`handover-seat.ts` 372, `set-board-result.ts` 311, `start-game-service.ts` 757) was not read in detail and may hold rules                                                                                    |
-| 5    | **integrations** (BridgeWebs, EBU, cloud sync, players directory)                | small / ~1,450      | mostly I/O                                                                                                                  | upload and fetch clients with credentials passed in                                                                                                                                                                                  | depends on interchange first; little logic to isolate                                                                                                                                                                                                                                               |
-| 6    | **appliance network** (WiFi, captive portal)                                     | small / ~500        | I/O (`nmcli`, files)                                                                                                        | `writeWifiConfig` `src/lib/system/wifi-config.ts:37` and the `wifi-*` helpers                                                                                                                                                        | keeps system calls out of routes; the atomic write rule for `wifi.json` must stay in `writeWifiConfig`                                                                                                                                                                                              |
-| 7    | **access** (sign-in limits, director alerts)                                     | ~240 / ~800         | `src/model/director-alert.ts` is; `sign-in-attempts.ts` holds `globalThis` state                                            | `describeAlert` `src/model/director-alert.ts:96`; `recordFailure`, `blockedFor` `src/lib/security/sign-in-attempts.ts:85`, `:56`                                                                                                     | spread across client, HTTP and socket layers; the attempt store must stay on `globalThis` in the core                                                                                                                                                                                               |
+| 5    | **integrations** (BridgeWebs, EBU, cloud sync, players directory) (**closed**)   | small / ~1,450      | mostly I/O                                                                                                                  | upload and fetch clients with credentials passed in                                                                                                                                                                                  | depends on interchange first; little logic to isolate                                                                                                                                                                                                                                               |
+| 6    | **appliance network** (WiFi, captive portal) (**closed**)                        | small / ~500        | I/O (`nmcli`, files)                                                                                                        | `writeWifiConfig` `src/lib/system/wifi-config.ts:37` and the `wifi-*` helpers                                                                                                                                                        | keeps system calls out of routes; the atomic write rule for `wifi.json` must stay in `writeWifiConfig`                                                                                                                                                                                              |
+| 7    | **access** (sign-in limits, director alerts) (**closed**)                        | ~240 / ~800         | `src/model/director-alert.ts` is; `sign-in-attempts.ts` holds `globalThis` state                                            | `describeAlert` `src/model/director-alert.ts:96`; `recordFailure`, `blockedFor` `src/lib/security/sign-in-attempts.ts:85`, `:56`                                                                                                     | spread across client, HTTP and socket layers; the attempt store must stay on `globalThis` in the core                                                                                                                                                                                               |
 
 **Timer, as built.** `src/modules/timer/` holds `timer-state.ts`,
 `bridge-timer-engine.ts` and `breaks.ts` from `src/timer`. It also holds three
@@ -1920,6 +1920,56 @@ so nothing changed there. The four copies of `pairName` in the game queries
 (`find-teams-roster`, `find-game-roster`, `find-substitution-seats`,
 `get-outstanding-boards`) and the handover's `pairLabel` are now one
 `pairName` in the kernel (`model/player-name.ts`).
+
+**Rows 5–7 closed.** None of the three is a module:
+
+- Integrations (row 5): the EBU and BridgeWebs clients are network code plus
+  parsers for their message formats. There are no bridge rules in them.
+- Appliance network (row 6): the WiFi files run `nmcli` and write
+  `wifi.json`. The one pure piece, `parseWifiScan`, stays in `lib/system`.
+- Access (row 7): the alert text is already pure and in the kernel
+  (`model/director-alert.ts`). The sign-in limit in `sign-in-attempts.ts` is
+  about 45 lines over a store that must stay on `globalThis` in the core.
+
+**Further moves, as built.** A last survey of the larger core files found
+these small pure rules, now moved:
+
+- **Swiss draw gate** (`swiss/draw-gate.ts`): `nextSwissDrawRound` (the event
+  must have rounds left and the current round must be scored; the completeness
+  read is passed in, as `resolvePlayPhase` takes `PlayReads`),
+  `swissTeamsOddFieldRejection`, and `isSwissRoundFinal` with the
+  `PAIRS_ROUND_COMPLETION` / `TEAMS_ROUND_COMPLETION` policies. Both draw
+  services had these checks in the same order; `swiss-round-completion.ts` now
+  only reads the round's boards.
+- **Ruling token flips** (kernel): `invertVoidMatch` beside `parseVoidMatch`
+  (`model/teams-match-void.ts`) and `invertMismatchSide` beside
+  `parseMismatch` (`model/swiss-mismatch.ts`), from `set-board-result.ts`.
+- **Scorecard figures** (`results-views/scorecard/scorecard-figures.ts`):
+  `swissRoundVps` and `adjustedScoreLookup`, from `scorecard-service.ts`.
+- **Teams traveller margin** (`scoring`): `teamRoomsImps(homeRow, awayRow)`,
+  next to `scoreOfRow`. `board-service.ts` had its own copy of `scoreOfRow`
+  for the per-board margin; `teamMatchBoardImps` uses `teamRoomsImps` too.
+  The survey suggested moving the whole traveller framing to results-views,
+  but the margin needs scoring's functions, which results-views may not use.
+- **Fixed movement setup** (`movement-catalog/display/movement-setup.ts`):
+  `fixedMovementSetup` and `stationaryFromTables`, from
+  `hooks/stationary-pairs.ts`. The Swiss part stays in the hook, because it
+  needs `swissPairHomeSeat` and modules may not import each other.
+- **Stored teams movements deleted:** `TSMovements.txt`, its loader, the
+  teams catalogue queries and writers, and the three `teammovement*` tables
+  (migration `0002`, which also drops the `individualmovement*` tables the
+  schema had already removed). The movement detail route is now
+  `/api/movements/detail/[movementId]` and `getMovementDetail(id)` takes no
+  kind. This also fixed a bug: in a plain Teams game using a stored movement,
+  the setup hooks fetched `/detail/TEAMS/<id>` with a pairs movement id, so
+  Show Tables and the timer setup read the wrong catalogue.
+- **Migration note:** Drizzle runs migrations in a transaction, where
+  `PRAGMA foreign_keys=OFF` has no effect, so `0002` drops child tables
+  before parents and does not rebuild `pairmovementtablespec` to apply the
+  NOT NULL the schema added earlier on `movement_id` (the column stays
+  nullable in the database; the seed always sets it).
+- **Not a bug:** the movement routes accept any movement on any game type. A
+  stored movement on a Teams game is a supported path, so no guard was added.
 
 Code that looks like a candidate but should stay in the core:
 
@@ -2083,10 +2133,14 @@ Behaviour changes and tidy-ups found during the design are in
 - **Q17.** `scripts/dump-db-movements.mjs` was not read. **Answered:** it is a
   maintenance script that parses `PSMovements.txt` itself and prints a
   summary. It needed a path update only (6.6).
-- **Q20.** That a teams game can only choose Swiss Teams or Round Robin. If
-  so, the pairs IMP error path is unreachable (D11), and the stored team
-  movements (`TSMovements.txt`, `getTeamMovement`) may be unused. Still open;
-  D11 did not change that path (9.4).
+- **Q20.** That a teams game can only choose Swiss Teams or Round Robin.
+  **Answered:** no. A plain Teams game (TEAMS, STANDARD format) picks a
+  Mitchell or a stored pairs movement from the same picker as a pairs game;
+  only Swiss Teams has its own form, and Round Robin Teams has no picker
+  (the e2e seed sets it directly). The stored teams movements
+  (`TSMovements.txt`, `getTeamMovement`) had no caller and were deleted (see
+  "Further moves, as built" in §11). The pairs IMP error path (D11) is out of
+  scope here.
 
 ## 15. Suggested order (outline only)
 
