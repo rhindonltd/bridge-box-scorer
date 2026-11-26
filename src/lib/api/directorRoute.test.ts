@@ -9,12 +9,12 @@ vi.mock("@/db/games", () => ({
 vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
   isGameFinalised: vi.fn(),
 }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 
 import { getDb } from "@/db/games";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
 import { withDirectorEditRoute, withDirectorRoute } from "./directorRoute";
 import type { GameRouteContext } from "@/lib/api/gameRoute";

@@ -7,7 +7,7 @@ import {
   Seat,
   parseSeat,
 } from "@/model/participants";
-import { Player } from "@/db/games/tables/players";
+import type { Player } from "@/db/games/tables/players";
 
 import { createContext, useContext, ReactNode, useMemo } from "react";
 

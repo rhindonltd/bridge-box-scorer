@@ -122,6 +122,16 @@ export {
   tripleBoardSets,
 } from "./teams/plan-round";
 
+/* ---------- Round 1 (the start) ---------- */
+export {
+  swissHomeAnchors,
+  swissPairsRoundOnePlan,
+  swissRoundOneIsHalfMatch,
+  swissRoundOneLayout,
+  type SwissHomeAnchor,
+} from "./pairs/round-one";
+export { swissTeamsRoundOnePlan } from "./teams/round-one";
+
 /* ---------- Shared ---------- */
 export {
   swissHalfMatchBoardSplit,

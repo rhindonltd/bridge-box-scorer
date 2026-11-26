@@ -1,6 +1,6 @@
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Spinner } from "@/components/common/Spinner";
-import { BridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame } from "@/db/game-index/schema";
 
 interface Props {
   headerTitle: string;

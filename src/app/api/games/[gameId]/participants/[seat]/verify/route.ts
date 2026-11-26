@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { withGameRoute } from "@/lib/api/gameRoute";
 import { success } from "@/lib/api/success";
-import { validatePlayerToken } from "@/socket/middleware/participant-auth";
+import { validatePlayerToken } from "@/services/security/player-token";
 import { isPairSeat, type Seat } from "@/model/participants";
 
 /**

@@ -1,8 +1,10 @@
 /**
  * Rulings: every rewrite of results that happens before scoring — who a board
  * is credited to, which results the director has changed, and who is left out
- * of the ranking. Pure and browser-safe; depends only on the kernel
- * (`@/model`). See docs/design/modules.md §8.
+ * of the ranking — plus who holds a seat after a §2.4.7 handover (the
+ * handover rules and the ranked / device / merged-line occupant picks).
+ * Pure and browser-safe; depends only on the kernel (`@/model`). See
+ * docs/design/modules.md §8.
  */
 
 export {
@@ -34,8 +36,26 @@ export {
   inheritStandInOccupancyIds,
   mergedLineOf,
   occupancyCoversBoard,
+  oneLineSecondaryByAnchorId,
+  primaryOccupancyIds,
+  rankedOf,
   scoredIdByOccupancyId,
   seatIsOneLine,
+  splitSeatSecondaryOccupants,
   type OccupantCandidate,
   type RankedCandidate,
 } from "./occupants";
+export {
+  chooseHandover,
+  isSamePair,
+  MAX_PAIRS_PER_TEAM,
+  newPairBoards,
+  returningPairBoards,
+  teamHandoverRejection,
+  type HandoverChoice,
+  type HandoverOccupant,
+  type HandoverRejection,
+  type PairIdentity,
+  type PlayerIdentity,
+  type SeatBoards,
+} from "./handover";

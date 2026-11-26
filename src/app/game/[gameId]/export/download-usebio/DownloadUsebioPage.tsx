@@ -5,7 +5,7 @@ import { Spinner } from "@/components/common/Spinner";
 import useSWR from "swr";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { Club } from "@/db/system/schema";
+import type { Club } from "@/db/system/schema";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 

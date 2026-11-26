@@ -1,4 +1,4 @@
-import { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame, NewBridgeGame } from "@/db/game-index/schema";
 import { GameType, GameFormat, ScoringType } from "@/model/game-types";
 import { SocketEvents } from "@/socket/socket-events";
 import { emitWithAck, emitEvent } from "@/lib/socket";

@@ -6,7 +6,7 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import { useSocketEvent } from "@/hooks/socket-event";
 import { SocketEvents } from "@/socket/socket-events";
-import { StartValidationResult } from "@/model/start-validator";
+import type { StartValidationResult } from "@/modules/seating";
 
 /**
  * Fetches whether the game can currently be started (movement + seating are

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const mockValidate = vi.fn();
-vi.mock("@/socket/middleware/participant-auth", () => ({
+vi.mock("@/services/security/player-token", () => ({
   validatePlayerToken: (...a: unknown[]) => mockValidate(...a),
 }));
 const mockGame = vi.fn();

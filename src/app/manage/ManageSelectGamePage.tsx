@@ -1,7 +1,7 @@
 "use client";
 
 import { SelectGame } from "@/components/common/SelectGame";
-import { BridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame } from "@/db/game-index/schema";
 import { fetcher } from "@/lib/fetcher";
 import useSWR from "swr";
 

@@ -8,7 +8,7 @@ vi.mock("@/services/bridgewebs-upload-service", () => ({
   uploadResultsToBridgewebs: vi.fn(),
 }));
 // Director-gated: control token validation and the per-game db resolution.
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
@@ -17,7 +17,7 @@ vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
 }));
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { uploadResultsToBridgewebs } from "@/services/bridgewebs-upload-service";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { getDb } from "@/db/games";
 import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
 import * as appHandler from "./route";

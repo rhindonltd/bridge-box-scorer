@@ -2,7 +2,7 @@
 
 import RoundInfo from "@/app/game/[gameId]/play/[initialSeat]/RoundInfo";
 import React from "react";
-import { Player } from "@/db/games/tables/players";
+import type { Player } from "@/db/games/tables/players";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import type { ScheduleHalfMatch } from "@/modules/play-flow";
 

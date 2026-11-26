@@ -4,6 +4,7 @@ import { players } from "@/db/games/tables/players";
 import { arrivalAnchorOf, mergedLineOf } from "@/modules/rulings";
 import { readSeatOccupancies } from "@/db/games/queries/seat-occupancy";
 import type { SeatOccupancy } from "@/db/games/tables/seat-occupancy";
+import { pairName } from "@/model/player-name";
 
 /**
  * One occupant of a §2.4.7 substitution seat, as the Substitutions screen needs
@@ -62,16 +63,6 @@ export interface SubstitutionSeat {
   split: boolean;
   /** The two occupants, anchor first then the earlier pair. */
   occupants: SubstitutionOccupant[];
-}
-
-function pairName(
-  p1: { firstName: string; lastName: string } | undefined,
-  p2: { firstName: string; lastName: string } | undefined,
-): string {
-  return [p1, p2]
-    .filter((p): p is { firstName: string; lastName: string } => p != null)
-    .map((p) => `${p.firstName} ${p.lastName}`.trim())
-    .join(" & ");
 }
 
 /**

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { DirectorRooms } from "@/socket/rooms";
 import { registerHandler } from "@/socket/handlers/handler-wrapper";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import {
   recentAlertsFor,

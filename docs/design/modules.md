@@ -1337,8 +1337,8 @@ taking the types from the kernel.
 - The occupant picks that rulings needs (`arrivalAnchorOf`, `mergedLineOf`,
   `seatIsOneLine`, `occupancyCoversBoard`) moved in with the resolver. The core
   uses them from the entry. `rankedOf`, `primaryOccupancyIds` and
-  `oneLineSecondaryByAnchorId` serve names and `findPairs`, so they stay in
-  `seat-occupancy.ts`.
+  `oneLineSecondaryByAnchorId` first stayed in `seat-occupancy.ts`; they moved
+  in later with the handover rules (8.6).
 - The absence types and `normaliseAbsenceTreatment` stay in the kernel
   (`src/model/absence.ts`); only the row logic moved.
 - Q15: `readAbsences` is a pure function of the occupancies and the
@@ -1346,6 +1346,30 @@ taking the types from the kernel.
   the absences it returns.
 - The traveller/standings agreement is pinned by
   `src/modules/rulings/apply-rulings.test.ts`.
+
+### 8.6 Handover rules (as built)
+
+Rulings also owns who holds a seat after a §2.4.7 handover, because the
+occupant picks the handover depends on (`arrivalAnchorOf`, `mergedLineOf`)
+were already here, and modules may not import each other.
+
+- `handover.ts`, from `db/games/actions/handover-seat.ts`:
+  `MAX_PAIRS_PER_TEAM`, `isSamePair`, and the decisions `chooseHandover` (who
+  the seat is taken from: a new pair, a returning pair, or a rejection),
+  `teamHandoverRejection` (the six-player team limit), `newPairBoards` and
+  `returningPairBoards` (the board split derived from results already
+  entered). The action keeps the reads, the transaction and the secret
+  rotation. The rejection messages are unchanged.
+- `occupants.ts`, from `db/games/queries/seat-occupancy.ts`: `rankedOf`,
+  `primaryOccupancyIds`, `oneLineSecondaryByAnchorId`, and
+  `splitSeatSecondaryOccupants` (the pure half of
+  `findNonPrimaryOccupantPairs`). The query file keeps
+  `readSeatOccupancies`, the column projections and the player join. The
+  `primaryOf` alias of `rankedOf` was removed; its one caller,
+  `get-outstanding-boards.ts`, calls `rankedOf`.
+- `find-teams-roster.ts` used its own copy of the team limit
+  (`TEAM_MAX_PAIRS`), because the handover action was server-only. It now uses
+  `MAX_PAIRS_PER_TEAM` from the entry.
 
 ## 9. scoring
 
@@ -1774,7 +1798,7 @@ modules are done (D14).
 | 1    | **interchange** (USEBIO, PBN) (**done**, see [`interchange.md`](interchange.md)) | ~3,000 / ~3,400     | the generators and parsers are                                                                                              | `generateUsebioXml(snapshot)` `src/lib/usebio/generate-usebio.ts:425`; `generatePbn(data)` `src/lib/pbn/generate-pbn.ts:92`; `parsePbnFile(text)` `src/model/pbn-file.ts:173`; deal helpers `src/model/deal.ts`                      | assemblers import `Board`, `BridgeGame`, `Club` from `@/db` (5.6); `src/services/usebio-service.ts` (372) must split into "gather a snapshot" (core) and "assemble from a snapshot" (module); depends on scoring's breakdowns (9.5) and rulings                                                     |
 | 2    | **timer** engine (**done**, see below)                                           | ~830 / ~1,400       | `bridge-timer-engine.ts`, `breaks.ts`, `timer-state.ts` are, apart from `Date.now()` defaults, which are already parameters | `BridgeTimerEngine` `src/timer/bridge-timer-engine.ts:4`; `validateBreaks` `breaks.ts:152`; `buildConfiguredTimerState` `timer-state.ts:142`                                                                                         | the adapter (`game-store.ts`, `scheduler.ts`, `promote-timer.ts`) sits in the same folder; `promote-timer.ts` imports `makeTimerBroadcaster` from a socket handler, which points the wrong way (it should take a broadcast callback). The `globalThis` store and scheduler stay in the core adapter |
 | 3    | **play-flow** (**done**, see below)                                              | ~650 / ~1,700       | the reducer, reconcile and round status are                                                                                 | `reconcileSubmissions` `src/socket/handlers/game/submit-result/reconcile-submissions.ts:33`; `playStateFromResolved`, `playReducer` `src/hooks/play-state-machine.ts:233`, `:368`; `computeRoundStatus` `src/lib/round-status.ts:58` | `src/services/resolve-play-state.ts` imports the reconcile function from a handler folder (wrong direction); `BoardSubmission` is a Drizzle type; the server half (`resolve-play-state.ts` 340, `schedule-service.ts` 409) is database-bound                                                        |
-| 4    | **seating** (start checks, expected seats)                                       | ~870 / large        | `start-validator.ts`, `expected-seats.ts` are                                                                               | `validateStart` `src/model/start-validator.ts:78`; `deriveExpectedSeats` `src/model/expected-seats.ts:32`; teams structure checks (`validateTeamsStructure`, `start-game-service.ts:449`)                                            | `model/participants.ts` is used everywhere and is better as kernel; the database side (`handover-seat.ts` 372, `set-board-result.ts` 311, `start-game-service.ts` 757) was not read in detail and may hold rules                                                                                    |
+| 4    | **seating** (start checks, expected seats) (**done**, see below)                 | ~870 / large        | `start-validator.ts`, `expected-seats.ts` are                                                                               | `validateStart` `src/model/start-validator.ts:78`; `deriveExpectedSeats` `src/model/expected-seats.ts:32`; teams structure checks (`validateTeamsStructure`, `start-game-service.ts:449`)                                            | `model/participants.ts` is used everywhere and is better as kernel; the database side (`handover-seat.ts` 372, `set-board-result.ts` 311, `start-game-service.ts` 757) was not read in detail and may hold rules                                                                                    |
 | 5    | **integrations** (BridgeWebs, EBU, cloud sync, players directory)                | small / ~1,450      | mostly I/O                                                                                                                  | upload and fetch clients with credentials passed in                                                                                                                                                                                  | depends on interchange first; little logic to isolate                                                                                                                                                                                                                                               |
 | 6    | **appliance network** (WiFi, captive portal)                                     | small / ~500        | I/O (`nmcli`, files)                                                                                                        | `writeWifiConfig` `src/lib/system/wifi-config.ts:37` and the `wifi-*` helpers                                                                                                                                                        | keeps system calls out of routes; the atomic write rule for `wifi.json` must stay in `writeWifiConfig`                                                                                                                                                                                              |
 | 7    | **access** (sign-in limits, director alerts)                                     | ~240 / ~800         | `src/model/director-alert.ts` is; `sign-in-attempts.ts` holds `globalThis` state                                            | `describeAlert` `src/model/director-alert.ts:96`; `recordFailure`, `blockedFor` `src/lib/security/sign-in-attempts.ts:85`, `:56`                                                                                                     | spread across client, HTTP and socket layers; the attempt store must stay on `globalThis` in the core                                                                                                                                                                                               |
@@ -1830,6 +1854,72 @@ Afterwards:
   merged type is accurate where the copy was not: a padded sit-out round has
   no table (`tableNumber: null`). So `SitOutPage` now says "Sit Out" rather
   than "Sit Out at Table null" for a pair with no table that round.
+
+**Seating, as built.** `src/modules/seating/` holds the start checks, so the
+start service only reads the seating and the movement, calls the checks and
+plans, and writes the boards. Its entry `@/modules/seating` exports:
+
+- `validateStart` and its result types, moved from `src/model/start-validator.ts`.
+- `deriveExpectedSeats`, moved from `src/model/expected-seats.ts`, plus
+  `expectedSeatsFromLayout(section, layout, missingParticipant)`, which takes a
+  round-1 `MovementPlan` directly. The layout-to-`Tables` conversion moved in
+  with it from the service.
+- `validateTeamsStructure` (full team at every table, odd team counts), moved
+  from the service.
+- `checkHalfMatchField`: the Swiss "2 half matches" group-size check (a
+  half-match round needs at least two tables), moved from the service.
+- `aggregateSections` (all-or-nothing) and `flattenSections` (the flat result
+  the start-check screen shows, problems tagged by section). The old
+  `validateSections` in `src/model/validate-sections.ts` had no caller (the
+  service only used its types and aggregated inline), so it was replaced by
+  these two. `flattenSections` is the service's old `flattenAggregate`.
+
+Modules may not import each other, so the Swiss round-1 planning went into
+`swiss` rather than `seating`: `swissRoundOneLayout`,
+`swissRoundOneIsHalfMatch`, `swissPairsRoundOnePlan` (half-match group,
+bye, or full round) and `swissHomeAnchors` in `swiss/pairs/round-one.ts`, and
+`swissTeamsRoundOnePlan` in `swiss/teams/round-one.ts`. The service maps
+`swissHomeAnchors` to `SeatAnchor`s itself, because `SeatAnchor` and
+`sectionParticipantId` belong to `services/materialize-movement.ts`, which
+builds game database rows and stays in the core. The module has a lint block
+(kernel and itself only). `start-game-service.ts` went from 743 to 386 lines.
+
+The seat handover rules and the occupancy ranking from this row's blockers
+went to rulings instead (8.6).
+
+**Tidy-ups, as built.** The core had three imports that pointed the wrong
+way (a service or `lib` file importing from the socket layer):
+
+- `validateDirectorToken` and `validatePlayerToken` moved from
+  `socket/middleware/` to `services/security/director-token.ts` and
+  `player-token.ts`. HTTP routes, `lib/api/directorRoute.ts`,
+  `services/security/identify-device.ts` and the socket handlers import them
+  there; the middleware's `assertDirector` / `assertPlayer` wrap them.
+- `signInSucceeded` and `signInFailed` (`services/security/sign-in-guard.ts`)
+  take a `raiseAlert` callback, as `promoteTimerAtGameStart` takes its
+  broadcast. The two sign-in routes pass `raiseDirectorAlert`. The
+  `NewDirectorAlert` type moved to the kernel (`model/director-alert.ts`).
+
+Two lint rules in `eslint.config.mjs` keep these directions:
+
+- `services/`, `db/` and `lib/` may not import the socket layer, hooks,
+  contexts, components or `app/`. The exceptions are
+  `@/socket/socket-events` and `@/socket/socket-response`, which the client
+  wrappers in `lib/` use.
+- Client code (`components/`, `context/`, `hooks/`, `swr/`, `lib/` outside
+  `lib/api/`, and `app/` outside route handlers, `page.tsx` and `layout.tsx`)
+  may import only types from `@/db` (`import type`), so no database code can
+  reach the browser. The 22 plain imports of row types (`Player`,
+  `NewPlayer`, `BridgeGame`, `NewBridgeGame`, `Club`) became `import type`.
+  Server components and route handlers read the database, so they are
+  excluded. A `"use client"` page is not covered by the rule.
+
+`hooks/finalise-check.ts` was on the list but imports only the kernel's
+`FinaliseCheckResult` type and `socket/socket-events`, as every sync hook does,
+so nothing changed there. The four copies of `pairName` in the game queries
+(`find-teams-roster`, `find-game-roster`, `find-substitution-seats`,
+`get-outstanding-boards`) and the handover's `pairLabel` are now one
+`pairName` in the kernel (`model/player-name.ts`).
 
 Code that looks like a candidate but should stay in the core:
 

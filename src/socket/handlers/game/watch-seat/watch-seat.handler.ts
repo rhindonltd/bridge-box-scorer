@@ -4,7 +4,7 @@ import { SocketEvents } from "@/socket/socket-events";
 import { Rooms } from "@/socket/rooms";
 import { registerHandler } from "@/socket/handlers/handler-wrapper";
 import { findSeatDeviceInfo } from "@/db/games/queries/find-participant-secret";
-import { validatePlayerToken } from "@/socket/middleware/participant-auth";
+import { validatePlayerToken } from "@/services/security/player-token";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),

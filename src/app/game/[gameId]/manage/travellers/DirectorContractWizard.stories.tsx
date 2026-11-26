@@ -4,7 +4,7 @@ import { GameContext } from "@/context/GameContext";
 import { AssignmentContext } from "@/context/AssignmentContext";
 import { DirectorContractWizard } from "@/app/game/[gameId]/manage/travellers/DirectorContractWizard";
 import { KeyedMutator } from "swr";
-import { BridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame } from "@/db/game-index/schema";
 import { mockGame } from "@/mocks/fixtures/game";
 
 const mockAssignment = {

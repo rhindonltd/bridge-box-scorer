@@ -67,6 +67,12 @@ export type DirectorAlert =
       seatedAs: AlertSeat[];
     };
 
+/** Distributive Omit, so each alert variant keeps its own fields. */
+type WithoutIdAndTime<T> = T extends unknown ? Omit<T, "id" | "at"> : never;
+
+/** An alert as raised, before it is given its id and time. */
+export type NewDirectorAlert = WithoutIdAndTime<DirectorAlert>;
+
 /** "Mary Smith & John Jones (Table 3 NS, Monday Pairs)", or a fallback. */
 export function describeDevice(seatedAs: AlertSeat[]): string {
   if (seatedAs.length === 0) return "A device that isn't seated at a game";

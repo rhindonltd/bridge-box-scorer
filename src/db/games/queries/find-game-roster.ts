@@ -11,6 +11,7 @@ import {
   findAbsentPairs,
   type AbsentPair,
 } from "@/db/games/queries/find-absent-pairs";
+import { pairName } from "@/model/player-name";
 
 /**
  * A pair's status on the director's "Pairs" roster (design §11):
@@ -75,16 +76,6 @@ async function readRoundOneAnchors(db: Db): Promise<Map<string, string>> {
     out.set(`${r.section}${r.tableNumber}EW`, r.ew);
   }
   return out;
-}
-
-function pairName(
-  p1: { firstName: string; lastName: string } | undefined,
-  p2: { firstName: string; lastName: string } | undefined,
-): string {
-  return [p1, p2]
-    .filter((p): p is { firstName: string; lastName: string } => p != null)
-    .map((p) => `${p.firstName} ${p.lastName}`.trim())
-    .join(" & ");
 }
 
 /**

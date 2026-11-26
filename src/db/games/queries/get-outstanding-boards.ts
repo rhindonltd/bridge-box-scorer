@@ -10,8 +10,8 @@ import { players } from "@/db/games/tables/players";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-import { primaryOf } from "@/db/games/queries/seat-occupancy";
-import { applySeatSwaps } from "@/modules/rulings";
+import { applySeatSwaps, rankedOf } from "@/modules/rulings";
+import { pairName } from "@/model/player-name";
 
 /** The default cap on how many outstanding boards the detail list returns. */
 export const OUTSTANDING_DETAIL_LIMIT = 5;
@@ -26,14 +26,6 @@ export interface OutstandingBoard {
   nsPair: string | null;
   /** "First Last & First Last" for the EW pair, or null if the seat is empty. */
   ewPair: string | null;
-}
-
-/** "First Last & First Last" for a seated pair. */
-function pairName(
-  p1: { firstName: string; lastName: string },
-  p2: { firstName: string; lastName: string },
-): string {
-  return [p1, p2].map((p) => `${p.firstName} ${p.lastName}`.trim()).join(" & ");
 }
 
 /**
@@ -104,7 +96,7 @@ export async function getOutstandingBoards(
       anchorId: seatOccupancy.anchorId,
       boardsSet: seatOccupancy.boards,
       standing: seatOccupancy.standing,
-      // The merged-line pick (`primaryOf`) needs these flags; selecting them
+      // The merged-line pick (`rankedOf`) needs these flags; selecting them
       // explicitly keeps a handover seat's board-name resolution on the right
       // (main / anchor) pair instead of the lowest-id fallback.
       isArrivalAnchor: seatOccupancy.isArrivalAnchor,
@@ -128,7 +120,7 @@ export async function getOutstandingBoards(
 
   const nameByBoardId = new Map<string, string>();
   for (const [boardId, forSeat] of byBoardId) {
-    const primary = primaryOf(
+    const primary = rankedOf(
       forSeat.map((o) => ({
         id: o.id,
         boards: o.boardsSet,
@@ -137,7 +129,7 @@ export async function getOutstandingBoards(
         isMainLine: o.isMainLine,
       })),
     );
-    // `primaryOf` picks one of `forSeat`'s own occupancies.
+    // `rankedOf` picks one of `forSeat`'s own occupancies.
     const occ = forSeat.find((o) => o.id === primary.id)!;
     nameByBoardId.set(
       boardId,

@@ -9,8 +9,7 @@ import {
   recordSuccess,
   type SignInTarget,
 } from "@/lib/security/sign-in-attempts";
-import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
-import type { AlertAudience } from "@/model/director-alert";
+import type { AlertAudience, NewDirectorAlert } from "@/model/director-alert";
 import { identifyDevice } from "./identify-device";
 
 /**
@@ -61,11 +60,18 @@ async function audienceFor(target: SignInTarget): Promise<AlertAudience> {
 }
 
 /**
+ * Sends a director alert. The routes pass the socket layer's
+ * `raiseDirectorAlert`, so this service does not reach into the socket layer.
+ */
+export type RaiseAlert = (alert: NewDirectorAlert) => unknown;
+
+/**
  * A sign-in succeeded: clear the device's failures and tell the directors.
  * The alert carries the device's `originId`, which only that device knows, so
  * it can skip its own alert.
  */
 export async function signInSucceeded(
+  raiseAlert: RaiseAlert,
   req: Request,
   target: SignInTarget,
   method: "shareCode" | "adminKey",
@@ -73,7 +79,7 @@ export async function signInSucceeded(
   originId?: string,
 ): Promise<void> {
   recordSuccess(clientAddress(req));
-  raiseDirectorAlert({
+  raiseAlert({
     kind: "signedIn",
     audience: await audienceFor(target),
     method,
@@ -88,6 +94,7 @@ export async function signInSucceeded(
  * then blocked.
  */
 export async function signInFailed(
+  raiseAlert: RaiseAlert,
   req: Request,
   target: SignInTarget,
   seats: HeldSeats,
@@ -96,7 +103,7 @@ export async function signInFailed(
   if (!outcome.burst) return;
   const seatedAs = await identifyDevice(seats ?? []);
   for (const t of outcome.targets) {
-    raiseDirectorAlert({
+    raiseAlert({
       kind: "repeatedFailures",
       audience: await audienceFor(t),
       failures: outcome.failures,

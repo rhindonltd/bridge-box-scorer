@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/participant-auth", () => ({
+vi.mock("@/services/security/player-token", () => ({
   validatePlayerToken: vi.fn(),
 }));
 
 import { getDb } from "@/db/games";
-import { validatePlayerToken } from "@/socket/middleware/participant-auth";
+import { validatePlayerToken } from "@/services/security/player-token";
 import { GET } from "./route";
 
 function invoke(gameId: string, seat: string, token?: string) {

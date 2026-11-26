@@ -10,7 +10,7 @@ vi.mock("@/db/game-index/queries/is-game-finalised", () => ({
 vi.mock("@/services/ebu-upload-service", () => ({
   uploadResultsToEbu: vi.fn(),
 }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
@@ -18,7 +18,7 @@ vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { isGameFinalised } from "@/db/game-index/queries/is-game-finalised";
 import { uploadResultsToEbu } from "@/services/ebu-upload-service";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { getDb } from "@/db/games";
 import * as appHandler from "./route";
 

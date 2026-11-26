@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/services/detect-swiss-mismatch-service", () => ({
@@ -9,7 +9,7 @@ vi.mock("@/services/detect-swiss-mismatch-service", () => ({
 }));
 
 import { getDb } from "@/db/games";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { detectSectionMismatches } from "@/services/detect-swiss-mismatch-service";
 import { GET } from "./route";
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn(() => null) }));
 
-import type { NewDirectorAlert } from "./director-alerts";
+import type { NewDirectorAlert } from "@/model/director-alert";
 import {
   ALERT_REPLAY_MS,
   alertRoom,

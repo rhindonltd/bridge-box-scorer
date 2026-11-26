@@ -12,6 +12,7 @@ import {
   signInFailed,
   signInSucceeded,
 } from "@/services/security/sign-in-guard";
+import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
 
 const verifySchema = z.object({
   key: z.string().min(1),
@@ -48,7 +49,7 @@ export const POST = withBasicRoute(async ({ req }) => {
   }
 
   if (!(await verifyAdminKey(parsed.data.key))) {
-    await signInFailed(req, SETTINGS, parsed.data.seats);
+    await signInFailed(raiseDirectorAlert, req, SETTINGS, parsed.data.seats);
     return NextResponse.json(
       { success: false, error: "Incorrect admin key" },
       { status: 401 },
@@ -62,6 +63,7 @@ export const POST = withBasicRoute(async ({ req }) => {
     role: "ADMIN",
   });
   await signInSucceeded(
+    raiseDirectorAlert,
     req,
     SETTINGS,
     "adminKey",
