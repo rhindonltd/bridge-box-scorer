@@ -16,7 +16,7 @@ describe("useMovementRoundInfo", () => {
   });
 
   it("returns null with no movement selected", () => {
-    const { result } = renderHook(() => useMovementRoundInfo(null, "PAIRS"));
+    const { result } = renderHook(() => useMovementRoundInfo(null));
     expect(result.current).toEqual({ info: null, isLoading: false });
   });
 
@@ -25,7 +25,7 @@ describe("useMovementRoundInfo", () => {
       source: "MITCHELL",
       mitchell: { tables: 5, rounds: 9, boardsPerRound: 3 },
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current.info).toEqual({ rounds: 9, boardsPerRound: 3 });
     // MITCHELL passes a null key to useSWR (no network call).
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.any(Function));
@@ -36,7 +36,7 @@ describe("useMovementRoundInfo", () => {
       source: "SWISS",
       swiss: { tables: 6, rounds: 7, boardsPerRound: 2 },
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current.info).toEqual({ rounds: 7, boardsPerRound: 2 });
   });
 
@@ -45,7 +45,7 @@ describe("useMovementRoundInfo", () => {
       source: "SWISS_TEAMS",
       swissTeams: { teams: 8, rounds: 5, boardsPerRound: 4 },
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "TEAMS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current.info).toEqual({ rounds: 5, boardsPerRound: 4 });
   });
 
@@ -54,13 +54,13 @@ describe("useMovementRoundInfo", () => {
       source: "ROUND_ROBIN_TEAMS",
       roundRobinTeams: { teams: 4, rounds: 3, boardsPerRound: 6 },
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "TEAMS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current.info).toEqual({ rounds: 3, boardsPerRound: 6 });
   });
 
   it("derives SPEC rounds from the fetched movement detail", () => {
     mockUseSWR.mockReturnValue({
-      data: { type: "PAIRS", tables: [{ rounds: [{}, {}, {}] }] },
+      data: { tables: [{ rounds: [{}, {}, {}] }] },
       isLoading: false,
     });
     const m: SelectedMovement = {
@@ -68,7 +68,7 @@ describe("useMovementRoundInfo", () => {
       specId: 12,
       boardsPerRound: 2,
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current.info).toEqual({ rounds: 3, boardsPerRound: 2 });
   });
 
@@ -79,7 +79,7 @@ describe("useMovementRoundInfo", () => {
       specId: 12,
       boardsPerRound: 2,
     };
-    const { result } = renderHook(() => useMovementRoundInfo(m, "PAIRS"));
+    const { result } = renderHook(() => useMovementRoundInfo(m));
     expect(result.current).toEqual({ info: null, isLoading: true });
   });
 });

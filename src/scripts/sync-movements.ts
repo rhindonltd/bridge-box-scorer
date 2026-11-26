@@ -11,7 +11,7 @@ import {
  * Self-contained and idempotent: it migrates the movements database first (so a
  * freshly provisioned box with no movements.db is fine), then wipes and
  * re-seeds the movement catalogue from the committed source files
- * (PSMovements.txt / TSMovements.txt). Re-running never duplicates rows.
+ * (PSMovements.txt). Re-running never duplicates rows.
  *
  * Designed to run with plain `node` on the appliance — no `tsx`, no `npm` —
  * from the compiled `dist/sync-movements.js`:
@@ -30,11 +30,8 @@ async function main() {
   await runCatalogMigrations();
 
   console.log("Refreshing movement catalogue...");
-  const { pairs, teams } = await refreshCatalog();
-
-  console.log(
-    `✅ Movement refresh complete — ${pairs} pair movements, ${teams} team movements.`,
-  );
+  const { pairs } = await refreshCatalog();
+  console.log(`✅ Movement refresh complete — ${pairs} pair movements.`);
 }
 
 main()

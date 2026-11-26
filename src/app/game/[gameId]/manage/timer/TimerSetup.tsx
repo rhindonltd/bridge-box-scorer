@@ -55,7 +55,6 @@ function TimerConfigContainer({
     sections.find((s) => s.section === section)?.selectedMovement ?? null;
   const { info: movementInfo } = useMovementRoundInfo(
     selectedMovement,
-    game.gameType,
   );
   const derived = movementInfo
     ? {

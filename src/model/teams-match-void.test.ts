@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildVoidMatch,
+  invertVoidMatch,
   isVoidMatch,
   parseVoidMatch,
   VoidCause,
@@ -29,5 +30,21 @@ describe("void-match token", () => {
     expect(isVoidMatch("A60/40")).toBe(false);
     expect(isVoidMatch("TRM:EW_FAULT")).toBe(false);
     expect(parseVoidMatch("VOID:NOPE")).toBeNull();
+  });
+});
+
+describe("invertVoidMatch", () => {
+  it("flips the offender of a short match", () => {
+    expect(invertVoidMatch("VOID:SHORT_OFFENDER_NS")).toBe(
+      "VOID:SHORT_OFFENDER_EW",
+    );
+    expect(invertVoidMatch("VOID:SHORT_OFFENDER_EW")).toBe(
+      "VOID:SHORT_OFFENDER_NS",
+    );
+  });
+
+  it("leaves a cause that reads the same from either room", () => {
+    expect(invertVoidMatch("VOID:SHORT_BOTH")).toBe("VOID:SHORT_BOTH");
+    expect(invertVoidMatch("VOID:SEATING_TD")).toBe("VOID:SEATING_TD");
   });
 });

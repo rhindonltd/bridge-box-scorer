@@ -15,7 +15,7 @@ describe("useMovementResolution", () => {
 
   it("returns empty maps when no movement is selected", () => {
     const { result } = renderHook(() =>
-      useMovementResolution(null, "PAIRS", 5),
+      useMovementResolution(null, 5),
     );
     expect(result.current.stationary.size).toBe(0);
     expect(result.current.placement.size).toBe(0);
@@ -34,7 +34,7 @@ describe("useMovementResolution", () => {
     it("marks the designated stationary pairs at their home table/direction", () => {
       const { result } = renderHook(() =>
         // pair 1 -> table 1 NS; pair (tables+2) -> table 2 EW
-        useMovementResolution(swiss(4, [1, 6]), "PAIRS", 4),
+        useMovementResolution(swiss(4, [1, 6]), 4),
       );
 
       expect(result.current.movementTables).toBe(4);
@@ -49,7 +49,7 @@ describe("useMovementResolution", () => {
 
     it("returns empty stationary/placement (but reports tables) on a table-count mismatch", () => {
       const { result } = renderHook(() =>
-        useMovementResolution(swiss(6), "PAIRS", 4),
+        useMovementResolution(swiss(6), 4),
       );
       expect(result.current.stationary.size).toBe(0);
       expect(result.current.placement.size).toBe(0);
@@ -58,7 +58,7 @@ describe("useMovementResolution", () => {
 
     it("defaults all directions to non-stationary when no pairs are designated", () => {
       const { result } = renderHook(() =>
-        useMovementResolution(swiss(3), "PAIRS", 3),
+        useMovementResolution(swiss(3), 3),
       );
       expect(result.current.stationary.get(1)).toEqual({
         ns: false,
@@ -72,7 +72,7 @@ describe("useMovementResolution", () => {
     it("ignores a stationary pair id whose home table is out of range", () => {
       // tables=3 => valid pair ids are 1..6. Pair 99 maps to table 96, absent.
       const { result } = renderHook(() =>
-        useMovementResolution(swiss(3, [99]), "PAIRS", 3),
+        useMovementResolution(swiss(3, [99]), 3),
       );
       expect(result.current.stationary.get(1)).toEqual({
         ns: false,
@@ -93,7 +93,7 @@ describe("useMovementResolution", () => {
 
     it("resolves per-table facts from the generated movement", () => {
       const { result } = renderHook(() =>
-        useMovementResolution(mitchell(5), "PAIRS", 5),
+        useMovementResolution(mitchell(5), 5),
       );
       expect(result.current.movementTables).toBe(5);
       expect(result.current.placement.size).toBe(5);
@@ -103,7 +103,7 @@ describe("useMovementResolution", () => {
 
     it("returns empty when the generated table count doesn't match the section", () => {
       const { result } = renderHook(() =>
-        useMovementResolution(mitchell(5), "PAIRS", 4),
+        useMovementResolution(mitchell(5), 4),
       );
       expect(result.current.stationary.size).toBe(0);
       expect(result.current.movementTables).toBe(5);
@@ -116,7 +116,7 @@ describe("useMovementResolution", () => {
         mitchell: { tables: 1, rounds: 1, boardsPerRound: 2 },
       };
       const { result } = renderHook(() =>
-        useMovementResolution(bad, "PAIRS", 1),
+        useMovementResolution(bad, 1),
       );
       expect(result.current.movementTables).toBe(0);
     });
@@ -132,7 +132,7 @@ describe("useMovementResolution", () => {
     it("returns empty while the movement detail is still loading", () => {
       mockUseSWR.mockReturnValue({ data: undefined });
       const { result } = renderHook(() =>
-        useMovementResolution(spec, "PAIRS", 2),
+        useMovementResolution(spec, 2),
       );
       expect(result.current.movementTables).toBe(0);
     });
@@ -140,7 +140,6 @@ describe("useMovementResolution", () => {
     it("resolves per-table facts from the fetched detail", () => {
       mockUseSWR.mockReturnValue({
         data: {
-          type: "PAIRS",
           tables: [
             { tableNumber: 1, rounds: [{ ns: "1", ew: "2", boards: [1, 2] }] },
             { tableNumber: 2, rounds: [{ ns: "3", ew: "4", boards: [1, 2] }] },
@@ -148,7 +147,7 @@ describe("useMovementResolution", () => {
         },
       });
       const { result } = renderHook(() =>
-        useMovementResolution(spec, "PAIRS", 2),
+        useMovementResolution(spec, 2),
       );
       expect(result.current.movementTables).toBe(2);
       expect(result.current.stationary.size).toBe(2);
@@ -157,14 +156,13 @@ describe("useMovementResolution", () => {
     it("returns empty on a SPEC table-count mismatch", () => {
       mockUseSWR.mockReturnValue({
         data: {
-          type: "PAIRS",
           tables: [
             { tableNumber: 1, rounds: [{ ns: "1", ew: "2", boards: [1, 2] }] },
           ],
         },
       });
       const { result } = renderHook(() =>
-        useMovementResolution(spec, "PAIRS", 4),
+        useMovementResolution(spec, 4),
       );
       expect(result.current.stationary.size).toBe(0);
       expect(result.current.movementTables).toBe(1);
@@ -175,12 +173,11 @@ describe("useMovementResolution", () => {
     it("treats a table with no rounds as non-stationary (empty labels)", () => {
       mockUseSWR.mockReturnValue({
         data: {
-          type: "PAIRS",
           tables: [{ tableNumber: 1, rounds: [] }],
         },
       });
       const { result } = renderHook(() =>
-        useMovementResolution(spec, "PAIRS", 1),
+        useMovementResolution(spec, 1),
       );
       expect(result.current.stationary.get(1)).toEqual({
         ns: false,
@@ -193,7 +190,6 @@ describe("useMovementResolution", () => {
     it("treats a nullish first label as non-stationary", () => {
       mockUseSWR.mockReturnValue({
         data: {
-          type: "PAIRS",
           tables: [
             {
               tableNumber: 1,
@@ -207,7 +203,7 @@ describe("useMovementResolution", () => {
         },
       });
       const { result } = renderHook(() =>
-        useMovementResolution(spec, "PAIRS", 1),
+        useMovementResolution(spec, 1),
       );
       expect(result.current.stationary.get(1)).toEqual({ ns: true, ew: false });
     });

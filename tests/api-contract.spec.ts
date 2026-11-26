@@ -170,10 +170,10 @@ test.describe("API contract — movements", () => {
     expect(res.status()).toBe(400);
   });
 
-  test("GET /api/movements/detail/PAIRS/{unknown} returns 404", async ({
+  test("GET /api/movements/detail/{unknown} returns 404", async ({
     request,
   }) => {
-    const res = await request.get("/api/movements/detail/PAIRS/9999999");
+    const res = await request.get("/api/movements/detail/9999999");
     expect(res.status()).toBe(404);
     const body = await res.json();
     expect(body.success).toBe(false);

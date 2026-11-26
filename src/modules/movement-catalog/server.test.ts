@@ -2,21 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("./storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
-  getTeamMovement: vi.fn(),
 }));
 vi.mock("./storage/db/queries/get-movement-spec", () => ({
   getPairMovementSpecById: vi.fn(),
-  getTeamMovementSpecById: vi.fn(),
 }));
 
-import {
-  getPairMovement,
-  getTeamMovement,
-} from "./storage/db/queries/get-movement";
-import {
-  getPairMovementSpecById,
-  getTeamMovementSpecById,
-} from "./storage/db/queries/get-movement-spec";
+import { getPairMovement } from "./storage/db/queries/get-movement";
+import { getPairMovementSpecById } from "./storage/db/queries/get-movement-spec";
 import { describeMovement, getMovementDetail } from "./server";
 
 describe("getMovementDetail", () => {
@@ -36,7 +28,7 @@ describe("getMovementDetail", () => {
       boardsPerRound: 3,
     } as never);
 
-    expect(await getMovementDetail("PAIRS", 5)).toEqual({
+    expect(await getMovementDetail(5)).toEqual({
       name: "Howell",
       tables: [
         {
@@ -48,29 +40,12 @@ describe("getMovementDetail", () => {
       ],
     });
     expect(getPairMovement).toHaveBeenCalledWith(5);
-    expect(getTeamMovement).not.toHaveBeenCalled();
-  });
-
-  it("reads a teams movement from the teams tables", async () => {
-    vi.mocked(getTeamMovement).mockResolvedValue(rows as never);
-    vi.mocked(getTeamMovementSpecById).mockResolvedValue({
-      name: "Teams",
-      boardsPerRound: 2,
-    } as never);
-
-    const detail = await getMovementDetail("TEAMS", 5);
-    expect(detail?.name).toBe("Teams");
-    expect(detail?.tables[0].rounds[0]).toMatchObject({
-      boardStart: 3,
-      boardEnd: 4,
-    });
-    expect(getPairMovement).not.toHaveBeenCalled();
   });
 
   it("is null when no movement has the id", async () => {
-    vi.mocked(getTeamMovement).mockResolvedValue([] as never);
-    vi.mocked(getTeamMovementSpecById).mockResolvedValue(null as never);
-    expect(await getMovementDetail("TEAMS", 99)).toBeNull();
+    vi.mocked(getPairMovement).mockResolvedValue([] as never);
+    vi.mocked(getPairMovementSpecById).mockResolvedValue(null as never);
+    expect(await getMovementDetail(99)).toBeNull();
   });
 });
 

@@ -4,6 +4,7 @@ import { Fragment, useMemo } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { swrKeys } from "@/swr/swr-keys";
 import {
   RecommendedMovement,
   MovementByTable,
@@ -91,10 +92,10 @@ function MovementPreviewContent({
   // DB-based movements need their full layout fetched. Generated Mitchells are
   // computed locally from the spec, so no request is made for them. The shared
   // fetcher already unwraps the `{ result }` success envelope, so `detail` is
-  // the inner `{ type, tables }` payload.
-  const { data: detail } = useSWR<{ type: string; tables: MovementByTable[] }>(
+  // the inner `{ name, tables }` payload.
+  const { data: detail } = useSWR<{ tables: MovementByTable[] }>(
     movement.specRef.source === "db"
-      ? `/api/movements/detail/PAIRS/${movement.specRef.id}`
+      ? swrKeys.movementDetail(movement.specRef.id)
       : null,
     fetcher,
   );

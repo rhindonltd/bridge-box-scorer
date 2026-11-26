@@ -12,16 +12,14 @@ import {
  *
  * The former append-only seed has been replaced by the shared, idempotent
  * `refreshCatalog` action: it migrates the movements database first, then
- * wipes and re-seeds the catalogue from PSMovements.txt / TSMovements.txt.
+ * wipes and re-seeds the catalogue from PSMovements.txt.
  * Re-running no longer duplicates rows.
  */
 async function main() {
   try {
     await runCatalogMigrations();
-    const { pairs, teams } = await refreshCatalog();
-    console.log(
-      `✅ Seed complete — ${pairs} pair movements, ${teams} team movements.`,
-    );
+    const { pairs } = await refreshCatalog();
+    console.log(`✅ Seed complete — ${pairs} pair movements.`);
   } catch (err) {
     console.error(err);
     process.exit(1);

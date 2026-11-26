@@ -34,6 +34,12 @@ export {
   type RelayContext,
   type TablePlacement,
 } from "./display/table-placement";
+export {
+  fixedMovementSetup,
+  stationaryFromTables,
+  type MovementResolution,
+  type StationaryDirections,
+} from "./display/movement-setup";
 
 // Planning a fixed movement for the start of a game.
 export type {

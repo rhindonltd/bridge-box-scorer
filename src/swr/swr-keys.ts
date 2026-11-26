@@ -15,8 +15,8 @@ export const swrKeys = {
 
   sections: (gameId: string) => `/api/games/${gameId}/sections`,
 
-  movementDetail: (movementType: string, movementId: number) =>
-    `/api/movements/detail/${movementType}/${movementId}`,
+  movementDetail: (movementId: number) =>
+    `/api/movements/detail/${movementId}`,
 
   playState: (gameId: string, seat: string) =>
     `/api/games/${gameId}/play-state/${seat}`,

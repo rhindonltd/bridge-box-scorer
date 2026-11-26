@@ -1,6 +1,4 @@
 import { describe, it, expect } from "vitest";
-import * as fs from "fs";
-import * as path from "path";
 import {
   generateRoundRobinTeams,
   roundRobinTeamsSchedule,
@@ -187,49 +185,3 @@ describe("generateRoundRobinTeams", () => {
   });
 });
 
-/**
- * Cross-check our understanding of the `TSMovements.txt` round-robin layout:
- * each table row is a sequence of (homeTeam, opponentTeam, boardSet) triples,
- * one per round. This decodes the shipped "5 Table Round Robin Teams" block and
- * asserts the format so the generator and the file stay describable in the same
- * terms. (The shipped blocks are odd-team layouts, which the generator itself
- * does not target yet — this only validates the shared triple format.)
- */
-describe("TSMovements round-robin format", () => {
-  it("decodes the 5-table block as (home, opponent, boardSet) triples", () => {
-    const content = fs.readFileSync(
-      path.join(
-        process.cwd(),
-        "src/modules/movement-catalog/storage/TSMovements.txt",
-      ),
-      "utf-8",
-    );
-
-    const lines = content.split(/\r?\n/);
-    const headerIdx = lines.findIndex((l) =>
-      l.startsWith("5 Table Round Robin Teams"),
-    );
-    expect(headerIdx).toBeGreaterThan(-1);
-
-    // The line after the header is the movement header:
-    // type, tables, boardSets, boardsPerSet, rounds.
-    const header = lines[headerIdx + 1].split(",").map((n) => parseInt(n, 10));
-    const [, tables, , , rounds] = header;
-    expect(tables).toBe(5);
-    expect(rounds).toBe(4);
-
-    // Each of the next `tables` lines is a table's per-round triples.
-    for (let t = 0; t < tables; t++) {
-      const nums = lines[headerIdx + 2 + t]
-        .split(",")
-        .map((n) => parseInt(n, 10));
-      expect(nums.length).toBe(rounds * 3);
-
-      for (let r = 0; r < rounds; r++) {
-        const home = nums[r * 3];
-        // The first element of every triple on table t's row is its own team.
-        expect(home).toBe(t + 1);
-      }
-    }
-  });
-});

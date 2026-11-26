@@ -61,10 +61,8 @@ describe("swrKeys", () => {
     );
   });
 
-  it("movementDetail embeds the type and id", () => {
-    expect(swrKeys.movementDetail("mitchell", 7)).toBe(
-      "/api/movements/detail/mitchell/7",
-    );
+  it("movementDetail embeds the id", () => {
+    expect(swrKeys.movementDetail(7)).toBe("/api/movements/detail/7");
   });
 
   it("resultsSummary returns correct API path", () => {

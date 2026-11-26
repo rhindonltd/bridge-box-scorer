@@ -67,7 +67,7 @@ async function main() {
   await runPlayersMigrations();
   await runSystemMigrations();
   await seedAdminKey();
-  const { pairs, teams } = await refreshCatalog();
+  const { pairs } = await refreshCatalog();
   await syncPlayers(
     E2E_PLAYERS.map((p) => ({
       ebuNumber: p.ebuNumber,
@@ -77,7 +77,7 @@ async function main() {
   );
 
   console.log(
-    `E2E data ready at ${dataDir}: ${pairs} pair + ${teams} team movements, ` +
+    `E2E data ready at ${dataDir}: ${pairs} pair movements, ` +
       `${E2E_PLAYERS.length} players.`,
   );
 }

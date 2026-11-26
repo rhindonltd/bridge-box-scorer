@@ -4,12 +4,10 @@ import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
-import type { GameType } from "@/model/game-types";
 import type { SelectedMovement } from "@/model/selected-movement";
 import type { MitchellMovementSpec } from "@/modules/movement-catalog";
 
 type MovementDetailResult = {
-  type: GameType;
   name: string;
 };
 
@@ -40,12 +38,11 @@ function mitchellName(spec: MitchellMovementSpec | undefined): string {
  */
 export function useSelectedMovementName(
   selectedMovement: SelectedMovement | null,
-  gameType: GameType,
 ): string | null {
   const isSpec = selectedMovement?.source === "SPEC";
 
   const { data } = useSWR<MovementDetailResult>(
-    isSpec ? swrKeys.movementDetail(gameType, selectedMovement.specId) : null,
+    isSpec ? swrKeys.movementDetail(selectedMovement.specId) : null,
     fetcher,
   );
 

@@ -143,3 +143,16 @@ export function parseMismatch(outcome: string): MismatchRuling | null {
   }
   return { side, direction, fault };
 }
+
+/**
+ * The same single-side mismatch token seen from the other room: its `side`
+ * flips (NS ↔ EW). A token that is not `MM:<side>:<direction>:<fault>` is
+ * returned as is. Used to store a ruling made from the opponents' room
+ * home-relative.
+ */
+export function invertMismatchSide(token: string): string {
+  const parts = token.split(":");
+  if (parts.length !== 4 || `${parts[0]}:` !== PREFIX) return token;
+  parts[1] = parts[1] === "NS" ? "EW" : "NS";
+  return parts.join(":");
+}

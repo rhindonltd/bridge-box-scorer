@@ -4,7 +4,6 @@ import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
-import type { GameType } from "@/model/game-types";
 import type { SelectedMovement } from "@/model/selected-movement";
 import type { MovementByTable } from "@/modules/movement-catalog";
 
@@ -17,7 +16,6 @@ export interface MovementRoundInfo {
 }
 
 type MovementDetailResult = {
-  type: GameType;
   tables: MovementByTable[];
 };
 
@@ -36,13 +34,12 @@ type MovementDetailResult = {
  */
 export function useMovementRoundInfo(
   selectedMovement: SelectedMovement | null,
-  gameType: GameType,
 ): { info: MovementRoundInfo | null; isLoading: boolean } {
   const isSpec = selectedMovement?.source === "SPEC";
 
   // Only fetch for SPEC selections; MITCHELL needs no network call.
   const { data, isLoading } = useSWR<MovementDetailResult>(
-    isSpec ? swrKeys.movementDetail(gameType, selectedMovement.specId) : null,
+    isSpec ? swrKeys.movementDetail(selectedMovement.specId) : null,
     fetcher,
   );
 

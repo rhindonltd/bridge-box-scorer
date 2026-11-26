@@ -172,7 +172,7 @@ test.describe("API Routes", () => {
     // Note: there is no teams movements endpoint (only pairs), so no teams
     // movements test here.
 
-    test("GET /api/movements/detail/PAIRS/[id] returns movement detail", async ({
+    test("GET /api/movements/detail/[id] returns movement detail", async ({
       request,
     }) => {
       // First get available movements to obtain a valid ID
@@ -185,7 +185,7 @@ test.describe("API Routes", () => {
       const id = movements[0].id;
 
       // Now fetch the movement detail
-      const response = await request.get(`/api/movements/detail/PAIRS/${id}`);
+      const response = await request.get(`/api/movements/detail/${id}`);
 
       expect(response.ok()).toBe(true);
       expect(response.headers()["content-type"]).toContain("application/json");
@@ -194,15 +194,11 @@ test.describe("API Routes", () => {
       const detail = body.result;
       expect(detail).toHaveProperty("tables");
       expect(Array.isArray(detail.tables)).toBe(true);
-      expect(detail).toHaveProperty("type", "PAIRS");
+      expect(detail).toHaveProperty("name");
     });
 
-    test("GET /api/movements/detail/INVALID_TYPE/1 returns 400", async ({
-      request,
-    }) => {
-      const response = await request.get(
-        "/api/movements/detail/INVALID_TYPE/1",
-      );
+    test("GET /api/movements/detail/abc returns 400", async ({ request }) => {
+      const response = await request.get("/api/movements/detail/abc");
 
       expect(response.status()).toBe(400);
 

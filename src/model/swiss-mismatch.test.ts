@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMismatch,
+  invertMismatchSide,
   parseMismatch,
   parseMismatches,
   withMismatch,
@@ -88,5 +89,17 @@ describe("rulings for both sides of one match", () => {
     expect(parseMismatches("MM:NS:HIGHER:NOT;VOID:SEATING_TD")).toEqual([]);
     // Two rulings for the same side are not a valid value.
     expect(parseMismatches("MM:NS:HIGHER:NOT;MM:NS:LOWER:OWN")).toEqual([]);
+  });
+});
+
+describe("invertMismatchSide", () => {
+  it("flips the ruled side", () => {
+    expect(invertMismatchSide("MM:NS:HIGHER:OWN")).toBe("MM:EW:HIGHER:OWN");
+    expect(invertMismatchSide("MM:EW:LOWER:NOT")).toBe("MM:NS:LOWER:NOT");
+  });
+
+  it("leaves anything that is not a single mismatch token", () => {
+    expect(invertMismatchSide("VOID:SHORT_BOTH")).toBe("VOID:SHORT_BOTH");
+    expect(invertMismatchSide("XX:NS:HIGHER:OWN")).toBe("XX:NS:HIGHER:OWN");
   });
 });

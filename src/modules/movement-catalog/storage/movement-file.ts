@@ -3,7 +3,7 @@ import * as path from "path";
 import { groupLinesReducer } from "@/modules/movement-catalog/shared";
 
 /**
- * Read a movement file (PSMovements.txt / TSMovements.txt) and split it into
+ * Read a movement file (PSMovements.txt) and split it into
  * blank-line-separated groups of lines, one group per movement.
  *
  * The files sit next to this module, so they are found relative to

@@ -7,7 +7,12 @@ import { matches } from "@/db/games/tables/matches";
 import { BoardOutcome } from "@/model/score";
 import type { Card } from "@/model/common";
 import { parseSeat } from "@/model/participants";
-import { parseMismatch, withMismatch } from "@/model/swiss-mismatch";
+import {
+  invertMismatchSide,
+  parseMismatch,
+  withMismatch,
+} from "@/model/swiss-mismatch";
+import { invertVoidMatch } from "@/model/teams-match-void";
 
 /**
  * Minimal shape of the game db handle this action needs. Kept structural so
@@ -234,7 +239,7 @@ export async function voidTeamsMatch(
   if (!resolved) return;
   const ruling = resolved.actedIsHome
     ? causeToken
-    : invertVoidCauseToken(causeToken);
+    : invertVoidMatch(causeToken);
   await writeMatchRuling(db, resolved.matchId, ruling);
 }
 
@@ -274,7 +279,7 @@ export async function markMismatch(
   const resolved = await resolveActedMatch(db, key);
   if (!resolved) return;
   const homeRelative = parseMismatch(
-    resolved.actedIsHome ? rulingToken : invertMismatchSideToken(rulingToken),
+    resolved.actedIsHome ? rulingToken : invertMismatchSide(rulingToken),
   );
   if (homeRelative == null) {
     throw new Error(`Not a mismatch ruling: ${rulingToken}`);
@@ -293,19 +298,4 @@ export async function markMismatch(
     resolved.matchId,
     withMismatch(existing ?? null, homeRelative),
   );
-}
-
-/** Flip the offender side of a `VOID:SHORT_OFFENDER_NS/EW` token; others as-is. */
-function invertVoidCauseToken(token: string): string {
-  if (token === "VOID:SHORT_OFFENDER_NS") return "VOID:SHORT_OFFENDER_EW";
-  if (token === "VOID:SHORT_OFFENDER_EW") return "VOID:SHORT_OFFENDER_NS";
-  return token;
-}
-
-/** Flip the `side` field (NS↔EW) of an `MM:<side>:<dir>:<fault>` token. */
-function invertMismatchSideToken(token: string): string {
-  const parts = token.split(":");
-  if (parts.length !== 4 || parts[0] !== "MM") return token;
-  parts[1] = parts[1] === "NS" ? "EW" : "NS";
-  return parts.join(":");
 }

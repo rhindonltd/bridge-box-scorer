@@ -271,11 +271,8 @@ export function teamMatchBoardImps<R extends TeamMatchRow>(
       continue;
     }
 
-    const homeScore = scoreOfRow(homeRow);
-    const awayScore = scoreOfRow(awayRow);
-
-    if (homeScore != null && awayScore != null) {
-      const imps = computeImps(homeScore - awayScore);
+    const imps = teamRoomsImps(homeRow, awayRow);
+    if (imps != null) {
       margin += imps;
       boardsPlayed += 1;
       perBoard.push({ boardNumber, imps });
@@ -407,6 +404,22 @@ export function teamByeRounds(
     });
   }
   return byes;
+}
+
+/**
+ * One board's IMPs from the home team's perspective: its room's score against
+ * the opponents' room's score. Null until both rooms have a comparable scored
+ * result. A §3.3.7 removed board's fixed indemnity is not applied here (see
+ * {@link teamMatchBoardImps}).
+ */
+export function teamRoomsImps<R extends TeamMatchRow>(
+  homeRow: R | undefined,
+  awayRow: R | undefined,
+): number | null {
+  const homeScore = scoreOfRow(homeRow);
+  const awayScore = scoreOfRow(awayRow);
+  if (homeScore == null || awayScore == null) return null;
+  return computeImps(homeScore - awayScore);
 }
 
 /**

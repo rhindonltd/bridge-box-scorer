@@ -3,8 +3,7 @@ import "server-only";
 /**
  * movement-catalog, server entry (docs/design/modules.md §6.3).
  *
- * The stored catalogue: movements.db (seeded from PSMovements.txt /
- * TSMovements.txt) and reading a selected movement for the start of a game.
+ * The stored catalogue: movements.db (seeded from PSMovements.txt) and reading a selected movement for the start of a game.
  * Everything here reaches the database or the file system; the pure helpers
  * are in the module's main entry.
  */
@@ -19,14 +18,8 @@ import {
 } from "./plan/describe-movement";
 import { boardRangeForSet } from "./shared";
 import { getPairMovementSpecsForTables } from "./storage/db/queries/get-movements";
-import {
-  getPairMovement,
-  getTeamMovement,
-} from "./storage/db/queries/get-movement";
-import {
-  getPairMovementSpecById,
-  getTeamMovementSpecById,
-} from "./storage/db/queries/get-movement-spec";
+import { getPairMovement } from "./storage/db/queries/get-movement";
+import { getPairMovementSpecById } from "./storage/db/queries/get-movement-spec";
 
 export { refreshCatalog } from "./storage/db/actions/refresh-movements";
 export { runCatalogMigrations } from "./storage/db/migrate";
@@ -50,13 +43,12 @@ export interface MovementDetail {
  * movement's own default boards-per-round.
  */
 export async function getMovementDetail(
-  kind: "PAIRS" | "TEAMS",
   id: number,
 ): Promise<MovementDetail | null> {
-  const [movement, spec] =
-    kind === "PAIRS"
-      ? await Promise.all([getPairMovement(id), getPairMovementSpecById(id)])
-      : await Promise.all([getTeamMovement(id), getTeamMovementSpecById(id)]);
+  const [movement, spec] = await Promise.all([
+    getPairMovement(id),
+    getPairMovementSpecById(id),
+  ]);
   if (!spec) return null;
 
   return {

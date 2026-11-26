@@ -11,15 +11,12 @@ vi.mock("@/modules/movement-catalog/storage/db", () => ({
 
 vi.mock("./create-movement-spec", () => ({
   createPairMovementSpec: vi.fn(async () => 1),
-  createTeamMovementSpec: vi.fn(async () => 2),
 }));
 vi.mock("./create-movement-table-spec", () => ({
   createPairMovementTableSpec: vi.fn(async () => 10),
-  createTeamMovementTableSpec: vi.fn(async () => 20),
 }));
 vi.mock("./create-movement-round-spec", () => ({
   createPairMovementRoundSpec: vi.fn(),
-  createTeamMovementRoundSpec: vi.fn(),
 }));
 
 const pairMovements = [
@@ -42,28 +39,8 @@ const pairMovements = [
     ],
   },
 ];
-const teamMovements = [
-  {
-    name: "RR Teams",
-    type: 2,
-    tables: 2,
-    boards: 4,
-    boardsPerRound: 2,
-    rounds: 1,
-    tableData: [
-      {
-        table: 1,
-        rounds: [{ participants: { nsId: 1, ewId: 2 }, boards: [1] }],
-      },
-    ],
-  },
-];
-
 vi.mock("@/modules/movement-catalog/storage/pairsMovements", () => ({
   generatePairsMovements: vi.fn(() => pairMovements),
-}));
-vi.mock("@/modules/movement-catalog/storage/teamsMovements", () => ({
-  generateTeamsMovements: vi.fn(() => teamMovements),
 }));
 vi.mock("@/modules/movement-catalog/shared", () => ({
   boardSetFor: vi.fn(() => 0),
@@ -77,18 +54,17 @@ describe("refreshCatalog", () => {
     vi.clearAllMocks();
   });
 
-  it("wipes the six spec tables in one transaction, then reseeds and returns counts", async () => {
+  it("wipes the three spec tables in one transaction, then reseeds and returns counts", async () => {
     const result = await refreshCatalog();
 
-    // One transaction wrapping six deletes (rounds -> tables -> specs, both
-    // pair and team).
+    // One transaction wrapping three deletes (rounds -> tables -> specs).
     expect(transaction).toHaveBeenCalledTimes(1);
-    expect(del).toHaveBeenCalledTimes(6);
-    expect(mockRun).toHaveBeenCalledTimes(6);
+    expect(del).toHaveBeenCalledTimes(3);
+    expect(mockRun).toHaveBeenCalledTimes(3);
 
     // Reseed walked the pair movement's single table with two rounds.
     expect(vi.mocked(createPairMovementRoundSpec)).toHaveBeenCalledTimes(2);
 
-    expect(result).toEqual({ pairs: 1, teams: 1 });
+    expect(result).toEqual({ pairs: 1 });
   });
 });

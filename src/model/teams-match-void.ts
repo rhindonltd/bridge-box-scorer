@@ -75,3 +75,19 @@ export function parseVoidMatch(outcome: string): VoidCause | null {
   const cause = outcome.slice(PREFIX.length) as VoidCause;
   return CAUSES.includes(cause) ? cause : null;
 }
+
+/**
+ * The same void token seen from the other team's room: the offender of a
+ * short match flips (`VOID:SHORT_OFFENDER_NS` ↔ `VOID:SHORT_OFFENDER_EW`).
+ * Every other token reads the same from either side and is returned as is.
+ * Used to store a ruling made from the opponents' room home-relative.
+ */
+export function invertVoidMatch(token: string): string {
+  if (token === buildVoidMatch("SHORT_OFFENDER_NS")) {
+    return buildVoidMatch("SHORT_OFFENDER_EW");
+  }
+  if (token === buildVoidMatch("SHORT_OFFENDER_EW")) {
+    return buildVoidMatch("SHORT_OFFENDER_NS");
+  }
+  return token;
+}
