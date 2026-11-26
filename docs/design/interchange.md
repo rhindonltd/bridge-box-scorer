@@ -111,6 +111,47 @@ export interface TeamMatchResult {
 - The leaderboard's output is unchanged: its tests and the scoring journeys
   must pass as they are.
 
+### Step 2, as built (no change to the leaderboard or the files written)
+
+- **Kernel types.** `src/model/event-detail.ts` holds `RoomResult` (one
+  table's result on one board), `ScoredLine`, `PairsMatchResult`,
+  `TeamMatchBoard` and `TeamMatchResult`.
+- **Contract scores.** There is no separate `rowScores` field. Each
+  `RoomResult` carries its contract score (`nsScore`) and its lead
+  (`directorOverrideLead ?? confirmedLead`), along with the row's
+  `seatsSwapped` flag. A teams row keeps its ids, so the export swaps the
+  partnership names itself.
+- **New `EventScore` fields.** `lines`, `pairsMatches` and `teamMatches` sit
+  next to `adjustedBoards`, each tagged with its `field`.
+- **`adjustedBoards` stays.** The scorecard still reads it. Both come from the
+  same scored lines.
+- **How the scorers record.** Each of the six scorers
+  (`calculateTeamsVpOverall`, the aggregate-IMP and board-comparison teams
+  scorers, and the two Swiss Pairs scorers) takes an optional `matches` list.
+  It records each match from the same values it credits to the standings. In
+  scoring these are the internal types `TeamMatchDetail` and
+  `SwissPairsMatchDetail`, which keep the scorer's row type. `scoreEvent` turns
+  them into the kernel types.
+- **Teams VP.** A match records the VP after the void ruling or the §3.5
+  mismatch adjustment. Each triple comparison records each side's stake VP.
+- **Aggregate IMPs.** A match records +margin / −margin, and each triple
+  comparison is recorded the same way.
+- **Board-a-match and point-a-board.** A match records boards won in native
+  units, including void matches.
+- **Board-pooled pairs.** A scored line keeps a reference to its row through
+  every pass (each pass copies the line with `...line`), so `ScoredLine`
+  reports the line's table, round and lead next to its adjusted figures.
+- **Tests.**
+  - `match-detail.test.ts` checks that each teams scorer's recorded scores add
+    up to its standings.
+  - `score-event-detail.test.ts` checks that pairs lines sum to the totals,
+    that Swiss match VP equals the round VP, and that teams boards played in
+    only one room are handled.
+  - `leaderboard-service.test.ts` mocks the per-board scorer. The mock now
+    keeps each input line's fields, as the real scorer does. No expected
+    values changed.
+- **Checks.** The USEBIO sample files are still byte-for-byte unchanged.
+
 ## How the files change (step 3)
 
 Agreed with the user. E6 was changed from the first proposal; the others are
@@ -134,7 +175,7 @@ as recommended.
 ## Steps
 
 1. **Module skeleton.** Done (above).
-2. **Scoring detail.** Add the kernel types and the new `EventScore` fields,
+2. **Scoring detail.** Done (above). Add the kernel types and the new `EventScore` fields,
    and restructure the teams scorers onto `TeamMatchResult`. The leaderboard,
    scorecard and the §3.5 replay must be unchanged.
 3. **Export onto `scoreEvent`.**

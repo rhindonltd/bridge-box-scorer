@@ -13,7 +13,9 @@ import {
   tripleTeamStakes,
   tripleVpPool,
   type TeamMatchStructureRow,
+  type TripleTeamStake,
 } from "./team-match";
+import { detailBoards, type TeamMatchDetail } from "./match-detail";
 import { voidMatchVp } from "@/modules/scoring/swiss/team-match-void-score";
 import { adjustMismatchVp } from "./mismatch-adjustment";
 
@@ -36,16 +38,41 @@ import { adjustMismatchVp } from "./mismatch-adjustment";
  * via the EW-seat-encodes-opponent convention) is shared with the USEBIO
  * exporter via `groupTeamMatches` / `teamMatchBoardImps`.
  */
-export function calculateTeamsVpOverall(
-  boardRows: SwissVpBoardRow[],
+export function calculateTeamsVpOverall<R extends SwissVpBoardRow>(
+  boardRows: R[],
   matchRows: TeamMatchStructureRow[],
-  options: { expectedBoards?: number } = {},
+  options: {
+    expectedBoards?: number;
+    /** When given, receives each match as credited (for the export). */
+    matches?: TeamMatchDetail<R>[];
+  } = {},
 ): TeamSwissVpOverallScore {
   const totals = new Map<string, VpAccumulator>();
   const { expectedBoards } = options;
+  const record = (detail: TeamMatchDetail<R>) => options.matches?.push(detail);
 
   for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
+    const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(match);
+    const detail = (
+      homeVp: number,
+      opponentVp: number,
+      isVoid: boolean,
+    ): TeamMatchDetail<R> => ({
+      section: match.section,
+      round,
+      triple: null,
+      home: homeTeamId,
+      opponent: opponentTeamId,
+      boards: detailBoards(
+        match,
+        perBoard.map((b) => ({ boardNumber: b.boardNumber, value: b.imps })),
+      ),
+      homeScore: homeVp,
+      opponentScore: opponentVp,
+      boardsPlayed,
+      void: isVoid,
+    });
 
     // §3.3.6 / §3.3.9 void match: credit each team a ruling VP (flat 40%/60%,
     // or the §3.3.9 AVE+/AVE− half-board split) instead of a margin → VP. This
@@ -56,15 +83,15 @@ export function calculateTeamsVpOverall(
       const { home, opponent } = voidMatchVp(voidCause, 20, expectedBoards);
       creditVp(totals, homeTeamId, round, home);
       creditVp(totals, opponentTeamId, round, opponent);
+      record(detail(home, opponent, true));
       continue;
     }
-
-    const { margin, boardsPlayed } = teamMatchBoardImps(match);
 
     if (boardsPlayed === 0) {
       // Match drawn but nothing comparable yet: both teams sit at the average.
       creditVp(totals, homeTeamId, round, NEUTRAL_VP);
       creditVp(totals, opponentTeamId, round, NEUTRAL_VP);
+      record(detail(NEUTRAL_VP, NEUTRAL_VP, false));
       continue;
     }
 
@@ -90,6 +117,7 @@ export function calculateTeamsVpOverall(
 
     creditVp(totals, homeTeamId, round, homeVp);
     creditVp(totals, opponentTeamId, round, opponentVp);
+    record(detail(homeVp, opponentVp, false));
   }
 
   // Credit each bye team an average-plus result for the round it sat out.
@@ -111,41 +139,40 @@ export function calculateTeamsVpOverall(
     // Aggregate each (team, round) VP across the team's comparisons, then
     // credit once (creditVp assigns the round value, so it must be pre-summed).
     const byTeamRound = new Map<string, number>();
+    const vpByStake = new Map<TripleTeamStake<R>, number>();
     for (const stake of tripleTeamStakes(triple)) {
-      const { margin, boardsPlayed } = teamMatchBoardImps(stake.comparison);
-      let vp: number;
-      if (boardsPlayed === 0) {
-        // Nothing comparable yet: the dead-even midpoint of this pool (5 on the
-        // 10-VP half pool, 10 on the 20-VP full pool). A SHORT team's two
-        // 5-neutral halves sum to the round's neutral 10; a LONG team's single
-        // per-round comparison is a neutral 10.
-        vp = pool / 2;
-      } else {
-        const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, pool);
-        const loserVP = pool - winnerVP;
-        // A non-negative margin favours the home side; the away side mirrors.
-        const homeWon = margin >= 0;
-        vp = stake.isHome === homeWon ? winnerVP : loserVP;
-
-        // §3.5 mismatch (F21 Part B): the director may rule either side (or
-        // both) of a comparison mismatched. The ruling is home-relative to the comparison
-        // (NS = its home side, EW = its opponent side); apply the one-sided
-        // §3.5.2 adjustment to THIS stake only when it is that side. The pool
-        // is this comparison's pool (10 SHORT / 20 LONG), so `base = pool/4`
-        // gives the 2.5 constant on the triangular 10-VP half pool.
-        const mismatch = matchMismatches(stake.comparison).find(
-          (m) => (m.side === "NS") === stake.isHome,
-        );
-        if (mismatch != null) {
-          vp = adjustMismatchVp(vp, mismatch, pool);
-        }
-      }
+      const vp = tripleStakeVp(stake, pool);
+      vpByStake.set(stake, vp);
       const key = `${stake.teamId}|${stake.round}`;
       byTeamRound.set(key, (byTeamRound.get(key) ?? 0) + vp);
     }
     for (const [key, vp] of byTeamRound) {
       const [teamId, roundStr] = key.split("|");
       creditVp(totals, teamId, Number(roundStr), vp);
+    }
+
+    // Each comparison as one match: each side's score is its own stake's VP.
+    const stakes = [...vpByStake.keys()];
+    for (const comparison of triple.comparisons) {
+      const [homeStake, awayStake] = stakes.filter(
+        (stake) => stake.comparison === comparison,
+      );
+      const { perBoard, boardsPlayed } = teamMatchBoardImps(comparison);
+      record({
+        section: comparison.section,
+        round: comparison.round,
+        triple: triple.kind,
+        home: comparison.homeTeamId,
+        opponent: comparison.opponentTeamId,
+        boards: detailBoards(
+          comparison,
+          perBoard.map((b) => ({ boardNumber: b.boardNumber, value: b.imps })),
+        ),
+        homeScore: vpByStake.get(homeStake)!,
+        opponentScore: vpByStake.get(awayStake)!,
+        boardsPlayed,
+        void: false,
+      });
     }
   }
 
@@ -164,4 +191,39 @@ export function calculateTeamsVpOverall(
     scoring: "SWISS_VP",
     lines,
   };
+}
+
+/**
+ * One triple team's VP from one of its comparisons. The comparison's IMP
+ * margin converts to VP on the triple's pool (10 SHORT / 20 LONG); a
+ * comparison with nothing comparable yet is the pool's dead-even midpoint.
+ */
+function tripleStakeVp<R extends SwissVpBoardRow>(
+  stake: TripleTeamStake<R>,
+  pool: 10 | 20,
+): number {
+  const { margin, boardsPlayed } = teamMatchBoardImps(stake.comparison);
+  if (boardsPlayed === 0) {
+    // Nothing comparable yet: the dead-even midpoint of this pool (5 on the
+    // 10-VP half pool, 10 on the 20-VP full pool). A SHORT team's two
+    // 5-neutral halves sum to the round's neutral 10; a LONG team's single
+    // per-round comparison is a neutral 10.
+    return pool / 2;
+  }
+  const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, pool);
+  const loserVP = pool - winnerVP;
+  // A non-negative margin favours the home side; the away side mirrors.
+  const homeWon = margin >= 0;
+  const vp = stake.isHome === homeWon ? winnerVP : loserVP;
+
+  // §3.5 mismatch (F21 Part B): the director may rule either side (or both) of
+  // a comparison mismatched. The ruling is home-relative to the comparison
+  // (NS = its home side, EW = its opponent side); apply the one-sided §3.5.2
+  // adjustment to THIS stake only when it is that side. The pool is this
+  // comparison's pool (10 SHORT / 20 LONG), so `base = pool/4` gives the 2.5
+  // constant on the triangular 10-VP half pool.
+  const mismatch = matchMismatches(stake.comparison).find(
+    (m) => (m.side === "NS") === stake.isHome,
+  );
+  return mismatch != null ? adjustMismatchVp(vp, mismatch, pool) : vp;
 }

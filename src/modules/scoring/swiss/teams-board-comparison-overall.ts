@@ -8,8 +8,10 @@ import {
   teamByeRounds,
   teamMatchBoardWins,
   tripleTeamStakes,
+  type TeamMatch,
   type TeamMatchStructureRow,
 } from "./team-match";
+import { detailBoards, type TeamMatchDetail } from "./match-detail";
 import { voidMatchWon } from "@/modules/scoring/swiss/team-match-void-score";
 
 /**
@@ -69,17 +71,45 @@ function credit(
  * total (Round Robin Teams); it does not affect the scoring maths. `scoring`
  * is likewise carried through so the view/export apply the right scale and tag.
  */
-export function calculateTeamsBoardComparisonOverall(
-  boardRows: SwissVpBoardRow[],
+export function calculateTeamsBoardComparisonOverall<R extends SwissVpBoardRow>(
+  boardRows: R[],
   matchRows: TeamMatchStructureRow[],
   options: {
     barometer: boolean;
     scoring: BoardComparisonScoring;
     expectedBoards?: number;
+    /** When given, receives each match as credited (for the export). */
+    matches?: TeamMatchDetail<R>[];
   },
 ): TeamBamOverallScore | TeamPabOverallScore {
   const totals = new Map<string, Accumulator>();
   const { expectedBoards } = options;
+  /** Each match as credited, in native board units. */
+  const record = (
+    match: TeamMatch<R>,
+    triple: "SHORT" | "LONG" | null,
+    homeScore: number,
+    opponentScore: number,
+    isVoid: boolean,
+  ) => {
+    if (!options.matches) return;
+    const { perBoard, boardsPlayed } = teamMatchBoardWins(match);
+    options.matches.push({
+      section: match.section,
+      round: match.round,
+      triple,
+      home: match.homeTeamId,
+      opponent: match.opponentTeamId,
+      boards: detailBoards(
+        match,
+        perBoard.map((b) => ({ boardNumber: b.boardNumber, value: b.result })),
+      ),
+      homeScore,
+      opponentScore,
+      boardsPlayed,
+      void: isVoid,
+    });
+  };
 
   for (const match of groupTeamMatches(boardRows, matchRows)) {
     const { round, homeTeamId, opponentTeamId } = match;
@@ -95,6 +125,7 @@ export function calculateTeamsBoardComparisonOverall(
       );
       credit(totals, homeTeamId, round, home, boards);
       credit(totals, opponentTeamId, round, opponent, boards);
+      record(match, null, home, opponent, true);
       continue;
     }
 
@@ -104,6 +135,7 @@ export function calculateTeamsBoardComparisonOverall(
     // with nothing comparable yet contributes 0 won / 0 played to each.
     credit(totals, homeTeamId, round, won, boardsPlayed);
     credit(totals, opponentTeamId, round, boardsPlayed - won, boardsPlayed);
+    record(match, null, won, boardsPlayed - won, false);
   }
 
   // Credit each bye team an average-plus result (60% of the round's boards) for
@@ -125,6 +157,10 @@ export function calculateTeamsBoardComparisonOverall(
   // and R+1). `credit` accumulates within a round, so a team's two comparisons
   // add up for a SHORT triple's single round.
   for (const triple of groupTeamTriples(boardRows, matchRows)) {
+    for (const comparison of triple.comparisons) {
+      const { won, boardsPlayed } = teamMatchBoardWins(comparison);
+      record(comparison, triple.kind, won, boardsPlayed - won, false);
+    }
     for (const stake of tripleTeamStakes(triple)) {
       const { won, boardsPlayed } = teamMatchBoardWins(stake.comparison);
       const teamWon = stake.isHome ? won : boardsPlayed - won;

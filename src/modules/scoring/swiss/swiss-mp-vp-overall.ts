@@ -1,6 +1,12 @@
 import { PairSwissVpOverallScore } from "@/model/leaderboard";
 import { rank } from "@/modules/scoring/overall/rank";
-import { BYE_VP, SwissVpBoardRow, swissPairsByes } from "./swiss-vp-overall";
+import {
+  BYE_VP,
+  pairsMatchDetail,
+  SwissVpBoardRow,
+  swissPairsByes,
+  type SwissPairsMatchDetail,
+} from "./swiss-vp-overall";
 import { VpAccumulator, creditVp } from "./vp-accumulator";
 import { scoreSwissVpRound, type SwissVpMatchRow } from "./swiss-vp-round";
 
@@ -27,12 +33,16 @@ import { scoreSwissVpRound, type SwissVpMatchRow } from "./swiss-vp-round";
  * are skipped; the bye pair is credited {@link BYE_VP} for that round from its
  * BYE match instead.
  */
-export function calculateSwissMpVpOverall(
-  boardRows: SwissVpBoardRow[],
+export function calculateSwissMpVpOverall<R extends SwissVpBoardRow>(
+  boardRows: R[],
   matchRows: SwissVpMatchRow[],
-  options: { expectedBoards?: number } = {},
+  options: {
+    expectedBoards?: number;
+    /** When given, receives each match as scored (for the export). */
+    matches?: SwissPairsMatchDetail<R>[];
+  } = {},
 ): PairSwissVpOverallScore {
-  const rounds = new Map<number, SwissVpBoardRow[]>();
+  const rounds = new Map<number, R[]>();
   for (const row of boardRows) {
     if (row.status === "SIT_OUT") continue;
     const arr = rounds.get(row.roundNumber) ?? [];
@@ -50,12 +60,15 @@ export function calculateSwissMpVpOverall(
 
   const totals = new Map<string, VpAccumulator>();
   for (const [round, rows] of rounds) {
-    const { pairVp } = scoreSwissVpRound(
+    const { pairVp, matches } = scoreSwissVpRound(
       rows,
       "MP",
       options.expectedBoards,
       matchesByRound.get(round) ?? [],
     );
+    for (const match of matches) {
+      options.matches?.push(pairsMatchDetail(round, rows, match));
+    }
     for (const [pairId, vp] of pairVp) {
       creditVp(totals, pairId, round, vp);
     }
