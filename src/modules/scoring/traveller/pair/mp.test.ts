@@ -97,6 +97,25 @@ describe("scoreMP", () => {
   });
 });
 
+describe("scoreMP — a board with one line", () => {
+  it("gives a lone director-assigned line no field to be measured against", () => {
+    const lines: PairLine[] = [
+      { nsId: "1", ewId: "2", outcome: "A60/40" as BoardOutcome },
+    ];
+    expect(scoreMP(1, lines)).toEqual([
+      {
+        nsId: "1",
+        ewId: "2",
+        outcome: "A60/40",
+        score: null,
+        maxMatchPoints: 0,
+        nsMatchPoints: 0,
+        ewMatchPoints: 0,
+      },
+    ]);
+  });
+});
+
 describe("scoreMP — weighted lines with no real field", () => {
   it("awards a weighted line the field average when every line is assigned", () => {
     const result = scoreMP(1, [

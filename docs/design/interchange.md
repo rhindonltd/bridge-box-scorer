@@ -172,20 +172,62 @@ as recommended.
 | E11 | **Pairs lead.**                                                                          | Use `directorOverrideLead ?? confirmedLead`, as the Swiss and teams files do.                                                                                                                                                                                                                                                                                                      |
 | E12 | **Ties.**                                                                                | Use the scoring `rank` (the leaderboard's tie rule).                                                                                                                                                                                                                                                                                                                               |
 
+### Step 3, as built (the files change)
+
+- **The service.** `usebio-service.ts` is now a thin adapter:
+  - it reads with `readScoringInputs(db, game)`, split out of the
+    leaderboard's `readLeaderboardInputs` so both share one read;
+  - it scores with `scoreEvent(..., { baseline: false })`;
+  - it chooses the fields to write;
+  - it hands a `UsebioSnapshot` to `buildUsebioData`
+    (`interchange/usebio/assemble-usebio.ts`), then `generateUsebioXml`.
+- **Removed.** The service's own rulings and scoring, `score-mp-pairs.ts`, the
+  four `assemble-*.ts` and `readParticipantStandings`, which had no other
+  caller.
+- **Fields (E4).** A multi-section game with a combined ranking is one
+  SECTION (the pooled field, section-qualified pair numbers). Otherwise there
+  is one SECTION per section (section-local pair numbers for board-pooled
+  pairs; Swiss pair ids and team numbers are unchanged). The Swiss and teams
+  writers now support several SECTIONs; a single-section file is
+  byte-for-byte as before.
+- **E1, refined.** The DTD has `AVERAGE_SCORE`, which is exactly the
+  leaderboard's Cross-IMP figure (average cross-IMPs per board). So a
+  Cross-IMP pair carries AVERAGE_SCORE and PLACE, not TOTAL_SCORE.
+- **E2.** Lines carry the adjusted figures (after Neuberg, better-than-average
+  and rounding). For example, a 40% / 60% average on a top of 4 is written as
+  2 / 2.
+- **E6.** A MP pair with no comparable board (a top of 0) is placed at 50%, as
+  on the leaderboard.
+- **Removed field.** `UsebioPairsData.tables` was never written, so it is gone.
+- **A Swiss Pairs game scored on IMPs.** The app cannot create one (pairs are
+  MP or Cross-IMP, D11). The leaderboard throws on it, and so does the export
+  now. The old export quietly scored it as Cross-IMP; the integration fixture
+  that used it is now XIMP.
+- **Tests.**
+  - `assemble-usebio.test.ts` covers each format and decision.
+  - The writer tests take pre-scored data.
+  - The integration test runs the real read, rulings and scoring. It adds a
+    pooled-section case and a two-winner Mitchell case.
+- **DTD check.** Generated files with AVERAGE_SCORE, WINNER_TYPE 2 and a
+  two-SECTION Swiss Teams event validate against USEBIO 1.2. The check also
+  found that Cross-IMP traveller lines use `NS_IMPS` / `EW_IMPS`, which the DTD
+  does not define. That was older than this step; follow-up O5 fixed it by
+  writing the DTD's `NS_CROSS_IMP_POINTS` / `EW_CROSS_IMP_POINTS`.
+
 ## Steps
 
 1. **Module skeleton.** Done (above).
 2. **Scoring detail.** Done (above). Add the kernel types and the new `EventScore` fields,
    and restructure the teams scorers onto `TeamMatchResult`. The leaderboard,
    scorecard and the §3.5 replay must be unchanged.
-3. **Export onto `scoreEvent`.**
+3. **Export onto `scoreEvent`.** Done (above).
    - `usebio-service` becomes a thin adapter, sharing the leaderboard's read.
    - The assemblers are rewritten as interchange layout over `EventScore`.
    - `score-mp-pairs.ts` is deleted.
    - Apply E1–E12 and update the USEBIO tests.
    - Regenerate the samples and validate them against the DTD.
    - Run the export, scoring and Swiss journeys.
-4. **Docs.** Mark F2, F3 and O1–O4 done in
+4. **Docs.** Done. Mark F2, F3 and O1–O4 done in
    [`modules-follow-ups.md`](modules-follow-ups.md). Update the director guide
    only if what the director sees changes.
 

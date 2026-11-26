@@ -1,29 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
-  generateUsebioXml as layoutUsebioXml,
-  type UsebioGameData,
-  type UsebioPairsData as ScoredPairsData,
+  generateUsebioXml,
+  type UsebioPairsData,
   type UsebioSwissPairsData,
   type UsebioSwissTeamsData,
   type UsebioBoardComparisonTeamsData,
 } from "@/modules/interchange/usebio";
-import {
-  scoreMpPairs,
-  type UnscoredPairsData as UsebioPairsData,
-} from "./score-mp-pairs";
 
-/**
- * Score a pairs event (the board-pooled export's own scoring) before laying it
- * out; the other event kinds are laid out as given.
- */
-function generateUsebioXml(
-  data: UsebioPairsData | Exclude<UsebioGameData, ScoredPairsData>,
-): string {
-  return data.kind === undefined || data.kind === "MP_PAIRS"
-    ? layoutUsebioXml(scoreMpPairs(data as UsebioPairsData))
-    : layoutUsebioXml(data as UsebioGameData);
-}
-
+// The writer lays out figures it is given: the export scores the game first
+// (as the leaderboard does). These fixtures carry those figures.
 function makeBasicGameData(): UsebioPairsData {
   return {
     club: {
@@ -33,7 +18,6 @@ function makeBasicGameData(): UsebioPairsData {
     eventName: "Monday Pairs",
     eventDate: "2024-11-18T00:00:00.000Z",
     scoringType: "MP",
-    tables: 3,
     sectionName: "A",
     boards: 6,
     pairs: [
@@ -79,6 +63,8 @@ function makeBasicGameData(): UsebioPairsData {
         ewPairNumber: "1EW",
         outcome: "3NTN+1",
         lead: "HK",
+        score: 430,
+        lineScore: { ns: 2, ew: 0 },
       },
       {
         table: 2,
@@ -88,6 +74,8 @@ function makeBasicGameData(): UsebioPairsData {
         ewPairNumber: "2EW",
         outcome: "2NTN=",
         lead: "D5",
+        score: 120,
+        lineScore: { ns: 0, ew: 2 },
       },
       {
         table: 1,
@@ -97,6 +85,8 @@ function makeBasicGameData(): UsebioPairsData {
         ewPairNumber: "1EW",
         outcome: "4SE-1",
         lead: "SA",
+        score: 50,
+        lineScore: { ns: 2, ew: 0 },
       },
       {
         table: 2,
@@ -106,7 +96,15 @@ function makeBasicGameData(): UsebioPairsData {
         ewPairNumber: "2EW",
         outcome: "PO",
         lead: null,
+        score: 0,
+        lineScore: { ns: 0, ew: 2 },
       },
+    ],
+    placings: [
+      { section: "A", pairNumber: "1NS", percentage: "100.00", place: 1 },
+      { section: "A", pairNumber: "2NS", percentage: "0.00", place: 3 },
+      { section: "A", pairNumber: "1EW", percentage: "0.00", place: 3 },
+      { section: "A", pairNumber: "2EW", percentage: "100.00", place: 1 },
     ],
   };
 }
@@ -205,13 +203,11 @@ describe("generateUsebioXml", () => {
       expect(xml).toContain("<PLACE>1</PLACE>");
     });
 
-    it("drops a §2.4.9 without-standing pair from the placings but keeps it a participant", () => {
+    it("writes no placing for a pair that has none (e.g. without standing)", () => {
       const data = makeBasicGameData();
-      // The default section is "A", so the section-qualified id of pair "2NS"
-      // is "A2NS".
       const xml = generateUsebioXml({
         ...data,
-        excludedFromRanking: new Set(["A2NS"]),
+        placings: data.placings.filter((p) => p.pairNumber !== "2NS"),
       });
 
       // 2NS is still listed as a PARTICIPANT...
@@ -350,6 +346,7 @@ describe("generateUsebioXml", () => {
             outcome: "3NTN+1",
             lead: "HK",
             section: "A",
+            score: 430,
           },
           {
             table: 1,
@@ -360,6 +357,7 @@ describe("generateUsebioXml", () => {
             outcome: "4SE-1",
             lead: "SA",
             section: "B",
+            score: 50,
           },
         ],
       };
@@ -487,6 +485,7 @@ describe("generateUsebioXml", () => {
           ewPairNumber: "2",
           outcome: "1NTN=",
           lead: null,
+          score: 90,
         },
       ];
       const xml = generateUsebioXml(data);
@@ -528,6 +527,7 @@ describe("generateUsebioXml", () => {
           ewPairNumber: "1EW",
           outcome: "NP",
           lead: null,
+          score: null,
         },
       ];
       const xml = generateUsebioXml(data);
@@ -552,13 +552,9 @@ describe("generateUsebioXml", () => {
     });
   });
 
-  describe("adjusted scores (A<ns>/<ew> outcomes)", () => {
-    // Two lines on the same board so results.length - 1 > 0 (a non-zero max),
-    // giving meaningful matchpoints / percentages for the adjusted rows.
-    function makeAdjustedData(
+  describe("director-assigned lines and placings", () => {
+    function makeAssignedData(
       scoringType: UsebioPairsData["scoringType"],
-      nsPercent: number,
-      ewPercent: number,
     ): UsebioPairsData {
       const data = makeBasicGameData();
       data.scoringType = scoringType;
@@ -569,67 +565,70 @@ describe("generateUsebioXml", () => {
           round: 1,
           nsPairNumber: "1NS",
           ewPairNumber: "1EW",
-          outcome: `A${nsPercent}/${ewPercent}` as any,
+          outcome: "A60/40" as any,
           lead: null,
-        },
-        {
-          table: 2,
-          board: 1,
-          round: 1,
-          nsPairNumber: "2NS",
-          ewPairNumber: "2EW",
-          outcome: "3NTN=",
-          lead: null,
+          score: null,
+          lineScore: { ns: 1.2, ew: 0.8 },
         },
       ];
       return data;
     }
 
-    it("emits an artificial/adjusted MP result with percentage-based matchpoints", () => {
-      const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
-      // Blank contract fields + zero score for the adjusted line.
+    it("writes an assigned line with blank contract detail, a zero score and its given matchpoints", () => {
+      const xml = generateUsebioXml(makeAssignedData("MP"));
       expect(xml).toContain("<CONTRACT/>");
       expect(xml).toContain("<SCORE>0</SCORE>");
-      // 2 total lines (1 adjusted + 1 real), max = 2*(2-1) = 2.
-      // NS 60% of 2 = 1.2, EW 40% of 2 = 0.8 (convention (b): no rounding).
       expect(xml).toContain("<NS_MATCH_POINTS>1.2</NS_MATCH_POINTS>");
       expect(xml).toContain("<EW_MATCH_POINTS>0.8</EW_MATCH_POINTS>");
     });
 
-    it("emits AVE (50%) as 0 IMPs for XIMP scoring", () => {
-      const xml = generateUsebioXml(makeAdjustedData("XIMP", 50, 50));
-      expect(xml).toContain("<NS_IMPS>0</NS_IMPS>");
-      expect(xml).toContain("<EW_IMPS>0</EW_IMPS>");
+    it("writes a Cross-IMP line's figures as cross-IMP points (USEBIO 1.2)", () => {
+      const xml = generateUsebioXml(makeAssignedData("XIMP"));
+      expect(xml).toContain("<NS_CROSS_IMP_POINTS>1.2</NS_CROSS_IMP_POINTS>");
+      expect(xml).toContain("<EW_CROSS_IMP_POINTS>0.8</EW_CROSS_IMP_POINTS>");
     });
 
-    it("keeps adjusted-score pairs in the participants list with a placing", () => {
-      const xml = generateUsebioXml(makeAdjustedData("MP", 60, 40));
-      // The adjusted-score pairs still appear as participants with a placing.
-      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
-      expect(xml).toContain("<PAIR_NUMBER>1EW</PAIR_NUMBER>");
-      expect(xml).toContain("<PLACE>");
+    it.each([
+      ["IMP", "AGGREGATE_POINTS"],
+      ["IMP_VP", "BUTLER_POINTS"],
+      ["BAM", "MATCH_POINTS"],
+    ] as const)("names a %s line's figures %s", (scoringType, suffix) => {
+      const xml = generateUsebioXml(makeAssignedData(scoringType));
+      expect(xml).toContain(`<NS_${suffix}>1.2</NS_${suffix}>`);
     });
 
-    it("gives a 0.00 percentage to a lone adjusted MP result (zero max)", () => {
-      // A board with a single result -> maxMp = 2 * (1 - 1) = 0, exercising the
-      // `maxMp > 0 ? maxMp : 0` false branch in the ranking accumulation.
+    it("falls back to matchpoints for an unknown scoring type", () => {
+      const xml = generateUsebioXml(
+        makeAssignedData("UNKNOWN" as UsebioPairsData["scoringType"]),
+      );
+      expect(xml).toContain("<NS_MATCH_POINTS>1.2</NS_MATCH_POINTS>");
+    });
+
+    it("writes no matchpoints for a line that was not scored", () => {
+      const data = makeAssignedData("MP");
+      delete data.boardResults[0].lineScore;
+      const xml = generateUsebioXml(data);
+      expect(xml).not.toContain("<NS_MATCH_POINTS>");
+    });
+
+    it("writes a Cross-IMP placing as AVERAGE_SCORE with no PERCENTAGE", () => {
       const data = makeBasicGameData();
-      data.scoringType = "MP";
-      data.boardResults = [
-        {
-          table: 1,
-          board: 1,
-          round: 1,
-          nsPairNumber: "1NS",
-          ewPairNumber: "1EW",
-          outcome: "A60/40" as any,
-          lead: null,
-        },
+      data.scoringType = "XIMP";
+      data.placings = [
+        { section: "A", pairNumber: "1NS", averageScore: "1.25", place: 1 },
       ];
       const xml = generateUsebioXml(data);
-      // With max 0, the inline percentage is the "0.00" fallback.
-      expect(xml).toContain("<PAIR_NUMBER>1NS</PAIR_NUMBER>");
-      expect(xml).toContain("<PERCENTAGE>0.00</PERCENTAGE>");
+      const block = xml
+        .split("<PAIR_NUMBER>1NS</PAIR_NUMBER>")[1]
+        .split("</PAIR>")[0];
+      expect(block).toContain("<AVERAGE_SCORE>1.25</AVERAGE_SCORE>");
+      expect(block).toContain("<PLACE>1</PLACE>");
+      expect(block).not.toContain("<PERCENTAGE>");
+    });
+
+    it("writes WINNER_TYPE 2 for a two-winner event", () => {
+      const xml = generateUsebioXml({ ...makeBasicGameData(), winnerType: 2 });
+      expect(xml).toContain("<WINNER_TYPE>2</WINNER_TYPE>");
     });
   });
 
@@ -673,6 +672,7 @@ describe("generateUsebioXml", () => {
             ewPairNumber: "A1EW",
             outcome: "3NTN=",
             lead: null,
+            score: 400,
           },
           {
             table: 1,
@@ -682,6 +682,7 @@ describe("generateUsebioXml", () => {
             ewPairNumber: "B1EW",
             outcome: "3NTN+1",
             lead: null,
+            score: 430,
           },
         ],
       };

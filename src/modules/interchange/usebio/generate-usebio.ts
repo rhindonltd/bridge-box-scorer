@@ -77,8 +77,11 @@ export type UsebioPairPlacing = {
   section: string;
   /** The pair's number as written in the file (section-local). */
   pairNumber: string;
-  /** Percentage to two decimals, as written to PERCENTAGE. */
-  percentage: string;
+  /** Matchpoints: the percentage to two decimals, written to PERCENTAGE. */
+  percentage?: string;
+  /** Cross-IMP: average cross-IMPs per board, written to AVERAGE_SCORE. */
+  averageScore?: string;
+  /** Place in the ranking (within its direction for a two-winner event). */
   place: number;
 };
 
@@ -99,7 +102,6 @@ export type UsebioPairsData = {
    */
   tournamentLevel?: TournamentLevel;
   scoringType: ScoringType;
-  tables: number;
   /**
    * The default section id, used for pairs/results that carry no `section` and
    * as the single SECTION for a one-section event.
@@ -120,6 +122,11 @@ export type UsebioPairsData = {
    * PERCENTAGE or PLACE.
    */
   placings: UsebioPairPlacing[];
+  /**
+   * 1 for one ranking across the field; 2 for a two-winner event (North/South
+   * and East/West ranked separately). Defaults to 1.
+   */
+  winnerType?: 1 | 2;
 };
 
 /**
@@ -148,6 +155,8 @@ export type UsebioSwissBoard = {
 
 /** One Swiss Pairs match: a round's head-to-head between two pairs. */
 export type UsebioSwissPairsMatch = {
+  /** The SECTION this match is written under (see `sections`). */
+  section?: string;
   round: number;
   nsPairNumber: string;
   ewPairNumber: string;
@@ -168,6 +177,12 @@ export type UsebioVpRankEntry = {
 
 export type UsebioSwissPairsData = {
   kind: "SWISS_PAIRS";
+  /**
+   * The SECTIONs to write, in order. Each pair, team and match is written under
+   * the section it names (`section` / `sectionId`). Absent: everything goes in
+   * one SECTION named `sectionName`.
+   */
+  sections?: string[];
   club: UsebioClub;
   eventName: string;
   eventDate: string;
@@ -240,6 +255,8 @@ export type UsebioTeamTravellerLine = {
 
 /** One Swiss Teams match: a round's team-vs-team encounter. */
 export type UsebioSwissTeamsMatch = {
+  /** The SECTION this match is written under (see `sections`). */
+  section?: string;
   round: number;
   team: string;
   opposingTeam: string;
@@ -253,6 +270,12 @@ export type UsebioSwissTeamsMatch = {
 
 export type UsebioSwissTeamsData = {
   kind: "SWISS_TEAMS";
+  /**
+   * The SECTIONs to write, in order. Each pair, team and match is written under
+   * the section it names (`section` / `sectionId`). Absent: everything goes in
+   * one SECTION named `sectionName`.
+   */
+  sections?: string[];
   club: UsebioClub;
   eventName: string;
   eventDate: string;
@@ -297,6 +320,8 @@ export type UsebioBoardComparisonBoard = {
 
 /** One board-comparison team match: a round's team-vs-team encounter. */
 export type UsebioBoardComparisonMatch = {
+  /** The SECTION this match is written under (see `sections`). */
+  section?: string;
   round: number;
   team: string;
   opposingTeam: string;
@@ -319,6 +344,12 @@ export type UsebioBoardComparisonRankEntry = {
 
 export type UsebioBoardComparisonTeamsData = {
   kind: "BOARD_COMPARISON_TEAMS";
+  /**
+   * The SECTIONs to write, in order. Each pair, team and match is written under
+   * the section it names (`section` / `sectionId`). Absent: everything goes in
+   * one SECTION named `sectionName`.
+   */
+  sections?: string[];
   /** Which scale/tag the file uses (BAM 0/0.5/1, PAB 0/1/2). */
   scoring: UsebioBoardComparisonScoring;
   club: UsebioClub;
@@ -420,18 +451,22 @@ function appendMasterPointFields(
 }
 
 /**
- * Open the single `<SESSION><SECTION>` wrapper the USEBIO structure nests
- * participants and boards inside, returning the SECTION element for the caller
- * to populate. The appliance runs one session per game; multi-section games
- * still export under one SECTION today (participants carry their own section
- * id), matching the pre-existing single-section export.
+ * The SECTIONs a Swiss or teams file is written in, each with a test for
+ * whether a pair, team or match (by its section) belongs to it. With no
+ * section list everything goes in one SECTION named after the event's section,
+ * as a single-section file always has.
  */
-function startSection(
-  event: ReturnType<ReturnType<typeof create>["ele"]>,
-  sectionId: string,
-): ReturnType<ReturnType<typeof create>["ele"]> {
-  const session = event.ele("SESSION", { SESSION_ID: "1" });
-  return session.ele("SECTION", { SECTION_ID: sectionId });
+function sectionPlan(data: {
+  sections?: string[];
+  sectionName: string;
+}): { id: string; has: (section: string | undefined) => boolean }[] {
+  if (!data.sections || data.sections.length === 0) {
+    return [{ id: data.sectionName || "A", has: () => true }];
+  }
+  return data.sections.map((id) => ({
+    id,
+    has: (section: string | undefined) => section === id,
+  }));
 }
 
 /* ============================================================
@@ -462,8 +497,8 @@ function generateMpPairsXml(data: UsebioPairsData): string {
   event.ele("SECTION_COUNT").txt(String(sectionIds.length));
   event.ele("PAIRS").txt(String(data.pairs.length));
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
-  // One combined ranking across all pairs (not a two-winner NS/EW event).
-  event.ele("WINNER_TYPE").txt("1");
+  // 1: one ranking across all pairs; 2: North/South and East/West separately.
+  event.ele("WINNER_TYPE").txt(String(data.winnerType ?? 1));
   event.ele("EW_PAIRS").txt(String(ewPairs));
 
   // One SESSION wraps all sections; each section is a separate <SECTION> with
@@ -513,7 +548,12 @@ function appendSectionContent(
 
     const rank = rankByPair.get(pair.pairNumber);
     if (rank) {
-      pairEl.ele("PERCENTAGE").txt(rank.percentage);
+      if (rank.percentage !== undefined) {
+        pairEl.ele("PERCENTAGE").txt(rank.percentage);
+      }
+      if (rank.averageScore !== undefined) {
+        pairEl.ele("AVERAGE_SCORE").txt(rank.averageScore);
+      }
       pairEl.ele("PLACE").txt(String(rank.place));
     }
 
@@ -577,19 +617,37 @@ function generateSwissPairsXml(data: UsebioSwissPairsData): string {
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
   appendMasterPointFields(event, data.tournamentLevel);
+  const plan = sectionPlan(data);
   event.ele("SESSION_COUNT").txt("1");
-  event.ele("SECTION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt(String(plan.length));
   event.ele("PAIRS").txt(String(data.pairs.length));
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   event.ele("WINNER_TYPE").txt("1");
   event.ele("EW_PAIRS").txt(String(ewPairs));
 
-  const section = startSection(event, data.sectionName || "A");
-
-  // Global pairs roster with inline placings.
+  const session = event.ele("SESSION", { SESSION_ID: "1" });
   const rankByPair = new Map(data.ranking.map((r) => [r.number, r]));
+  for (const { id, has } of plan) {
+    appendSwissPairsSection(
+      session.ele("SECTION", { SECTION_ID: id }),
+      data.pairs.filter((p) => has(p.section)),
+      data.matches.filter((m) => has(m.section)),
+      rankByPair,
+    );
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/** One Swiss Pairs SECTION: its pairs with inline placings, then its matches. */
+function appendSwissPairsSection(
+  section: ReturnType<ReturnType<typeof create>["ele"]>,
+  pairs: UsebioPair[],
+  matches: UsebioSwissPairsMatch[],
+  rankByPair: Map<string, UsebioVpRankEntry>,
+): void {
   const participants = section.ele("PARTICIPANTS");
-  for (const pair of data.pairs) {
+  for (const pair of pairs) {
     const dir = pair.direction === "N" ? "NS" : "EW";
     const pairEl = participants.ele("PAIR");
     pairEl.ele("PAIR_NUMBER").txt(pair.pairNumber);
@@ -607,7 +665,7 @@ function generateSwissPairsXml(data: UsebioSwissPairsData): string {
 
   // One MATCH per round/table pairing. Pair numbers live at the match level, so
   // the nested traveller lines do not repeat them.
-  for (const match of data.matches) {
+  for (const match of matches) {
     const matchEl = section.ele("MATCH");
     matchEl.ele("ROUND_NUMBER").txt(String(match.round));
     matchEl.ele("NS_PAIR_NUMBER").txt(match.nsPairNumber);
@@ -622,8 +680,6 @@ function generateSwissPairsXml(data: UsebioSwissPairsData): string {
       appendTravellerDetail(line, board);
     }
   }
-
-  return doc.end({ prettyPrint: true, indent: "  " });
 }
 
 /* ============================================================
@@ -641,21 +697,40 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
   appendMasterPointFields(event, data.tournamentLevel);
+  const plan = sectionPlan(data);
   event.ele("SESSION_COUNT").txt("1");
-  event.ele("SECTION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt(String(plan.length));
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   event.ele("WINNER_TYPE").txt("1");
   // Each team declares its partnerships as <PAIR> blocks (not just a flat
   // player list), and board results are tagged with pair numbers.
   event.ele("TEAM_PAIRING_AVAILABLE").txt("Y");
 
-  const section = startSection(event, data.sectionName || "A");
-
-  // Global team roster: each TEAM carries its id and name (both DTD
-  // attributes), its placing, and its partnerships (<PAIR> blocks).
+  const session = event.ele("SESSION", { SESSION_ID: "1" });
   const rankByTeam = new Map(data.ranking.map((r) => [r.number, r]));
+  for (const { id, has } of plan) {
+    appendSwissTeamsSection(
+      session.ele("SECTION", { SECTION_ID: id }),
+      data.teams.filter((t) => has(t.sectionId)),
+      data.matches.filter((m) => has(m.section)),
+      rankByTeam,
+    );
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/** One Swiss Teams SECTION: its teams with inline placings, then its matches. */
+function appendSwissTeamsSection(
+  section: ReturnType<ReturnType<typeof create>["ele"]>,
+  teams: UsebioTeam[],
+  matches: UsebioSwissTeamsMatch[],
+  rankByTeam: Map<string, UsebioVpRankEntry>,
+): void {
+  // Team roster: each TEAM carries its id and name (both DTD attributes), its
+  // placing, and its partnerships (<PAIR> blocks).
   const participants = section.ele("PARTICIPANTS");
-  for (const team of data.teams) {
+  for (const team of teams) {
     const teamEl = participants.ele("TEAM", {
       TEAM_ID: team.teamNumber,
       TEAM_NAME: team.teamName,
@@ -672,7 +747,7 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
 
   // One MATCH per round: the primary TEAM vs its OPPOSING_TEAM over a board
   // range, with per-board net IMPs and both rooms' traveller lines.
-  for (const match of data.matches) {
+  for (const match of matches) {
     const matchEl = section.ele("MATCH");
     matchEl.ele("ROUND_NUMBER").txt(String(match.round));
     matchEl.ele("TEAM").txt(match.team);
@@ -693,8 +768,6 @@ function generateSwissTeamsXml(data: UsebioSwissTeamsData): string {
       }
     }
   }
-
-  return doc.end({ prettyPrint: true, indent: "  " });
 }
 
 /**
@@ -718,19 +791,38 @@ function generateBoardComparisonTeamsXml(
   event.ele("EVENT_DESCRIPTION").txt(data.eventName);
   event.ele("DATE").txt(formatDate(data.eventDate));
   appendMasterPointFields(event, data.tournamentLevel);
+  const plan = sectionPlan(data);
   event.ele("SESSION_COUNT").txt("1");
-  event.ele("SECTION_COUNT").txt("1");
+  event.ele("SECTION_COUNT").txt(String(plan.length));
   event.ele("BOARDS_PLAYED").txt(String(data.boards));
   event.ele("WINNER_TYPE").txt("1");
   // Partnerships are declared as <PAIR> blocks and board results are tagged
   // with pair numbers (see the Swiss Teams generator).
   event.ele("TEAM_PAIRING_AVAILABLE").txt("Y");
 
-  const section = startSection(event, data.sectionName || "A");
-
+  const session = event.ele("SESSION", { SESSION_ID: "1" });
   const rankByTeam = new Map(data.ranking.map((r) => [r.number, r]));
+  for (const { id, has } of plan) {
+    appendBoardComparisonSection(
+      session.ele("SECTION", { SECTION_ID: id }),
+      data.teams.filter((t) => has(t.sectionId)),
+      data.matches.filter((m) => has(m.section)),
+      rankByTeam,
+    );
+  }
+
+  return doc.end({ prettyPrint: true, indent: "  " });
+}
+
+/** One board-comparison SECTION: its teams with placings, then its matches. */
+function appendBoardComparisonSection(
+  section: ReturnType<ReturnType<typeof create>["ele"]>,
+  teams: UsebioTeam[],
+  matches: UsebioBoardComparisonMatch[],
+  rankByTeam: Map<string, UsebioBoardComparisonRankEntry>,
+): void {
   const participants = section.ele("PARTICIPANTS");
-  for (const team of data.teams) {
+  for (const team of teams) {
     const teamEl = participants.ele("TEAM", {
       TEAM_ID: team.teamNumber,
       TEAM_NAME: team.teamName,
@@ -745,7 +837,7 @@ function generateBoardComparisonTeamsXml(
     addTeamPairs(teamEl, team.pairs);
   }
 
-  for (const match of data.matches) {
+  for (const match of matches) {
     const matchEl = section.ele("MATCH");
     matchEl.ele("ROUND_NUMBER").txt(String(match.round));
     matchEl.ele("TEAM").txt(match.team);
@@ -767,8 +859,6 @@ function generateBoardComparisonTeamsXml(
       }
     }
   }
-
-  return doc.end({ prettyPrint: true, indent: "  " });
 }
 
 /* ============================================================
@@ -859,20 +949,28 @@ function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
 }
 
 /**
- * Write a line's NS/EW score onto a RESULT element using the USEBIO element
- * names for the scoring type (match points for MP, IMPs for IMP/XIMP). Shared
- * by the normal-result and adjusted-score branches.
+ * The USEBIO 1.2 traveller-line element suffix for each scoring type's
+ * per-line figures (`NS_<suffix>` / `EW_<suffix>`), matching the board scoring
+ * method in the file header. A pairs file is scored on matchpoints or
+ * cross-IMPs; the other scoring types fall back to matchpoints, as the header
+ * does for an unknown type.
  */
+const LINE_SCORE_SUFFIX: Record<ScoringType, string> = {
+  MP: "MATCH_POINTS",
+  XIMP: "CROSS_IMP_POINTS",
+  IMP: "AGGREGATE_POINTS",
+  IMP_VP: "BUTLER_POINTS",
+  BAM: "MATCH_POINTS",
+  PAB: "MATCH_POINTS",
+};
+
+/** Write a line's NS/EW figures under the scoring type's element names. */
 function appendLineScore(
   resultEl: ReturnType<ReturnType<typeof create>["ele"]>,
   scoringType: ScoringType,
   line: { ns: number; ew: number },
 ): void {
-  if (scoringType === "MP") {
-    resultEl.ele("NS_MATCH_POINTS").txt(String(line.ns));
-    resultEl.ele("EW_MATCH_POINTS").txt(String(line.ew));
-  } else {
-    resultEl.ele("NS_IMPS").txt(String(line.ns));
-    resultEl.ele("EW_IMPS").txt(String(line.ew));
-  }
+  const suffix = LINE_SCORE_SUFFIX[scoringType] ?? "MATCH_POINTS";
+  resultEl.ele(`NS_${suffix}`).txt(String(line.ns));
+  resultEl.ele(`EW_${suffix}`).txt(String(line.ew));
 }

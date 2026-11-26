@@ -9,14 +9,14 @@ They can be done before, during or after the split, each with its own tests.
 
 ## Decided
 
-| #   | Change                                                                                                                                                                            | Notes     |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| F1  | **Done.** The 60% sit-out credit applies to Swiss only. Remove it from ordinary pairs games, and give Swiss Pairs byes a credit, which they appear not to get today.              | see below |
-| F2  | Not-played boards are left out of the USEBIO export.                                                                                                                              |           |
-| F3  | The USEBIO export pools sections exactly when the director chose combined ranking at setup (`combinedRanking`), as the leaderboard already does.                                  | check C2  |
-| F4  | Remove `WithdrawalRecord.unplayedBoards` and mark the matching part of the handover design superseded.                                                                            | see below |
-| F5  | Fix the `TripleComparison` comment (`src/movement/swiss-teams/swiss-teams-pairing.ts:117`): long triples use board sets A, B and C too, not "R1"/"R2" (`TripleBoardSet`, `:129`). |           |
-| F6  | `mitchellSpecSchema` (`src/model/selected-movement.ts:36`) keeps the Mitchell variant fields `blackpool`, `doubleHesitation`, `revengeRounds` and `modified`.                     | see below |
+| #   | Change                                                                                                                                                                                         | Notes     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| F1  | **Done.** The 60% sit-out credit applies to Swiss only. Remove it from ordinary pairs games, and give Swiss Pairs byes a credit, which they appear not to get today.                           | see below |
+| F2  | **Done** ([interchange](interchange.md), E3). Not-played boards are left out of the USEBIO export.                                                                                             |           |
+| F3  | **Done** ([interchange](interchange.md), E4). The USEBIO export pools sections exactly when the director chose combined ranking at setup (`combinedRanking`), as the leaderboard already does. | check C2  |
+| F4  | Remove `WithdrawalRecord.unplayedBoards` and mark the matching part of the handover design superseded.                                                                                         | see below |
+| F5  | Fix the `TripleComparison` comment (`src/movement/swiss-teams/swiss-teams-pairing.ts:117`): long triples use board sets A, B and C too, not "R1"/"R2" (`TripleBoardSet`, `:129`).              |           |
+| F6  | `mitchellSpecSchema` (`src/model/selected-movement.ts:36`) keeps the Mitchell variant fields `blackpool`, `doubleHesitation`, `revengeRounds` and `modified`.                                  | see below |
 
 ### F1: sit-out credit
 
@@ -91,20 +91,22 @@ separate choice.
 
 ## Open
 
-- **O1. Two-winner and baseline in the export.**
+- **O1. Two-winner and baseline in the export.** **Done**
+  ([interchange](interchange.md), E5 and E6): two rankings, and a pair that
+  played no board is left out of the file.
   - For a two-winner Mitchell the leaderboard ranks North/South and East/West
     separately; the export publishes one ranking. Should the export publish
     two?
   - The leaderboard lists every seated pair, with a zero line if it has no
     result. After F2 this only affects a pair that sat down but played no
     board. Should it appear in the export?
-- **O2. Handed-over seats in the Swiss Pairs export.** The leaderboard scores
+- **O2. Handed-over seats in the Swiss Pairs export.** **Done** (E7). The leaderboard scores
   a stand-in's boards and the arriving pair's boards separately (for example
   `A1NS#12` and `A1NS`). The Swiss Pairs export credits every board at that
   seat to one pair. The teams exports get the seat occupancies directly
   (`src/services/usebio-service.ts:227`) and appear to handle substitutes their
   own way. Recommendation: split the seat as the leaderboard does.
-- **O3. A pair that never arrives, in Swiss and teams exports.** A seat
+- **O3. A pair that never arrives, in Swiss and teams exports.** **Done** (E8). A seat
   marked "expected late" whose pair never turns up does not stop finalising,
   because its boards count as not needing a result
   (`src/db/games/queries/board-resolution.ts:41`–`:43`). For Swiss and teams
@@ -113,7 +115,9 @@ separate choice.
   neither, so the opponents score lower in the published file, and Swiss
   Teams matches against the empty seat are not voided. Recommendation: match
   the leaderboard.
-- **O4. Cross-IMP pairs placings in the export look broken.** The export ranks
+- **O4. Cross-IMP pairs placings in the export look broken.** **Done** (E1):
+  pairs are placed on the leaderboard's average cross-IMPs per board, written
+  as AVERAGE_SCORE. The export ranks
   pairs with its own `computeOverallRanking`
   (`src/lib/usebio/generate-usebio.ts`). For Cross-IMP it adds each line's
   cross-IMPs to the total but nothing to the maximum (`accumulate(…, 0)`), so
@@ -123,6 +127,18 @@ separate choice.
   the leaderboard does, and decide what the percentage field should hold.
   Moving the export onto `scoreEvent` would fix this. Found during step 2 of
   the split, which deliberately left the export's output unchanged.
+
+- **O5. Cross-IMP traveller lines use elements USEBIO 1.2 does not define.** **Done**: lines are
+  written with the DTD's element for the scoring type (`NS_CROSS_IMP_POINTS` /
+  `EW_CROSS_IMP_POINTS` for Cross-IMP, `NS_MATCH_POINTS` for matchpoints), and a
+  Cross-IMP file validates against USEBIO 1.2.
+  A Cross-IMP pairs line is written with `NS_IMPS` / `EW_IMPS`
+  (`appendLineScore`, `src/modules/interchange/usebio/generate-usebio.ts`).
+  The DTD has no such elements; its Cross-IMP line elements are
+  `NS_CROSS_IMP_POINTS` / `EW_CROSS_IMP_POINTS`, so a strict validator rejects
+  the file. Found while validating the interchange step 3 output; the export
+  has always written them. Recommendation: switch to the DTD names, after
+  checking what BridgeWebs and the EBU parser read.
 
 ## Checks
 
