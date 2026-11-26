@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/games/actions/split-section", () => ({
@@ -32,7 +32,7 @@ vi.mock("@/socket/websocket", () => ({
 }));
 
 import { getDb } from "@/db/games";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { splitSection } from "@/db/games/actions/split-section";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";

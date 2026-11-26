@@ -1,5 +1,5 @@
 import { PairSeat, parseSeat, seatFor } from "@/model/participants";
-import { ExpectedSeats } from "@/model/expected-seats";
+import { ExpectedSeats } from "@/modules/seating/expected-seats";
 
 /**
  * Stable problem codes explaining why a game cannot be started. The UI maps

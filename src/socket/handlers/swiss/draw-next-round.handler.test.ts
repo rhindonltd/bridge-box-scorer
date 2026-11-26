@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 
@@ -21,7 +21,7 @@ vi.mock("@/socket/handlers/swiss/resume-timer-after-draw", () => ({
   resumeTimerAfterDraw: vi.fn(),
 }));
 
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import {
   previewNextSwissRound,
   commitNextSwissRound,

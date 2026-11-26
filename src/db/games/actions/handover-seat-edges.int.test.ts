@@ -4,35 +4,11 @@ import { eq } from "drizzle-orm";
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 import type { Db } from "@/db/games";
 import { seedFixtureMatch } from "@/mocks/fixtures/db-rows";
-import { isSamePair } from "@/db/games/actions/handover-seat";
 /**
  * Edge cases of the §2.4.7 handover action that the main handover tests don't
- * reach: legacy whole-seat occupancies on both sides of a return, and the
- * partial-pair guard in isSamePair.
+ * reach: legacy whole-seat occupancies on both sides of a return. (The
+ * partial-pair guard in isSamePair is unit-tested in `@/modules/rulings`.)
  */
-describe("isSamePair", () => {
-  const a = { firstName: "A", lastName: "One" };
-  const b = { firstName: "B", lastName: "Two" };
-  it("never matches a recorded side with a missing player", () => {
-    expect(
-      isSamePair(
-        { player1: a, player2: b },
-        { player1: a, player2: undefined },
-      ),
-    ).toBe(false);
-    expect(
-      isSamePair(
-        { player1: a, player2: b },
-        { player1: undefined, player2: b },
-      ),
-    ).toBe(false);
-  });
-  it("matches either seat order", () => {
-    expect(
-      isSamePair({ player1: b, player2: a }, { player1: a, player2: b }),
-    ).toBe(true);
-  });
-});
 describe("handoverSeat — return between two whole-seat occupancies", () => {
   let harness: DbHarness;
   beforeEach(async () => {

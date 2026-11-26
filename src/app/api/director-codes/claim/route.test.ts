@@ -40,6 +40,7 @@ import {
 } from "@/services/security/sign-in-guard";
 import { NOT_SHARE_CODE_OR_ADMIN_KEY } from "@/lib/director-claim-messages";
 import { POST } from "./route";
+import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
 
 function invoke(body: unknown) {
   const req = new Request("http://localhost/api/director-codes/claim", {
@@ -81,6 +82,7 @@ describe("POST /api/director-codes/claim", () => {
         expect.objectContaining({ gameId: "g1", role: "DIRECTOR" }),
       );
       expect(signInSucceeded).toHaveBeenCalledWith(
+        raiseDirectorAlert,
         expect.any(Request),
         { kind: "game", gameId: "g1" },
         "shareCode",
@@ -110,6 +112,7 @@ describe("POST /api/director-codes/claim", () => {
         error: "Code has expired",
       });
       expect(signInFailed).toHaveBeenCalledWith(
+        raiseDirectorAlert,
         expect.any(Request),
         { kind: "game", gameId: "g1" },
         seats,
@@ -141,6 +144,7 @@ describe("POST /api/director-codes/claim", () => {
       expect(verifyAdminKey).toHaveBeenCalledWith("Admin-Key");
       expect(validateAndClaimShareCode).not.toHaveBeenCalled();
       expect(signInSucceeded).toHaveBeenCalledWith(
+        raiseDirectorAlert,
         expect.any(Request),
         { kind: "game", gameId: "g9" },
         "adminKey",

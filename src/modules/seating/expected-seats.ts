@@ -1,4 +1,5 @@
 import { Tables } from "@/model/movement";
+import type { MovementPlan } from "@/model/movement-plan";
 import { PairSeat, SectionLetter, seatFor } from "@/model/participants";
 
 /**
@@ -65,4 +66,59 @@ export function deriveExpectedSeats(
   }
 
   return { seats, phantomSeat };
+}
+
+/**
+ * The seats a movement expects filled, from its round-1 layout (a plan with
+ * no sit-outs), excluding any built-in phantom pair, qualified to the section.
+ */
+export function expectedSeatsFromLayout(
+  section: SectionLetter,
+  layout: MovementPlan,
+  missingParticipant: number | null,
+): ExpectedSeats {
+  return deriveExpectedSeats(
+    section,
+    pairMovementToTables(layout),
+    missingParticipant,
+  );
+}
+
+/**
+ * Convert a round-1 layout into the round-oriented Tables shape
+ * used by deriveExpectedSeats. Only round 1 participants matter for expected seats,
+ * but we map all rounds for completeness.
+ */
+function pairMovementToTables(movement: MovementPlan): {
+  tables: {
+    table: number;
+    rounds: {
+      round: number;
+      boards: number[];
+      participants: { nsId: string; ewId: string };
+    }[];
+  }[];
+} {
+  return {
+    tables: movement.map((table) => ({
+      table: table.tableNumber,
+      rounds: table.rounds.map((round) => ({
+        round: round.roundNumber,
+        // Layout rounds always carry a valid inclusive board range (Mitchell
+        // uses boardsForSet, stored specs and Swiss round 1 a set range, all
+        // with a positive boardsPerRound), so boardEnd is never below boardStart;
+        // the `: []` arm is defensive only.
+        /* v8 ignore next 3 */
+        boards:
+          round.boardEnd >= round.boardStart
+            ? rangeInclusive(round.boardStart, round.boardEnd)
+            : [],
+        participants: { nsId: round.ns, ewId: round.ew },
+      })),
+    })),
+  };
+}
+
+function rangeInclusive(start: number, end: number): number[] {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }

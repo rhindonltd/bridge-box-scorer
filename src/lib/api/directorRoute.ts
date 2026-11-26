@@ -1,4 +1,4 @@
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { NextResponse } from "next/server";
 import { finalisedGuard } from "@/lib/api/finalised-guard";
 import {

@@ -3,15 +3,8 @@ import { players } from "@/db/games/tables/players";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { readSeatOccupancies } from "@/db/games/queries/seat-occupancy";
 import { parseSeat, type Seat } from "@/model/participants";
-
-/**
- * A team can field at most this many pairs across its two seats (the two
- * original pairs plus one substitute, i.e. six players). Mirrors
- * `MAX_PAIRS_PER_TEAM` in `handover-seat.ts`, which enforces it when a
- * handover is recorded; it is repeated here because that module is server-only
- * and the figure is surfaced to the director.
- */
-export const TEAM_MAX_PAIRS = 3;
+import { pairName } from "@/model/player-name";
+import { MAX_PAIRS_PER_TEAM } from "@/modules/rulings";
 
 /** A team's standing on the roster (the lifecycle facts the director edits). */
 export type TeamRosterStatus =
@@ -50,16 +43,6 @@ export interface TeamRosterEntry {
   pairsUsed: number;
   /** The most pairs a team may field. */
   maxPairs: number;
-}
-
-function pairName(
-  p1: { firstName: string; lastName: string } | undefined,
-  p2: { firstName: string; lastName: string } | undefined,
-): string {
-  return [p1, p2]
-    .filter((p): p is { firstName: string; lastName: string } => p != null)
-    .map((p) => `${p.firstName} ${p.lastName}`.trim())
-    .join(" & ");
 }
 
 /**
@@ -118,7 +101,7 @@ export async function findTeamsRoster(db: Db): Promise<TeamRosterEntry[]> {
       treatment: hasRound ? (team.pair1.withdrawalTreatment ?? null) : null,
       seats,
       pairsUsed: seats.reduce((n, s) => n + s.occupants.length, 0),
-      maxPairs: TEAM_MAX_PAIRS,
+      maxPairs: MAX_PAIRS_PER_TEAM,
     };
   });
 }

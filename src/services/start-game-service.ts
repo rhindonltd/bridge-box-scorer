@@ -9,13 +9,16 @@ import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 
 import { PairSeat, SectionLetter, parseSeat } from "@/model/participants";
 import { SelectedMovement } from "@/model/selected-movement";
-import { deriveExpectedSeats } from "@/model/expected-seats";
 import {
+  aggregateSections,
+  checkHalfMatchField,
+  expectedSeatsFromLayout,
+  flattenSections,
   validateStart,
-  StartValidationResult,
-  StartProblem,
-} from "@/model/start-validator";
-import { AllSectionsValidationResult } from "@/model/validate-sections";
+  validateTeamsStructure,
+  type AllSectionsValidationResult,
+  type StartValidationResult,
+} from "@/modules/seating";
 
 import { MovementPlan } from "@/model/movement-plan";
 import {
@@ -30,21 +33,11 @@ import {
 } from "@/modules/movement-catalog";
 import { describeMovement } from "@/modules/movement-catalog/server";
 import {
-  drawSwissRound,
-  swissPairHomeSeat,
-  swissPairIdFromHomeSeat,
-  swissPairIds,
-  type SwissHomeSeat,
-  type SwissPairId,
-  type SwissSeating,
-  roundOddResolution,
-  swissTeamsRoundOne,
-  swissRoundToMaterializable,
-  swissTeamsRoundOneSeed,
-  swissTeamsRoundToMaterializable,
-  swissPairIdFromSeat,
-  swissRoundBoardRange,
-  swissRoundOne,
+  swissHomeAnchors,
+  swissPairsRoundOnePlan,
+  swissRoundOneIsHalfMatch,
+  swissRoundOneLayout,
+  swissTeamsRoundOnePlan,
 } from "@/modules/swiss";
 
 /**
@@ -96,17 +89,17 @@ export async function resolveSectionStart(
             tables: selected.swissTeams.teams,
             boardsPerRound: selected.swissTeams.boardsPerRound,
           };
-    const expected = deriveExpectedSeats(
+    const expected = expectedSeatsFromLayout(
       section,
-      pairMovementToTables(swissRoundOneLayout(tables, boardsPerRound)),
+      swissRoundOneLayout(tables, boardsPerRound),
       null,
     );
     const validation = validateStart(expected, seatedSeats, expectedLateSeats);
 
     // Swiss Teams has extra structural requirements the generic validator does
     // not know about: every table must be a complete team (no sit-out — that
-    // would be half a team) and the team count must be even (odd counts need
-    // three-way handling, which is out of scope). Layer these on top.
+    // would be half a team) and an odd team count needs odd handling. Layer
+    // these on top.
     if (selected.source === "SWISS_TEAMS") {
       return resolveSwissTeamsStart(section, selected, validation, gameId);
     }
@@ -123,9 +116,9 @@ export async function resolveSectionStart(
 
   // Derive expected seats from the movement's round-1 layout (no sit-out yet),
   // excluding any built-in phantom, qualified to this section.
-  const expected = deriveExpectedSeats(
+  const expected = expectedSeatsFromLayout(
     section,
-    pairMovementToTables(description.layout),
+    description.layout,
     description.missingPair,
   );
 
@@ -149,248 +142,54 @@ export async function resolveSectionStart(
 }
 
 /**
- * Round 1 of a Swiss event as a positional layout, for the expected-seat check:
- * table T seats pair T NS against pair tables+T EW, i.e. seats "${T}NS" and
- * "${T}EW". A pair's participant id is its round-1 home seat (unqualified);
- * deriveExpectedSeats qualifies it with the section.
- */
-function swissRoundOneLayout(
-  tables: number,
-  boardsPerRound: number,
-): MovementPlan {
-  const { boardStart, boardEnd } = swissRoundBoardRange(1, boardsPerRound);
-  return swissRoundOne(tables).map((seat) => ({
-    tableNumber: seat.tableNumber,
-    rounds: [
-      {
-        roundNumber: 1,
-        ns: `${seat.tableNumber}NS`,
-        ew: `${seat.tableNumber}EW`,
-        boardStart,
-        boardEnd,
-        boardCopy: "A",
-      },
-    ],
-  }));
-}
-
-/**
- * Resolve a Swiss Pairs section's start.
- *
- * On top of the base seat validation (which already permits the single empty
- * seat of an odd field), this adds the "2 half matches" group-size guard: when
- * the field is odd and this event uses HALF_MATCHES odd handling with round 1
- * set to a half-match, the field must have at least three pairs (two tables) to
- * form the group — a one-table odd field (a single pair) is rejected.
- *
- * Materialization of a round-1 half-match group (vs the ordinary round-1 bye)
- * is threaded through the draw/seating layer in a later step; here we only
- * gate the start. An even field, a BYE event, or a round-1 BYE plan entry all
- * fall through to the ordinary single-sit-out path unchanged.
+ * Resolve a Swiss Pairs section's start: the base seat check plus the
+ * "2 half matches" group-size check, then — when valid — round 1 (a half-match
+ * group, an ordinary bye, or a full even round) with every seat anchored to its
+ * pair's stable Swiss number.
  */
 function resolveSwissPairsStart(
   section: SectionLetter,
   selected: Extract<SelectedMovement, { source: "SWISS" }>,
   baseValidation: StartValidationResult,
 ): ResolvedStart {
-  const { tables, oddHandling = "BYE", oddRoundPlan } = selected.swiss;
-
+  const { tables } = selected.swiss;
   // Only an odd field (one empty seat) engages odd handling at all.
-  const isOddField = baseValidation.sitOutSeat !== null;
-  const roundOneIsHalfMatch =
-    isOddField &&
-    oddHandling === "HALF_MATCHES" &&
-    (oddRoundPlan?.[0] ?? "BYE") === "HALF_MATCHES";
+  const halfMatch = swissRoundOneIsHalfMatch(
+    selected.swiss,
+    baseValidation.sitOutSeat !== null,
+  );
+  const validation = checkHalfMatchField(baseValidation, { halfMatch, tables });
 
-  if (roundOneIsHalfMatch && tables < 2) {
-    // One table (an odd field of a single pair) can't form a three-pair group.
-    const problems: StartProblem[] = [
-      ...baseValidation.problems,
-      {
-        code: "HALF_MATCH_FIELD_TOO_SMALL",
-        message:
-          "A 2-half-matches round needs at least three pairs (two tables). Add a table, or use a bye for this round.",
-      },
-    ];
-    return {
-      validation: { canStart: false, problems, sitOutSeat: null },
-      movement: null,
-    };
+  if (!validation.canStart) {
+    return { validation, movement: null };
   }
 
-  if (!baseValidation.canStart) {
-    return { validation: baseValidation, movement: null };
-  }
-
-  // Round-1 half-match: build the three-pair group from the positional field
-  // (no standings yet, so the engine orders by pair id) and materialize it —
-  // the anchor's table hosts both halves plus the two compensation blocks.
-  if (roundOneIsHalfMatch && baseValidation.sitOutSeat !== null) {
-    return {
-      validation: baseValidation,
-      movement: resolveRoundOneHalfMatch(selected, baseValidation.sitOutSeat),
-      anchors: swissPairAnchors(section, tables),
-    };
-  }
-
-  // Otherwise round 1 is an ordinary bye (odd field) or a full even round.
   return {
-    validation: baseValidation,
-    movement: swissRoundOnePositional(
-      tables,
-      selected.swiss.boardsPerRound,
-      baseValidation.sitOutSeat,
-    ),
+    validation,
+    movement: swissPairsRoundOnePlan(selected.swiss, validation.sitOutSeat),
     anchors: swissPairAnchors(section, tables),
   };
 }
 
 /**
  * Every seat's anchor id in a Swiss Pairs section: the pair's stable Swiss
- * number, section-qualified ("A1".."A8" with 4 tables — NS seats 1..tables, EW
- * seats tables+1..2·tables). Every round writes a pair's boards under this one
- * id whatever chair it sits in, so the schedule, travellers and standings all
- * see one pair. An empty seat has no occupancy, so its entry updates nothing.
+ * number, section-qualified ("A1".."A8" with 4 tables). An empty seat has no
+ * occupancy, so its entry updates nothing.
  */
 function swissPairAnchors(
   section: SectionLetter,
   tables: number,
 ): SeatAnchor[] {
-  const anchors: SeatAnchor[] = [];
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    for (const direction of ["NS", "EW"] as const) {
-      const pairId = swissPairIdFromHomeSeat(tables, {
-        tableNumber,
-        direction,
-      });
-      anchors.push({
-        seat: `${section}${tableNumber}${direction}` as PairSeat,
-        anchorId: sectionParticipantId(section, `${pairId}`),
-      });
-    }
-  }
-  return anchors;
-}
-
-/**
- * Round 1 of a Swiss Pairs event (even field, or an odd field with a bye): each
- * pair plays at the seat it sat down in. Built by the same materializer every
- * later round uses, so round 1 carries the same stable pair ids and the same
- * match rows (a /20 match per table, a BYE for the sitting-out pair) as the
- * rounds that follow.
- *
- * In an odd field the pair opposite the empty seat has the bye. It keeps its
- * own table number (it is physically seated there), rather than being parked
- * after the played tables as a drawn round's bye is.
- */
-function swissRoundOnePositional(
-  tables: number,
-  boardsPerRound: number,
-  sitOutSeat: PairSeat | null,
-): MovementPlan {
-  const byeTable =
-    sitOutSeat !== null ? parseSeat(sitOutSeat).tableNumber : null;
-  const byePairId =
-    sitOutSeat !== null
-      ? swissPairIdFromHomeSeat(tables, {
-          tableNumber: byeTable!,
-          // The bye pair is the one sitting opposite the empty seat.
-          direction: parseSeat(sitOutSeat).direction === "NS" ? "EW" : "NS",
-        })
-      : null;
-
-  const seating: SwissSeating[] = [];
-  for (let tableNumber = 1; tableNumber <= tables; tableNumber++) {
-    if (tableNumber === byeTable) continue;
-    seating.push({
-      tableNumber,
-      ns: swissPairIdFromHomeSeat(tables, { tableNumber, direction: "NS" }),
-      ew: swissPairIdFromHomeSeat(tables, { tableNumber, direction: "EW" }),
-    });
-  }
-
-  const movement = swissRoundToMaterializable(
-    tables,
-    1,
-    boardsPerRound,
-    seating,
-    byePairId,
-  );
-  if (byeTable === null) return movement;
-  return movement.map((table) =>
-    table.rounds.some((r) => r.sitOut)
-      ? { ...table, tableNumber: byeTable }
-      : table,
-  );
-}
-
-/**
- * Build the round-1 materialization for a 2-half-matches odd field.
- *
- * Round 1 has no standings, so the field is ordered positionally (by stable
- * pair id) over the REAL seated pairs — every `swissPairIds(tables)` id except
- * the empty seat's phantom. `drawSwissRound` with `oddHandling: "HALF_MATCHES"`
- * then chooses the three-pair group, honours a stationary anchor, and seats the
- * rest; `swissRoundToMaterializable` turns that into the round-1 board rows
- * (two halves at the anchor's table + the two HALF_AVERAGE compensation blocks).
- */
-function resolveRoundOneHalfMatch(
-  selected: Extract<SelectedMovement, { source: "SWISS" }>,
-  sitOutSeat: PairSeat,
-): MovementPlan {
-  const { tables, boardsPerRound, stationaryPairs } = selected.swiss;
-
-  // The phantom position is the empty seat (a physical round-1 home chair);
-  // every other id is a real pair.
-  const phantomId = swissPairIdFromSeat(sitOutSeat, tables);
-  const standings = swissPairIds(tables).filter((id) => id !== phantomId);
-
-  const stationary = new Map<SwissPairId, SwissHomeSeat>();
-  for (const pairId of stationaryPairs ?? []) {
-    stationary.set(pairId, swissPairHomeSeat(tables, pairId));
-  }
-
-  const draw = drawSwissRound({
-    tables,
-    standings,
-    playedOpponents: new Set(),
-    hadBye: new Set(),
-    hadHalfMatch: new Set(),
-    oddHandling: "HALF_MATCHES",
-    directionCounts: new Map(),
-    stationary,
-  });
-
-  // drawSwissRound always sets `halfMatch` for an odd HALF_MATCHES field of
-  // >= 3 pairs (guaranteed here by the earlier tables >= 2 gate).
-  /* v8 ignore next 3 */
-  if (draw.halfMatch == null) {
-    throw new Error(
-      "Expected a half-match group for a round-1 HALF_MATCHES odd field",
-    );
-  }
-
-  return swissRoundToMaterializable(
-    tables,
-    1,
-    boardsPerRound,
-    draw.seating,
-    null,
-    {
-      group: draw.halfMatch.group,
-      seat: {
-        tableNumber: draw.halfMatch.anchorTable,
-        anchorDirection: draw.halfMatch.anchorDirection,
-      },
-    },
-  );
+  return swissHomeAnchors(tables).map(({ tableNumber, direction, pairId }) => ({
+    seat: `${section}${tableNumber}${direction}` as PairSeat,
+    anchorId: sectionParticipantId(section, `${pairId}`),
+  }));
 }
 
 /**
  * Resolve a Swiss Teams section's start. On top of the base seat validation it
- * rejects a sit-out (a team must have both its pairs) and an odd team count,
- * then — when valid — materializes round 1 by drawing a random team pairing
- * (seeded per game+section) and expanding it into open/closed-room board rows.
+ * rejects a sit-out (a team must have both its pairs) and an odd team count it
+ * cannot handle, then — when valid — plans round 1.
  */
 function resolveSwissTeamsStart(
   section: SectionLetter,
@@ -398,13 +197,7 @@ function resolveSwissTeamsStart(
   baseValidation: StartValidationResult,
   gameId: string,
 ): ResolvedStart {
-  const {
-    teams,
-    rounds,
-    boardsPerRound,
-    oddHandling = "BYE",
-    oddRoundPlan,
-  } = selected.swissTeams;
+  const { teams, oddHandling = "BYE" } = selected.swissTeams;
   // Swiss Teams resolves an odd count via a bye or a triple (both supported);
   // a triple needs at least three teams to form the three-way.
   const validation = validateTeamsStructure(baseValidation, teams, {
@@ -416,75 +209,10 @@ function resolveSwissTeamsStart(
     return { validation, movement: null };
   }
 
-  // Random round-1 pairing, seeded per game+section so a retried start is
-  // reproducible, then expanded into the two-table (open/closed) board rows.
-  // An odd field resolves per the round-1 plan entry: "BYE" byes the bottom
-  // table, SHORT/LONG triples the bottom three (see swissTeamsRoundOne).
-  const roundOneOdd = roundOddResolution(oddHandling, oddRoundPlan, 1);
-  const { matches, byeTeamId, triple } = swissTeamsRoundOne(
-    teams,
-    swissTeamsRoundOneSeed(gameId, section),
-    roundOneOdd,
-  );
-  const movement = swissTeamsRoundToMaterializable(
-    1,
-    boardsPerRound,
-    rounds,
-    matches,
-    byeTeamId,
-    triple,
-  );
-
-  return { validation, movement };
-}
-
-/**
- * The structural validations both teams formats share, on top of the base seat
- * validation: every table must hold a full team (no single sit-out — that would
- * be half a team). `label` names the format in the director-facing messages.
- *
- * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
- * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
- * "BYE" permits an odd count (one team sits out each round) and "TRIPLE"
- * permits it too (three teams play a three-way each round) — a triple needs
- * at least three teams to form, so an odd field of one is still rejected.
- */
-function validateTeamsStructure(
-  baseValidation: StartValidationResult,
-  teams: number,
-  options: { label: string; oddHandling?: "BYE" | "TRIPLE" },
-): StartValidationResult {
-  const { label, oddHandling } = options;
-  const problems: StartProblem[] = [...baseValidation.problems];
-
-  if (baseValidation.sitOutSeat !== null) {
-    problems.push({
-      code: "TEAMS_SIT_OUT_NOT_ALLOWED",
-      message: `${label} needs a full team at every table — seat both pairs or remove the table. Sit-outs are not supported.`,
-    });
-  }
-
-  if (teams % 2 !== 0) {
-    if (oddHandling === "TRIPLE") {
-      // A triple needs three teams to form the three-way.
-      if (teams < 3) {
-        problems.push({
-          code: "ODD_TEAM_COUNT",
-          message: `${label} with a three-way triple needs at least three teams — you have ${teams}. Add a table before starting.`,
-        });
-      }
-      // teams >= 3 (odd): allowed (the bottom three play a three-way each round).
-    } else if (oddHandling !== "BYE") {
-      // No odd handling for this format/choice: an odd count is rejected.
-      problems.push({
-        code: "ODD_TEAM_COUNT",
-        message: `${label} needs an even number of teams — you have ${teams}. Add or remove a table before starting.`,
-      });
-    }
-    // oddHandling === "BYE": an odd count is allowed (a team byes each round).
-  }
-
-  return { canStart: problems.length === 0, sitOutSeat: null, problems };
+  return {
+    validation,
+    movement: swissTeamsRoundOnePlan(selected.swissTeams, gameId, section),
+  };
 }
 
 /**
@@ -578,100 +306,15 @@ async function resolveAllSections(
     }),
   );
 
-  // Each section is already resolved to a StartValidationResult; aggregate
-  // them all-or-nothing (matching validateSections' contract).
-  const sectionsResult = resolutions.map((r) => ({
-    section: r.section,
-    validation: r.resolved.validation,
-  }));
-  const canStart =
-    sectionsResult.length > 0 &&
-    sectionsResult.every((s) => s.validation.canStart);
-
   return {
-    aggregate: { canStart, sections: sectionsResult },
+    aggregate: aggregateSections(
+      resolutions.map((r) => ({
+        section: r.section,
+        validation: r.resolved.validation,
+      })),
+    ),
     resolutions,
   };
-}
-
-/**
- * Flatten a per-section aggregate into the flat StartValidationResult shape the
- * start-check API and client currently consume. `canStart` is the all-or-nothing
- * aggregate; each problem is tagged with its `section` so the UI can group by
- * section. `sitOutSeat` is null at the aggregate level (each section's sit-out
- * is already applied internally on start).
- */
-function flattenAggregate(
-  aggregate: AllSectionsValidationResult,
-): StartValidationResult {
-  const problems: StartProblem[] = [];
-
-  if (aggregate.sections.length === 0) {
-    return {
-      canStart: false,
-      sitOutSeat: null,
-      problems: [
-        {
-          code: "NO_MOVEMENT_SELECTED",
-          message: "Add at least one section before starting the game.",
-        },
-      ],
-    };
-  }
-
-  // Tag each problem with its section so the UI can group by section. The
-  // message stays plain (the grouping shows which section); the section field
-  // is the structured source of truth.
-  for (const s of aggregate.sections) {
-    for (const p of s.validation.problems) {
-      problems.push({ ...p, section: s.section });
-    }
-  }
-
-  return {
-    canStart: aggregate.canStart,
-    sitOutSeat: null,
-    problems,
-  };
-}
-
-/**
- * Convert a round-1 layout into the round-oriented Tables shape
- * used by deriveExpectedSeats. Only round 1 participants matter for expected seats,
- * but we map all rounds for completeness.
- */
-function pairMovementToTables(movement: MovementPlan): {
-  tables: {
-    table: number;
-    rounds: {
-      round: number;
-      boards: number[];
-      participants: { nsId: string; ewId: string };
-    }[];
-  }[];
-} {
-  return {
-    tables: movement.map((table) => ({
-      table: table.tableNumber,
-      rounds: table.rounds.map((round) => ({
-        round: round.roundNumber,
-        // Layout rounds always carry a valid inclusive board range (Mitchell
-        // uses boardsForSet, stored specs and Swiss round 1 a set range, all
-        // with a positive boardsPerRound), so boardEnd is never below boardStart;
-        // the `: []` arm is defensive only.
-        /* v8 ignore next 3 */
-        boards:
-          round.boardEnd >= round.boardStart
-            ? rangeInclusive(round.boardStart, round.boardEnd)
-            : [],
-        participants: { nsId: round.ns, ewId: round.ew },
-      })),
-    })),
-  };
-}
-
-function rangeInclusive(start: number, end: number): number[] {
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
 
 /**
@@ -685,7 +328,7 @@ export async function checkStart(
   db: Db,
 ): Promise<StartValidationResult> {
   const { aggregate } = await resolveAllSections(gameId, db);
-  return flattenAggregate(aggregate);
+  return flattenSections(aggregate);
 }
 
 /**
@@ -726,7 +369,7 @@ export async function startGame(
   const { aggregate, resolutions } = await resolveAllSections(gameId, db);
 
   if (!aggregate.canStart) {
-    return flattenAggregate(aggregate);
+    return flattenSections(aggregate);
   }
 
   const sectionMovements = resolutions
@@ -739,5 +382,5 @@ export async function startGame(
 
   await materializeSections(gameId, sectionMovements);
 
-  return flattenAggregate(aggregate);
+  return flattenSections(aggregate);
 }

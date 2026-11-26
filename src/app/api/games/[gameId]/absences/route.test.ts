@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { testApiHandler } from "next-test-api-route-handler";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
@@ -20,7 +20,7 @@ vi.mock("@/socket/handlers/results/broadcast-results", () => ({
 vi.mock("@/socket/websocket", () => ({ getIO: vi.fn(() => null) }));
 
 import { getDb } from "@/db/games";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findAbsentPairs } from "@/db/games/queries/find-absent-pairs";
 import { setAbsenceTreatment } from "@/db/games/actions/set-absence-treatment";

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/db/games", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/games/actions/set-section-movement", () => ({
@@ -27,7 +27,7 @@ vi.mock("@/lib/log", () => ({
 }));
 
 import { getDb } from "@/db/games";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { setSectionMovement } from "@/db/games/actions/set-section-movement";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";

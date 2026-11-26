@@ -4,7 +4,7 @@ import { findSections } from "@/db/games/queries/find-sections";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { parseSeat } from "@/model/participants";
-import { validatePlayerToken } from "@/socket/middleware/participant-auth";
+import { validatePlayerToken } from "@/services/security/player-token";
 
 /** A seat a device says it holds: the seat's own secret proves it. */
 export interface HeldSeat {

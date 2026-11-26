@@ -6,7 +6,7 @@ import {
   registerHandler,
   HandlerError,
 } from "@/socket/handlers/handler-wrapper";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import {
   previewNextSwissRound,
   commitNextSwissRound,

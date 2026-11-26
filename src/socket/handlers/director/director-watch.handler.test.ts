@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SocketEvents } from "@/socket/socket-events";
 
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 const sessions: Record<string, { createdAt: string | null }> = {};
@@ -12,7 +12,7 @@ vi.mock("@/socket/broadcast/director-alerts", () => ({
   recentAlertsFor: vi.fn(() => [{ id: "a1" }]),
 }));
 
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { recentAlertsFor } from "@/socket/broadcast/director-alerts";
 import { registerDirectorWatchHandler } from "./director-watch.handler";
 import { registerDirectorHandlers } from "./director.handlers";

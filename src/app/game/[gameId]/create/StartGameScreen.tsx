@@ -9,7 +9,7 @@ import { useStartCheck } from "@/hooks/start-check";
 import { useSections } from "@/hooks/sections";
 import { startGame } from "@/lib/game-service";
 import { errorMessage } from "@/lib/error-message";
-import type { StartProblem } from "@/model/start-validator";
+import type { StartProblem } from "@/modules/seating";
 
 type Props = {
   /** Setup navigation menu rendered in the header's right-hand slot. */

@@ -9,7 +9,7 @@ const del = vi.fn(() => ({ where: vi.fn() }));
 // @/db/games#getDb, so that must be mocked truthy for the route to proceed.
 vi.mock("@/db/games", () => ({ getDb: vi.fn(), closeDb: vi.fn() }));
 vi.mock("@/db/game-index", () => ({ getDb: vi.fn() }));
-vi.mock("@/socket/middleware/director-auth", () => ({
+vi.mock("@/services/security/director-token", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/db/game-index/schema", () => ({ games: { gameId: "game_id" } }));
@@ -24,7 +24,7 @@ vi.mock("@/socket/broadcast/game-deleted-broadcast", () => ({
 import fs from "fs";
 import { getDb as getGamesDb, closeDb } from "@/db/games";
 import { getDb as getIndexDb } from "@/db/game-index";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import * as appHandler from "./route";
 
 // The director token travels in the `x-director-token` header (no body).

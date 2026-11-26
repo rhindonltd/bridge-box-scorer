@@ -14,6 +14,7 @@ import {
   signInFailed,
   signInSucceeded,
 } from "@/services/security/sign-in-guard";
+import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
 
 const bodySchema = z.object({
   code: z.string().min(1),
@@ -57,6 +58,7 @@ export const POST = withBasicRoute(async ({ req }) => {
     } catch (err) {
       if (err instanceof ClientError) {
         await signInFailed(
+          raiseDirectorAlert,
           req,
           { kind: "game", gameId: requestedGameId },
           seats,
@@ -72,6 +74,7 @@ export const POST = withBasicRoute(async ({ req }) => {
       role: "DIRECTOR",
     });
     await signInSucceeded(
+      raiseDirectorAlert,
       req,
       { kind: "game", gameId: claim.gameId },
       claim.method,

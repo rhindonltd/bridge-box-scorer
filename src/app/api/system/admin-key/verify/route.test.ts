@@ -21,6 +21,7 @@ import {
 } from "@/services/security/sign-in-guard";
 import { NextResponse } from "next/server";
 import * as appHandler from "./route";
+import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
 
 describe("POST /api/system/admin-key/verify", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -42,6 +43,7 @@ describe("POST /api/system/admin-key/verify", () => {
         expect(typeof body.result.adminToken).toBe("string");
         // Every director is told.
         expect(signInSucceeded).toHaveBeenCalledWith(
+          raiseDirectorAlert,
           expect.any(Request),
           { kind: "settings" },
           "adminKey",
@@ -69,6 +71,7 @@ describe("POST /api/system/admin-key/verify", () => {
         expect(res.status).toBe(401);
         expect(createLoginSession).not.toHaveBeenCalled();
         expect(signInFailed).toHaveBeenCalledWith(
+          raiseDirectorAlert,
           expect.any(Request),
           { kind: "settings" },
           undefined,
@@ -121,6 +124,7 @@ describe("POST /api/system/admin-key/verify", () => {
           headers: { "content-type": "application/json" },
         });
         expect(signInSucceeded).toHaveBeenCalledWith(
+          raiseDirectorAlert,
           expect.any(Request),
           { kind: "settings" },
           "adminKey",

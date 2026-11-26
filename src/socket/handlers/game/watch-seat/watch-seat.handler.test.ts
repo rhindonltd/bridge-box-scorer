@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SocketEvents } from "@/socket/socket-events";
 
-vi.mock("@/socket/middleware/participant-auth", () => ({
+vi.mock("@/services/security/player-token", () => ({
   validatePlayerToken: vi.fn(),
 }));
 vi.mock("@/db/games/queries/find-participant-secret", () => ({
   findSeatDeviceInfo: vi.fn(),
 }));
 
-import { validatePlayerToken } from "@/socket/middleware/participant-auth";
+import { validatePlayerToken } from "@/services/security/player-token";
 import { findSeatDeviceInfo } from "@/db/games/queries/find-participant-secret";
 import { registerWatchSeatHandler } from "./watch-seat.handler";
 

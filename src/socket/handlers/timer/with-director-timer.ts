@@ -3,7 +3,7 @@ import { BridgeTimerEngine } from "@/modules/timer";
 import { getEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { scheduleGame, cancelGameSchedule } from "@/services/timer/scheduler";
-import { validateDirectorToken } from "@/socket/middleware/director-auth";
+import { validateDirectorToken } from "@/services/security/director-token";
 import { HandlerError } from "@/socket/handlers/handler-wrapper";
 import { assertNotFinalised } from "@/socket/middleware/finalised-guard";
 import { makeTimerBroadcaster } from "./broadcast-timer";

@@ -5,11 +5,13 @@ import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { alias } from "drizzle-orm/sqlite-core";
 import { Pair } from "@/model/participants";
 import {
-  primaryOccupancyIds,
-  oneLineSecondaryByAnchorId,
   readSeatOccupancies,
   rankedPickColumns,
 } from "@/db/games/queries/seat-occupancy";
+import {
+  oneLineSecondaryByAnchorId,
+  primaryOccupancyIds,
+} from "@/modules/rulings";
 
 /**
  * The seated pairs of a game — one {@link Pair} per SEAT, the seat's PRIMARY

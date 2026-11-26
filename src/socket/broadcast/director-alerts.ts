@@ -3,14 +3,10 @@ import { randomUUID } from "node:crypto";
 import { getIO } from "@/socket/websocket";
 import { DirectorRooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import type { DirectorAlert } from "@/model/director-alert";
+import type { DirectorAlert, NewDirectorAlert } from "@/model/director-alert";
 
 /** How long alerts are kept for a director device that was offline. */
 export const ALERT_REPLAY_MS = 30 * 60 * 1000;
-
-/** Distributive Omit, so each alert variant keeps its own fields. */
-type WithoutIdAndTime<T> = T extends unknown ? Omit<T, "id" | "at"> : never;
-export type NewDirectorAlert = WithoutIdAndTime<DirectorAlert>;
 
 /**
  * Recent alerts, kept on `globalThis`: alerts are raised by HTTP routes (the

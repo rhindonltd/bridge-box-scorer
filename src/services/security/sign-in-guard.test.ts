@@ -3,15 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(),
 }));
-vi.mock("@/socket/broadcast/director-alerts", () => ({
-  raiseDirectorAlert: vi.fn(() => ({ id: "alert-1" })),
-}));
 vi.mock("./identify-device", () => ({
   identifyDevice: vi.fn(async () => []),
 }));
 
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
-import { raiseDirectorAlert } from "@/socket/broadcast/director-alerts";
 import { resetSignInAttempts } from "@/lib/security/sign-in-attempts";
 import { CLIENT_ADDRESS_HEADER } from "@/lib/net/client-address";
 import { identifyDevice } from "./identify-device";
@@ -22,6 +18,8 @@ import {
   signInFailed,
   signInSucceeded,
 } from "./sign-in-guard";
+
+const raiseDirectorAlert = vi.fn(() => ({ id: "alert-1" }));
 
 const req = (address = "192.168.4.9") =>
   new Request("http://x", { headers: { [CLIENT_ADDRESS_HEADER]: address } });
@@ -53,7 +51,14 @@ describe("sign-in guard", () => {
   });
 
   it("raises a sign-in alert for the game, carrying the device's origin id", async () => {
-    await signInSucceeded(req(), game, "adminKey", seats, "origin-1");
+    await signInSucceeded(
+      raiseDirectorAlert,
+      req(),
+      game,
+      "adminKey",
+      seats,
+      "origin-1",
+    );
     expect(identifyDevice).toHaveBeenCalledWith(seats);
     expect(raiseDirectorAlert).toHaveBeenCalledWith({
       kind: "signedIn",
@@ -65,14 +70,26 @@ describe("sign-in guard", () => {
   });
 
   it("leaves the origin id out when the device sent none", async () => {
-    await signInSucceeded(req(), game, "shareCode", undefined);
+    await signInSucceeded(
+      raiseDirectorAlert,
+      req(),
+      game,
+      "shareCode",
+      undefined,
+    );
     expect(raiseDirectorAlert).toHaveBeenCalledWith(
       expect.not.objectContaining({ originId: expect.anything() }),
     );
   });
 
   it("raises a Settings sign-in alert, with no seats sent", async () => {
-    await signInSucceeded(req(), settings, "adminKey", undefined);
+    await signInSucceeded(
+      raiseDirectorAlert,
+      req(),
+      settings,
+      "adminKey",
+      undefined,
+    );
     expect(identifyDevice).toHaveBeenCalledWith([]);
     expect(raiseDirectorAlert).toHaveBeenCalledWith(
       expect.objectContaining({ audience: { kind: "settings" } }),
@@ -81,7 +98,13 @@ describe("sign-in guard", () => {
 
   it("names a deleted game rather than failing", async () => {
     vi.mocked(findGameById).mockResolvedValue(null as never);
-    await signInSucceeded(req(), game, "shareCode", undefined);
+    await signInSucceeded(
+      raiseDirectorAlert,
+      req(),
+      game,
+      "shareCode",
+      undefined,
+    );
     expect(raiseDirectorAlert).toHaveBeenCalledWith(
       expect.objectContaining({
         audience: {
@@ -94,12 +117,12 @@ describe("sign-in guard", () => {
   });
 
   it("alerts once on the third failure, for each target, then blocks", async () => {
-    await signInFailed(req(), game, seats);
-    await signInFailed(req(), settings, seats);
+    await signInFailed(raiseDirectorAlert, req(), game, seats);
+    await signInFailed(raiseDirectorAlert, req(), settings, seats);
     expect(raiseDirectorAlert).not.toHaveBeenCalled();
     expect(blockedResponse(req())).toBeNull();
 
-    await signInFailed(req(), game, seats);
+    await signInFailed(raiseDirectorAlert, req(), game, seats);
     expect(raiseDirectorAlert).toHaveBeenCalledTimes(2);
     expect(raiseDirectorAlert).toHaveBeenCalledWith({
       kind: "repeatedFailures",
@@ -126,7 +149,8 @@ describe("sign-in guard", () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(0);
-      for (let i = 0; i < 3; i++) await signInFailed(req(), game, undefined);
+      for (let i = 0; i < 3; i++)
+        await signInFailed(raiseDirectorAlert, req(), game, undefined);
       vi.setSystemTime(5 * 60 * 1000 - 1000);
       await expect(blockedResponse(req())?.json()).resolves.toMatchObject({
         error: "Too many attempts. Try again in 1 minute.",
@@ -137,11 +161,17 @@ describe("sign-in guard", () => {
   });
 
   it("a success clears the device's failures", async () => {
-    await signInFailed(req(), game, undefined);
-    await signInFailed(req(), game, undefined);
-    await signInSucceeded(req(), game, "shareCode", undefined);
-    vi.mocked(raiseDirectorAlert).mockClear();
-    await signInFailed(req(), game, undefined);
+    await signInFailed(raiseDirectorAlert, req(), game, undefined);
+    await signInFailed(raiseDirectorAlert, req(), game, undefined);
+    await signInSucceeded(
+      raiseDirectorAlert,
+      req(),
+      game,
+      "shareCode",
+      undefined,
+    );
+    raiseDirectorAlert.mockClear();
+    await signInFailed(raiseDirectorAlert, req(), game, undefined);
     expect(raiseDirectorAlert).not.toHaveBeenCalled();
   });
 });

@@ -202,8 +202,8 @@ export type UsebioSwissPairsData = {
  * and its travelling EW pair); a mid-game substitution (EBU §2.4.7) adds a
  * further pair. The format itself does not cap the count; the limit of three
  * pairs (six distinct players) is the EBU rule for a teams-of-four event,
- * enforced when the handover is recorded (`MAX_PAIRS_PER_TEAM` in
- * `handover-seat.ts`), not here. The `pairNumber` is an opaque identifier: USEBIO
+ * enforced when the handover is recorded (`MAX_PAIRS_PER_TEAM` in the
+ * rulings module), not here. The `pairNumber` is an opaque identifier: USEBIO
  * only requires that each traveller line's NS_PAIR_NUMBER / EW_PAIR_NUMBER
  * matches a declared PAIR_NUMBER. We use the app's own pair id — the seat
  * ("1NS"), or the seat plus occupancy id for a substitute ("1NS#7") — the same

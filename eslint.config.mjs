@@ -249,6 +249,9 @@ const eslintConfig = defineConfig([
   moduleBlock("timer"),
   // The player's schedule, play position, result confirmation and screen flow.
   moduleBlock("play-flow"),
+
+  // Whether the seated pairs let a game start: seat check, format rules.
+  moduleBlock("seating"),
   // File formats (USEBIO, PBN): lays out results it is given, scores nothing.
   moduleBlock("interchange"),
   // Results views lay out scoring's numbers, so they read scoring's types.
