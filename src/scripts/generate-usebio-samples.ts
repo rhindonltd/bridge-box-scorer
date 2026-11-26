@@ -3,10 +3,13 @@ import path from "node:path";
 
 import {
   generateUsebioXml,
-  UsebioPairsData,
-  UsebioSwissPairsData,
-  UsebioSwissTeamsData,
-} from "@/lib/usebio/generate-usebio";
+  type UsebioSwissPairsData,
+  type UsebioSwissTeamsData,
+} from "@/modules/interchange/usebio";
+import {
+  scoreMpPairs,
+  type UnscoredPairsData,
+} from "@/services/usebio/score-mp-pairs";
 
 /**
  * Generate example USEBIO 1.2 XML files for each supported event kind
@@ -24,7 +27,7 @@ const eventDate = "2024-11-18T00:00:00.000Z";
 
 /* ---------- MP Pairs ---------- */
 
-function mpPairs(): UsebioPairsData {
+function mpPairs(): UnscoredPairsData {
   return {
     club,
     eventName: "Monday Afternoon Pairs",
@@ -402,7 +405,7 @@ function main() {
   mkdirSync(outDir, { recursive: true });
 
   const files: Array<[string, string]> = [
-    ["mp-pairs.xml", generateUsebioXml(mpPairs())],
+    ["mp-pairs.xml", generateUsebioXml(scoreMpPairs(mpPairs()))],
     ["swiss-pairs.xml", generateUsebioXml(swissPairs())],
     ["swiss-teams.xml", generateUsebioXml(swissTeams())],
   ];

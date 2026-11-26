@@ -19,7 +19,7 @@ vi.mock("@/socket/broadcast/participant-broadcast", () => ({
 vi.mock("@/db/games/actions/clear-timer-state", () => ({
   clearTimerState: vi.fn(),
 }));
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   clearEngine: vi.fn(),
 }));
 vi.mock("@/socket/handlers/timer/broadcast-timer", () => ({
@@ -38,7 +38,7 @@ import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
-import { clearEngine } from "@/timer/game-store";
+import { clearEngine } from "@/services/timer/game-store";
 import { broadcastTimerCleared } from "@/socket/handlers/timer/broadcast-timer";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";

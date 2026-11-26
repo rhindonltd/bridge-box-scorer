@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   getEngine: vi.fn(),
   createEngine: vi.fn(),
 }));
@@ -9,7 +9,7 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
 }));
 
@@ -17,9 +17,9 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
   findLoginSession: vi.fn(),
 }));
 
-import { getEngine } from "@/timer/game-store";
+import { getEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { scheduleGame } from "@/timer/scheduler";
+import { scheduleGame } from "@/services/timer/scheduler";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
 import { registerStartTimerHandler } from "./start-timer.handler";
 

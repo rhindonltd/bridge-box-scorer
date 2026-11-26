@@ -408,7 +408,7 @@ test.describe("Timer config screen (pre-start)", () => {
   // covered here. Triggering it end-to-end depends on wall-clock projection of
   // a resume-time break against the live schedule, which is timing-fragile in a
   // browser test. It is already covered at the unit level: the validation logic
-  // in `src/timer/breaks.test.ts` and the alert rendering in
+  // in `src/modules/timer/breaks.test.ts` and the alert rendering in
   // `TimerConfigView.test.tsx` / `TimerLiveView.test.tsx`.
 });
 

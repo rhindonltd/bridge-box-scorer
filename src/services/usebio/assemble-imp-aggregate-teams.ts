@@ -1,0 +1,257 @@
+import { Board } from "@/db/games/tables/boards";
+import { AssignedTeam, sectionOf } from "@/model/participants";
+import { BridgeGame } from "@/db/game-index/schema";
+import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/model/game-types";
+import { BoardOutcome } from "@/model/score";
+import { Card } from "@/model/common";
+import {
+  outcomeToScore,
+  rank,
+  groupTeamMatches,
+  groupTeamTriples,
+  teamMatchBoardImps,
+  boardResult,
+  type TeamMatchStructureRow,
+} from "@/modules/scoring";
+import {
+  buildTravellerLine,
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+  UsebioClub,
+  UsebioSwissTeamsData,
+  UsebioSwissTeamsMatch,
+  UsebioTeam,
+  UsebioTeamBoard,
+  UsebioTeamTravellerLine,
+  UsebioVpRankEntry,
+} from "@/modules/interchange/usebio";
+import { applySeatSwap } from "@/modules/rulings";
+
+/**
+ * Assemble the USEBIO data for an aggregate-IMP teams event.
+ *
+ * Structurally this is a Swiss Teams file (same match reconstruction, same
+ * per-board IMPs and traveller lines), but the match is scored on its raw net
+ * IMP margin rather than converted to Victory Points, and the ranking is by
+ * total net IMPs. The reused {@link UsebioSwissTeamsData} shape carries those
+ * IMP figures in its `teamScore` / `totalVP` fields, and `matchScoringMethod`
+ * is set to "IMPS" so the generator writes the correct MATCH_SCORING_METHOD.
+ *
+ * A team match credits the home team `+margin` and the opponent `−margin`. A
+ * three-way triple is written as three informational head-to-head MATCH nodes
+ * (each showing its own IMP margin), while the authoritative per-team round
+ * result added to the ranking total is the team's cross-IMP total — mirroring
+ * how {@link import("./assemble-swiss-teams").assembleSwissTeams} treats
+ * triples for VP.
+ */
+export function assembleImpAggregateTeams(
+  game: BridgeGame,
+  club: Club,
+  tournamentLevel: TournamentLevel,
+  teams: AssignedTeam[],
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  excludedFromRanking: ReadonlySet<string> = new Set(),
+  // §2.4.7 mid-match substitutions (see assembleSwissTeams). Empty ⇒ the
+  // two-pairs-per-team shape.
+  occupancies: readonly TeamOccupancy[] = [],
+): UsebioSwissTeamsData {
+  const usebioClub: UsebioClub = {
+    name: club.name,
+    clubNumber: club.clubNumber,
+  };
+
+  // Stable team numbers: 1..N in findTeams order (section then table).
+  const numberByTeamId = new Map<string, string>();
+  teams.forEach((team, i) => numberByTeamId.set(team.id, String(i + 1)));
+
+  const pairing = buildTeamPairing(teams, occupancies);
+  const usebioTeams: UsebioTeam[] = teams.map((team) => ({
+    teamNumber: numberByTeamId.get(team.id)!,
+    teamName: team.name,
+    sectionId: sectionOf(team.id),
+    /* v8 ignore next -- unreachable: buildTeamPairing sets an entry for every roster team */
+    pairs: pairing.pairsByTeamId.get(team.id) ?? [],
+  }));
+
+  const { matches, totals } = buildImpMatches(
+    boardRows,
+    matchRows,
+    numberByTeamId,
+    pairing,
+  );
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
+
+  const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
+
+  return {
+    kind: "SWISS_TEAMS",
+    matchScoringMethod: "IMPS",
+    club: usebioClub,
+    tournamentLevel,
+    eventName: game.eventName,
+    eventDate: game.eventDate,
+    sectionName: game.sectionName || "A",
+    boards: boardNumbers.size,
+    teams: usebioTeams,
+    matches,
+    ranking,
+  };
+}
+
+function leadOf(row: Board): Card | null {
+  return (row.directorOverrideLead ?? row.confirmedLead ?? null) as Card | null;
+}
+
+function teamTravellerLine(
+  row: Board,
+  direction: string,
+  pairing: TeamPairing,
+): UsebioTeamTravellerLine {
+  const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
+  const seated = applySeatSwap(row);
+  const line = buildTravellerLine(
+    outcome,
+    leadOf(row),
+    outcomeToScore(row.boardNumber, outcome),
+  );
+  return {
+    direction,
+    // Which partnership sat NS / EW at this table for this board (a room the
+    // director marked played-reversed has its two seats exchanged).
+    nsPairNumber: pairing.pairNumberFor(seated.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(seated.ew, row.boardNumber),
+    ...line,
+  };
+}
+
+/**
+ * Reconstruct team matches and emit each with its per-board IMPs, both rooms'
+ * traveller lines, and the net IMP margin as TEAM_SCORE / OPPOSING_TEAM_SCORE.
+ * Accumulate per-team total net IMPs (keyed by team id) for the ranking.
+ */
+function buildImpMatches(
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  numberByTeamId: Map<string, string>,
+  pairing: TeamPairing,
+): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
+  const totals = new Map<string, number>();
+  const addImps = (teamId: string, imps: number): void => {
+    totals.set(teamId, (totals.get(teamId) ?? 0) + imps);
+  };
+
+  const matches: UsebioSwissTeamsMatch[] = [];
+
+  const emitMatch = (
+    round: number,
+    homeTeamId: string,
+    opponentTeamId: string,
+    perBoard: { boardNumber: number; imps: number | null }[],
+    margin: number,
+    homeRows: Map<number, Board>,
+    awayRows: Map<number, Board>,
+  ): void => {
+    const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
+    const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
+
+    const boards: UsebioTeamBoard[] = perBoard.map(({ boardNumber, imps }) => {
+      const travellerLines: UsebioTeamTravellerLine[] = [];
+      const homeRow = homeRows.get(boardNumber);
+      const awayRow = awayRows.get(boardNumber);
+      if (homeRow)
+        travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+      if (awayRow)
+        travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+      return { boardNumber, imps: imps ?? 0, travellerLines };
+    });
+
+    /* v8 ignore start -- a reconstructed match always has >=1 board */
+    const startBoard = boards[0]?.boardNumber ?? 0;
+    const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+    /* v8 ignore stop */
+
+    matches.push({
+      round,
+      team: teamNumber,
+      opposingTeam: opposingNumber,
+      startBoard,
+      endBoard,
+      // The match's net IMP margin, from each team's perspective.
+      teamScore: margin,
+      opposingTeamScore: -margin,
+      boards,
+    });
+  };
+
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
+    const { perBoard, margin } = teamMatchBoardImps(match);
+    emitMatch(
+      match.round,
+      match.homeTeamId,
+      match.opponentTeamId,
+      perBoard,
+      margin,
+      match.homeRowsByBoard,
+      match.opponentRowsByBoard,
+    );
+    // The home team's aggregate is +margin, the opponent's is -margin.
+    addImps(match.homeTeamId, margin);
+    addImps(match.opponentTeamId, -margin);
+  }
+
+  // Triples: a three-way is three ordinary head-to-head comparisons (x-y, y-z,
+  // z-x), each an authoritative two-room MATCH node. A team's aggregate is the
+  // sum of its comparison margins (home +margin, away −margin) — the export
+  // total agrees with the live head-to-head standings.
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
+    for (const sub of triple.comparisons) {
+      const { perBoard, margin } = teamMatchBoardImps(sub);
+      emitMatch(
+        sub.round,
+        sub.homeTeamId,
+        sub.opponentTeamId,
+        perBoard,
+        margin,
+        sub.homeRowsByBoard,
+        sub.opponentRowsByBoard,
+      );
+      addImps(sub.homeTeamId, margin);
+      addImps(sub.opponentTeamId, -margin);
+    }
+  }
+
+  return { matches, totals };
+}
+
+/**
+ * Rank teams by total net IMPs (highest first); ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
+function buildRanking(
+  totals: Map<string, number>,
+  numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
+): UsebioVpRankEntry[] {
+  const ranked = rank(
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalImps]) => ({
+        teamId,
+        totalImps,
+      })),
+    (row) => row.totalImps,
+  );
+
+  return ranked.map((row) => ({
+    number: numberByTeamId.get(row.teamId) ?? row.teamId,
+    sectionId: sectionOf(row.teamId),
+    // The reused rank-entry shape names this field totalVP; here it carries the
+    // team's total net IMPs (MATCH_SCORING_METHOD = IMPS).
+    totalVP: row.totalImps,
+    place: row.rank,
+  }));
+}

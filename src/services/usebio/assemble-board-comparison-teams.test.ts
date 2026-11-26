@@ -1,0 +1,419 @@
+import { describe, it, expect } from "vitest";
+import { assembleBoardComparisonTeams as assembleBoardComparisonTeamsImpl } from "./assemble-board-comparison-teams";
+import { teamMatchStructureFromRows } from "@/modules/scoring/swiss/team-match-test-structure";
+import type { Board } from "@/db/games/tables/boards";
+import type { AssignedTeam, Pair } from "@/model/participants";
+import type { BridgeGame } from "@/db/game-index/schema";
+import type { Club } from "@/db/system/schema";
+import type { BoardOutcome } from "@/model/score";
+import type { UsebioBoardComparisonScoring } from "@/modules/interchange/usebio/generate-usebio";
+
+// assembleBoardComparisonTeams now takes the first-class `matches` rows; derive
+// them from each scenario's board rows via the test-only helper. The
+// materialiser-written path is covered by the usebio-service int test.
+function assembleBoardComparisonTeams(
+  g: BridgeGame,
+  c: Club,
+  teams: AssignedTeam[],
+  boardRows: Board[],
+  scoring: UsebioBoardComparisonScoring,
+) {
+  return assembleBoardComparisonTeamsImpl(
+    g,
+    c,
+    "NORMAL_CLUB",
+    teams,
+    boardRows,
+    teamMatchStructureFromRows(boardRows),
+    scoring,
+  );
+}
+
+const club: Club = { id: 1, name: "Test Club", clubNumber: "999" };
+
+const game = {
+  gameId: "g1",
+  eventName: "Board-a-Match Teams",
+  eventDate: "2024-11-18T00:00:00.000Z",
+  gameType: "TEAMS",
+  scoringType: "BAM",
+  sectionName: "A",
+} as BridgeGame;
+
+function pair(seat: string, first: string): Pair {
+  return {
+    type: "PAIR",
+    initialSeat: seat as Pair["initialSeat"],
+    player1: { id: 1, firstName: first, lastName: "N", nationalId: null },
+    player2: { id: 2, firstName: first, lastName: "S", nationalId: null },
+  };
+}
+
+function team(homeTable: number, name: string): AssignedTeam {
+  return {
+    type: "TEAM",
+    id: `A${homeTable}NS`,
+    name,
+    pair1: pair(`A${homeTable}NS`, `H${homeTable}`),
+    pair2: pair(`A${homeTable}EW`, `A${homeTable}`),
+  } as AssignedTeam;
+}
+
+function board(
+  round: number,
+  table: number,
+  boardNumber: number,
+  ns: string,
+  ew: string,
+  outcome: BoardOutcome | null,
+  extra: Partial<Board> = {},
+): Board {
+  return {
+    section: "A",
+    roundNumber: round,
+    tableNumber: table,
+    boardNumber,
+    copy: "A",
+    ns,
+    ew,
+    confirmedResult: outcome,
+    confirmedLead: null,
+    directorOverrideResult: null,
+    directorOverrideLead: null,
+    status: "CONFIRMED",
+    matchId: 1,
+    ...extra,
+  } as Board;
+}
+
+describe("assembleBoardComparisonTeams — Board-a-Match (scale 1)", () => {
+  const teams = [team(1, "Sharks"), team(2, "Dragons")];
+
+  it("produces a board-comparison BAM file with the team roster", () => {
+    const data = assembleBoardComparisonTeams(game, club, teams, [], "BAM");
+    expect(data.kind).toBe("BOARD_COMPARISON_TEAMS");
+    expect(data.scoring).toBe("BAM");
+    expect(data.teams).toHaveLength(2);
+    expect(data.teams[0]).toMatchObject({
+      teamNumber: "1",
+      teamName: "Sharks",
+    });
+    expect(data.teams[0].pairs).toHaveLength(2);
+  });
+
+  it("emits per-board win/tie/loss points (0/0.5/1) from the home team's view", () => {
+    // Board 1: team 1 (home NS) 4S= (420) beats team 2's home 3NT= (400) -> win.
+    // Board 2: both 3NT= (400 v 400) -> tie.
+    // Board 3: team 1 3NT= (400) loses to team 2's home 4S= (420) -> loss.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 2, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 3, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 3, "A2NS", "A1EW", "4SN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(game, club, teams, boards, "BAM");
+    const byBoard = new Map(
+      data.matches[0].boards.map((b) => [b.boardNumber, b]),
+    );
+
+    expect(byBoard.get(1)).toMatchObject({
+      teamPoints: 1,
+      opposingTeamPoints: 0,
+    });
+    expect(byBoard.get(2)).toMatchObject({
+      teamPoints: 0.5,
+      opposingTeamPoints: 0.5,
+    });
+    expect(byBoard.get(3)).toMatchObject({
+      teamPoints: 0,
+      opposingTeamPoints: 1,
+    });
+    // Both rooms' direction-tagged traveller lines, no cross-imp fields.
+    expect(byBoard.get(1)!.travellerLines.map((l) => l.direction)).toEqual([
+      "NS",
+      "EW",
+    ]);
+    expect(byBoard.get(1)!.travellerLines[0]).toMatchObject({
+      contract: "4S",
+      playedBy: "N",
+    });
+  });
+
+  it("sets each team's match score to its boards won (complements sum to boards played)", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 2, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(game, club, teams, boards, "BAM");
+    const match = data.matches[0];
+
+    // Board 1 win + board 2 tie = 1.5 of 2; opponent gets 0.5.
+    expect(match.teamScore).toBe(1.5);
+    expect(match.opposingTeamScore).toBe(0.5);
+    expect(match.teamScore + match.opposingTeamScore).toBe(2);
+  });
+
+  it("ranks teams by total boards won, highest first", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(game, club, teams, boards, "BAM");
+    expect(data.ranking[0]).toMatchObject({
+      number: "1",
+      place: 1,
+      totalWon: 1,
+    });
+    const dragons = data.ranking.find((r) => r.number === "2")!;
+    expect(dragons.totalWon).toBe(0);
+  });
+
+  it("scores a not-yet-comparable board as 0/0 for both teams", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", null),
+    ];
+
+    const data = assembleBoardComparisonTeams(game, club, teams, boards, "BAM");
+    const [boardEntry] = data.matches[0].boards;
+    expect(boardEntry).toMatchObject({ teamPoints: 0, opposingTeamPoints: 0 });
+    expect(data.matches[0].teamScore).toBe(0);
+    expect(data.matches[0].opposingTeamScore).toBe(0);
+  });
+});
+
+describe("assembleBoardComparisonTeams — Point-a-Board (scale 2)", () => {
+  const teams = [team(1, "Sharks"), team(2, "Dragons")];
+  const pabGame = { ...game, scoringType: "PAB" } as BridgeGame;
+
+  it("produces a board-comparison PAB file tagged PAB", () => {
+    const data = assembleBoardComparisonTeams(pabGame, club, teams, [], "PAB");
+    expect(data.kind).toBe("BOARD_COMPARISON_TEAMS");
+    expect(data.scoring).toBe("PAB");
+  });
+
+  it("doubles the per-board points: win 2 / tie 1 / loss 0", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 2, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 3, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 3, "A2NS", "A1EW", "4SN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(
+      pabGame,
+      club,
+      teams,
+      boards,
+      "PAB",
+    );
+    const byBoard = new Map(
+      data.matches[0].boards.map((b) => [b.boardNumber, b]),
+    );
+
+    // Win -> 2/0, tie -> 1/1, loss -> 0/2.
+    expect(byBoard.get(1)).toMatchObject({
+      teamPoints: 2,
+      opposingTeamPoints: 0,
+    });
+    expect(byBoard.get(2)).toMatchObject({
+      teamPoints: 1,
+      opposingTeamPoints: 1,
+    });
+    expect(byBoard.get(3)).toMatchObject({
+      teamPoints: 0,
+      opposingTeamPoints: 2,
+    });
+  });
+
+  it("scales the match score and ranking onto the 0/1/2 points", () => {
+    // Board 1 win (2) + board 2 tie (1) = 3 of 4; opponent gets 1.
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+      board(1, 1, 2, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      board(1, 2, 2, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+
+    const data = assembleBoardComparisonTeams(
+      pabGame,
+      club,
+      teams,
+      boards,
+      "PAB",
+    );
+    const match = data.matches[0];
+    expect(match.teamScore).toBe(3);
+    expect(match.opposingTeamScore).toBe(1);
+    expect(data.ranking[0]).toMatchObject({
+      number: "1",
+      place: 1,
+      totalWon: 3,
+    });
+  });
+});
+
+describe("assembleBoardComparisonTeams — triples", () => {
+  const triTeams = [team(1, "Sharks"), team(2, "Dragons"), team(3, "Owls")];
+
+  // SHORT triple {1,2,3}, one round, three one-board head-to-head sets:
+  //   set A (board 1): 1·NS 4S= (420) vs 2·NS 3NT= (400) -> team 1 wins board
+  //   set B (board 2): 2·NS 4S= (420) vs 3·NS 3NT= (400) -> team 2 wins board
+  //   set C (board 3): 1·NS 4S= (420) vs 3·NS 3NT= (400) -> team 1 wins board
+  // Board-comparison wins across each team's two comparisons:
+  //   team 1 wins both (1-2, 1-3) -> 2 board-points
+  //   team 2 wins one  (2-3)      -> 1 board-point
+  //   team 3 wins none            -> 0 board-points
+  const tripleBoards = [
+    // set A board 1: comparison 1-2
+    board(1, 1, 1, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+    board(1, 2, 1, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    // set B board 2: comparison 2-3
+    board(1, 2, 2, "A2NS", "A3EW", "4SN=" as BoardOutcome),
+    board(1, 3, 2, "A3NS", "A2EW", "3NTN=" as BoardOutcome),
+    // set C board 3: comparison 1-3
+    board(1, 3, 3, "A3NS", "A1EW", "3NTN=" as BoardOutcome),
+    board(1, 1, 3, "A1NS", "A3EW", "4SN=" as BoardOutcome),
+  ];
+
+  it("writes a SHORT triple as three head-to-head match nodes (BAM ×1)", () => {
+    const data = assembleBoardComparisonTeams(
+      game,
+      club,
+      triTeams,
+      tripleBoards,
+      "BAM",
+    );
+
+    // Three head-to-head MATCH nodes, all round 1, covering the three pairings.
+    expect(data.matches).toHaveLength(3);
+    expect(data.matches.every((m) => m.round === 1)).toBe(true);
+    expect(
+      data.matches.map((m) => `${m.team}v${m.opposingTeam}`).sort(),
+    ).toEqual(["1v2", "1v3", "2v3"]);
+
+    // Each team's total = sum of its two comparisons' board wins × winPoints
+    // (BAM ×1): 2 / 1 / 0.
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
+    expect(byNumber.get("1")).toBe(2);
+    expect(byNumber.get("2")).toBe(1);
+    expect(byNumber.get("3")).toBe(0);
+    expect(data.ranking[0].number).toBe("1");
+  });
+
+  it("scales the triple head-to-head totals onto PAB points (×2)", () => {
+    const pabGame = { ...game, scoringType: "PAB" } as BridgeGame;
+    const data = assembleBoardComparisonTeams(
+      pabGame,
+      club,
+      triTeams,
+      tripleBoards,
+      "PAB",
+    );
+    const byNumber = new Map(data.ranking.map((r) => [r.number, r.totalWon]));
+    // PAB doubles each board win: 4 / 2 / 0.
+    expect(byNumber.get("1")).toBe(4);
+    expect(byNumber.get("2")).toBe(2);
+    expect(byNumber.get("3")).toBe(0);
+  });
+});
+
+describe("assembleBoardComparisonTeams — edge cases", () => {
+  const teams = [team(1, "Sharks"), team(2, "Dragons")];
+  const o = (v: string) => v as BoardOutcome;
+
+  it("defaults an empty section name to A", () => {
+    const data = assembleBoardComparisonTeams(
+      { ...game, sectionName: "" } as BridgeGame,
+      club,
+      teams,
+      [],
+      "BAM",
+    );
+    expect(data.sectionName).toBe("A");
+  });
+
+  it("drops a without-standing team from the ranking", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN=")),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN=")),
+    ];
+    const data = assembleBoardComparisonTeamsImpl(
+      game,
+      club,
+      "NORMAL_CLUB",
+      teams,
+      boards,
+      teamMatchStructureFromRows(boards),
+      "BAM",
+      new Set(["A2NS"]),
+    );
+    expect(data.matches).toHaveLength(1);
+    expect(data.ranking.map((r) => r.number)).toEqual(["1"]);
+  });
+
+  it("handles leads, missing rooms and teams off the roster in a match", () => {
+    const boards = [
+      // board 1: both rooms, both with a lead (override beats confirmed).
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN="), {
+        confirmedLead: "SA" as never,
+      }),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN="), {
+        confirmedLead: "SA" as never,
+        directorOverrideLead: "HK" as never,
+      }),
+      // board 2: only the away room has a row.
+      board(1, 2, 2, "A2NS", "A1EW", o("3NTN=")),
+      // board 3: only the home room has a row, with no result entered.
+      board(1, 1, 3, "A1NS", "A2EW", null),
+    ];
+    // Roster holds neither team's number for team 1 -> raw ids are used.
+    const data = assembleBoardComparisonTeams(game, club, [], boards, "BAM");
+    const m = data.matches[0];
+    expect(m.team).toBe("A1NS");
+    expect(m.opposingTeam).toBe("A2NS");
+    const byBoard = new Map(m.boards.map((b) => [b.boardNumber, b]));
+    expect(byBoard.get(2)!.travellerLines.map((l) => l.direction)).toEqual([
+      "EW",
+    ]);
+    expect(byBoard.get(3)!.travellerLines.map((l) => l.direction)).toEqual([
+      "NS",
+    ]);
+    expect(data.ranking.map((r) => r.number)).toEqual(["A1NS", "A2NS"]);
+  });
+
+  it("handles leads, missing rooms and off-roster teams inside a triple", () => {
+    const boards = [
+      board(1, 1, 1, "A1NS", "A2EW", o("4SN="), {
+        confirmedLead: "SA" as never,
+      }),
+      board(1, 2, 1, "A2NS", "A1EW", o("3NTN="), {
+        directorOverrideLead: "HK" as never,
+      }),
+      // set B: board 2 only entered in the away room (A3NS), so the home room
+      // (A2NS) has no row.
+      board(1, 3, 2, "A3NS", "A2EW", o("3NTN=")),
+      // set B has a second board where only the home room has a row.
+      board(1, 2, 4, "A2NS", "A3EW", null),
+      board(1, 3, 3, "A3NS", "A1EW", o("3NTN=")),
+      board(1, 1, 3, "A1NS", "A3EW", o("4SN=")),
+    ];
+    const data = assembleBoardComparisonTeams(game, club, [], boards, "BAM");
+    expect(data.matches).toHaveLength(3);
+    const hasSingleRoom = data.matches.some((m) =>
+      m.boards.some((b) => b.travellerLines.length === 1),
+    );
+    expect(hasSingleRoom).toBe(true);
+    // Raw ids are used for teams missing from the roster.
+    expect(data.matches.every((m) => m.team.startsWith("A"))).toBe(true);
+  });
+});

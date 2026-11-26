@@ -22,7 +22,7 @@ vi.mock("@/db/games/actions/clear-timer-state", () => ({
 }));
 
 const mockClearEngine = vi.fn();
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   clearEngine: (...a: unknown[]) => mockClearEngine(...a),
 }));
 

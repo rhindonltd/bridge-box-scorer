@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState, type ChangeEvent } from "react";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { parsePbnFile, type ParsedPbnBoard } from "@/model/pbn-file";
+import { parsePbnFile, type ParsedPbnBoard } from "@/modules/interchange";
 
 /** A PBN deal file is a few KB; anything this large is not one. */
 const MAX_FILE_BYTES = 1_000_000;

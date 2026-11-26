@@ -74,6 +74,21 @@ import { findPairs } from "@/db/games/queries/find-pairs";
 import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { findTeams } from "@/db/games/queries/find-teams";
 import { scoreBoard } from "@/modules/scoring/traveller/score-traveller";
+
+/**
+ * Mock the per-board scorer. Like the real one, it keeps each input line's own
+ * fields (the board row travels with the line through scoring) and adds the
+ * given scored fields on top.
+ */
+function mockScoreBoard(result: any) {
+  vi.mocked(scoreBoard).mockImplementation(((traveller: any) => ({
+    ...result,
+    lines: result.lines.map((line: any, i: number) => ({
+      ...traveller.lines[i],
+      ...line,
+    })),
+  })) as any);
+}
 import {
   getCombination,
   getOverallPlugin,
@@ -134,7 +149,7 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb);
 
-      vi.mocked(scoreBoard).mockReturnValue({
+      mockScoreBoard({
         pluginId: "MP",
         board: 1,
         lines: [
@@ -289,7 +304,7 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(scoreBoard).mockReturnValue({
+      mockScoreBoard({
         pluginId: "MP",
         board: 1,
         lines: [],
@@ -352,7 +367,7 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(scoreBoard).mockReturnValue({
+      mockScoreBoard({
         pluginId: "XIMP",
         board: 1,
         lines: [],
@@ -398,7 +413,7 @@ describe("leaderboard-service", () => {
       } as unknown as Db;
       vi.mocked(getPairsDb).mockResolvedValue(mockDb as any);
 
-      vi.mocked(scoreBoard).mockReturnValue({
+      mockScoreBoard({
         pluginId: "XIMP",
         board: 1,
         lines: [
@@ -466,7 +481,7 @@ describe("computeSectionLeaderboards", () => {
       }),
     } as unknown as Db;
 
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -525,7 +540,7 @@ describe("computeSectionLeaderboards", () => {
       }),
     } as unknown as Db;
 
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -738,7 +753,7 @@ describe("sit-outs in a board-pooled pairs game", () => {
         perBoard,
         overall: perBoard,
       });
-      vi.mocked(scoreBoard).mockReturnValue({
+      mockScoreBoard({
         pluginId: perBoard,
         board: 1,
         lines: [{ nsId: "1", ewId: "2", score: 400 }],
@@ -797,7 +812,7 @@ describe("buildLeaderboards", () => {
   it("computes both the combined and per-section leaderboards from a single read", async () => {
     const { buildLeaderboards } = await import("./leaderboard-service");
     mockOverallPlugin({ type: "PAIR_MP", lines: [] });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -833,7 +848,7 @@ describe("buildLeaderboards", () => {
 
     const { buildLeaderboards } = await import("./leaderboard-service");
     mockOverallPlugin({ type: "PAIR_MP", lines: [] });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -877,7 +892,7 @@ describe("buildLeaderboards", () => {
 
     const { buildLeaderboards } = await import("./leaderboard-service");
     mockOverallPlugin({ type: "PAIR_MP", lines: [] });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -948,7 +963,7 @@ describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
         { pairId: "A3EW", totalMP: 4, maxMP: 20, rank: 6, tied: false },
       ],
     });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -1002,7 +1017,7 @@ describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
         { pairId: "A2NS", totalMP: 8, maxMP: 20, rank: 1, tied: false },
       ],
     });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],
@@ -1048,7 +1063,7 @@ describe("buildLeaderboards — two-winner (Mitchell) NS/EW split", () => {
       scoring: "MP",
       lines: [{ pairId: "A1NS", totalMP: 10, maxMP: 20, rank: 1, tied: false }],
     });
-    vi.mocked(scoreBoard).mockReturnValue({
+    mockScoreBoard({
       pluginId: "MP",
       board: 1,
       lines: [],

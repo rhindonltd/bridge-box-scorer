@@ -1,0 +1,289 @@
+import { Board } from "@/db/games/tables/boards";
+import { AssignedTeam, sectionOf } from "@/model/participants";
+import { BridgeGame } from "@/db/game-index/schema";
+import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/model/game-types";
+import { BoardOutcome } from "@/model/score";
+import { Card } from "@/model/common";
+import {
+  outcomeToScore,
+  rank,
+  groupTeamMatches,
+  groupTeamTriples,
+  teamMatchBoardWins,
+  boardResult,
+  type TeamMatchStructureRow,
+} from "@/modules/scoring";
+import {
+  buildTravellerLine,
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+  UsebioBoardComparisonBoard,
+  UsebioBoardComparisonMatch,
+  UsebioBoardComparisonRankEntry,
+  UsebioBoardComparisonScoring,
+  UsebioBoardComparisonTeamsData,
+  UsebioClub,
+  UsebioTeam,
+  UsebioTeamTravellerLine,
+} from "@/modules/interchange/usebio";
+import { applySeatSwap } from "@/modules/rulings";
+
+/** Points a single board is worth on the scoring's scale (BAM 1, PAB 2). */
+function winPointsFor(scoring: UsebioBoardComparisonScoring): number {
+  return scoring === "PAB" ? 2 : 1;
+}
+
+/**
+ * Assemble the USEBIO board-comparison teams data (Board-a-Match or
+ * Point-a-Board) from a game's teams and board rows.
+ *
+ * Mirrors `assembleSwissTeams`'s match reconstruction (the two home tables of a
+ * match paired via the EW-seat encoding, shared through `groupTeamMatches`),
+ * but scores by board comparison: each board's comparable result is a win, tie
+ * or loss for the primary team decided on raw score, the opponent taking the
+ * complement. The `scoring` scale (BAM 1 point per board, PAB 2) is applied
+ * here so the emitted `teamPoints` / `teamScore` are already on the file's
+ * scale. No cross-IMP points are emitted.
+ */
+export function assembleBoardComparisonTeams(
+  game: BridgeGame,
+  club: Club,
+  tournamentLevel: TournamentLevel,
+  teams: AssignedTeam[],
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  scoring: UsebioBoardComparisonScoring,
+  excludedFromRanking: ReadonlySet<string> = new Set(),
+  // §2.4.7 mid-match substitutions (see assembleSwissTeams). Empty ⇒ the
+  // two-pairs-per-team shape.
+  occupancies: readonly TeamOccupancy[] = [],
+): UsebioBoardComparisonTeamsData {
+  const usebioClub: UsebioClub = {
+    name: club.name,
+    clubNumber: club.clubNumber,
+  };
+  const winPoints = winPointsFor(scoring);
+
+  // Stable team numbers: 1..N in findTeams order (section then table).
+  const numberByTeamId = new Map<string, string>();
+  teams.forEach((team, i) => numberByTeamId.set(team.id, String(i + 1)));
+
+  const pairing = buildTeamPairing(teams, occupancies);
+  const usebioTeams: UsebioTeam[] = teams.map((team) => ({
+    teamNumber: numberByTeamId.get(team.id)!,
+    teamName: team.name,
+    sectionId: sectionOf(team.id),
+    /* v8 ignore next -- unreachable: buildTeamPairing sets an entry for every roster team */
+    pairs: pairing.pairsByTeamId.get(team.id) ?? [],
+  }));
+
+  const { matches, totals } = buildMatches(
+    boardRows,
+    matchRows,
+    numberByTeamId,
+    winPoints,
+    pairing,
+  );
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
+
+  const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
+
+  return {
+    kind: "BOARD_COMPARISON_TEAMS",
+    scoring,
+    club: usebioClub,
+    tournamentLevel,
+    eventName: game.eventName,
+    eventDate: game.eventDate,
+    sectionName: game.sectionName || "A",
+    boards: boardNumbers.size,
+    teams: usebioTeams,
+    matches,
+    ranking,
+  };
+}
+
+function leadOf(row: Board): Card | null {
+  return (row.directorOverrideLead ?? row.confirmedLead ?? null) as Card | null;
+}
+
+/**
+ * Reconstruct team matches and emit each match's per-board points (scaled by
+ * `winPoints`), both rooms' traveller lines, and each team's points-won total.
+ */
+function buildMatches(
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  numberByTeamId: Map<string, string>,
+  winPoints: number,
+  pairing: TeamPairing,
+): { matches: UsebioBoardComparisonMatch[]; totals: Map<string, number> } {
+  const totals = new Map<string, number>();
+  const add = (teamId: string, points: number): void => {
+    totals.set(teamId, (totals.get(teamId) ?? 0) + points);
+  };
+
+  const matches: UsebioBoardComparisonMatch[] = [];
+
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
+    const { homeTeamId, opponentTeamId } = match;
+    const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
+    const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
+
+    const { perBoard, won, boardsPlayed } = teamMatchBoardWins(match);
+
+    const boards: UsebioBoardComparisonBoard[] = perBoard.map(
+      ({ boardNumber, result }) => {
+        const travellerLines: UsebioTeamTravellerLine[] = [];
+        const homeRow = match.homeRowsByBoard.get(boardNumber);
+        const awayRow = match.opponentRowsByBoard.get(boardNumber);
+        // Primary team sat NS at its own home table, EW at the opponent's.
+        if (homeRow)
+          travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+        if (awayRow)
+          travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+        // A board that isn't comparable yet scores 0/0 in the file; otherwise
+        // scale the native board result (0/0.5/1) onto the file's points.
+        const teamPoints = (result ?? 0) * winPoints;
+        const opposingTeamPoints =
+          result == null ? 0 : (1 - result) * winPoints;
+        return { boardNumber, teamPoints, opposingTeamPoints, travellerLines };
+      },
+    );
+
+    // groupTeamMatches keys entries off actual rows, so a reconstructed match
+    // always has at least one board and these fallbacks cannot fire.
+    /* v8 ignore start -- unreachable: a reconstructed match always has >=1 board */
+    const startBoard = boards[0]?.boardNumber ?? 0;
+    const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+    /* v8 ignore stop */
+
+    // Match score is points won; the opponent won the complement of the played
+    // boards (ties split), all scaled onto the file's points.
+    const teamScore = won * winPoints;
+    const opposingTeamScore = (boardsPlayed - won) * winPoints;
+    add(homeTeamId, teamScore);
+    add(opponentTeamId, opposingTeamScore);
+
+    matches.push({
+      round: match.round,
+      team: teamNumber,
+      opposingTeam: opposingNumber,
+      startBoard,
+      endBoard,
+      teamScore,
+      opposingTeamScore,
+      boards,
+    });
+  }
+
+  // Triples: USEBIO has no three-way tag, so each triple is written as its
+  // three pairwise head-to-head MATCH nodes (same round) for board-level
+  // detail. Those nodes are INFORMATIONAL — a triple team's contribution to
+  // its total is its CROSS board-comparison result (win/tie/loss vs BOTH other
+  // tables), added once here (Option A: the export total agrees with the live
+  // board-comparison standings).
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
+    for (const sub of triple.comparisons) {
+      const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
+      const opposingNumber =
+        numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
+      const { perBoard, won, boardsPlayed } = teamMatchBoardWins(sub);
+
+      const boards: UsebioBoardComparisonBoard[] = perBoard.map(
+        ({ boardNumber, result }) => {
+          const travellerLines: UsebioTeamTravellerLine[] = [];
+          const homeRow = sub.homeRowsByBoard.get(boardNumber);
+          const awayRow = sub.opponentRowsByBoard.get(boardNumber);
+          if (homeRow)
+            travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+          if (awayRow)
+            travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+          const teamPoints = (result ?? 0) * winPoints;
+          const opposingTeamPoints =
+            result == null ? 0 : (1 - result) * winPoints;
+          return {
+            boardNumber,
+            teamPoints,
+            opposingTeamPoints,
+            travellerLines,
+          };
+        },
+      );
+
+      /* v8 ignore start -- a reconstructed sub-match always has >=1 board */
+      const startBoard = boards[0]?.boardNumber ?? 0;
+      const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+      /* v8 ignore stop */
+
+      // Each comparison is authoritative: the team's points are its own board
+      // wins (home `won`, away `boardsPlayed - won`), scaled, added once here.
+      matches.push({
+        round: sub.round,
+        team: teamNumber,
+        opposingTeam: opposingNumber,
+        startBoard,
+        endBoard,
+        teamScore: won * winPoints,
+        opposingTeamScore: (boardsPlayed - won) * winPoints,
+        boards,
+      });
+      add(sub.homeTeamId, won * winPoints);
+      add(sub.opponentTeamId, (boardsPlayed - won) * winPoints);
+    }
+  }
+
+  return { matches, totals };
+}
+
+function teamTravellerLine(
+  row: Board,
+  direction: string,
+  pairing: TeamPairing,
+): UsebioTeamTravellerLine {
+  const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
+  const seated = applySeatSwap(row);
+  const line = buildTravellerLine(
+    outcome,
+    leadOf(row),
+    outcomeToScore(row.boardNumber, outcome),
+  );
+  return {
+    direction,
+    // Which partnership sat NS / EW at this table for this board (a room the
+    // director marked played-reversed has its two seats exchanged).
+    nsPairNumber: pairing.pairNumberFor(seated.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(seated.ew, row.boardNumber),
+    ...line,
+  };
+}
+
+/**
+ * Rank teams by total points won (highest first); ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
+function buildRanking(
+  totals: Map<string, number>,
+  numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
+): UsebioBoardComparisonRankEntry[] {
+  const ranked = rank(
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalWon]) => ({
+        teamId,
+        totalWon,
+      })),
+    (row) => row.totalWon,
+  );
+
+  return ranked.map((row) => ({
+    number: numberByTeamId.get(row.teamId) ?? row.teamId,
+    sectionId: sectionOf(row.teamId),
+    totalWon: row.totalWon,
+    place: row.rank,
+  }));
+}

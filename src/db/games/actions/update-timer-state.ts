@@ -1,7 +1,7 @@
 import "server-only";
 
 import { requireGameDb } from "@/db/games";
-import { TimerState } from "@/timer/timer-state";
+import { TimerState } from "@/modules/timer";
 import { metadata } from "@/db/games/tables/metadata";
 import { SectionLetter } from "@/model/participants";
 import { timerKey } from "@/db/games/queries/find-timer-state";

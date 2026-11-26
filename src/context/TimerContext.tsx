@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useRef, useState, ReactNode } from "react";
-import { TimerState } from "@/timer/timer-state";
-import { BreakProblem } from "@/timer/breaks";
+import { TimerState, BreakProblem } from "@/modules/timer";
 import { SocketEvents } from "@/socket/socket-events";
 import { useRequiredGame } from "@/context/GameContext";
 import { useFeatureSnapshot } from "@/hooks/use-feature-snapshot";

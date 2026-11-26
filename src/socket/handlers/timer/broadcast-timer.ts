@@ -1,9 +1,8 @@
 import { Server } from "socket.io";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import { TimerState } from "@/timer/timer-state";
+import { TimerState, validateStateBreaks } from "@/modules/timer";
 import { SectionLetter } from "@/model/participants";
-import { validateStateBreaks } from "@/timer/breaks";
 
 /**
  * Build the `timer:sync` payload for a section's timer state: the full state

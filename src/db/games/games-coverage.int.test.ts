@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
-import type { TimerState } from "@/timer/timer-state";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 /**
  * Coverage for the per-game database entry points that the other games int

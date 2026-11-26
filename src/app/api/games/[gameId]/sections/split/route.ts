@@ -9,7 +9,7 @@ import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
-import { clearEngine } from "@/timer/game-store";
+import { clearEngine } from "@/services/timer/game-store";
 import { broadcastTimerCleared } from "@/socket/handlers/timer/broadcast-timer";
 import { getIO } from "@/socket/websocket";
 import { Rooms } from "@/socket/rooms";

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 import { useTimerConfigState, msToResumeAt } from "./useTimerConfigState";
-import type { TimerState } from "@/timer/timer-state";
+import type { TimerState } from "@/modules/timer/timer-state";
 
 function seedState(overrides: Partial<TimerState> = {}): TimerState {
   return {

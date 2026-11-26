@@ -72,7 +72,7 @@ vi.mock("@/db/games", () => ({
   })),
 }));
 
-vi.mock("@/timer/game-store", () => ({
+vi.mock("@/services/timer/game-store", () => ({
   getEngine: vi.fn(),
   createEngine: vi.fn(),
 }));
@@ -81,7 +81,7 @@ vi.mock("@/db/games/actions/update-timer-state", () => ({
   updateTimerState: vi.fn(),
 }));
 
-vi.mock("@/timer/scheduler", () => ({
+vi.mock("@/services/timer/scheduler", () => ({
   scheduleGame: vi.fn(),
   cancelGameSchedule: vi.fn(),
 }));
@@ -91,7 +91,7 @@ import { createPairWithPlayers } from "@/db/games/actions/create-pair-with-playe
 import { findPairs } from "@/db/games/queries/find-pairs";
 import { findSections } from "@/db/games/queries/find-sections";
 import { findLoginSession } from "@/db/system/queries/find-login-session";
-import { getEngine } from "@/timer/game-store";
+import { getEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 
 import { registerGameHandlers } from "@/socket/handlers/game/game.handlers";

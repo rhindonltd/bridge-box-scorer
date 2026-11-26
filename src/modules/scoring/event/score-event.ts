@@ -24,6 +24,16 @@ import {
   calculateTeamsBoardComparisonOverall,
 } from "@/modules/scoring/swiss/teams-board-comparison-overall";
 import { PairTraveller } from "@/model/traveller";
+import { outcomeToScore } from "@/modules/scoring/traveller/common";
+import type { SwissPairsMatchDetail } from "@/modules/scoring/swiss/swiss-vp-overall";
+import type { TeamMatchDetail } from "@/modules/scoring/swiss/match-detail";
+import type {
+  PairsMatchResult,
+  RoomResult,
+  ScoredLine,
+  TeamMatchResult,
+} from "@/model/event-detail";
+import type { Card } from "@/model/common";
 import { BoardOutcome } from "@/model/score";
 import { OverallScore } from "@/model/leaderboard";
 import {
@@ -134,14 +144,104 @@ function scoreSwissVp(
   matchRows: MatchRow[],
   mode: SwissVpMode,
   expectedBoards: number | undefined,
+  field: string,
+  sink: DetailSink,
 ) {
-  if (mode === "XIMP")
-    return calculateSwissXimpVpOverall(boardRows, matchRows, {
-      expectedBoards,
-    });
-  if (mode === "MP")
-    return calculateSwissMpVpOverall(boardRows, matchRows, { expectedBoards });
-  return null;
+  if (mode === null) return null;
+  const matches: SwissPairsMatchDetail<ResultRow>[] = [];
+  const score =
+    mode === "XIMP"
+      ? calculateSwissXimpVpOverall(boardRows, matchRows, {
+          expectedBoards,
+          matches,
+        })
+      : calculateSwissMpVpOverall(boardRows, matchRows, {
+          expectedBoards,
+          matches,
+        });
+  sink.pairsMatches.push(...matches.map((m) => pairsMatchResult(field, m)));
+  return score;
+}
+
+/**
+ * Everything a scoring run records besides the standings, filled in as each
+ * field is scored: the adjusted board scores (scorecard), and the per-line and
+ * per-match results (USEBIO export).
+ */
+interface DetailSink {
+  adjusted: AdjustedBoardScore[];
+  lines: ScoredLine[];
+  pairsMatches: PairsMatchResult[];
+  teamMatches: TeamMatchResult[];
+}
+
+/** One ruled row as a traveller shows it. */
+function roomOf(row: ResultRow): RoomResult {
+  const outcome = row.directorOverrideResult ?? row.confirmedResult;
+  return {
+    section: row.section,
+    roundNumber: row.roundNumber,
+    tableNumber: row.tableNumber,
+    boardNumber: row.boardNumber,
+    ns: row.ns,
+    ew: row.ew,
+    outcome,
+    lead: (row.directorOverrideLead ?? row.confirmedLead) as Card | null,
+    nsScore: outcome != null ? outcomeToScore(row.boardNumber, outcome) : null,
+    seatsSwapped: row.seatsSwapped,
+  };
+}
+
+function pairsMatchResult(
+  field: string,
+  m: SwissPairsMatchDetail<ResultRow>,
+): PairsMatchResult {
+  return {
+    field,
+    // A match's rows are all in its round's section.
+    /* v8 ignore next -- every scored match has at least one board row */
+    section: m.rows[0]?.section ?? field,
+    round: m.round,
+    ns: m.nsId,
+    ew: m.ewId,
+    nsVp: m.nsVp,
+    ewVp: m.ewVp,
+    boards: m.rows.map(roomOf),
+  };
+}
+
+function teamMatchResult(
+  field: string,
+  m: TeamMatchDetail<ResultRow>,
+): TeamMatchResult {
+  return {
+    field,
+    section: m.section,
+    round: m.round,
+    triple: m.triple,
+    home: m.home,
+    opponent: m.opponent,
+    boards: m.boards.map((b) => ({
+      boardNumber: b.boardNumber,
+      home: b.home,
+      homeRoom: b.homeRow ? roomOf(b.homeRow) : null,
+      awayRoom: b.awayRow ? roomOf(b.awayRow) : null,
+    })),
+    homeScore: m.homeScore,
+    opponentScore: m.opponentScore,
+    boardsPlayed: m.boardsPlayed,
+    void: m.void,
+  };
+}
+
+/** Collect a teams scorer's matches into the sink, tagged with the field. */
+function teamMatchesInto(sink: DetailSink, field: string) {
+  const matches: TeamMatchDetail<ResultRow>[] = [];
+  return {
+    matches,
+    flush: () =>
+      sink.teamMatches.push(...matches.map((m) => teamMatchResult(field, m))),
+  };
 }
 
 /**
@@ -158,7 +258,7 @@ function scoreBoardsToOverall(
   boardRows: ResultRow[],
   scoringType: ScoringType,
   sectionLabel: string,
-  adjusted: AdjustedBoardScore[],
+  sink: DetailSink,
 ): OverallScore {
   const boardMap = new Map<number, ResultRow[]>();
   for (const row of boardRows) {
@@ -186,11 +286,14 @@ function scoreBoardsToOverall(
       // boards carry a distinct `#<occId>` id (rewritten up front in
       // `readLeaderboardInputs`), so the stand-in ranks as its own (excluded)
       // line while still counting for opponents.
+      // Each line carries its row through every pass (they all copy the
+      // line), so the scored line can be reported with its table and lead.
       lines: linesWithResults.map((r) => ({
         nsId: r.ns,
         ewId: r.ew,
         outcome: (r.directorOverrideResult ??
           r.confirmedResult) as BoardOutcome,
+        row: r,
       })),
     };
 
@@ -285,12 +388,42 @@ function scoreBoardsToOverall(
   // Record each pair's figure on each board exactly as the standings sum it
   // (after equalisation, the better-than-average uplift and rounding), so the
   // personal scorecard shows the same numbers its total is built from (D5).
-  adjusted.push(...adjustedBoardScores(sectionLabel, scoredBoards));
+  sink.adjusted.push(...adjustedBoardScores(sectionLabel, scoredBoards));
+  sink.lines.push(...scoredLines(sectionLabel, scoredBoards));
 
   const overallPlugin = getOverallPlugin(overallId);
   return overallPlugin.aggregate(
     scoredBoards.map((b) => ({ lines: b.lines })),
   ) as OverallScore;
+}
+
+/**
+ * Every scored line with its row, after the standings passes: the figures the
+ * standings sum, with the table, round and lead the traveller shows.
+ */
+function scoredLines(field: string, boards: ScoredBoard[]): ScoredLine[] {
+  const out: ScoredLine[] = [];
+  for (const board of boards) {
+    for (const line of board.lines as ((MatchpointLine | XimpLine) & {
+      row: ResultRow;
+    })[]) {
+      const values =
+        "nsMatchPoints" in line
+          ? {
+              nsValue: line.nsMatchPoints,
+              ewValue: line.ewMatchPoints,
+              top: line.maxMatchPoints,
+            }
+          : { nsValue: line.nsCrossImps, ewValue: line.ewCrossImps };
+      out.push({
+        ...roomOf(line.row),
+        field,
+        outcome: line.outcome,
+        ...values,
+      });
+    }
+  }
+  return out;
 }
 
 /**
@@ -533,7 +666,7 @@ function computeCombined(
   expectedBoards: number | undefined,
   withdrawals: WithdrawalRecord[],
   excludedFromRanking: ReadonlySet<string>,
-  adjusted: AdjustedBoardScore[],
+  sink: DetailSink,
 ): Standings {
   // A board-comparison teams game (BAM/PAB) ranks teams on boards won; a
   // teams-VP game ranks teams on Victory Points; an aggregate-IMP teams game
@@ -541,24 +674,32 @@ function computeCombined(
   // the standard board-pooled overall).
   const teamIds = teams.map((t) => t.id);
   if (teamsBoardComparison !== null) {
+    const detail = teamMatchesInto(sink, combinedLabel);
     const overallScore = padBaselineLines(
       calculateTeamsBoardComparisonOverall(boardRows, matchRows, {
         barometer,
         scoring: teamsBoardComparison,
         expectedBoards,
+        matches: detail.matches,
       }),
       teamIds,
       excludedFromRanking,
     );
+    detail.flush();
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   if (teamsImpAggregate) {
+    const detail = teamMatchesInto(sink, combinedLabel);
     const overallScore = padBaselineLines(
-      calculateTeamsImpAggregateOverall(boardRows, matchRows, { barometer }),
+      calculateTeamsImpAggregateOverall(boardRows, matchRows, {
+        barometer,
+        matches: detail.matches,
+      }),
       teamIds,
       excludedFromRanking,
     );
+    detail.flush();
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
@@ -571,18 +712,29 @@ function computeCombined(
       withdrawals,
       boardRows,
     );
+    const detail = teamMatchesInto(sink, combinedLabel);
     const overallScore = padBaselineLines(
-      calculateTeamsVpOverall(boardRows, ruledMatches, { expectedBoards }),
+      calculateTeamsVpOverall(boardRows, ruledMatches, {
+        expectedBoards,
+        matches: detail.matches,
+      }),
       teamIds,
       excludedFromRanking,
     );
+    detail.flush();
     return { type: overallScore.type, overallScore, participants: teams };
   }
 
   const participants = pairs;
   const overallScore = padBaselineLines(
-    scoreSwissVp(boardRows, matchRows, swissVpMode, expectedBoards) ??
-      scoreBoardsToOverall(boardRows, scoringType, combinedLabel, adjusted),
+    scoreSwissVp(
+      boardRows,
+      matchRows,
+      swissVpMode,
+      expectedBoards,
+      combinedLabel,
+      sink,
+    ) ?? scoreBoardsToOverall(boardRows, scoringType, combinedLabel, sink),
     participants.map((p) => p.id),
     excludedFromRanking,
   );
@@ -622,7 +774,7 @@ function computeSections(
   // competitor from the start. Disabled for the §3.5 "as-of" replay, which must
   // reproduce the exact field that drove a past Swiss draw.
   baseline = true,
-  adjusted: AdjustedBoardScore[] = [],
+  sink: DetailSink,
 ): SectionStandings[] {
   const rowsBySection = new Map<string, ResultRow[]>();
   for (const row of boardRows) {
@@ -682,14 +834,17 @@ function computeSections(
     const sectionTeamIds = (teamsBySection.get(section) ?? []).map((t) => t.id);
 
     if (teamsBoardComparison !== null) {
+      const detail = teamMatchesInto(sink, section);
       const overallScore = pad(
         calculateTeamsBoardComparisonOverall(sectionRows, sectionMatches, {
           barometer,
           scoring: teamsBoardComparison,
           expectedBoards,
+          matches: detail.matches,
         }),
         sectionTeamIds,
       );
+      detail.flush();
       return {
         section,
         type: overallScore.type,
@@ -699,12 +854,15 @@ function computeSections(
     }
 
     if (teamsImpAggregate) {
+      const detail = teamMatchesInto(sink, section);
       const overallScore = pad(
         calculateTeamsImpAggregateOverall(sectionRows, sectionMatches, {
           barometer,
+          matches: detail.matches,
         }),
         sectionTeamIds,
       );
+      detail.flush();
       return {
         section,
         type: overallScore.type,
@@ -720,12 +878,15 @@ function computeSections(
         withdrawersBySection.get(section) ?? [],
         sectionRows,
       );
+      const detail = teamMatchesInto(sink, section);
       const overallScore = pad(
         calculateTeamsVpOverall(sectionRows, ruledMatches, {
           expectedBoards,
+          matches: detail.matches,
         }),
         sectionTeamIds,
       );
+      detail.flush();
       return {
         section,
         type: overallScore.type,
@@ -736,8 +897,14 @@ function computeSections(
 
     const sectionParticipants = pairsBySection.get(section) ?? [];
     const overallScore = pad(
-      scoreSwissVp(sectionRows, sectionMatches, swissVpMode, expectedBoards) ??
-        scoreBoardsToOverall(sectionRows, scoringType, section, adjusted),
+      scoreSwissVp(
+        sectionRows,
+        sectionMatches,
+        swissVpMode,
+        expectedBoards,
+        section,
+        sink,
+      ) ?? scoreBoardsToOverall(sectionRows, scoringType, section, sink),
       sectionParticipants.map((p) => p.id),
     );
     return {
@@ -816,6 +983,15 @@ export interface EventScore {
    */
   adjustedBoards: AdjustedBoardScore[];
   /**
+   * Board-pooled pairs only: every scored traveller line after the standings
+   * passes (the figures the standings sum), per field. Empty otherwise.
+   */
+  lines: ScoredLine[];
+  /** Swiss Pairs only: every head-to-head match as scored, per field. */
+  pairsMatches: PairsMatchResult[];
+  /** Teams formats only: every match and triple comparison, per field. */
+  teamMatches: TeamMatchResult[];
+  /**
    * The combined standings. Null when not requested, or when combined ranking
    * is off for a multi-section game.
    */
@@ -890,7 +1066,12 @@ export function scoreEvent(
 
   const { rows, matches, withdrawals, excludedFromRanking } = ruled;
   const { pairs, teams } = participants;
-  const adjustedBoards: AdjustedBoardScore[] = [];
+  const sink: DetailSink = {
+    adjusted: [],
+    lines: [],
+    pairsMatches: [],
+    teamMatches: [],
+  };
 
   const sections =
     scope === "combined"
@@ -911,7 +1092,7 @@ export function scoreEvent(
           withdrawals,
           excludedFromRanking,
           baseline,
-          adjustedBoards,
+          sink,
         ).map((s) => excludeFromLeaderboard(s, excludedFromRanking));
 
   // The director can turn off the combined overall ranking for a multi-section
@@ -940,11 +1121,19 @@ export function scoreEvent(
           expectedBoards,
           withdrawals,
           excludedFromRanking,
-          adjustedBoards,
+          sink,
         ),
         excludedFromRanking,
       )
     : null;
 
-  return { classification, adjustedBoards, overall, sections };
+  return {
+    classification,
+    adjustedBoards: sink.adjusted,
+    lines: sink.lines,
+    pairsMatches: sink.pairsMatches,
+    teamMatches: sink.teamMatches,
+    overall,
+    sections,
+  };
 }

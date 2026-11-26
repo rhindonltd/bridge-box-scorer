@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ImportDealsPage } from "./ImportDealsPage";
-import type { ParsedPbnBoard } from "@/model/pbn-file";
+import type { ParsedPbnBoard } from "@/modules/interchange/pbn/pbn-file";
 
 // GamePageLayout is stubbed so the header's back action and the fixed action
 // bar can be exercised without the router/game providers.

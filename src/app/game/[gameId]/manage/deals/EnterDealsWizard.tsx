@@ -17,7 +17,7 @@ import {
   useTravellerContext,
 } from "@/context/TravellerContext";
 import { Deal } from "@/model/common";
-import type { ParsedPbnBoard } from "@/model/pbn-file";
+import type { ParsedPbnBoard } from "@/modules/interchange";
 import { ImportDealsPage } from "@/app/game/[gameId]/manage/deals/ImportDealsPage";
 
 interface EnterDealsWizardProps {

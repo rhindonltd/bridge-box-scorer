@@ -1,10 +1,10 @@
 import type { Server } from "socket.io";
 
-import { createEngine } from "@/timer/game-store";
+import { createEngine } from "@/services/timer/game-store";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
 import type { SectionLetter } from "@/model/participants";
-import type { TimerState } from "@/timer/timer-state";
+import type { TimerState } from "@/modules/timer";
 
 /**
  * TEST SUPPORT — seed a live, engine-backed timer for a section directly

@@ -1,4 +1,5 @@
 import { BoardOutcome } from "@/model/score";
+import type { SwissVpMatch } from "./swiss-vp-round";
 
 /**
  * Shared types/constants for the Swiss Pairs Victory-Point scorers.
@@ -67,4 +68,39 @@ export function swissPairsByes(
   return matchRows
     .filter((m) => m.kind === "BYE")
     .map((m) => ({ pairId: m.home, round: m.roundNumber }));
+}
+
+/**
+ * One Swiss Pairs match as the round was scored, with the table's board row for
+ * each of its boards. `scoreEvent` turns it into the kernel `PairsMatchResult`.
+ */
+export interface SwissPairsMatchDetail<
+  R extends SwissVpBoardRow,
+> extends SwissVpMatch {
+  round: number;
+  /** The match's board rows, in board order. */
+  rows: R[];
+}
+
+/**
+ * The detail of one scored match: the row where this NS/EW pair sat for each
+ * of the match's boards (either way round). The match's board numbers come from
+ * these same rows, so every board has a row.
+ */
+export function pairsMatchDetail<R extends SwissVpBoardRow>(
+  round: number,
+  rows: R[],
+  match: SwissVpMatch,
+): SwissPairsMatchDetail<R> {
+  const found = match.boardNumbers.flatMap((boardNumber) =>
+    rows
+      .filter(
+        (r) =>
+          r.boardNumber === boardNumber &&
+          ((r.ns === match.nsId && r.ew === match.ewId) ||
+            (r.ns === match.ewId && r.ew === match.nsId)),
+      )
+      .slice(0, 1),
+  );
+  return { ...match, round, rows: found };
 }

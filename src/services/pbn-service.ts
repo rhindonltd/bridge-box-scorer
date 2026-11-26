@@ -2,7 +2,7 @@ import { BridgeGame } from "@/db/game-index/schema";
 import { Db } from "@/db/games";
 import { getAllDealHands } from "@/db/games/queries/get-deal";
 import { Club } from "@/db/system/schema";
-import { generatePbn } from "@/lib/pbn/generate-pbn";
+import { generatePbn } from "@/modules/interchange";
 
 /**
  * Generate the PBN (Portable Bridge Notation) export for a game.

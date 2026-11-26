@@ -7,7 +7,7 @@ import { TimerConfigView } from "./TimerConfigView";
 import { TimerLiveView } from "./TimerLiveView";
 import { TimerStatus } from "./timer-view-types";
 import { useTimerConfigState } from "./useTimerConfigState";
-import { useTimerDerived } from "@/hooks/timer-derived";
+import { deriveTimerView } from "@/modules/timer";
 import { useSections } from "@/hooks/sections";
 import { useMovementRoundInfo } from "@/hooks/movement-round-info";
 import { SectionPills } from "@/components/manage/sections/SectionPills";
@@ -170,7 +170,7 @@ function TimerLiveContainer({
   // A 1s tick keeps the derived status counting down between syncs.
   useTicker(setTick);
 
-  const timer = useTimerDerived(timerState, tick) as TimerStatus;
+  const timer = deriveTimerView(timerState, tick) as TimerStatus;
 
   const { adjustApplyToFuture, setAdjustApplyToFuture } =
     useTimerConfigState(timerState);

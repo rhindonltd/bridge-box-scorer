@@ -5,7 +5,7 @@ vi.mock("@/socket/middleware/director-auth", () => ({
   validateDirectorToken: vi.fn(),
 }));
 vi.mock("@/services/start-game-service", () => ({ startGame: vi.fn() }));
-vi.mock("@/timer/promote-timer", () => ({
+vi.mock("@/services/timer/promote-timer", () => ({
   promoteTimerAtGameStart: vi.fn(),
 }));
 vi.mock("@/socket/broadcast/game-broadcast", () => ({
@@ -25,7 +25,7 @@ vi.mock("@/lib/log", () => ({
 import { getDb } from "@/db/games";
 import { validateDirectorToken } from "@/socket/middleware/director-auth";
 import { startGame } from "@/services/start-game-service";
-import { promoteTimerAtGameStart } from "@/timer/promote-timer";
+import { promoteTimerAtGameStart } from "@/services/timer/promote-timer";
 import { broadcastGameStarted } from "@/socket/broadcast/game-broadcast";
 import { getIO } from "@/socket/websocket";
 import { POST } from "./route";

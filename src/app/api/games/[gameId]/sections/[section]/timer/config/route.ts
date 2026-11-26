@@ -5,13 +5,13 @@ import { withDirectorEditRoute } from "@/lib/api/directorRoute";
 import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
-import { buildConfiguredTimerState } from "@/timer/timer-state";
-import { clearEngine } from "@/timer/game-store";
-import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
 import {
+  buildConfiguredTimerState,
   breakConfigSchema,
   toBreakConfigs,
-} from "@/socket/handlers/timer/payload";
+} from "@/modules/timer";
+import { clearEngine } from "@/services/timer/game-store";
+import { broadcastTimerConfigSaved } from "@/socket/broadcast/timer-broadcast";
 import { getDb } from "@/db/games";
 import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { isSwissMovement } from "@/model/event-format";

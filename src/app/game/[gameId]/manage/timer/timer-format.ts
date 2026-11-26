@@ -1,4 +1,4 @@
-import { BreakConfig } from "@/timer/timer-state";
+import { BreakConfig } from "@/modules/timer";
 import { BreakDraft } from "./timer-view-types";
 
 /**
@@ -52,44 +52,6 @@ export function formatDuration(totalSeconds: number): string {
   if (hours > 0) return `${hours}h ${minutes}m`;
   if (minutes > 0) return `${minutes}m ${seconds}s`;
   return `${seconds}s`;
-}
-
-/**
- * Walk the session timeline from `start`, returning the ms-since-epoch at which
- * each round's play finishes (keyed by round number).
- *
- * Between rounds the cursor advances by either a configured break (a fixed
- * duration, or the gap up to its resume time) or, when no break sits there, the
- * move time. This is the single source of truth for the per-round timeline and
- * the session end; the earliest legal resume time for a break after round N is
- * simply the play-end of round N.
- */
-export function computePlayEndByRound(params: {
-  start: number;
-  totalRounds: number;
-  playMs: number;
-  moveMs: number;
-  breaks: BreakConfig[];
-}): Map<number, number> {
-  const { start, totalRounds, playMs, moveMs, breaks } = params;
-  const map = new Map<number, number>();
-  let cursor = start;
-  for (let round = 1; round <= totalRounds; round++) {
-    cursor += playMs;
-    map.set(round, cursor);
-    if (round < totalRounds) {
-      const brk = breaks.find((b) => b.afterRound === round);
-      if (brk) {
-        cursor +=
-          brk.mode === "duration"
-            ? brk.durationSeconds * 1000
-            : Math.max(0, brk.resumeAtMs - cursor);
-      } else {
-        cursor += moveMs;
-      }
-    }
-  }
-  return map;
 }
 
 /** Convert a persisted break config into an editable draft. */

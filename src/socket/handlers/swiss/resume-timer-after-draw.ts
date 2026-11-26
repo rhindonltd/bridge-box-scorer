@@ -1,6 +1,6 @@
 import { Server } from "socket.io";
-import { getEngine } from "@/timer/game-store";
-import { scheduleGame, cancelGameSchedule } from "@/timer/scheduler";
+import { getEngine } from "@/services/timer/game-store";
+import { scheduleGame, cancelGameSchedule } from "@/services/timer/scheduler";
 import { updateTimerState } from "@/db/games/actions/update-timer-state";
 import { makeTimerBroadcaster } from "@/socket/handlers/timer/broadcast-timer";
 import { SectionLetter } from "@/model/participants";
@@ -11,7 +11,7 @@ import { logger } from "@/lib/log";
  * has committed that round's draw.
  *
  * A Swiss timer parks in the open-ended `awaitingDraw` phase at the end of each
- * round (see {@link import("@/timer/bridge-timer-engine").BridgeTimerEngine}).
+ * round (see {@link import("@/modules/timer/bridge-timer-engine").BridgeTimerEngine}).
  * Committing the next round's draw is the signal to start that round's clock:
  * this advances the engine out of `awaitingDraw` into play, persists, pushes a
  * fresh `timer:sync`, and arms the scheduler for the new play phase.

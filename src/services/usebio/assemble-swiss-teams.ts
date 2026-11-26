@@ -1,0 +1,343 @@
+import { Board } from "@/db/games/tables/boards";
+import { AssignedTeam, sectionOf } from "@/model/participants";
+import { BridgeGame } from "@/db/game-index/schema";
+import { Club } from "@/db/system/schema";
+import { TournamentLevel } from "@/model/game-types";
+import { BoardOutcome } from "@/model/score";
+import { Card } from "@/model/common";
+import {
+  outcomeToScore,
+  rank,
+  impVpWinner,
+  groupTeamMatches,
+  groupTeamTriples,
+  matchVoidCause,
+  teamMatchBoardImps,
+  tripleVpPool,
+  boardResult,
+  type TeamMatch,
+  type TeamMatchRow,
+  type TeamMatchStructureRow,
+  voidMatchVp,
+} from "@/modules/scoring";
+import {
+  buildTravellerLine,
+  buildTeamPairing,
+  type TeamOccupancy,
+  type TeamPairing,
+  UsebioClub,
+  UsebioSwissTeamsData,
+  UsebioSwissTeamsMatch,
+  UsebioTeam,
+  UsebioTeamBoard,
+  UsebioTeamTravellerLine,
+  UsebioVpRankEntry,
+} from "@/modules/interchange/usebio";
+import { applySeatSwap } from "@/modules/rulings";
+
+/**
+ * Assemble the USEBIO Swiss Teams data from a game's teams and board rows.
+ *
+ * A Swiss Teams match spans two home tables (open + closed room) sharing the
+ * same boards: at team A's home its home pair sits NS and B's away pair sits
+ * EW; at team B's home the mirror. A team's net result on a board is its NS
+ * score at its own table minus the opponent's NS score at the other table; the
+ * per-board net converts to IMPs and the match's summed IMP margin converts to
+ * WHOLE-integer Victory Points on the WBF 20-point scale.
+ *
+ * This mirrors `calculateTeamsVpOverall`'s match reconstruction (home
+ * tables paired via the EW-seat encoding) but additionally emits the per-board
+ * IMPs, both rooms' traveller lines and the per-match VP split the export
+ * needs. Integer VPs are used throughout per the export's requirement.
+ */
+export function assembleSwissTeams(
+  game: BridgeGame,
+  club: Club,
+  tournamentLevel: TournamentLevel,
+  teams: AssignedTeam[],
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  excludedFromRanking: ReadonlySet<string> = new Set(),
+  expectedBoards?: number,
+  // §2.4.7 mid-match substitutions: the seat occupancies, so a team whose NS or
+  // EW seat was handed over declares the substitute as a third partnership and
+  // each traveller line is tagged with which partnership played it. Empty for
+  // every game with no substitution (the pre-existing two-pairs-per-team shape).
+  occupancies: readonly TeamOccupancy[] = [],
+): UsebioSwissTeamsData {
+  const usebioClub: UsebioClub = {
+    name: club.name,
+    clubNumber: club.clubNumber,
+  };
+
+  // Stable team numbers: 1..N in findTeams order (section then table). The
+  // team id ("A1NS") maps to its USEBIO number and its display name/players.
+  const numberByTeamId = new Map<string, string>();
+  teams.forEach((team, i) => numberByTeamId.set(team.id, String(i + 1)));
+
+  const pairing = buildTeamPairing(teams, occupancies);
+  const usebioTeams: UsebioTeam[] = teams.map((team) => ({
+    teamNumber: numberByTeamId.get(team.id)!,
+    teamName: team.name,
+    sectionId: sectionOf(team.id),
+    /* v8 ignore next -- unreachable: buildTeamPairing sets an entry for every roster team */
+    pairs: pairing.pairsByTeamId.get(team.id) ?? [],
+  }));
+
+  const { matches, totals } = buildUsebioMatches(
+    boardRows,
+    matchRows,
+    numberByTeamId,
+    pairing,
+    expectedBoards,
+  );
+  const ranking = buildRanking(totals, numberByTeamId, excludedFromRanking);
+
+  const boardNumbers = new Set(boardRows.map((b) => b.boardNumber));
+
+  return {
+    kind: "SWISS_TEAMS",
+    club: usebioClub,
+    tournamentLevel,
+    eventName: game.eventName,
+    eventDate: game.eventDate,
+    sectionName: game.sectionName || "A",
+    boards: boardNumbers.size,
+    teams: usebioTeams,
+    matches,
+    ranking,
+  };
+}
+
+function leadOf(row: Board): Card | null {
+  return (row.directorOverrideLead ?? row.confirmedLead ?? null) as Card | null;
+}
+
+/**
+ * Reconstruct team matches from board rows (via the shared `groupTeamMatches`)
+ * and emit each match's per-board IMPs, both rooms' traveller lines, and the
+ * integer VP split. Also accumulate per-team VP totals (keyed by team id) for
+ * the ranking. Matches come out ordered by round, then section, then home
+ * table — the order `groupTeamMatches` guarantees.
+ */
+function buildUsebioMatches(
+  boardRows: Board[],
+  matchRows: TeamMatchStructureRow[],
+  numberByTeamId: Map<string, string>,
+  pairing: TeamPairing,
+  expectedBoards?: number,
+): { matches: UsebioSwissTeamsMatch[]; totals: Map<string, number> } {
+  const totals = new Map<string, number>();
+  const addVp = (teamId: string, vp: number): void => {
+    totals.set(teamId, (totals.get(teamId) ?? 0) + vp);
+  };
+
+  const matches: UsebioSwissTeamsMatch[] = [];
+
+  for (const match of groupTeamMatches(boardRows, matchRows)) {
+    const { homeTeamId, opponentTeamId } = match;
+    const teamNumber = numberByTeamId.get(homeTeamId) ?? homeTeamId;
+    const opposingNumber = numberByTeamId.get(opponentTeamId) ?? opponentTeamId;
+
+    const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(match);
+
+    // Build the per-board USEBIO shapes: net IMPs (0 shown when not yet
+    // comparable) plus a traveller line from each room that has played it.
+    const boards: UsebioTeamBoard[] = perBoard.map(({ boardNumber, imps }) => {
+      const travellerLines: UsebioTeamTravellerLine[] = [];
+      const homeRow = match.homeRowsByBoard.get(boardNumber);
+      const awayRow = match.opponentRowsByBoard.get(boardNumber);
+      // Primary team sat NS at its own home table, EW at the opponent's.
+      if (homeRow)
+        travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+      if (awayRow)
+        travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+      return { boardNumber, imps: imps ?? 0, travellerLines };
+    });
+
+    // A match is only emitted for a home entry that has at least one board row
+    // (groupTeamMatches keys entries off actual rows), so `boards` is never
+    // empty here and the `?? 0` / optional-chain fallbacks below cannot fire.
+    /* v8 ignore start -- unreachable: a reconstructed match always has >=1 board */
+    const startBoard = boards[0]?.boardNumber ?? 0;
+    const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+    /* v8 ignore stop */
+
+    const { teamScore, opposingTeamScore } = teamsVpSplit(
+      match,
+      margin,
+      boardsPlayed,
+      20,
+      expectedBoards,
+    );
+    addVp(homeTeamId, teamScore);
+    addVp(opponentTeamId, opposingTeamScore);
+
+    matches.push({
+      round: match.round,
+      team: teamNumber,
+      opposingTeam: opposingNumber,
+      startBoard,
+      endBoard,
+      teamScore,
+      opposingTeamScore,
+      boards,
+    });
+  }
+
+  // Triples: a three-way is three ordinary head-to-head comparisons (x-y, y-z,
+  // z-x), each an authoritative two-room MATCH node on its own board set. VP is
+  // on the 10-VP half pool for a SHORT triple and the 20-VP full pool for a
+  // LONG one. Each node's own VP is also the team's contribution, so the per-
+  // team total is just the sum of its comparison nodes (no separate cross-IMP
+  // credit) — the export total agrees with the live head-to-head standings.
+  for (const triple of groupTeamTriples(boardRows, matchRows)) {
+    const pool = tripleVpPool(triple);
+    for (const sub of triple.comparisons) {
+      const teamNumber = numberByTeamId.get(sub.homeTeamId) ?? sub.homeTeamId;
+      const opposingNumber =
+        numberByTeamId.get(sub.opponentTeamId) ?? sub.opponentTeamId;
+      const { perBoard, margin, boardsPlayed } = teamMatchBoardImps(sub);
+
+      const boards: UsebioTeamBoard[] = perBoard.map(
+        ({ boardNumber, imps }) => {
+          const travellerLines: UsebioTeamTravellerLine[] = [];
+          const homeRow = sub.homeRowsByBoard.get(boardNumber);
+          const awayRow = sub.opponentRowsByBoard.get(boardNumber);
+          if (homeRow)
+            travellerLines.push(teamTravellerLine(homeRow, "NS", pairing));
+          if (awayRow)
+            travellerLines.push(teamTravellerLine(awayRow, "EW", pairing));
+          return { boardNumber, imps: imps ?? 0, travellerLines };
+        },
+      );
+
+      /* v8 ignore start -- a reconstructed comparison always has >=1 board */
+      const startBoard = boards[0]?.boardNumber ?? 0;
+      const endBoard = boards[boards.length - 1]?.boardNumber ?? 0;
+      /* v8 ignore stop */
+
+      const { teamScore, opposingTeamScore } = matchVp(
+        margin,
+        boardsPlayed,
+        pool,
+      );
+      addVp(sub.homeTeamId, teamScore);
+      addVp(sub.opponentTeamId, opposingTeamScore);
+
+      matches.push({
+        round: sub.round,
+        team: teamNumber,
+        opposingTeam: opposingNumber,
+        startBoard,
+        endBoard,
+        teamScore,
+        opposingTeamScore,
+        boards,
+      });
+    }
+  }
+
+  return { matches, totals };
+}
+
+function teamTravellerLine(
+  row: Board,
+  direction: string,
+  pairing: TeamPairing,
+): UsebioTeamTravellerLine {
+  const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
+  const seated = applySeatSwap(row);
+  const line = buildTravellerLine(
+    outcome,
+    leadOf(row),
+    outcomeToScore(row.boardNumber, outcome),
+  );
+  return {
+    direction,
+    // Which partnership sat NS / EW at this table for this board (a room the
+    // director marked played-reversed has its two seats exchanged).
+    nsPairNumber: pairing.pairNumberFor(seated.ns, row.boardNumber),
+    ewPairNumber: pairing.pairNumberFor(seated.ew, row.boardNumber),
+    ...line,
+  };
+}
+
+/**
+ * The integer VP split for an ordinary two-team match, honouring a §3.3.6 /
+ * §3.3.9 VOID ruling the match may carry (incl. the whole-team withdrawal void
+ * the leaderboard synthesises): a void match credits each team a ruling VP
+ * (flat 40%/60%, or the §3.3.9 AVE+/AVE− half-board split over `expectedBoards`)
+ * instead of a margin → VP, exactly as `calculateTeamsVpOverall` does — so the
+ * published file agrees with the live standings. Falls back to the ordinary
+ * margin → VP split ({@link matchVp}) when the match is not void.
+ */
+function teamsVpSplit(
+  match: TeamMatch<TeamMatchRow>,
+  margin: number,
+  boardsPlayed: number,
+  pool: 10 | 20,
+  expectedBoards: number | undefined,
+): { teamScore: number; opposingTeamScore: number } {
+  const voidCause = matchVoidCause(match);
+  if (voidCause != null) {
+    const { home, opponent } = voidMatchVp(voidCause, pool, expectedBoards);
+    return { teamScore: home, opposingTeamScore: opponent };
+  }
+  return matchVp(margin, boardsPlayed, pool);
+}
+
+/**
+ * The integer VP split for a match given the primary team's net IMP margin over
+ * the boards both rooms have scored, on the given pool (20 for an ordinary
+ * full match or a long-triple comparison; 10 for a short-triple half
+ * comparison). No comparable boards yet is the dead-even midpoint for both;
+ * otherwise the EBU discrete (integer) scale, with the primary team taking the
+ * winner's share when its margin is non-negative.
+ */
+function matchVp(
+  margin: number,
+  boardsPlayed: number,
+  pool: 10 | 20 = 20,
+): { teamScore: number; opposingTeamScore: number } {
+  if (boardsPlayed === 0) {
+    const mid = pool / 2;
+    return { teamScore: mid, opposingTeamScore: mid };
+  }
+  const winnerVP = impVpWinner(Math.abs(margin), boardsPlayed, pool);
+  const loserVP = pool - winnerVP;
+  return margin >= 0
+    ? { teamScore: winnerVP, opposingTeamScore: loserVP }
+    : { teamScore: loserVP, opposingTeamScore: winnerVP };
+}
+
+/**
+ * Rank teams by total VP (highest first), ties share a place. A §2.4.9
+ * without-standing / removed-withdrawn team is dropped from the ranking; its
+ * results still counted for opponents (already in `totals`).
+ */
+function buildRanking(
+  totals: Map<string, number>,
+  numberByTeamId: Map<string, string>,
+  excludedFromRanking: ReadonlySet<string>,
+): UsebioVpRankEntry[] {
+  const ranked = rank(
+    Array.from(totals.entries())
+      .filter(([teamId]) => !excludedFromRanking.has(teamId))
+      .map(([teamId, totalVP]) => ({
+        teamId,
+        totalVP,
+      })),
+    (row) => row.totalVP,
+  );
+
+  return ranked.map((row) => {
+    const section = sectionOf(row.teamId);
+    return {
+      number: numberByTeamId.get(row.teamId) ?? row.teamId,
+      sectionId: section,
+      totalVP: row.totalVP,
+      place: row.rank,
+    };
+  });
+}

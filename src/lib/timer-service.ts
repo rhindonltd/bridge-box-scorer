@@ -1,5 +1,5 @@
 import { getDirectorToken } from "@/lib/director-token";
-import type { BreakConfig } from "@/timer/timer-state";
+import type { BreakConfig } from "@/modules/timer";
 
 /** The domain fields that describe a section's timer configuration. */
 export interface TimerConfigFields {

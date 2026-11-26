@@ -491,7 +491,7 @@ reachable or are timing-fragile in a browser:
   game (boards always have round instances / a non-null snapshot with zero rows);
   unit-covered (`DisplayLeaderboardPage.test.tsx`, `Traveller.test.tsx`).
 - **Invalid break-timing alert** — wall-clock-projection fragile; unit-covered
-  (`src/timer/breaks.test.ts`, `TimerConfigView.test.tsx`, `TimerLiveView.test.tsx`).
+  (`src/modules/timer/breaks.test.ts`, `TimerConfigView.test.tsx`, `TimerLiveView.test.tsx`).
 - **Share-code expiry** — 5-minute product constant with no test-only short-expiry
   seam; int-covered (`system.int.test.ts`).
 - **`useSocketSWRSync`** — client-only hook with no independent server-observable
