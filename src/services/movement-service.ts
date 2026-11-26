@@ -3,7 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { Db } from "@/db/games";
 import { boards as pairsBoards } from "@/db/games/tables/boards";
-import { isBoardEntered } from "@/lib/round-status";
+import { isBoardEntered } from "@/modules/play-flow";
 
 /**
  * Build the by-table/by-round movement view (with per-round played/total

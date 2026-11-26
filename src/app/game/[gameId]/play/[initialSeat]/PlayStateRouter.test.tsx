@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import type { PlayState, Schedule } from "@/hooks/play-state-machine";
+import type { PlayState, Schedule } from "@/modules/play-flow";
 
 // Each child screen is stubbed to a marker that echoes the key props/handlers
 // we care about, so the test asserts the state→screen mapping and wiring

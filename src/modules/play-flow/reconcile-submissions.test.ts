@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { reconcileSubmissions } from "./reconcile-submissions";
-import { BoardSubmission } from "@/db/games/tables/submissions";
+import type { PendingSubmission as BoardSubmission } from "./reconcile-submissions";
 
 function sub(
   side: "NS" | "EW",

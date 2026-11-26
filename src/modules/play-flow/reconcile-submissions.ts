@@ -1,4 +1,3 @@
-import { BoardSubmission } from "@/db/games/tables/submissions";
 import { BoardOutcome } from "@/model/score";
 import type { Card } from "@/model/common";
 
@@ -30,8 +29,16 @@ export type Reconciliation =
       ew: { boardNumber: number; result: SubmittedResult; lead: Card | null };
     };
 
+/** One side's pending submission for a board (a `board_submissions` row). */
+export interface PendingSubmission {
+  side: "NS" | "EW";
+  boardNumber: number;
+  result: SubmittedResult;
+  lead: Card | null;
+}
+
 export function reconcileSubmissions(
-  submissions: BoardSubmission[],
+  submissions: readonly PendingSubmission[],
 ): Reconciliation {
   // Both sides must have submitted before we can confirm or flag a mismatch.
   if (submissions.length !== 2) {

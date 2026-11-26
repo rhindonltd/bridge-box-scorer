@@ -1773,7 +1773,7 @@ modules are done (D14).
 | ---- | -------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1    | **interchange** (USEBIO, PBN) (**done**, see [`interchange.md`](interchange.md)) | ~3,000 / ~3,400     | the generators and parsers are                                                                                              | `generateUsebioXml(snapshot)` `src/lib/usebio/generate-usebio.ts:425`; `generatePbn(data)` `src/lib/pbn/generate-pbn.ts:92`; `parsePbnFile(text)` `src/model/pbn-file.ts:173`; deal helpers `src/model/deal.ts`                      | assemblers import `Board`, `BridgeGame`, `Club` from `@/db` (5.6); `src/services/usebio-service.ts` (372) must split into "gather a snapshot" (core) and "assemble from a snapshot" (module); depends on scoring's breakdowns (9.5) and rulings                                                     |
 | 2    | **timer** engine (**done**, see below)                                           | ~830 / ~1,400       | `bridge-timer-engine.ts`, `breaks.ts`, `timer-state.ts` are, apart from `Date.now()` defaults, which are already parameters | `BridgeTimerEngine` `src/timer/bridge-timer-engine.ts:4`; `validateBreaks` `breaks.ts:152`; `buildConfiguredTimerState` `timer-state.ts:142`                                                                                         | the adapter (`game-store.ts`, `scheduler.ts`, `promote-timer.ts`) sits in the same folder; `promote-timer.ts` imports `makeTimerBroadcaster` from a socket handler, which points the wrong way (it should take a broadcast callback). The `globalThis` store and scheduler stay in the core adapter |
-| 3    | **play-flow** (submission reconcile, play state, round status)                   | ~650 / ~1,700       | the reducer, reconcile and round status are                                                                                 | `reconcileSubmissions` `src/socket/handlers/game/submit-result/reconcile-submissions.ts:33`; `playStateFromResolved`, `playReducer` `src/hooks/play-state-machine.ts:233`, `:368`; `computeRoundStatus` `src/lib/round-status.ts:58` | `src/services/resolve-play-state.ts` imports the reconcile function from a handler folder (wrong direction); `BoardSubmission` is a Drizzle type; the server half (`resolve-play-state.ts` 340, `schedule-service.ts` 409) is database-bound                                                        |
+| 3    | **play-flow** (**done**, see below)                                              | ~650 / ~1,700       | the reducer, reconcile and round status are                                                                                 | `reconcileSubmissions` `src/socket/handlers/game/submit-result/reconcile-submissions.ts:33`; `playStateFromResolved`, `playReducer` `src/hooks/play-state-machine.ts:233`, `:368`; `computeRoundStatus` `src/lib/round-status.ts:58` | `src/services/resolve-play-state.ts` imports the reconcile function from a handler folder (wrong direction); `BoardSubmission` is a Drizzle type; the server half (`resolve-play-state.ts` 340, `schedule-service.ts` 409) is database-bound                                                        |
 | 4    | **seating** (start checks, expected seats)                                       | ~870 / large        | `start-validator.ts`, `expected-seats.ts` are                                                                               | `validateStart` `src/model/start-validator.ts:78`; `deriveExpectedSeats` `src/model/expected-seats.ts:32`; teams structure checks (`validateTeamsStructure`, `start-game-service.ts:449`)                                            | `model/participants.ts` is used everywhere and is better as kernel; the database side (`handover-seat.ts` 372, `set-board-result.ts` 311, `start-game-service.ts` 757) was not read in detail and may hold rules                                                                                    |
 | 5    | **integrations** (BridgeWebs, EBU, cloud sync, players directory)                | small / ~1,450      | mostly I/O                                                                                                                  | upload and fetch clients with credentials passed in                                                                                                                                                                                  | depends on interchange first; little logic to isolate                                                                                                                                                                                                                                               |
 | 6    | **appliance network** (WiFi, captive portal)                                     | small / ~500        | I/O (`nmcli`, files)                                                                                                        | `writeWifiConfig` `src/lib/system/wifi-config.ts:37` and the `wifi-*` helpers                                                                                                                                                        | keeps system calls out of routes; the atomic write rule for `wifi.json` must stay in `writeWifiConfig`                                                                                                                                                                                              |
@@ -1797,6 +1797,39 @@ The module has a lint block (kernel and itself only). The adapter
 so it no longer imports from a socket handler. The start route passes
 `makeTimerBroadcaster(io)`. `buildTimerSyncPayload` stays in the socket layer;
 it already calls the module's `validateStateBreaks`.
+
+**Play-flow, as built.** `src/modules/play-flow/` holds:
+
+- `play-state-machine.ts` (the player's screen flow), moved whole from
+  `src/hooks/`.
+- `reconcile-submissions.ts` (the dual-side confirmation rule), moved from the
+  submit-result socket handler folder. It takes a structural
+  `PendingSubmission` instead of the Drizzle `BoardSubmission`.
+- `round-status.ts`, moved from `src/lib/`.
+- `schedule.ts`: `buildScheduleRounds`, the pure half of `schedule-service.ts`
+  (rounds, sit-outs, half matches, late arrivals, withdrawn opponents).
+- `play-position.ts`: `resolvePlayPhase`, the rules from `resolve-play-state.ts`
+  (strict forward round order, resting rounds, the within-round position).
+  Its two reads are passed in as `PlayReads`, so each is still made only when
+  the phase needs it.
+
+The module has a lint block (kernel and itself only). `schedule-service.ts`
+and `resolve-play-state.ts` keep their names and only read, so their callers,
+tests and mocks are unchanged. `resolve-play-state.ts` no longer imports from
+a socket handler.
+
+Afterwards:
+
+- `computeRoundStatus` (and its `TableRoundStatus` / `BoardEntry` types) had
+  no caller outside its tests and was deleted. `round-status.ts` now holds
+  only `isBoardEntered`.
+- The client's copies of the response types were merged into the module's
+  own. The screen flow uses `ScheduleRound`, `ScheduleHalfMatch`,
+  `ResolvedPlayState` and `WithinRoundPosition`, and `Schedule` is the
+  schedule route's response (rounds plus the game's play options). The
+  merged type is accurate where the copy was not: a padded sit-out round has
+  no table (`tableNumber: null`). So `SitOutPage` now says "Sit Out" rather
+  than "Sit Out at Table null" for a pair with no table that round.
 
 Code that looks like a candidate but should stay in the core:
 

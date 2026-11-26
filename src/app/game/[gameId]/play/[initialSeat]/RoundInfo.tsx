@@ -2,7 +2,7 @@ import React from "react";
 import CardTable from "@/components/common/CardTable";
 import { Player } from "@/db/games/tables/players";
 import { formatBoardRange } from "@/lib/board-range-formatter";
-import type { RoundHalfMatch } from "@/hooks/play-state-machine";
+import type { ScheduleHalfMatch } from "@/modules/play-flow";
 
 type SeatPlayers = {
   N: Player;
@@ -20,7 +20,7 @@ interface Props {
    * anchor plays both halves (two segments, opponent change at the midpoint); a
    * non-anchor plays only its half. Drives an explicit switch instruction.
    */
-  halfMatch?: RoundHalfMatch;
+  halfMatch?: ScheduleHalfMatch;
   /**
    * §2.4.7: the opponent at this table has not arrived yet (a seat the director
    * marked "expected late"). Shows a "running late" note so the pair knows to
@@ -89,7 +89,7 @@ function HalfMatchRoundInfo({
   halfMatch,
 }: {
   table: number;
-  halfMatch: RoundHalfMatch;
+  halfMatch: ScheduleHalfMatch;
 }) {
   const isAnchor = halfMatch.role === "anchor";
 

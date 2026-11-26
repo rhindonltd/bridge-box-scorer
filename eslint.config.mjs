@@ -247,6 +247,8 @@ const eslintConfig = defineConfig([
   moduleBlock("rulings"),
   moduleBlock("scoring"),
   moduleBlock("timer"),
+  // The player's schedule, play position, result confirmation and screen flow.
+  moduleBlock("play-flow"),
   // File formats (USEBIO, PBN): lays out results it is given, scores nothing.
   moduleBlock("interchange"),
   // Results views lay out scoring's numbers, so they read scoring's types.

@@ -2,8 +2,11 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   round: number;
-  /** The table where the sit-out is happening (where the phantom pair is). */
-  tableNumber: number;
+  /**
+   * The table where the sit-out is happening (where the phantom pair is), or
+   * null when the pair has no table this round.
+   */
+  tableNumber: number | null;
   onHandleSitOutContinue: () => void;
   /** Right-hand header content (the play header menu). */
   headerRight?: React.ReactNode;
@@ -15,7 +18,8 @@ export function SitOutPage({
   onHandleSitOutContinue,
   headerRight,
 }: Props) {
-  const heading = `Sit Out at Table ${tableNumber}`;
+  const heading =
+    tableNumber != null ? `Sit Out at Table ${tableNumber}` : "Sit Out";
 
   return (
     <GamePageLayout
