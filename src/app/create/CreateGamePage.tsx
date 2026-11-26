@@ -1,6 +1,6 @@
 "use client";
 
-import { NewBridgeGame } from "@/db/game-index/schema";
+import type { NewBridgeGame } from "@/db/game-index/schema";
 import { useRouter } from "next/navigation";
 import { createGame } from "@/lib/game-service";
 import { useId, useState } from "react";

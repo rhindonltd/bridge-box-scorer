@@ -10,7 +10,7 @@ import { fetcher } from "@/lib/fetcher";
 import { useSocketSWRSync } from "@/hooks/socket-swr-sync";
 import { SocketEvents } from "@/socket/socket-events";
 import useSWR from "swr";
-import { NewPlayer } from "@/db/games/tables/players";
+import type { NewPlayer } from "@/db/games/tables/players";
 import { createParticipant } from "@/lib/game-service";
 import SelectTable from "@/app/game/[gameId]/join/SelectTable";
 import { ClaimSeatTransfer } from "@/app/game/[gameId]/join/ClaimSeatTransfer";

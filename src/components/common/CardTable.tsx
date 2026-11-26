@@ -21,7 +21,7 @@ interface Props {
 }
 
 import TableCompassLayout from "@/components/layout/TableCompassLayout";
-import { Player } from "@/db/games/tables/players";
+import type { Player } from "@/db/games/tables/players";
 
 export default function CardTable({
   players,

@@ -3,7 +3,7 @@
 import { createContext, useContext, ReactNode, useEffect } from "react";
 
 import useSWR, { KeyedMutator } from "swr";
-import { BridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame } from "@/db/game-index/schema";
 import { getSocket } from "@/lib/socket";
 import { SocketEvents } from "@/socket/socket-events";
 import { swrKeys } from "@/swr/swr-keys";

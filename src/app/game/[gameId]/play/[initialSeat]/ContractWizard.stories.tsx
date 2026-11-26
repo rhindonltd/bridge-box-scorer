@@ -4,7 +4,7 @@ import { ContractWizard } from "@/app/game/[gameId]/play/[initialSeat]/ContractW
 import { GameContext } from "@/context/GameContext";
 import { AssignmentContext } from "@/context/AssignmentContext";
 import { KeyedMutator } from "swr";
-import { BridgeGame } from "@/db/game-index/schema";
+import type { BridgeGame } from "@/db/game-index/schema";
 import { mockGame } from "@/mocks/fixtures/game";
 import { storyPlayHeader } from "@storybook/decorators/PlayHeaderDecorator";
 

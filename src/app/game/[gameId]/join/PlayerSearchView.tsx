@@ -1,6 +1,6 @@
 "use client";
 
-import { NewPlayer } from "@/db/games/tables/players";
+import type { NewPlayer } from "@/db/games/tables/players";
 import { Search, User, UserPlus, X } from "lucide-react";
 
 export interface PlayerSearchViewProps {

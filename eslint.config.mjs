@@ -93,6 +93,43 @@ function moduleBlock(
   };
 }
 
+// The core reaches a module only through its entry point.
+const MODULE_ENTRY_ONLY = {
+  group: [
+    "@/modules/*/*",
+    "!@/modules/movement-catalog/server",
+    "!@/modules/interchange/usebio",
+    "**/modules/*/*",
+    "!**/modules/movement-catalog/server",
+    "!**/modules/interchange/usebio",
+  ],
+  message:
+    "Import a module through its entry point (@/modules/<name>, @/modules/movement-catalog/server or @/modules/interchange/usebio) only. See docs/design/modules.md.",
+};
+
+// Client code may use the database layer's types only.
+const CLIENT_DB_TYPES_ONLY = {
+  group: ["@/db", "@/db/*"],
+  allowTypeImports: true,
+  message:
+    "Client code may import only types from @/db (use `import type`), so no database code reaches the browser.",
+};
+
+// services, lib and db sit below the socket layer and the UI.
+const NO_UPWARD_IMPORTS = {
+  group: [
+    "@/socket/*",
+    "!@/socket/socket-events",
+    "!@/socket/socket-response",
+    "@/hooks/*",
+    "@/context/*",
+    "@/components/*",
+    "@/app/*",
+  ],
+  message:
+    "services, lib and db may not import the socket layer, hooks, contexts, components or app code (only @/socket/socket-events and @/socket/socket-response). Take a callback from the caller instead.",
+};
+
 const eslintConfig = defineConfig([
   globalIgnores([
     "**/node_modules/**",
@@ -300,19 +337,74 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          patterns: [MODULE_ENTRY_ONLY],
+        },
+      ],
+    },
+  },
+  // Client code (components, contexts, hooks, SWR helpers, and app/ outside
+  // its server components and route handlers) may use the database layer's
+  // TYPES only, so no database code can reach the browser. Server components
+  // (page.tsx, layout.tsx) and route handlers read the database directly, so
+  // they are excluded.
+  {
+    files: [
+      "src/components/**/*.{ts,tsx}",
+      "src/context/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+      "src/swr/**/*.{ts,tsx}",
+      "src/app/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      ...TEST_FILES,
+      "src/app/api/**",
+      "src/app/**/route.ts",
+      "src/app/**/page.tsx",
+      "src/app/**/layout.tsx",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [MODULE_ENTRY_ONLY, CLIENT_DB_TYPES_ONLY],
+        },
+      ],
+    },
+  },
+  // The lower core layers (services, lib, db) are called by routes, socket
+  // handlers and the UI, never the other way round, so they must not import
+  // the socket layer, hooks, contexts, components or app code. A service that
+  // needs to broadcast takes a callback from its caller (e.g. sign-in-guard's
+  // `raiseAlert`). The shared event names and the socket response type are the
+  // exceptions: the client wrappers in lib/ emit and read them.
+  {
+    files: [
+      "src/services/**/*.{ts,tsx}",
+      "src/lib/api/**/*.{ts,tsx}",
+      "src/db/**/*.{ts,tsx}",
+    ],
+    ignores: TEST_FILES,
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [MODULE_ENTRY_ONLY, NO_UPWARD_IMPORTS] },
+      ],
+    },
+  },
+  // The rest of lib/ is shared with the browser, so it also takes the
+  // client rule: database types only. Server code that reads the database
+  // belongs in services/, db/ or lib/api/.
+  {
+    files: ["src/lib/**/*.{ts,tsx}"],
+    ignores: [...TEST_FILES, "src/lib/api/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
           patterns: [
-            {
-              group: [
-                "@/modules/*/*",
-                "!@/modules/movement-catalog/server",
-                "!@/modules/interchange/usebio",
-                "**/modules/*/*",
-                "!**/modules/movement-catalog/server",
-                "!**/modules/interchange/usebio",
-              ],
-              message:
-                "Import a module through its entry point (@/modules/<name>, @/modules/movement-catalog/server or @/modules/interchange/usebio) only. See docs/design/modules.md.",
-            },
+            MODULE_ENTRY_ONLY,
+            NO_UPWARD_IMPORTS,
+            CLIENT_DB_TYPES_ONLY,
           ],
         },
       ],

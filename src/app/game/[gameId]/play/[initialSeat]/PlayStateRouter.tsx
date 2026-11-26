@@ -19,7 +19,7 @@ import { EnterDealsPage } from "@/app/game/[gameId]/play/[initialSeat]/EnterDeal
 import { ScoringType, GameType } from "@/model/game-types";
 import { teamBoardResult } from "@/modules/scoring";
 import { teamBoardResultTable } from "@/modules/results-views";
-import { Player } from "@/db/games/tables/players";
+import type { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
 import type { PlayState, Schedule } from "@/modules/play-flow";

@@ -1,6 +1,6 @@
 "use client";
 
-import { NewPlayer } from "@/db/games/tables/players";
+import type { NewPlayer } from "@/db/games/tables/players";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { PlayerSearchView } from "@/app/game/[gameId]/join/PlayerSearchView";

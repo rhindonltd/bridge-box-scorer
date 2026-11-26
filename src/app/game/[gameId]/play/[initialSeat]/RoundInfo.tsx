@@ -1,6 +1,6 @@
 import React from "react";
 import CardTable from "@/components/common/CardTable";
-import { Player } from "@/db/games/tables/players";
+import type { Player } from "@/db/games/tables/players";
 import { formatBoardRange } from "@/lib/board-range-formatter";
 import type { ScheduleHalfMatch } from "@/modules/play-flow";
 

@@ -1900,6 +1900,20 @@ way (a service or `lib` file importing from the socket layer):
   broadcast. The two sign-in routes pass `raiseDirectorAlert`. The
   `NewDirectorAlert` type moved to the kernel (`model/director-alert.ts`).
 
+Two lint rules in `eslint.config.mjs` keep these directions:
+
+- `services/`, `db/` and `lib/` may not import the socket layer, hooks,
+  contexts, components or `app/`. The exceptions are
+  `@/socket/socket-events` and `@/socket/socket-response`, which the client
+  wrappers in `lib/` use.
+- Client code (`components/`, `context/`, `hooks/`, `swr/`, `lib/` outside
+  `lib/api/`, and `app/` outside route handlers, `page.tsx` and `layout.tsx`)
+  may import only types from `@/db` (`import type`), so no database code can
+  reach the browser. The 22 plain imports of row types (`Player`,
+  `NewPlayer`, `BridgeGame`, `NewBridgeGame`, `Club`) became `import type`.
+  Server components and route handlers read the database, so they are
+  excluded. A `"use client"` page is not covered by the rule.
+
 `hooks/finalise-check.ts` was on the list but imports only the kernel's
 `FinaliseCheckResult` type and `socket/socket-events`, as every sync hook does,
 so nothing changed there. The four copies of `pairName` in the game queries
