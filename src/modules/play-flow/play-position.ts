@@ -1,0 +1,298 @@
+import type { ScheduleRound } from "./schedule";
+import {
+  reconcileSubmissions,
+  type PendingSubmission,
+} from "./reconcile-submissions";
+
+/**
+ * Where a seated player is in the event, worked out from durable truth (the
+ * board statuses in their schedule and the table's pending submissions), so it
+ * survives the player leaving the Play screen and coming back. Pure: the two
+ * reads it may need are passed in (`PlayReads`), and each is made only when
+ * the answer depends on it.
+ */
+
+/**
+ * The player's position WITHIN the round they are currently on. Reconstructed
+ * from durable truth (board statuses + pending submissions) so it survives the
+ * player leaving the Play screen and returning — unlike the former in-memory
+ * play state, which was lost on remount.
+ *
+ * The position is always the FIRST not-yet-confirmed board of the current
+ * round (the flow is strictly sequential — a player cannot start a later board
+ * until the earlier one is confirmed), with its sub-state:
+ *
+ * - `entering`: this seat has not submitted the board yet.
+ * - `waitingConfirmation`: this seat has submitted; the table is not yet
+ *   reconciled (the other side hasn't submitted, or a mismatch is unresolved
+ *   from this seat's point of view — see note below).
+ * - `mismatch`: both sides submitted and they disagree. Carries the ns/ew
+ *   results oriented exactly as the live mismatch event does.
+ * - `roundComplete`: every board of the round is confirmed; the player decides
+ *   on Continue what comes next.
+ */
+export type WithinRoundPosition =
+  | { at: "entering"; boardNumber: number }
+  | {
+      at: "waitingConfirmation";
+      boardNumber: number;
+      /** The result this seat submitted (shown while it waits). */
+      result?: string;
+      /** The opening lead this seat submitted, if any. */
+      lead?: string;
+    }
+  | {
+      at: "mismatch";
+      boardNumber: number;
+      nsBoardNumber: number;
+      nsResult: string;
+      nsLead?: string;
+      ewBoardNumber: number;
+      ewResult: string;
+      ewLead?: string;
+    }
+  | { at: "roundComplete" };
+
+/**
+ * The fully server-resolved play state for a seat: identity, the current round
+ * (when the player is on one), the within-round position, and the
+ * between-rounds verdict. The client renders this directly rather than deriving
+ * "what comes next" from a local round count.
+ */
+export type ResolvedPlayState = {
+  assignmentId: string;
+  side: "NS" | "EW";
+  phase:
+    | { kind: "round"; roundIndex: number; position: WithinRoundPosition }
+    | { kind: "sitOut"; roundIndex: number }
+    /**
+     * §2.4.7: the current round's opponent is an empty "expected late" seat
+     * that has not arrived. There is nothing for this pair to play — a result
+     * needs two pairs — so, like a sit-out, it is a resting phase the pair
+     * acknowledges (wait for the latecomers, or move on to the next round). It
+     * is distinct from `sitOut` so the screen can explain WHY the table is
+     * empty. If the director later seats the pair, the next resolve turns this
+     * back into a normal `round` phase (the mark clears); once the pair has
+     * moved past it (finalised a later round) strict round ordering keeps them
+     * from being pulled back here.
+     */
+    | { kind: "expectedLate"; roundIndex: number }
+    | { kind: "awaitingNextRound"; completedRound: number }
+    | { kind: "complete" };
+  /**
+   * The materialized rounds (same shape the play flow already consumes). The
+   * client still needs the current round's boards/players/table to play; the
+   * `phase.roundIndex` selects which one is current.
+   */
+  rounds: ScheduleRound[];
+};
+
+/** The reads the play phase may need, made only when the phase depends on them. */
+export interface PlayReads {
+  /** The section movement's planned round count, or null when open-ended. */
+  expectedRounds(): Promise<number | null>;
+  /** The table's pending submissions for the round being played. */
+  submissions(round: ScheduleRound): Promise<readonly PendingSubmission[]>;
+}
+
+/**
+ * The phase a seat is in, given its schedule (with at least one round):
+ *
+ * 1. The current round is the first that is not a completed played round,
+ *    never earlier than the latest round with a finalised board (strict
+ *    forward order).
+ * 2. With every round done, it is either waiting for the next round to be
+ *    drawn (more rounds are planned) or the event is over.
+ * 3. A sit-out round, or a round whose opponent is an empty "expected late"
+ *    seat, is a resting phase the player acknowledges.
+ * 4. Otherwise the player is on the round, at the position the table's
+ *    submissions give (the same rule the live submit flow uses).
+ */
+export async function resolvePlayPhase(
+  rounds: ScheduleRound[],
+  side: "NS" | "EW",
+  reads: PlayReads,
+): Promise<ResolvedPlayState["phase"]> {
+  const currentRoundIndex = findCurrentRoundIndex(rounds);
+
+  if (currentRoundIndex === -1) {
+    // Every materialized round is done. Either the event is over, or (Swiss)
+    // more rounds are expected and the director hasn't drawn the next yet.
+    const expected = await reads.expectedRounds();
+    const materialized = rounds.length;
+
+    if (expected != null && materialized < expected) {
+      return { kind: "awaitingNextRound", completedRound: materialized };
+    }
+
+    return { kind: "complete" };
+  }
+
+  const round = rounds[currentRoundIndex];
+
+  // A sit-out round is a resting page the player confirms (the sit-out page):
+  // resolve it as its own phase so a player who reloads mid-bye is shown the
+  // sit-out page again rather than silently skipping it.
+  if (round.sitOut) {
+    return { kind: "sitOut", roundIndex: currentRoundIndex };
+  }
+
+  // §2.4.7: the opponent this round is an empty "expected late" seat and has
+  // not arrived. There is no one to play, so — like a sit-out — this is a
+  // resting page the pair acknowledges (wait, or move on). Resolved as its own
+  // phase so a reload re-shows it (never a stuck, unenterable playable round).
+  // If the director seats the pair, the mark clears and the next resolve
+  // returns a normal `round` phase here instead.
+  if (round.opponentExpectedLate) {
+    return { kind: "expectedLate", roundIndex: currentRoundIndex };
+  }
+
+  const position = await resolveWithinRound(side, round, reads);
+  return { kind: "round", roundIndex: currentRoundIndex, position };
+}
+
+/**
+ * Board statuses that mean this pair has FINALISED a result on the board — it
+ * has played/finished that board, so the round it belongs to is behind them.
+ * CONFIRMED is the ordinary agreed result; OVERRIDDEN / CANCELLED /
+ * REMOVED_TEAMS are director rulings that likewise finalise the board. (SIT_OUT
+ * and HALF_AVERAGE are not played by the pair; NOT_PLAYED / PENDING_CONFIRMATION
+ * are still in progress.)
+ */
+const FINALISED_STATUSES = new Set([
+  "CONFIRMED",
+  "OVERRIDDEN",
+  "CANCELLED",
+  "REMOVED_TEAMS",
+  // Design §11: missed because a pair is absent (withdrew / arrived late).
+  "ABSENT",
+]);
+
+/**
+ * The index of the round the player is currently on: the first round that is
+ * not a completed PLAYED round. A sit-out round is NOT skipped — it is a
+ * resting state the player must acknowledge on the sit-out page, so it counts
+ * as current until they move past it. A played round counts as done only once
+ * every board is confirmed. Returns -1 when every materialized round is a
+ * completed played round, i.e. the player is between rounds / at the end.
+ *
+ * STRICT ROUND ORDERING: play moves forward only. Once this pair has a
+ * finalised result in some round, it can never be sent back to an EARLIER
+ * round — even if that earlier round is left incomplete. That happens when the
+ * pair moved past a round whose opponent never arrived (an "expected late"
+ * no-show, whose boards never get confirmed), or when a director later corrects
+ * a board in a round the pair has already left. Both must NOT drag the pair
+ * backwards, so the search starts at the LATEST round that has any finalised
+ * board and never looks earlier. That latest round may itself still be current
+ * (a partly-played round has some finalised boards and some not), so the search
+ * includes it rather than skipping past it.
+ */
+function findCurrentRoundIndex(rounds: ScheduleRound[]): number {
+  // The latest round index in which this pair has finalised a board. The pair
+  // is somewhere at or after this round; it can never be sent before it.
+  let lastResultIndex = -1;
+  for (let i = 0; i < rounds.length; i++) {
+    if (
+      rounds[i].boardStatuses.some(
+        (b) => b.status != null && FINALISED_STATUSES.has(b.status),
+      )
+    ) {
+      lastResultIndex = i;
+    }
+  }
+
+  // Start at that round (it may be mid-played and still current), never before.
+  for (let i = Math.max(lastResultIndex, 0); i < rounds.length; i++) {
+    const round = rounds[i];
+    if (round.sitOut) return i;
+    // `every` is true for an empty array, so a round with no board statuses
+    // (not yet materialized for this pair) would otherwise be misread as a
+    // completed round. Treat a round with no boards as not-complete so it is
+    // taken as the current round rather than skipped. A board counts as done
+    // when it is FINALISED (confirmed OR a director ruling), so a round the
+    // director corrected (CONFIRMED → OVERRIDDEN) still reads as complete.
+    const complete =
+      round.boardStatuses.length > 0 &&
+      round.boardStatuses.every(
+        (b) => b.status != null && FINALISED_STATUSES.has(b.status),
+      );
+    if (!complete) return i;
+  }
+  return -1;
+}
+
+/**
+ * Reconstruct THIS seat's position within its current round: the first
+ * unconfirmed board, and whether this seat is still entering it, waiting for
+ * confirmation, or looking at a mismatch.
+ *
+ * The sub-state is seat-relative, which is why `side` matters. A pending
+ * submission on the table does not by itself mean this seat is waiting — if
+ * the OTHER side has submitted but this seat has not, this seat is still
+ * `entering` (it must enter its own result). Only once this seat has
+ * submitted does it move to `waitingConfirmation` (or `mismatch` once both
+ * sides are in and they disagree). This mirrors the live flow, where a player
+ * who hasn't yet submitted sees the round/wizard regardless of the other
+ * pair's progress.
+ */
+async function resolveWithinRound(
+  side: "NS" | "EW",
+  round: ScheduleRound,
+  reads: PlayReads,
+): Promise<WithinRoundPosition> {
+  // The first board of this round that isn't confirmed yet.
+  // ABSENT boards (design §11) are not played, so they are skipped too.
+  const firstUnconfirmed = round.boardStatuses.find(
+    (b) => b.status !== "CONFIRMED" && b.status !== "ABSENT",
+  );
+
+  // No unconfirmed board → the round is complete (defensive: the caller only
+  // reaches here for a round findCurrentRoundIndex deemed incomplete, so there
+  // is always an unconfirmed board; this guards the empty-round edge).
+  /* v8 ignore next 3 */
+  if (!firstUnconfirmed) {
+    return { at: "roundComplete" };
+  }
+
+  const boardNumber = firstUnconfirmed.boardNumber;
+
+  // The table's pending submissions decide the sub-state. Submissions are
+  // keyed by (section, round, table) with one row per side.
+  const submissions = await reads.submissions(round);
+
+  // Whether THIS seat has submitted its result for the board in play yet.
+  const mineSubmitted = submissions.some((s) => s.side === side);
+
+  // This seat hasn't entered its own result yet → it is still entering, even
+  // if the opponents have already submitted (they are the ones waiting).
+  if (!mineSubmitted) {
+    return { at: "entering", boardNumber };
+  }
+
+  const outcome = reconcileSubmissions(submissions);
+
+  if (outcome.status === "mismatch") {
+    return {
+      at: "mismatch",
+      boardNumber,
+      nsBoardNumber: outcome.ns.boardNumber,
+      nsResult: outcome.ns.result ?? "",
+      ...(outcome.ns.lead ? { nsLead: outcome.ns.lead } : {}),
+      ewBoardNumber: outcome.ew.boardNumber,
+      ewResult: outcome.ew.result ?? "",
+      ...(outcome.ew.lead ? { ewLead: outcome.ew.lead } : {}),
+    };
+  }
+
+  // This seat has submitted and there's no mismatch: either the other side
+  // hasn't submitted yet, or both agree but the board hasn't been flipped to
+  // CONFIRMED yet (a brief window). Either way this seat waits — showing the
+  // result it entered, so a player returning to the screen still sees it.
+  const mine = submissions.find((s) => s.side === side);
+  return {
+    at: "waitingConfirmation",
+    boardNumber,
+    ...(mine?.result ? { result: mine.result } : {}),
+    ...(mine?.lead ? { lead: mine.lead } : {}),
+  };
+}

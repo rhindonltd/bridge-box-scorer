@@ -27,9 +27,9 @@ vi.mock("@/lib/player-token", () => ({
 import { usePlayFlow } from "./play-flow";
 import { SocketEvents } from "../socket/socket-events";
 import type {
-  ResolvedPlayStateResponse,
-  ResolvedWithinRound,
-} from "./play-state-machine";
+  ResolvedPlayState,
+  WithinRoundPosition,
+} from "@/modules/play-flow";
 
 /** A materialized round, defaulting to table 1 and NOT_PLAYED boards. */
 function round(
@@ -54,8 +54,8 @@ function round(
 function enteringPhase(
   roundIndex: number,
   boardNumber: number,
-): ResolvedPlayStateResponse["phase"] {
-  const position: ResolvedWithinRound = { at: "entering", boardNumber };
+): ResolvedPlayState["phase"] {
+  const position: WithinRoundPosition = { at: "entering", boardNumber };
   return { kind: "round", roundIndex, position };
 }
 
@@ -179,7 +179,7 @@ describe("usePlayFlow", () => {
   });
 
   it("resumes directly on waiting when the server resolved a pending submission", () => {
-    const position: ResolvedWithinRound = {
+    const position: WithinRoundPosition = {
       at: "waitingConfirmation",
       boardNumber: 2,
       result: "4SN=",
@@ -203,7 +203,7 @@ describe("usePlayFlow", () => {
   });
 
   it("resumes directly on a mismatch when the server resolved one", () => {
-    const position: ResolvedWithinRound = {
+    const position: WithinRoundPosition = {
       at: "mismatch",
       boardNumber: 1,
       nsBoardNumber: 1,

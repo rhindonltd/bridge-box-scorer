@@ -14,12 +14,9 @@ import {
   playReducer,
   type PlayAction,
   type PlayState,
-  type ResolvedPlayStateResponse,
+  type ResolvedPlayState,
   type Schedule,
-} from "./play-state-machine";
-
-// Re-exported for existing consumers that import these types from the hook.
-export type { RoundSchedule, SeatPlayer } from "./play-state-machine";
+} from "@/modules/play-flow";
 
 export function usePlayFlow(
   gameId: string,
@@ -47,7 +44,7 @@ export function usePlayFlow(
     data: resolved,
     error: resolvedError,
     mutate: refreshResolved,
-  } = useSWR<ResolvedPlayStateResponse>(playStateKey, fetcher, {
+  } = useSWR<ResolvedPlayState>(playStateKey, fetcher, {
     shouldRetryOnError: (error: Error & { status?: number }) =>
       error.status !== 404,
   });

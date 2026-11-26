@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   playReducer,
   playStateFromResolved,
-  type ResolvedPlayStateResponse,
   type PlayState,
   type Schedule,
 } from "./play-state-machine";
+import type { ResolvedPlayState } from "./play-position";
 
 function round(
   roundNumber: number,
@@ -234,16 +234,16 @@ describe("opening-lead and result carry-through", () => {
   const rounds = [round(1, [1, 2])];
   function resolvedAt(
     position: Extract<
-      ResolvedPlayStateResponse["phase"],
+      ResolvedPlayState["phase"],
       { kind: "round" }
     >["position"],
-  ): ResolvedPlayStateResponse {
+  ): ResolvedPlayState {
     return {
       assignmentId: "A1",
       side: "NS",
       rounds,
       phase: { kind: "round", roundIndex: 0, position },
-    } as ResolvedPlayStateResponse;
+    } as ResolvedPlayState;
   }
   it("resumes waiting with the submitted result and lead", () => {
     expect(

@@ -12,68 +12,17 @@
  * listeners, emitting submissions) and drives this machine via `dispatch`.
  */
 
-/** A single seated player, as returned by the schedule route. */
-export interface SeatPlayer {
-  id: number;
-  firstName: string;
-  lastName: string;
-  nationalId: string | null;
-}
-
-/** The four seat players at a table, nullable where unresolved. */
-export interface SeatPlayers {
-  N: SeatPlayer | null;
-  S: SeatPlayer | null;
-  E: SeatPlayer | null;
-  W: SeatPlayer | null;
-}
-
-/** One half of a 2-half-matches round (board subset + that half's opponents). */
-export interface RoundHalfMatchSegment {
-  half: "first" | "second";
-  boards: number[];
-  players: SeatPlayers;
-}
+import type { ResolvedPlayState } from "./play-position";
+import type { ScheduleRound } from "./schedule";
 
 /**
- * The 2-half-matches shape of a round for this pair (Swiss Pairs odd-field
- * handling). Present only when the pair is in the three-pair group:
- * - `anchor` plays both halves (two segments, opponent change at the midpoint);
- * - `firstHalf` / `secondHalf` plays only that half (one segment).
+ * A seat's schedule as the schedule route returns it: its rounds (built by
+ * `buildScheduleRounds`) plus the game's per-game play options.
  */
-export interface RoundHalfMatch {
-  role: "anchor" | "firstHalf" | "secondHalf";
-  segments: RoundHalfMatchSegment[];
-}
-
-export interface RoundSchedule {
-  roundNumber: number;
-  tableNumber: number;
-  /** Which side this pair sits for the round (can switch between rounds). */
-  side?: "NS" | "EW";
-  boards: number[];
-  boardStatuses: {
-    boardNumber: number;
-    status: string;
-  }[];
-  players: SeatPlayers;
-  sitOut?: boolean;
-  /** Present for a Swiss Pairs "2 half matches" round this pair is in. */
-  halfMatch?: RoundHalfMatch;
-  /**
-   * §2.4.7: true when this round's opponent is an empty "expected late" seat —
-   * the pair has not arrived yet. The round-info screen shows a "running late"
-   * note instead of treating the empty opponent as a sit-out or blank table.
-   */
-  opponentExpectedLate?: boolean;
-  /** Design §11: the opponents withdrew; nothing to play this round. */
-  opponentWithdrawn?: boolean;
-}
-
 export interface Schedule {
   assignmentId: string;
   side: "NS" | "EW";
-  rounds: RoundSchedule[];
+  rounds: ScheduleRound[];
   handEntryEnabled?: boolean;
   /**
    * Whether to show the post-round "team results" summary (a teams game only):
@@ -83,52 +32,6 @@ export interface Schedule {
    */
   teamRoundResults?: boolean;
 }
-
-/**
- * The server-resolved play state, as returned by
- * `GET /api/games/[gameId]/play-state/[seat]`. This mirrors `ResolvedPlayState`
- * in `src/services/resolve-play-state.ts` — redeclared here (rather than
- * imported) because that module is server-only, and the client needs only the
- * wire shape. Keep the two in sync.
- */
-export interface ResolvedPlayStateResponse {
-  assignmentId: string;
-  side: "NS" | "EW";
-  phase:
-    | { kind: "round"; roundIndex: number; position: ResolvedWithinRound }
-    | { kind: "sitOut"; roundIndex: number }
-    /**
-     * §2.4.7: the current round's opponent is an empty "expected late" seat and
-     * has not arrived. A resting phase (there is nobody to play), shown via the
-     * round-info screen's "running late" state with a Continue to move on.
-     */
-    | { kind: "expectedLate"; roundIndex: number }
-    | { kind: "awaitingNextRound"; completedRound: number }
-    | { kind: "complete" };
-  rounds: RoundSchedule[];
-}
-
-/** The within-round position carried by a resolved `round` phase. */
-export type ResolvedWithinRound =
-  | { at: "entering"; boardNumber: number }
-  | {
-      at: "waitingConfirmation";
-      boardNumber: number;
-      /** The result this seat submitted (shown while it waits). */
-      result?: string;
-      lead?: string;
-    }
-  | {
-      at: "mismatch";
-      boardNumber: number;
-      nsBoardNumber: number;
-      nsResult: string;
-      nsLead?: string;
-      ewBoardNumber: number;
-      ewResult: string;
-      ewLead?: string;
-    }
-  | { at: "roundComplete" };
 
 export type PlayState =
   | { state: "loading" }
@@ -230,9 +133,7 @@ export type PlayAction =
  * (the contract wizard then skips already-confirmed boards), while a seat that
  * had submitted resumes directly on `waiting` / `mismatch` for its board.
  */
-export function playStateFromResolved(
-  resolved: ResolvedPlayStateResponse,
-): PlayState {
+export function playStateFromResolved(resolved: ResolvedPlayState): PlayState {
   const { phase } = resolved;
 
   switch (phase.kind) {

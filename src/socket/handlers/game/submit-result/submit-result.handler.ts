@@ -17,7 +17,7 @@ import {
   registerHandler,
   HandlerError,
 } from "@/socket/handlers/handler-wrapper";
-import { reconcileSubmissions } from "./reconcile-submissions";
+import { reconcileSubmissions } from "@/modules/play-flow";
 
 const payloadSchema = z.object({
   gameId: z.string().min(1),

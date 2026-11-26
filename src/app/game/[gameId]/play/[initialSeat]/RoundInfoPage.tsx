@@ -4,7 +4,7 @@ import RoundInfo from "@/app/game/[gameId]/play/[initialSeat]/RoundInfo";
 import React from "react";
 import { Player } from "@/db/games/tables/players";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import type { RoundHalfMatch } from "@/hooks/play-state-machine";
+import type { ScheduleHalfMatch } from "@/modules/play-flow";
 
 interface Props {
   round: number;
@@ -17,7 +17,7 @@ interface Props {
     W: Player;
   };
   /** Present for a "2 half matches" round this pair is in. */
-  halfMatch?: RoundHalfMatch;
+  halfMatch?: ScheduleHalfMatch;
   /** §2.4.7: the opponent is an empty "expected late" seat (not yet arrived). */
   opponentExpectedLate?: boolean;
   /** Design §11: the opponents withdrew — nothing to play this round. */

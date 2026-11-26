@@ -14,4 +14,15 @@ describe("SitOutPage", () => {
     );
     expect(screen.getByText("Sit Out at Table 3")).toBeInTheDocument();
   });
+
+  it("names no table when the pair has none this round", () => {
+    render(
+      <SitOutPage
+        round={5}
+        tableNumber={null}
+        onHandleSitOutContinue={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Sit Out")).toBeInTheDocument();
+  });
 });

@@ -22,7 +22,7 @@ import { teamBoardResultTable } from "@/modules/results-views";
 import { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
-import type { PlayState, Schedule } from "@/hooks/play-state-machine";
+import type { PlayState, Schedule } from "@/modules/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { AwaitingNextRoundPage } from "@/app/game/[gameId]/play/[initialSeat]/AwaitingNextRoundPage";
 import { RoundResultsLoader } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
