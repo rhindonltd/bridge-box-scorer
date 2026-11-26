@@ -6,6 +6,7 @@ import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
+  outcomeToScore,
   BYE_VP,
   rank,
   scoreSwissVpRound,
@@ -13,15 +14,15 @@ import {
   type SwissRoundMode,
   type SwissVpMatchRow,
 } from "@/modules/scoring";
-import { buildTravellerLine } from "./traveller-line";
 import {
+  buildTravellerLine,
   UsebioClub,
   UsebioPair,
   UsebioSwissBoard,
   UsebioSwissPairsData,
   UsebioSwissPairsMatch,
   UsebioVpRankEntry,
-} from "./generate-usebio";
+} from "@/modules/interchange/usebio";
 
 /**
  * Assemble the USEBIO Swiss Pairs data from a game's pairs and board rows.
@@ -189,7 +190,11 @@ function travellerBoards(
     const lead = (row?.directorOverrideLead ??
       row?.confirmedLead ??
       null) as Card | null;
-    const line = buildTravellerLine(boardNumber, outcome, lead);
+    const line = buildTravellerLine(
+      outcome,
+      lead,
+      outcomeToScore(boardNumber, outcome),
+    );
     return { boardNumber, ...line };
   });
 }

@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
-import { generatePbn } from "@/lib/pbn/generate-pbn";
+import { generatePbn } from "@/modules/interchange";
 import { clockwiseFrom, dealerFor, pbnStringToHand } from "@/model/deal";
 import { Deal } from "@/model/common";
 

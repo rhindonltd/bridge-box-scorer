@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("./deal", () => ({
+vi.mock("@/model/deal", () => ({
   parsePbn: vi.fn(() => {
     throw "boom";
   }),

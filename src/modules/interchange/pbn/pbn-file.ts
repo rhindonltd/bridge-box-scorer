@@ -1,5 +1,5 @@
-import type { Deal } from "./common";
-import { parsePbn } from "./deal";
+import type { Deal } from "@/model/common";
+import { parsePbn } from "@/model/deal";
 
 /**
  * Pure PBN (Portable Bridge Notation 2.x) *file* parsing.

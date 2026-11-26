@@ -27,15 +27,18 @@ import { stripSectionPrefix } from "@/model/pair-label";
 import { Club } from "@/db/system/schema";
 import {
   generateUsebioXml,
-  UsebioBoardResult,
-  UsebioPairsData,
-  UsebioPair,
-} from "@/lib/usebio/generate-usebio";
-import { assembleSwissPairs } from "@/lib/usebio/assemble-swiss-pairs";
-import { assembleSwissTeams } from "@/lib/usebio/assemble-swiss-teams";
-import { assembleImpAggregateTeams } from "@/lib/usebio/assemble-imp-aggregate-teams";
-import { assembleBoardComparisonTeams } from "@/lib/usebio/assemble-board-comparison-teams";
-import type { TeamOccupancy } from "@/lib/usebio/team-pairing";
+  type TeamOccupancy,
+  type UsebioPair,
+} from "@/modules/interchange/usebio";
+import {
+  scoreMpPairs,
+  type UnscoredPairsData,
+  type UnscoredPairsResult,
+} from "@/services/usebio/score-mp-pairs";
+import { assembleSwissPairs } from "@/services/usebio/assemble-swiss-pairs";
+import { assembleSwissTeams } from "@/services/usebio/assemble-swiss-teams";
+import { assembleImpAggregateTeams } from "@/services/usebio/assemble-imp-aggregate-teams";
+import { assembleBoardComparisonTeams } from "@/services/usebio/assemble-board-comparison-teams";
 import {
   parseSelectedMovement,
   boardsPerRoundOf,
@@ -320,7 +323,7 @@ async function generateMpPairsUsebio(
 
   // Build board results — each tagged with the section it was played in (from
   // the board row), with unprefixed pair numbers.
-  const boardResults: UsebioBoardResult[] = allBoards
+  const boardResults: UnscoredPairsResult[] = allBoards
     .filter(
       (b) =>
         b.confirmedResult ||
@@ -348,7 +351,7 @@ async function generateMpPairsUsebio(
   // Count total distinct board numbers (sections share the same board set).
   const boardNumbers = new Set(allBoards.map((b) => b.boardNumber));
 
-  const usebioData: UsebioPairsData = {
+  const usebioData: UnscoredPairsData = {
     club: {
       name: club.name,
       clubNumber: club.clubNumber,
@@ -366,5 +369,5 @@ async function generateMpPairsUsebio(
     excludedFromRanking,
   };
 
-  return generateUsebioXml(usebioData);
+  return generateUsebioXml(scoreMpPairs(usebioData));
 }

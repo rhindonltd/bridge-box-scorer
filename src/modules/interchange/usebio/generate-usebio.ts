@@ -6,15 +6,6 @@ import {
   isAssignedOutcome,
 } from "./format-contract";
 import { totalTricksFor } from "./traveller-line";
-import {
-  outcomeToScore,
-  applyBetterThanAverage,
-  applyBetterThanAverageXimpBoards,
-  scoreMP as scorePairMP,
-  equaliseMpBoards,
-  roundMpBoards,
-  scoreXIMP as scorePairXIMP,
-} from "@/modules/scoring";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import { ScoringType, TournamentLevel } from "@/model/game-types";
@@ -69,6 +60,26 @@ export type UsebioBoardResult = {
    * board number played in different sections is scored independently.
    */
   section?: string;
+  /**
+   * The contract score from North/South's side (SCORE), worked out by the
+   * caller. Null is written as 0; a director-assigned line always shows 0.
+   */
+  score: number | null;
+  /**
+   * The line's matchpoints (MP) or IMPs (Cross-IMP) for each side, as scored by
+   * the caller. Absent for a line that was not scored (a board not played).
+   */
+  lineScore?: { ns: number; ew: number };
+};
+
+/** One pair's placing within its section's ranking, worked out by the caller. */
+export type UsebioPairPlacing = {
+  section: string;
+  /** The pair's number as written in the file (section-local). */
+  pairNumber: string;
+  /** Percentage to two decimals, as written to PERCENTAGE. */
+  percentage: string;
+  place: number;
 };
 
 /**
@@ -104,12 +115,11 @@ export type UsebioPairsData = {
   pairs: UsebioPair[];
   boardResults: UsebioBoardResult[];
   /**
-   * EBU §2.4.9 — section-qualified seats (e.g. "A1NS") whose pair is "without
-   * standing" / removed-withdrawn: dropped from the exported placing (no
-   * PERCENTAGE / PLACE), though its results still count for its opponents.
-   * Optional; absent/empty means nobody is excluded.
+   * Each placed pair's percentage and place, per section. A pair that is not
+   * listed (without standing, or no scored board) is written with no
+   * PERCENTAGE or PLACE.
    */
-  excludedFromRanking?: ReadonlySet<string>;
+  placings: UsebioPairPlacing[];
 };
 
 /**
@@ -340,67 +350,6 @@ const SCORING_TYPE_MAP: Record<ScoringType, string> = {
 };
 
 /* ============================================================
-   SCORING-TYPE DESCRIPTORS
-
-   The one place USEBIO branches on scoring type. Each descriptor knows how to
-   turn a board's lines into normalised { ns, ew } numbers, and whether its
-   scores contribute to a MAX (only MP ranks as a percentage of a per-board
-   maximum; IMP/XIMP accumulate raw IMPs).
-
-   Director-assigned lines (artificial adjusted `A<ns>/<ew>` and weighted
-   assigned `W…`) are NOT handled here any more: the shared per-board scorers
-   (`scorePairMP` / `scorePairXIMP`) now value them inline
-   alongside the real played lines, so the live leaderboard and this export use
-   exactly the same matchpointing (convention (b): an assigned line occupies a
-   seat in the field). The descriptor therefore just forwards every line to the
-   scorer.
-============================================================ */
-
-type ScoreResult = { ns: number; ew: number };
-
-interface UsebioScoreDescriptor {
-  /** Score all of a board's lines to { ns, ew } per line. */
-  scoreLines: (board: number, lines: PairScoringLine[]) => LineScore[];
-  /** Whether a line's ns+ew contributes to the ranking MAX (MP only). */
-  contributesToMax: boolean;
-}
-
-type PairScoringLine = { outcome: BoardOutcome; nsId: string; ewId: string };
-type LineScore = { nsId: string; ewId: string; ns: number; ew: number };
-
-const SCORE_DESCRIPTORS: Record<string, UsebioScoreDescriptor> = {
-  MP: {
-    scoreLines: (board, lines) =>
-      scorePairMP(board, lines).map((l) => ({
-        nsId: l.nsId,
-        ewId: l.ewId,
-        ns: l.nsMatchPoints,
-        ew: l.ewMatchPoints,
-      })),
-    contributesToMax: true,
-  },
-  XIMP: {
-    scoreLines: (board, lines) =>
-      scorePairXIMP(board, lines).map((l) => ({
-        nsId: l.nsId,
-        ewId: l.ewId,
-        ns: l.nsCrossImps,
-        ew: l.ewCrossImps,
-      })),
-    contributesToMax: false,
-  },
-};
-
-/**
- * Resolve the descriptor for a scoring type, falling back to MP for an
- * unrecognised value (mirrors the `?? "MP"` fallback on the header's
- * BOARD_SCORING_METHOD, so malformed data still produces valid XML).
- */
-function scoreDescriptorFor(scoringType: ScoringType): UsebioScoreDescriptor {
-  return SCORE_DESCRIPTORS[scoringType] ?? SCORE_DESCRIPTORS.MP;
-}
-
-/* ============================================================
    GENERATOR
 ============================================================ */
 
@@ -486,7 +435,7 @@ function startSection(
 }
 
 /* ============================================================
-   MP / BUTLER / XIMP PAIRS (unchanged behaviour)
+   MP / XIMP PAIRS
 ============================================================ */
 
 function generateMpPairsXml(data: UsebioPairsData): string {
@@ -518,36 +467,19 @@ function generateMpPairsXml(data: UsebioPairsData): string {
   event.ele("EW_PAIRS").txt(String(ewPairs));
 
   // One SESSION wraps all sections; each section is a separate <SECTION> with
-  // its own participants, boards and (independently computed) placings.
+  // its own participants, boards and placings.
   const session = event.ele("SESSION", { SESSION_ID: "1" });
 
-  const excludedQualified = data.excludedFromRanking ?? new Set<string>();
-
   for (const sectionId of sectionIds) {
-    const sectionPairs = data.pairs.filter(
-      (p) => (p.section ?? defaultSection) === sectionId,
-    );
-    const sectionResults = data.boardResults.filter(
-      (r) => (r.section ?? defaultSection) === sectionId,
-    );
-
-    // Pair numbers in this path are section-LOCAL (e.g. "1NS"); the exclusion
-    // set is section-QUALIFIED ("A1NS"). Reduce it to the section-local numbers
-    // whose qualified id (sectionId + number) is excluded.
-    const excludedLocal = new Set<string>();
-    for (const pair of sectionPairs) {
-      if (excludedQualified.has(sectionId + pair.pairNumber)) {
-        excludedLocal.add(pair.pairNumber);
-      }
-    }
-
+    const inSection = (section: string | undefined) =>
+      (section ?? defaultSection) === sectionId;
     const section = session.ele("SECTION", { SECTION_ID: sectionId });
     appendSectionContent(
       section,
       data.scoringType,
-      sectionPairs,
-      sectionResults,
-      excludedLocal,
+      data.pairs.filter((p) => inSection(p.section)),
+      data.boardResults.filter((r) => inSection(r.section)),
+      data.placings.filter((p) => p.section === sectionId),
     );
   }
 
@@ -556,28 +488,20 @@ function generateMpPairsXml(data: UsebioPairsData): string {
 
 /**
  * Populate a single `<SECTION>` with its PARTICIPANTS (each pair carrying its
- * inline placing) and its BOARD/TRAVELLER_LINE elements. Placings and per-line
- * scores are computed within this section only, so the same board number played
- * in other sections is scored independently and unprefixed pair numbers do not
- * collide across sections.
+ * inline placing) and its BOARD/TRAVELLER_LINE elements, from the section's
+ * already-scored results and placings.
  */
 function appendSectionContent(
   section: ReturnType<ReturnType<typeof create>["ele"]>,
   scoringType: ScoringType,
   pairs: UsebioPair[],
   boardResults: UsebioBoardResult[],
-  excludedPairNumbers: ReadonlySet<string> = new Set(),
+  placings: UsebioPairPlacing[],
 ): void {
   // Placings per pair (inline on each PAIR, USEBIO-style) rather than a
-  // separate RANKING block — scoped to this section's field. A §2.4.9
-  // without-standing pair is dropped from the placings (it stays a PARTICIPANT
-  // but carries no PERCENTAGE/PLACE); its results still counted for opponents.
-  const ranking = computeOverallRanking(
-    scoringType,
-    boardResults,
-    excludedPairNumbers,
-  );
-  const rankByPair = new Map(ranking.map((r) => [r.pairNumber, r]));
+  // separate RANKING block. A pair with no placing (without standing, or no
+  // scored board) stays a PARTICIPANT with no PERCENTAGE/PLACE.
+  const rankByPair = new Map(placings.map((r) => [r.pairNumber, r]));
 
   // PARTICIPANTS — each pair carries its placing inline.
   const participants = section.ele("PARTICIPANTS");
@@ -602,9 +526,6 @@ function appendSectionContent(
   const boardNumbers = [...boardGroups.keys()].sort((a, b) => a - b);
 
   for (const boardNum of boardNumbers) {
-    const results = boardGroups.get(boardNum)!;
-    const scoredLines = computeBoardScores(boardNum, results, scoringType);
-
     const boardEl = section.ele("BOARD");
     boardEl.ele("BOARD_NUMBER").txt(String(boardNum));
 
@@ -612,43 +533,31 @@ function appendSectionContent(
     // here. Deal information is exported separately as a PBN file; the USEBIO
     // file carries only players and results (BridgeWebs takes both files).
 
-    for (const result of results) {
-      const key = resultKey(result);
+    for (const result of boardGroups.get(boardNum)!) {
       const lineEl = boardEl.ele("TRAVELLER_LINE");
       lineEl.ele("NS_PAIR_NUMBER").txt(result.nsPairNumber);
       lineEl.ele("EW_PAIR_NUMBER").txt(result.ewPairNumber);
 
       if (isAssignedOutcome(result.outcome)) {
         // A director-assigned line (artificial adjusted or weighted assigned)
-        // has no single played contract to report; its matchpoint / IMP values
-        // come from the shared scorer via the scored-lines map.
+        // has no single played contract to report.
         lineEl.ele("CONTRACT").txt("");
         lineEl.ele("PLAYED_BY").txt("");
         lineEl.ele("LEAD").txt("");
         lineEl.ele("TRICKS").txt("");
         lineEl.ele("SCORE").txt("0");
-
-        const lineScore = scoredLines.get(key);
-        /* v8 ignore else -- unreachable: the scorer returns a line for every assigned outcome, so the key is always present */
-        if (lineScore) {
-          appendLineScore(lineEl, scoringType, lineScore);
-        }
       } else {
-        const contract = formatContractCompact(result.outcome);
-        const declarer = formatOutcomeForUsebio(result.outcome).declarer;
-        const score = outcomeToScore(boardNum, result.outcome);
-        const lead = formatLeadForUsebio(result.lead);
-        const lineScore = scoredLines.get(key);
-
-        lineEl.ele("CONTRACT").txt(contract);
-        lineEl.ele("PLAYED_BY").txt(declarer);
-        lineEl.ele("LEAD").txt(lead);
+        lineEl.ele("CONTRACT").txt(formatContractCompact(result.outcome));
+        lineEl
+          .ele("PLAYED_BY")
+          .txt(formatOutcomeForUsebio(result.outcome).declarer);
+        lineEl.ele("LEAD").txt(formatLeadForUsebio(result.lead));
         lineEl.ele("TRICKS").txt(totalTricksFor(result.outcome));
-        lineEl.ele("SCORE").txt(String(score ?? 0));
+        lineEl.ele("SCORE").txt(String(result.score ?? 0));
+      }
 
-        if (lineScore) {
-          appendLineScore(lineEl, scoringType, lineScore);
-        }
+      if (result.lineScore) {
+        appendLineScore(lineEl, scoringType, result.lineScore);
       }
     }
   }
@@ -949,10 +858,6 @@ function groupBy<T, K>(items: T[], keyFn: (item: T) => K): Map<K, T[]> {
   return map;
 }
 
-function resultKey(r: UsebioBoardResult): string {
-  return `${r.board}-${r.nsPairNumber}-${r.ewPairNumber}`;
-}
-
 /**
  * Write a line's NS/EW score onto a RESULT element using the USEBIO element
  * names for the scoring type (match points for MP, IMPs for IMP/XIMP). Shared
@@ -961,7 +866,7 @@ function resultKey(r: UsebioBoardResult): string {
 function appendLineScore(
   resultEl: ReturnType<ReturnType<typeof create>["ele"]>,
   scoringType: ScoringType,
-  line: ScoreResult,
+  line: { ns: number; ew: number },
 ): void {
   if (scoringType === "MP") {
     resultEl.ele("NS_MATCH_POINTS").txt(String(line.ns));
@@ -970,188 +875,4 @@ function appendLineScore(
     resultEl.ele("NS_IMPS").txt(String(line.ns));
     resultEl.ele("EW_IMPS").txt(String(line.ew));
   }
-}
-
-/** Running per-pair totals used to build the overall ranking. */
-type PairTotals = { total: number; max: number; direction: string };
-
-/**
- * Add a pair's contribution for one board into the totals map, creating the
- * entry on first sight. `maxDelta` is only added for scoring types that rank as
- * a percentage of a maximum (MP); IMP/XIMP pass 0. Collapses the four
- * copy-pasted get-or-create-then-add blocks the ranking previously had.
- */
-function accumulate(
-  totals: Map<string, PairTotals>,
-  pairId: string,
-  direction: "NS" | "EW",
-  scoreDelta: number,
-  maxDelta: number,
-): void {
-  const entry = totals.get(pairId) ?? { total: 0, max: 0, direction };
-  entry.total += scoreDelta;
-  entry.max += maxDelta > 0 ? maxDelta : 0;
-  totals.set(pairId, entry);
-}
-
-/**
- * Computes per-line scores for a board — ALL lines (real, artificial adjusted,
- * weighted assigned) — via the shared per-board scorer. Returns MP for MP
- * scoring, or IMPs for IMP/XIMP scoring, normalised to { ns, ew }.
- */
-function computeBoardScores(
-  board: number,
-  results: UsebioBoardResult[],
-  scoringType: ScoringType,
-): Map<string, ScoreResult> {
-  // Every line (real played, artificial adjusted, or weighted assigned) is
-  // scored by the shared per-board scorer — assigned lines are valued inline,
-  // so there is no longer a separate adjusted-score pass.
-  const lines: PairScoringLine[] = results.map((r) => ({
-    outcome: r.outcome,
-    nsId: r.nsPairNumber,
-    ewId: r.ewPairNumber,
-  }));
-
-  const map = new Map<string, ScoreResult>();
-  for (const line of scoreDescriptorFor(scoringType).scoreLines(board, lines)) {
-    map.set(`${board}-${line.nsId}-${line.ewId}`, {
-      ns: line.ns,
-      ew: line.ew,
-    });
-  }
-  return map;
-}
-
-type RankEntry = {
-  pairNumber: string;
-  direction: string;
-  totalScore: number;
-  maxScore: number;
-  percentage: string;
-  place: number;
-};
-
-/**
- * Compute the placings for one section's field: totals accumulated across that
- * section's board results and turned into a percentage-ordered ranking. Callers
- * pass only the results for a single section so pair numbers (which are
- * unprefixed and therefore only unique within a section) do not collide.
- */
-function computeOverallRanking(
-  scoringType: ScoringType,
-  boardResults: UsebioBoardResult[],
-  excludedPairNumbers: ReadonlySet<string> = new Set(),
-): RankEntry[] {
-  const totals = new Map<string, PairTotals>();
-  const descriptor = scoreDescriptorFor(scoringType);
-
-  const boardGroups = groupBy(boardResults, (r) => r.board);
-
-  // Matchpoints pool across boards into a percentage ranking, so — exactly as
-  // the live leaderboard does — short boards must be equalised to the full
-  // field (EBU White Book §4.2.3) before accumulation. IMP/XIMP accumulate raw
-  // (datum-less) IMPs with no per-board maximum, so no equalisation applies.
-  if (scoringType === "MP") {
-    const scoredBoards = Array.from(boardGroups, ([boardNum, results]) => ({
-      board: boardNum,
-      lines: scorePairMP(
-        boardNum,
-        results.map((r) => ({
-          outcome: r.outcome,
-          nsId: r.nsPairNumber,
-          ewId: r.ewPairNumber,
-        })),
-      ),
-    }));
-
-    // §4.1.1.1 "better than average" applies to the RANKING only (not the
-    // per-board TRAVELLER_LINE detail, which keeps the flat 60/40), matching the
-    // live leaderboard and the on-screen board display. §4.2.6.1: round each
-    // board to the nearest whole matchpoint (halves away from average) LAST, so
-    // the exported ranking sums the same rounded board scores the leaderboard
-    // does.
-    const ranked = roundMpBoards(
-      applyBetterThanAverage(equaliseMpBoards(scoredBoards)),
-    );
-    for (const b of ranked) {
-      for (const line of b.lines) {
-        const maxForBoard = line.maxMatchPoints;
-        accumulate(totals, line.nsId, "NS", line.nsMatchPoints, maxForBoard);
-        accumulate(totals, line.ewId, "EW", line.ewMatchPoints, maxForBoard);
-      }
-    }
-  } else if (scoringType === "XIMP") {
-    // Cross-IMP: score every board (keeping the per-board scored lines so the
-    // §4.1.1.1 uplift can see each pair's own board results), apply the
-    // "better than average" AVE+/AVE− uplift across the whole field, THEN
-    // accumulate — mirroring the MP branch so the exported totals match the
-    // live leaderboard. Cross-IMP lines never contribute to a ranking MAX
-    // (`contributesToMax` is false for them), so `maxForBoard` stays 0.
-    const scored = Array.from(boardGroups, ([boardNum, results]) => ({
-      board: boardNum,
-      lines: scorePairXIMP(
-        boardNum,
-        results.map((r) => ({
-          outcome: r.outcome,
-          nsId: r.nsPairNumber,
-          ewId: r.ewPairNumber,
-        })),
-      ),
-    }));
-    for (const b of applyBetterThanAverageXimpBoards(scored)) {
-      for (const line of b.lines) {
-        accumulate(totals, line.nsId, "NS", line.nsCrossImps, 0);
-        accumulate(totals, line.ewId, "EW", line.ewCrossImps, 0);
-      }
-    }
-  } else {
-    for (const [boardNum, results] of boardGroups) {
-      const scoredLines = computeBoardScores(boardNum, results, scoringType);
-
-      // All lines — real played and director-assigned — are already in the
-      // scored-lines map. Accumulate every one into the pair totals.
-      for (const [key, lineScore] of scoredLines) {
-        const [, nsId, ewId] = key.split("-");
-        /* v8 ignore next 3 -- unreachable: MP/XIMP are handled above, so this branch only sees the MP fallback descriptor (contributesToMax is always true) */
-        const maxForBoard = descriptor.contributesToMax
-          ? lineScore.ns + lineScore.ew
-          : 0;
-        accumulate(totals, nsId, "NS", lineScore.ns, maxForBoard);
-        accumulate(totals, ewId, "EW", lineScore.ew, maxForBoard);
-      }
-    }
-  }
-
-  const entries: RankEntry[] = [];
-  for (const [pairNumber, pairData] of totals) {
-    // §2.4.9: a without-standing pair is dropped from the placings. Its board
-    // results already accumulated into every opponent's totals above, so the
-    // opponents' percentages stand; only this pair gets no ranked entry.
-    if (excludedPairNumbers.has(pairNumber)) continue;
-    const percentage =
-      pairData.max > 0
-        ? ((pairData.total / pairData.max) * 100).toFixed(2)
-        : "0.00";
-    entries.push({
-      pairNumber,
-      direction: pairData.direction,
-      totalScore: pairData.total,
-      maxScore: pairData.max,
-      percentage,
-      place: 0,
-    });
-  }
-
-  entries.sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage));
-
-  let place = 1;
-  for (let i = 0; i < entries.length; i++) {
-    if (i > 0 && entries[i].percentage !== entries[i - 1].percentage) {
-      place = i + 1;
-    }
-    entries[i].place = place;
-  }
-
-  return entries;
 }

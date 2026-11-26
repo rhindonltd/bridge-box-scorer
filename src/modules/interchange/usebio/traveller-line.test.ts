@@ -38,8 +38,8 @@ describe("totalTricksFor", () => {
 
 describe("buildTravellerLine", () => {
   it("builds a played contract line with contract, declarer, lead, tricks and score", () => {
-    // Board 1 is None vul; 3NTN+1 scores 430.
-    const line = buildTravellerLine(1, "3NTN+1" as BoardOutcome, "HK");
+    // The caller's contract score (3NTN+1 non-vulnerable: 430) is written as is.
+    const line = buildTravellerLine("3NTN+1" as BoardOutcome, "HK", 430);
     expect(line).toEqual({
       contract: "3NT",
       playedBy: "N",
@@ -50,7 +50,7 @@ describe("buildTravellerLine", () => {
   });
 
   it("handles a missing lead as an empty string", () => {
-    const line = buildTravellerLine(1, "4SE-1" as BoardOutcome, null);
+    const line = buildTravellerLine("4SE-1" as BoardOutcome, null, 50);
     expect(line.lead).toBe("");
     expect(line.contract).toBe("4S");
     expect(line.playedBy).toBe("E");
@@ -58,7 +58,7 @@ describe("buildTravellerLine", () => {
   });
 
   it("emits a pass-out as PASS with a zero score and blank detail", () => {
-    const line = buildTravellerLine(1, "PO" as BoardOutcome, null);
+    const line = buildTravellerLine("PO" as BoardOutcome, null, 0);
     expect(line).toEqual({
       contract: "PASS",
       playedBy: "",
@@ -69,7 +69,7 @@ describe("buildTravellerLine", () => {
   });
 
   it("emits a not-played board with blank fields and zero score", () => {
-    const line = buildTravellerLine(1, "NP" as BoardOutcome, null);
+    const line = buildTravellerLine("NP" as BoardOutcome, null, null);
     expect(line).toEqual({
       contract: "",
       playedBy: "",

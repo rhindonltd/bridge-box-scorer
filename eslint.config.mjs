@@ -247,6 +247,8 @@ const eslintConfig = defineConfig([
   moduleBlock("rulings"),
   moduleBlock("scoring"),
   moduleBlock("timer"),
+  // File formats (USEBIO, PBN): lays out results it is given, scores nothing.
+  moduleBlock("interchange"),
   // Results views lay out scoring's numbers, so they read scoring's types.
   moduleBlock("results-views", { allowTypesFrom: ["scoring"] }),
   // The movement catalog's pure side (its main entry and everything outside
@@ -298,11 +300,13 @@ const eslintConfig = defineConfig([
               group: [
                 "@/modules/*/*",
                 "!@/modules/movement-catalog/server",
+                "!@/modules/interchange/usebio",
                 "**/modules/*/*",
                 "!**/modules/movement-catalog/server",
+                "!**/modules/interchange/usebio",
               ],
               message:
-                "Import a module through its entry point (@/modules/<name>, or @/modules/movement-catalog/server) only. See docs/design/modules.md.",
+                "Import a module through its entry point (@/modules/<name>, @/modules/movement-catalog/server or @/modules/interchange/usebio) only. See docs/design/modules.md.",
             },
           ],
         },

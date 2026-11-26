@@ -26,7 +26,7 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
 // Capture the data passed to the XML generator so we can assert the branch
 // fallbacks (direction, outcome, lead, sectionName) without exercising the real
 // serializer.
-vi.mock("@/lib/usebio/generate-usebio", () => ({
+vi.mock("@/modules/interchange/usebio/generate-usebio", () => ({
   generateUsebioXml: vi.fn(() => "<xml/>"),
 }));
 
@@ -36,7 +36,7 @@ import { findPairs } from "@/db/games/queries/find-pairs";
 import {
   generateUsebioXml,
   type UsebioPairsData,
-} from "@/lib/usebio/generate-usebio";
+} from "@/modules/interchange/usebio/generate-usebio";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 

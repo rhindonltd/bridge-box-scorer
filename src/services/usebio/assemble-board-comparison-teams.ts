@@ -6,6 +6,7 @@ import { TournamentLevel } from "@/model/game-types";
 import { BoardOutcome } from "@/model/score";
 import { Card } from "@/model/common";
 import {
+  outcomeToScore,
   rank,
   groupTeamMatches,
   groupTeamTriples,
@@ -13,14 +14,11 @@ import {
   boardResult,
   type TeamMatchStructureRow,
 } from "@/modules/scoring";
-import { buildTravellerLine } from "./traveller-line";
-import { applySeatSwap } from "@/modules/rulings";
 import {
+  buildTravellerLine,
   buildTeamPairing,
   type TeamOccupancy,
   type TeamPairing,
-} from "./team-pairing";
-import {
   UsebioBoardComparisonBoard,
   UsebioBoardComparisonMatch,
   UsebioBoardComparisonRankEntry,
@@ -29,7 +27,8 @@ import {
   UsebioClub,
   UsebioTeam,
   UsebioTeamTravellerLine,
-} from "./generate-usebio";
+} from "@/modules/interchange/usebio";
+import { applySeatSwap } from "@/modules/rulings";
 
 /** Points a single board is worth on the scoring's scale (BAM 1, PAB 2). */
 function winPointsFor(scoring: UsebioBoardComparisonScoring): number {
@@ -246,7 +245,11 @@ function teamTravellerLine(
 ): UsebioTeamTravellerLine {
   const outcome = boardResult(row) ?? ("NP" as BoardOutcome);
   const seated = applySeatSwap(row);
-  const line = buildTravellerLine(row.boardNumber, outcome, leadOf(row));
+  const line = buildTravellerLine(
+    outcome,
+    leadOf(row),
+    outcomeToScore(row.boardNumber, outcome),
+  );
   return {
     direction,
     // Which partnership sat NS / EW at this table for this board (a room the

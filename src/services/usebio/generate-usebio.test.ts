@@ -1,11 +1,28 @@
 import { describe, it, expect } from "vitest";
 import {
-  generateUsebioXml,
-  UsebioPairsData,
-  UsebioSwissPairsData,
-  UsebioSwissTeamsData,
-  UsebioBoardComparisonTeamsData,
-} from "./generate-usebio";
+  generateUsebioXml as layoutUsebioXml,
+  type UsebioGameData,
+  type UsebioPairsData as ScoredPairsData,
+  type UsebioSwissPairsData,
+  type UsebioSwissTeamsData,
+  type UsebioBoardComparisonTeamsData,
+} from "@/modules/interchange/usebio";
+import {
+  scoreMpPairs,
+  type UnscoredPairsData as UsebioPairsData,
+} from "./score-mp-pairs";
+
+/**
+ * Score a pairs event (the board-pooled export's own scoring) before laying it
+ * out; the other event kinds are laid out as given.
+ */
+function generateUsebioXml(
+  data: UsebioPairsData | Exclude<UsebioGameData, ScoredPairsData>,
+): string {
+  return data.kind === undefined || data.kind === "MP_PAIRS"
+    ? layoutUsebioXml(scoreMpPairs(data as UsebioPairsData))
+    : layoutUsebioXml(data as UsebioGameData);
+}
 
 function makeBasicGameData(): UsebioPairsData {
   return {

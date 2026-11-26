@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { parsePbnFile } from "./pbn-file";
-import { dealerFor, isCompleteDeal, toPbn } from "./deal";
-import { Ranks, Suits } from "./common";
-import type { Card, Deal } from "./common";
+import { dealerFor, isCompleteDeal, toPbn } from "@/model/deal";
+import { Ranks, Suits } from "@/model/common";
+import type { Card, Deal } from "@/model/common";
 
 /** The example game from the PBN 2.1 specification (board 1). */
 const SPEC_DEAL =

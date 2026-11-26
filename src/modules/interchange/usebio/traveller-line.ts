@@ -1,6 +1,5 @@
 import { BoardOutcome } from "@/model/score";
 import { isPlayedContractCode, parsePlayedContract } from "@/model/result";
-import { outcomeToScore } from "@/modules/scoring";
 import {
   formatOutcomeForUsebio,
   formatContractCompact,
@@ -49,16 +48,15 @@ export function totalTricksFor(outcome: BoardOutcome): string {
 /**
  * Build the USEBIO traveller-line fields for one board result.
  *
- * `board` is the board number, needed to score the contract (vulnerability is
- * derived from it). `lead` is the opening lead card (may be null).
+ * `lead` is the opening lead card (may be null). `score` is the contract
+ * score from North/South's side, worked out by the caller; null (unknown, or
+ * not a scored result) is written as 0.
  */
 export function buildTravellerLine(
-  board: number,
   outcome: BoardOutcome,
   lead: Card | null,
+  score: number | null,
 ): UsebioTravellerLine {
-  const score = outcomeToScore(board, outcome);
-
   return {
     contract: formatContractCompact(outcome),
     playedBy: formatOutcomeForUsebio(outcome).declarer,

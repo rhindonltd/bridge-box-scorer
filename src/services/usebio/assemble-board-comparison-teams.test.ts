@@ -6,7 +6,7 @@ import type { AssignedTeam, Pair } from "@/model/participants";
 import type { BridgeGame } from "@/db/game-index/schema";
 import type { Club } from "@/db/system/schema";
 import type { BoardOutcome } from "@/model/score";
-import type { UsebioBoardComparisonScoring } from "./generate-usebio";
+import type { UsebioBoardComparisonScoring } from "@/modules/interchange/usebio/generate-usebio";
 
 // assembleBoardComparisonTeams now takes the first-class `matches` rows; derive
 // them from each scenario's board rows via the test-only helper. The
