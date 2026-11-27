@@ -54,7 +54,7 @@ export async function createGame(
     handEntry?: boolean;
   },
 ): Promise<CreatedGame> {
-  await page.goto("/create/new?step=details");
+  await page.goto("/create/new");
 
   // The create page fires a BridgeWebs-events fetch on mount; when it resolves
   // it re-renders the form. Filling before that settles can drop the first

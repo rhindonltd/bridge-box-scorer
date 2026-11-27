@@ -1,22 +1,16 @@
 "use client";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import { PageLayout } from "@/components/layout/PageLayout";
 
 export interface SetupMenuPageProps {
   /** Open Game Details (the create-form options, prefilled). */
   onGameDetailsClick: () => void;
-  onTablesClick?: () => void;
-  onMovementClick?: () => void;
-  onTimerClick?: () => void;
-  onStartGameClick?: () => void;
+  onTablesClick: () => void;
+  onMovementClick: () => void;
+  onTimerClick: () => void;
+  onStartGameClick: () => void;
   /** Open Share Director Access, to let a co-director manage the game. */
-  onShareAccessClick?: () => void;
-  onDeleteGameClick?: () => void;
-  /**
-   * A game not created yet (the other handlers may then be omitted): only Game Details is available. The rest unlock
-   * once its details are saved and the game exists.
-   */
-  draft?: boolean;
+  onShareAccessClick: () => void;
+  onDeleteGameClick: () => void;
 }
 
 const standardButtonClass =
@@ -39,72 +33,44 @@ export function SetupMenuPage({
   onStartGameClick,
   onShareAccessClick,
   onDeleteGameClick,
-  draft = false,
 }: SetupMenuPageProps) {
   const buttons = (
     <div className="flex flex-col gap-3 px-6 pb-8 pt-6 max-w-sm w-full mx-auto">
       <button onClick={onGameDetailsClick} className={standardButtonClass}>
         Game Details
       </button>
-      <button
-        onClick={onTablesClick}
-        disabled={draft}
-        className={standardButtonClass}
-      >
+      <button onClick={onTablesClick} className={standardButtonClass}>
         Tables
       </button>
-      <button
-        onClick={onMovementClick}
-        disabled={draft}
-        className={standardButtonClass}
-      >
+      <button onClick={onMovementClick} className={standardButtonClass}>
         Movement
       </button>
-      <button
-        onClick={onTimerClick}
-        disabled={draft}
-        className={standardButtonClass}
-      >
+      <button onClick={onTimerClick} className={standardButtonClass}>
         Timer
       </button>
-      <button
-        onClick={onStartGameClick}
-        disabled={draft}
-        className={standardButtonClass}
-      >
+      <button onClick={onStartGameClick} className={standardButtonClass}>
         Start Game
       </button>
-      <button
-        onClick={onShareAccessClick}
-        disabled={draft}
-        className={standardButtonClass}
-      >
+      <button onClick={onShareAccessClick} className={standardButtonClass}>
         Share Director Access
       </button>
 
       <div className="mt-6">
-        <button
-          onClick={onDeleteGameClick}
-          disabled={draft}
-          className={deleteButtonClass}
-        >
+        <button onClick={onDeleteGameClick} className={deleteButtonClass}>
           Delete Game
         </button>
       </div>
     </div>
   );
 
-  // A draft has no game yet, so the game-aware layout (which shows the event
-  // name) can't be used.
-  const Layout = draft ? PageLayout : GamePageLayout;
   return (
-    <Layout
+    <GamePageLayout
       headerTitle="Set Up Game"
       // Back to the list of games still being set up.
       backHref="/create"
       centerContent={true}
     >
       {buttons}
-    </Layout>
+    </GamePageLayout>
   );
 }

@@ -19,6 +19,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
 }));
 
+// The header's back arrow: record where it falls back to.
+const mockOnBack = vi.fn();
+const mockBackFallback = vi.fn();
+vi.mock("@/hooks/useBackNavigation", () => ({
+  useBackNavigation: (fallback: string) => {
+    mockBackFallback(fallback);
+    return { onBack: mockOnBack };
+  },
+}));
+
 // The BridgeWebs event picker reads its data via SWR. Default to "not
 // configured" so the base tests see the page exactly as before; individual
 // tests override the returned data.
@@ -568,13 +578,14 @@ describe("CreateGamePage", () => {
     vi.unstubAllEnvs();
   });
 
-  it("is titled Game Details and its back arrow calls onBack", () => {
-    const onBack = vi.fn();
-    render(<CreateGamePage onBack={onBack} />);
-
+  it("is titled Game Details and its back arrow returns to the games not yet started", () => {
+    render(<CreateGamePage />);
     expect(screen.getByText("Game Details")).toBeInTheDocument();
+    // It goes back where it came from, or else to the list of games not yet
+    // started.
+    expect(mockBackFallback).toHaveBeenCalledWith("/create");
     fireEvent.click(screen.getByRole("button", { name: /back/i }));
-    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(mockOnBack).toHaveBeenCalledTimes(1);
   });
 
   it("shows an error and re-enables the button when creation fails", async () => {

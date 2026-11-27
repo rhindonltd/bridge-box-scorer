@@ -22,11 +22,10 @@ started yet (**Not started yet**). Tap one of those to carry on setting it up;
 from a different device you are asked for a share code first (see
 [Sharing director access](#sharing-director-access)).
 
-To set up a new game, tap **New Game** at the top. This opens the **Set Up
-Game** menu with only **Game Details** available: the other buttons stay greyed
-out until the game exists. Tap **Game Details** and fill it in. Tapping
-**Create Game** at the end creates the game and returns you to its Set Up Game
-menu, now with every option available.
+To set up a new game, tap **New Game** at the top. This opens **Game Details**
+straight away; fill it in and tap **Create Game** at the end. That creates the
+game and takes you to its **Set Up Game** menu. The back arrow on Game Details
+returns to the Create Game screen without creating anything.
 
 ### Step 2: Fill in Game Details
 

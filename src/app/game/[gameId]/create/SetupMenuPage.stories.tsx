@@ -27,6 +27,3 @@ export default meta;
 type Story = StoryObj<typeof SetupMenuPage>;
 
 export const Default: Story = {};
-
-/** New Game, before its details are saved: only Game Details is available. */
-export const NotCreatedYet: Story = { args: { draft: true } };

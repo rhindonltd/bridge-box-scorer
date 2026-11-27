@@ -1,16 +1,11 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { NewGameFlow } from "@/app/create/NewGameFlow";
+import { CreateGamePage } from "@/app/create/CreateGamePage";
 
 export const metadata: Metadata = {
   title: "Create Game | Bridge Box",
 };
 
+/** New Game opens straight onto the details form for the new game. */
 export default function CreateNewGameRoute() {
-  return (
-    // NewGameFlow reads the `?step=` search param.
-    <Suspense>
-      <NewGameFlow />
-    </Suspense>
-  );
+  return <CreateGamePage />;
 }
