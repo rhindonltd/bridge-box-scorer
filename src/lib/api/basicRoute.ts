@@ -10,7 +10,7 @@ export type BasicRouteContext<TParams = unknown> = {
   req: NextRequest;
   /**
    * Resolved dynamic route params for dynamic segments (e.g.
-   * `[movementType]/[movementId]`). `undefined` for static routes. Next.js 16
+   * `[gameId]/[seat]`). `undefined` for static routes. Next.js 16
    * hands params as a Promise on the route's second argument; the wrapper
    * awaits it so handlers receive a plain object.
    */

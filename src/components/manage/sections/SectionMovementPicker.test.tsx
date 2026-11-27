@@ -41,6 +41,16 @@ vi.mock("@/app/game/[gameId]/create/RecommendedMovementCard", () => ({
   ),
 }));
 
+vi.mock("./TeamsMovementPicker", () => ({
+  TeamsMovementPicker: ({
+    tables,
+    onSelected,
+  }: {
+    tables: number;
+    onSelected: () => void;
+  }) => <button onClick={onSelected}>Teams library for {tables} tables</button>,
+}));
+
 import {
   setSectionMitchellMovement,
   setSectionMovementSpec,
@@ -614,6 +624,27 @@ describe("SectionMovementPicker", () => {
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith("Failed to set movement"),
     );
+  });
+
+  it("lists the teams library (not pair movements) for a STANDARD Teams game", () => {
+    mockRecommendations.mockReturnValue([]);
+    const onDone = vi.fn();
+    const onSelected = vi.fn();
+    render(
+      <SectionMovementPicker
+        gameId="g1"
+        section="A"
+        tables={6}
+        gameType="TEAMS"
+        onDone={onDone}
+        onSelected={onSelected}
+      />,
+    );
+    // No pair movements are fetched for a Teams game.
+    expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
+    fireEvent.click(screen.getByText("Teams library for 6 tables"));
+    expect(onDone).toHaveBeenCalled();
+    expect(onSelected).toHaveBeenCalled();
   });
 
   it("shows the Swiss Teams form (not Swiss Pairs) for a SWISS TEAMS game", () => {

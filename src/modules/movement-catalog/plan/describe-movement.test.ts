@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   describeGeneratedMovement,
   describeStoredMovement,
+  describeStoredTeamsMovement,
   type FixedSelectedMovement,
 } from "./describe-movement";
 
@@ -111,28 +112,32 @@ describe("describeGeneratedMovement — Mitchell variants", () => {
   });
 });
 
-describe("describeGeneratedMovement — Teams Round Robin", () => {
-  it("lays out round 1 positionally, every table filled NS + EW", () => {
+describe("describeGeneratedMovement — American Whist teams", () => {
+  it("lays out the whole schedule, every table filled every round", () => {
     const result = describeGeneratedMovement({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 2, rounds: 1, boardsPerRound: 4 },
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 3, boardsPerRound: 4 },
     });
     expect(result.missingPair).toBeNull();
-    expect(result.layout).toEqual(
-      [1, 2].map((tableNumber) => ({
-        tableNumber,
-        rounds: [
-          {
-            roundNumber: 1,
-            ns: `${tableNumber}NS`,
-            ew: `${tableNumber}EW`,
-            boardStart: 1,
-            boardEnd: 4,
-            boardCopy: "A",
-          },
-        ],
-      })),
-    );
+    // Round k at table t: team t at home to team t + 2k, on board set t + k − 1.
+    expect(
+      result.layout.map((t) =>
+        t.rounds.map((r) => [r.roundNumber, r.ns, r.ew, r.boardStart]),
+      ),
+    ).toEqual([
+      [
+        [1, "1NS", "3EW", 1],
+        [2, "1NS", "2EW", 5],
+      ],
+      [
+        [1, "2NS", "1EW", 5],
+        [2, "2NS", "3EW", 9],
+      ],
+      [
+        [1, "3NS", "2EW", 9],
+        [2, "3NS", "1EW", 1],
+      ],
+    ]);
   });
 });
 
@@ -181,5 +186,64 @@ describe("describeStoredMovement", () => {
     expect(
       describeStoredMovement(selected, rows, undefined).missingPair,
     ).toBeNull();
+  });
+});
+
+describe("describeStoredTeamsMovement", () => {
+  const selected = {
+    source: "TEAMS_SPEC" as const,
+    specId: 7,
+    boardsPerRound: 3,
+  };
+  const tables = [
+    {
+      tableNumber: 1,
+      rounds: [{ roundNumber: 1, ns: "1", ew: "2", boardSet: 2 }],
+    },
+    {
+      tableNumber: 2,
+      rounds: [{ roundNumber: 1, ns: "2", ew: "1", boardSet: 2 }],
+    },
+  ];
+
+  it("seats each home pair NS and the visiting away pair EW", () => {
+    expect(describeStoredTeamsMovement(selected, tables)).toEqual({
+      selected,
+      layout: [
+        {
+          tableNumber: 1,
+          rounds: [
+            {
+              roundNumber: 1,
+              ns: "1NS",
+              ew: "2EW",
+              boardStart: 4,
+              boardEnd: 6,
+              boardCopy: "A",
+            },
+          ],
+        },
+        {
+          tableNumber: 2,
+          rounds: [
+            {
+              roundNumber: 1,
+              ns: "2NS",
+              ew: "1EW",
+              boardStart: 4,
+              boardEnd: 6,
+              boardCopy: "A",
+            },
+          ],
+        },
+      ],
+      missingPair: null,
+    });
+  });
+
+  it("refuses a movement the app cannot run", () => {
+    expect(() => describeStoredTeamsMovement(selected, [tables[0]])).toThrow(
+      /not a supported teams movement/,
+    );
   });
 });

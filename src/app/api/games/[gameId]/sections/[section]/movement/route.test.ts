@@ -13,6 +13,9 @@ vi.mock("@/db/games/queries/get-section-movement", () => ({
 vi.mock("@/db/games/queries/swiss-board-history", () => ({
   getSwissBoardHistory: vi.fn(),
 }));
+vi.mock("@/modules/movement-catalog/server", () => ({
+  getTeamMovementDetail: vi.fn(),
+}));
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSectionMovementChanged: vi.fn(),
 }));
@@ -33,6 +36,7 @@ import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { getSwissBoardHistory } from "@/db/games/queries/swiss-board-history";
 import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
 import { logger } from "@/lib/log";
+import { getTeamMovementDetail } from "@/modules/movement-catalog/server";
 import { PUT } from "./route";
 
 function invoke(
@@ -77,21 +81,29 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     );
   });
 
-  it("sets a ROUND_ROBIN_TEAMS movement and broadcasts the change", async () => {
-    const roundRobinTeams = { teams: 6, rounds: 5, boardsPerRound: 4 };
-    const res = await invoke("g1", "A", { roundRobinTeams });
+  it("sets an AMERICAN_WHIST_TEAMS movement and broadcasts the change", async () => {
+    const americanWhistTeams = { teams: 5, boardsPerRound: 4 };
+    const res = await invoke("g1", "A", { americanWhistTeams });
 
     expect(res.status).toBe(200);
     expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams,
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams,
     });
     expect(broadcastSectionMovementChanged).toHaveBeenCalledWith(
       "g1",
       "A",
       null,
-      { source: "ROUND_ROBIN_TEAMS", roundRobinTeams },
+      { source: "AMERICAN_WHIST_TEAMS", americanWhistTeams },
     );
+  });
+
+  it("refuses an American Whist with an even number of teams", async () => {
+    const res = await invoke("g1", "A", {
+      americanWhistTeams: { teams: 4, boardsPerRound: 4 },
+    });
+    expect(res.status).toBe(400);
+    expect(setSectionMovement).not.toHaveBeenCalled();
   });
 
   it("sets a SPEC movement with id + boardsPerRound", async () => {
@@ -103,6 +115,34 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
       specId: 12,
       boardsPerRound: 2,
     });
+  });
+
+  it("sets a stored teams movement from the library", async () => {
+    vi.mocked(getTeamMovementDetail).mockResolvedValue({
+      name: "Stagger",
+      tables: [],
+    });
+    const res = await invoke("g1", "A", { teamsSpecId: 3, boardsPerRound: 8 });
+    expect(res.status).toBe(200);
+    expect(getTeamMovementDetail).toHaveBeenCalledWith(3);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "TEAMS_SPEC",
+      specId: 3,
+      boardsPerRound: 8,
+    });
+  });
+
+  it("refuses a teams movement the app cannot run", async () => {
+    vi.mocked(getTeamMovementDetail).mockResolvedValue(null);
+    const res = await invoke("g1", "A", { teamsSpecId: 9, boardsPerRound: 8 });
+    expect(res.status).toBe(400);
+    expect(setSectionMovement).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for a teams movement with no boardsPerRound", async () => {
+    const res = await invoke("g1", "A", { teamsSpecId: 3 });
+    expect(res.status).toBe(400);
+    expect(getTeamMovementDetail).not.toHaveBeenCalled();
   });
 
   it("clears the movement when the body is empty", async () => {

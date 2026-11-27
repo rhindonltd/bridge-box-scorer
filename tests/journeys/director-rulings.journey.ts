@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { openDirectorTraveller } from "../fixtures/director-override";
+import {
+  THREE_TEAM_MATCHES,
+  teamMatchOutcomes,
+} from "../fixtures/scoring-scenarios";
 import { applyRuling, hubChoices, openHub } from "../fixtures/director-rulings";
 import {
   parseScore,
@@ -30,13 +34,26 @@ import {
  * in scoring-teams, so here only the VP the ruling moves is asserted.
  */
 
+/**
+ * A 3-team American Whist at 2 boards a round with the hand-built results of
+ * fixtures/scoring-scenarios.ts: match 1 (T1 v T3, boards 1-2) is level, 10-10;
+ * match 2 (T1 v T2, boards 3-4) and match 3 (T2 v T3, boards 5-6) are won.
+ */
 const TEAMS_GAME = {
   scoring: "TEAMS_IMP_VP",
+  tables: 3,
+  boardsPerRound: 2,
+  play: "all",
+  outcomes: teamMatchOutcomes(THREE_TEAM_MATCHES),
+} satisfies SeedGameOptions;
+
+/** A 4-table field for the Swiss rulings (Swiss Teams needs an even field). */
+const SWISS_GAME = {
   tables: 4,
   rounds: 3,
   boardsPerRound: 2,
   play: "all",
-} satisfies SeedGameOptions;
+} satisfies Omit<SeedGameOptions, "scoring">;
 
 /**
  * Open the room-display leaderboard and wait for its rows. A saved ruling ends
@@ -137,14 +154,15 @@ test.describe("Director rulings", () => {
         "Void Match (Teams)",
       ]);
 
-      // Round 1 plays team 1 against team 4: team 4 won the match, 17 VP to 3.
+      // Board 1 at table 1 (round 1) is team 1 at home to team 3: match 1, level
+      // on IMPs (+1, -1), 10 VP each.
       const before = await teamVp(director, game.gameId);
-      expect(before["Team A4NS"].rounds[0]).toBe(17);
-      expect(before["Team A1NS"].rounds[0]).toBe(3);
+      expect(before["Team A1NS"].rounds[0]).toBe(10);
+      expect(before["Team A3NS"].rounds[0]).toBe(10);
 
-      // Board 1 could not be played and the opponents (team 4) were at fault:
-      // team 1 gets +3 IMPs on it. Team 4's margin falls from 14 to 10 IMPs,
-      // which is one VP less for team 4 and one more for team 1.
+      // Board 1 could not be played and the opponents (team 3) were at fault:
+      // team 1 gets +3 IMPs on it instead of +1, a 2 IMP margin over the two
+      // boards, which is 12-8.
       await applyRuling(
         director,
         game.gameId,
@@ -154,14 +172,15 @@ test.describe("Director rulings", () => {
         /Opponents \(EW\) at fault/,
       );
       const after = await teamVp(director, game.gameId);
-      expect(after["Team A4NS"].rounds[0]).toBe(16);
-      expect(after["Team A1NS"].rounds[0]).toBe(4);
-      expect(after["Team A4NS"].total).toBe(before["Team A4NS"].total - 1);
-      expect(after["Team A1NS"].total).toBe(before["Team A1NS"].total + 1);
+      expect(after["Team A1NS"].rounds[0]).toBe(12);
+      expect(after["Team A3NS"].rounds[0]).toBe(8);
+      expect(after["Team A1NS"].total).toBe(before["Team A1NS"].total + 2);
+      expect(after["Team A3NS"].total).toBe(before["Team A3NS"].total - 2);
 
-      // Only that match moved; the other round 1 match is as before.
+      // Only that match moved; team 2 did not play in it.
       expect(after["Team A2NS"].rounds).toEqual(before["Team A2NS"].rounds);
-      expect(after["Team A3NS"].rounds).toEqual(before["Team A3NS"].rounds);
+      expect(after["Team A1NS"].rounds[1]).toBe(before["Team A1NS"].rounds[1]);
+      expect(after["Team A3NS"].rounds[2]).toBe(before["Team A3NS"].rounds[2]);
     } finally {
       await closeDevices(director);
     }
@@ -179,7 +198,8 @@ test.describe("Director rulings", () => {
     try {
       const before = await teamVp(director, game.gameId);
 
-      // Round 1, teams 1 v 4: incorrect seating, can't be replayed.
+      // Match 1 (teams 1 v 3, board 1 at table 1): incorrect seating, can't be
+      // replayed.
       await applyRuling(
         director,
         game.gameId,
@@ -188,8 +208,8 @@ test.describe("Director rulings", () => {
         "Void Match (Teams)",
         /Incorrect seating \/ cannot replay/,
       );
-      // Round 2, teams 1 v 3: incorrect seating and the TD's fault. Board 3 is
-      // the first board of round 2.
+      // Match 2 (teams 1 v 2): incorrect seating and the TD's fault, ruled from
+      // its room at table 1 in round 2 (board 3).
       await applyRuling(
         director,
         game.gameId,
@@ -200,18 +220,14 @@ test.describe("Director rulings", () => {
       );
 
       const after = await teamVp(director, game.gameId);
-      // 40% of 20 VP each in round 1, 60% each in round 2.
+      // 40% of 20 VP each in match 1, 60% each in match 2.
       expect(after["Team A1NS"].rounds.slice(0, 2)).toEqual([8, 12]);
-      expect(after["Team A4NS"].rounds[0]).toBe(8);
-      expect(after["Team A3NS"].rounds[1]).toBe(12);
+      expect(after["Team A3NS"].rounds[0]).toBe(8);
+      expect(after["Team A2NS"].rounds[1]).toBe(12);
 
-      // Voiding changes only the voided matches: the round 3 results stand and
-      // round 2's other match (teams 2 v 4) is untouched.
-      for (const team of ["Team A1NS", "Team A3NS", "Team A4NS"]) {
-        expect(after[team].rounds[2]).toBe(before[team].rounds[2]);
-      }
-      expect(after["Team A2NS"].rounds).toEqual(before["Team A2NS"].rounds);
-      expect(after["Team A4NS"].rounds[1]).toBe(before["Team A4NS"].rounds[1]);
+      // Voiding changes only the voided matches: match 3 (teams 2 v 3) stands.
+      expect(after["Team A2NS"].rounds[2]).toBe(before["Team A2NS"].rounds[2]);
+      expect(after["Team A3NS"].rounds[2]).toBe(before["Team A3NS"].rounds[2]);
     } finally {
       await closeDevices(director);
     }
@@ -222,7 +238,7 @@ test.describe("Director rulings", () => {
   }) => {
     test.setTimeout(120_000);
     const game = await seedGame({
-      ...TEAMS_GAME,
+      ...SWISS_GAME,
       scoring: "SWISS_PAIRS_MP",
       eventName: `Rulings swiss void ${Date.now()}`,
     });
@@ -284,7 +300,7 @@ test.describe("Director rulings", () => {
   }) => {
     test.setTimeout(120_000);
     const game = await seedGame({
-      ...TEAMS_GAME,
+      ...SWISS_GAME,
       scoring: "SWISS_TEAMS",
       eventName: `Rulings swiss teams ${Date.now()}`,
     });

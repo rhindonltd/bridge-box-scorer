@@ -368,7 +368,7 @@ fine)/100` of the board top on the withdrawer's seat (AVE− at 0% fine, 0 at
      `voidMatchVp` split so the published file matches the board. The §3.3.9 split
      is sized by the movement's boards-per-round, read via the new
      `boardsPerRoundOf` helper (`selected-movement.ts`) — it falls back to the
-     flat §3.3.6.1 40% when unknown. For Round-Robin Teams the future matches
+     flat §3.3.6.1 40% when unknown. For fixed teams movements the future matches
      exist as unplayed rows with a `matchId`; for Swiss Teams they are never
      drawn, so only the rounds actually drawn-but-unplayed are voided. The
      per-pair board-pooled withdrawal (above) is a separate, complete pass. (Odd

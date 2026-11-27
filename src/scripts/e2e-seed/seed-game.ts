@@ -29,7 +29,10 @@ import { handoverSeat } from "@/db/games/actions/handover-seat";
 import { setAbsenceTreatment } from "@/db/games/actions/set-absence-treatment";
 import { addExpectedLateSeat } from "@/db/games/queries/expected-late-seats";
 import { findParticipantSecret } from "@/db/games/queries/find-participant-secret";
-import { listPairMovements } from "@/modules/movement-catalog/server";
+import {
+  listPairMovements,
+  listTeamMovements,
+} from "@/modules/movement-catalog/server";
 import { recommendMovements } from "@/modules/movement-catalog";
 import { requireGameDb } from "@/db/games";
 import { boards } from "@/db/games/tables/boards";
@@ -55,6 +58,7 @@ export type FixtureKey =
   | "TEAMS_IMP_AGG"
   | "TEAMS_BAM"
   | "TEAMS_PAB"
+  | "TEAMS_LIBRARY"
   | "SWISS_PAIRS_MP"
   | "SWISS_PAIRS_XIMP"
   | "SWISS_TEAMS";
@@ -71,6 +75,16 @@ interface FixtureSpec {
   }) => SelectedMovement;
   /** Human description printed in the summary. */
   label: string;
+  /**
+   * The movement is a teams library movement for the team count (the first,
+   * or `--specId`); its rounds and boards per round come from the library.
+   */
+  teamsLibrary?: boolean;
+  /**
+   * The movement is an American Whist: an odd team count, and every round
+   * (teams − 1) is played, whatever `--rounds` says.
+   */
+  americanWhist?: boolean;
 }
 
 export const FIXTURES: Record<FixtureKey, FixtureSpec> = {
@@ -107,40 +121,57 @@ export const FIXTURES: Record<FixtureKey, FixtureSpec> = {
     gameType: "TEAMS",
     eventFormat: "STANDARD",
     scoringType: "IMP_VP",
-    label: "Teams · IMP (Victory Points) · Round Robin",
-    movement: ({ tables, rounds, bpr }) => ({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: tables, rounds, boardsPerRound: bpr },
+    label: "Teams · IMP (Victory Points) · American Whist",
+    americanWhist: true,
+    movement: ({ tables, bpr }) => ({
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: tables, boardsPerRound: bpr },
     }),
   },
   TEAMS_IMP_AGG: {
     gameType: "TEAMS",
     eventFormat: "STANDARD",
     scoringType: "IMP",
-    label: "Teams · IMP (aggregate net IMPs) · Round Robin",
-    movement: ({ tables, rounds, bpr }) => ({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: tables, rounds, boardsPerRound: bpr },
+    label: "Teams · IMP (aggregate net IMPs) · American Whist",
+    americanWhist: true,
+    movement: ({ tables, bpr }) => ({
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: tables, boardsPerRound: bpr },
     }),
   },
   TEAMS_BAM: {
     gameType: "TEAMS",
     eventFormat: "STANDARD",
     scoringType: "BAM",
-    label: "Teams · Board-a-Match · Round Robin",
-    movement: ({ tables, rounds, bpr }) => ({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: tables, rounds, boardsPerRound: bpr },
+    label: "Teams · Board-a-Match · American Whist",
+    americanWhist: true,
+    movement: ({ tables, bpr }) => ({
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: tables, boardsPerRound: bpr },
     }),
   },
   TEAMS_PAB: {
     gameType: "TEAMS",
     eventFormat: "STANDARD",
     scoringType: "PAB",
-    label: "Teams · Point-a-Board · Round Robin",
-    movement: ({ tables, rounds, bpr }) => ({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: tables, rounds, boardsPerRound: bpr },
+    label: "Teams · Point-a-Board · American Whist",
+    americanWhist: true,
+    movement: ({ tables, bpr }) => ({
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: tables, boardsPerRound: bpr },
+    }),
+  },
+  TEAMS_LIBRARY: {
+    gameType: "TEAMS",
+    eventFormat: "STANDARD",
+    scoringType: "IMP_VP",
+    label: "Teams · IMP (Victory Points) · teams library movement",
+    teamsLibrary: true,
+    // Replaced by the library movement in resolveMovement.
+    movement: ({ bpr }) => ({
+      source: "TEAMS_SPEC",
+      specId: 1,
+      boardsPerRound: bpr,
     }),
   },
   SWISS_PAIRS_MP: {
@@ -375,6 +406,37 @@ async function resolveMovement(
     return { movement, rounds: first.rounds, bpr: first.boardsPerRound };
   }
 
+  if (fixture.teamsLibrary) {
+    const library = await listTeamMovements(opts.tables);
+    const chosen = opts.specId
+      ? library.find((m) => m.id === opts.specId)
+      : library[0];
+    if (!chosen) {
+      throw new Error(`No teams library movement for ${opts.tables} tables.`);
+    }
+    return {
+      movement: {
+        source: "TEAMS_SPEC",
+        specId: chosen.id,
+        boardsPerRound: chosen.boardsPerRound,
+      },
+      rounds: chosen.rounds,
+      bpr: chosen.boardsPerRound,
+    };
+  }
+
+  if (fixture.americanWhist) {
+    return {
+      movement: fixture.movement({
+        tables: opts.tables,
+        rounds: opts.tables - 1,
+        bpr: opts.bpr,
+      }),
+      rounds: opts.tables - 1,
+      bpr: opts.bpr,
+    };
+  }
+
   let movement = fixture.movement({
     tables: opts.tables,
     rounds: opts.rounds,
@@ -400,9 +462,20 @@ function checkParity(
         `For an even field use movement "recommended" (e.g. a Howell).`,
     );
   }
-  if (fixture.gameType === "TEAMS" && tables % 2 !== 0) {
+  if (fixture.americanWhist && tables % 2 === 0) {
     throw new Error(
-      `A teams fixture (${scoring}) needs an EVEN --tables (try 4 or 6); got ${tables}.`,
+      `An American Whist fixture (${scoring}) needs an ODD --tables (try 3 or 5); got ${tables}.`,
+    );
+  }
+  // Swiss Teams is seeded with an even field; a library movement and an
+  // American Whist fill every table every round.
+  if (
+    fixture.gameType === "TEAMS" &&
+    fixture.eventFormat === "SWISS" &&
+    tables % 2 !== 0
+  ) {
+    throw new Error(
+      `A Swiss Teams fixture (${scoring}) needs an EVEN --tables (try 4 or 6); got ${tables}.`,
     );
   }
 }
@@ -420,7 +493,9 @@ export async function seedGame(
   }
   const mode = opts.movement ?? "fixture";
   const mitchellLike = scoring === "MP" || scoring === "XIMP";
-  const tables = opts.tables ?? (mitchellLike && mode === "fixture" ? 3 : 4);
+  const tables =
+    opts.tables ??
+    ((mitchellLike && mode === "fixture") || fixture.americanWhist ? 3 : 4);
   const play: Play = opts.play ?? "none";
   checkParity(scoring, fixture, tables, mode);
 

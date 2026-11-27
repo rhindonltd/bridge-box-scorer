@@ -149,7 +149,7 @@ by `scoredAsUnit`:
 | Movement family                                   | Match rows (structure) | Scored as a unit?                            | Where the match row earns its keep                                                                              |
 | ------------------------------------------------- | ---------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Swiss Teams                                       | Yes                    | **Yes** (margin→VP per match; triples; byes) | Scoring + traveller + USEBIO + draw history + rulings                                                           |
-| Round Robin Teams                                 | Yes                    | **Yes**                                      | Scoring + traveller + USEBIO                                                                                    |
+| American Whist Teams / teams library              | Yes                    | **Yes**                                      | Scoring + traveller + USEBIO                                                                                    |
 | Swiss Pairs                                       | Yes                    | **Yes** (per-round VP; half-matches; byes)   | Scoring + draw history + §3.5 detection + rulings                                                               |
 | Mitchell / Howell / American Whist (static pairs) | Yes                    | **No** (field-scored)                        | Traveller ("who played whom") + whole-table rulings (arrow-switch, cancel) + uniform model. Scoring ignores it. |
 
@@ -257,7 +257,8 @@ Labelled **SIMPLIFIED**, **UNCHANGED**, or **NEWLY COUPLED**.
 - `src/services/draw-swiss-teams-round-service.ts` /
   `materialize-swiss-teams-round.ts` — writes `matches` rows (TEAMS / TRIPLE
   comparisons / BYE) + `matchId`. Already has `matches`, `byeTeamId`, `triple`.
-- Round Robin Teams materialisation — writes match rows up front.
+- Fixed teams movements (American Whist Teams and the teams library) — write
+  match rows up front.
 - Idempotency guards per round stay; the match insert sits inside the same
   transaction as the board insert everywhere.
 

@@ -27,9 +27,11 @@ const MITCHELL = JSON.stringify({
   source: "MITCHELL",
   mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
 });
-const ROUND_ROBIN_TEAMS = JSON.stringify({
-  source: "ROUND_ROBIN_TEAMS",
-  roundRobinTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+// A two-team fixed teams movement (a stored teams movement) for the teams path.
+const FIXED_TEAMS = JSON.stringify({
+  source: "TEAMS_SPEC",
+  specId: 1,
+  boardsPerRound: 1,
 });
 
 let tmpDir: string;
@@ -274,7 +276,7 @@ describe("leaderboard credits a played-reversed board to the opposite side", () 
     });
   });
 
-  describe("teams (Teams Round Robin, VP)", () => {
+  describe("teams (fixed teams movement, VP)", () => {
     async function seedMatch(db: any) {
       const { boards } = await import("@/db/games/tables/boards");
       seedFixtureTeamsMatch(db);
@@ -322,7 +324,7 @@ describe("leaderboard credits a played-reversed board to the opposite side", () 
     const config = {
       gameType: "TEAMS",
       scoringType: "IMP_VP",
-      selectedMovement: ROUND_ROBIN_TEAMS,
+      selectedMovement: FIXED_TEAMS,
     };
 
     it("flips the match when the open room is played reversed", async () => {

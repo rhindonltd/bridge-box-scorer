@@ -1,8 +1,8 @@
 import { Tables } from "@/model/movement";
-import type { MatchDescriptor, MovementPlan } from "@/model/movement-plan";
+import type { MovementPlan } from "@/model/movement-plan";
 import type { PairSeat } from "@/model/participants";
 import { generateStandardMitchellWithSitOut } from "@/modules/movement-catalog/generation/mitchell/sit-out";
-import { generateRoundRobinTeams } from "@/modules/movement-catalog/generation/round-robin-teams/round-robin-teams-pairing";
+import { boardSetFor } from "@/modules/movement-catalog/shared";
 import type { MovementDescription } from "./describe-movement";
 import {
   alignSpecMissingPair,
@@ -22,10 +22,10 @@ import {
  * - Stored spec: a movement with a built-in missing pair is rotated so its
  *   phantom lines up with the empty seat; otherwise the position at the empty
  *   seat becomes the phantom.
- * - Teams Round Robin: the whole fixed schedule (every team plays every other
- *   once), each encounter's two rooms grouped into one TEAMS match. Teams
- *   never have a sit-out (the start check rejects one), so `sitOutSeat` is not
- *   read.
+ * - Teams (American Whist or a stored teams movement): the described layout as
+ *   it is, each match's two rooms grouped into one TEAMS match (see
+ *   `teamsLayoutToMaterializable`). Teams never have a sit-out (the start check
+ *   rejects one), so `sitOutSeat` is not read.
  */
 export function planMovement(
   description: MovementDescription,
@@ -33,11 +33,17 @@ export function planMovement(
 ): MovementPlan {
   const { selected, layout, missingPair } = description;
 
-  if (selected.source === "ROUND_ROBIN_TEAMS") {
-    const { teams, rounds, boardsPerRound } = selected.roundRobinTeams;
-    return roundRobinTeamsToMaterializable(
-      generateRoundRobinTeams({ teams, rounds, boardsPerRound }),
+  // A teams movement (American Whist or a stored teams movement) is laid out
+  // in full by its description, and a teams start never has a sit-out (a team
+  // needs both its pairs).
+  if (selected.source === "AMERICAN_WHIST_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.americanWhistTeams.boardsPerRound,
     );
+  }
+  if (selected.source === "TEAMS_SPEC") {
+    return teamsLayoutToMaterializable(layout, selected.boardsPerRound);
   }
 
   if (sitOutSeat === null) {
@@ -70,48 +76,22 @@ export function planMovement(
  * Convert a generated, fully-expanded {@link Tables} movement (board numbers
  * already applied) into the {@link MovementPlan} shape the DB writers
  * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
- * every generator that emits `Tables` — Mitchell-family pairs and Teams Round
- * Robin alike — shares it.
+ * every pairs generator that emits `Tables` shares it. Every round gets the
+ * default ordinary-pairs match (`PAIRS`, `scoredAsUnit: false`).
  */
-export function tablesToMaterializableMovement(
-  tables: Tables,
-  /**
-   * Optional per-round match descriptor builder. When omitted every round gets
-   * the default ordinary-pairs match (`PAIRS`, `scoredAsUnit: false`) — correct
-   * for a static matchpoint/XIMP pairs movement. Teams Round Robin supplies one
-   * so its rooms group into `TEAMS` matches scored as a unit.
-   */
-  describeMatch?: (round: {
-    roundNumber: number;
-    tableNumber: number;
-    ns: string;
-    ew: string;
-    boardStart: number;
-    boardEnd: number;
-  }) => MatchDescriptor,
-): MovementPlan {
+export function tablesToMaterializableMovement(tables: Tables): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
     rounds: table.rounds.map((round) => {
       const boardStart = round.boards[0];
       const boardEnd = round.boards[round.boards.length - 1];
-      const ns = round.participants.nsId;
-      const ew = round.participants.ewId;
       return {
         roundNumber: round.round,
-        ns,
-        ew,
+        ns: round.participants.nsId,
+        ew: round.participants.ewId,
         boardStart,
         boardEnd,
         boardCopy: round.boardCopy,
-        match: describeMatch?.({
-          roundNumber: round.round,
-          tableNumber: table.table,
-          ns,
-          ew,
-          boardStart,
-          boardEnd,
-        }),
       };
     }),
   }));
@@ -119,7 +99,7 @@ export function tablesToMaterializableMovement(
 
 /**
  * The home-table number encoded in a teams seat id ("3NS" / "3EW" → 3). A teams
- * RR seat is the home team's NS pair ("${T}NS") or an away pair that travelled
+ * seat is the home team's NS pair ("${T}NS") or an away pair that travelled
  * from its own home table ("${T}EW"), so the number is the room's home table.
  */
 function teamsSeatTable(seatId: string): number {
@@ -127,29 +107,36 @@ function teamsSeatTable(seatId: string): number {
 }
 
 /**
- * Convert a generated Teams Round Robin (`generateRoundRobinTeams` output) into
- * the MovementPlan shape, tagging each room with its `TEAMS` match so
- * the two rooms of an encounter group into ONE match scored as a unit.
- *
- * A room at table T sits the home team ("${T}NS") against an away pair whose id
- * encodes the opponent's home table. The encounter's two rooms are at the two
- * teams' home tables; the match is keyed by the unordered home-table pair in
- * the round, and its participants are the two teams' stable ids ("${lo}NS" /
- * "${hi}NS"). `vpPool` is the ordinary 20 and `scoredAsUnit` is true.
+ * Tag a teams movement's rooms with their `TEAMS` match, so a match's two
+ * rooms group into ONE match scored as a unit. Two teams meet once, so the
+ * match is keyed by the unordered home-table pair alone: the two rooms may be
+ * played in different rounds. The match is numbered by
+ * its board set (each team plays each set once), which gives every team one
+ * match per number for the per-round scorers.
  */
-export function roundRobinTeamsToMaterializable(tables: Tables): MovementPlan {
-  return tablesToMaterializableMovement(tables, (round) => {
-    const homeTable = teamsSeatTable(round.ns);
-    const oppTable = teamsSeatTable(round.ew);
-    const lo = Math.min(homeTable, oppTable);
-    const hi = Math.max(homeTable, oppTable);
-    return {
-      kind: "TEAMS",
-      scoredAsUnit: true,
-      key: `${round.roundNumber}|teams|${lo}-${hi}`,
-      home: `${lo}NS`,
-      opponent: `${hi}NS`,
-      vpPool: 20,
-    };
-  });
+export function teamsLayoutToMaterializable(
+  layout: MovementPlan,
+  boardsPerRound: number,
+): MovementPlan {
+  return layout.map((table) => ({
+    ...table,
+    rounds: table.rounds.map((round) => {
+      const homeTable = teamsSeatTable(round.ns);
+      const oppTable = teamsSeatTable(round.ew);
+      const lo = Math.min(homeTable, oppTable);
+      const hi = Math.max(homeTable, oppTable);
+      return {
+        ...round,
+        match: {
+          kind: "TEAMS" as const,
+          scoredAsUnit: true,
+          key: `teams|${lo}-${hi}`,
+          home: `${lo}NS`,
+          opponent: `${hi}NS`,
+          vpPool: 20,
+          roundNumber: boardSetFor(round.boardStart, boardsPerRound),
+        },
+      };
+    }),
+  }));
 }

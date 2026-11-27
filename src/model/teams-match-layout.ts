@@ -1,6 +1,6 @@
 /**
  * How a teams match is laid out at the tables. Shared by the Swiss Teams draw
- * and the Teams Round Robin generator, which is why it lives in the kernel and
+ * and the fixed teams movements, which is why it lives in the kernel and
  * not in either of them.
  *
  * A team is the two pairs seated at one home table. Its home pair (North/South)

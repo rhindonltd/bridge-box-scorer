@@ -13,7 +13,12 @@ vi.mock(
   }),
 );
 
+vi.mock("@/modules/movement-catalog/storage/db/queries/get-movements", () => ({
+  getTeamMovementRooms: vi.fn(),
+}));
+
 import { getPairMovement } from "@/modules/movement-catalog/storage/db/queries/get-movement";
+import { getTeamMovementRooms } from "@/modules/movement-catalog/storage/db/queries/get-movements";
 import { getPairMovementSpecById } from "@/modules/movement-catalog/storage/db/queries/get-movement-spec";
 import { resolveSectionStart } from "./start-game-service";
 import { PairSeat } from "@/model/participants";
@@ -670,90 +675,140 @@ describe("resolveSectionStart", () => {
     expect(a.movement).toEqual(b.movement);
   });
 
-  it("resolves a fully-seated Round Robin Teams and materializes ALL rounds", async () => {
-    const teams = 6;
-    const rounds = 5; // a full round robin of 6 teams
+  it("resolves a fully-seated American Whist and materializes ALL rounds", async () => {
+    const teams = 5;
     const result = await resolveSectionStart(
       "A",
       {
-        source: "ROUND_ROBIN_TEAMS",
-        roundRobinTeams: { teams, rounds, boardsPerRound: 4 },
+        source: "AMERICAN_WHIST_TEAMS",
+        americanWhistTeams: { teams, boardsPerRound: 4 },
       },
       seatsForTables(teams),
       "g1",
     );
-
     expect(result.validation.canStart).toBe(true);
-    expect(result.movement).not.toBeNull();
-
-    // Six teams => six physical tables, each carrying every round (unlike Swiss
-    // Teams, which materializes only round 1 at start).
-    expect(
-      result.movement!.map((t) => t.tableNumber).sort((a, b) => a - b),
-    ).toEqual([1, 2, 3, 4, 5, 6]);
+    // Five teams => five physical tables, each carrying every round (unlike
+    // Swiss Teams, which materializes only round 1 at start).
+    expect(result.movement!.map((t) => t.tableNumber)).toEqual([1, 2, 3, 4, 5]);
     for (const table of result.movement!) {
-      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
+      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4]);
       for (const round of table.rounds) {
-        expect(round.boardStart).toBe((round.roundNumber - 1) * 4 + 1);
-        expect(round.boardEnd).toBe(round.roundNumber * 4);
-        expect(round.ns).toMatch(/NS$/);
-        expect(round.ew).toMatch(/EW$/);
+        expect(round.ns).toBe(`${table.tableNumber}NS`);
+        expect(round.match?.kind).toBe("TEAMS");
       }
     }
+    expect(result.anchors).toEqual(teamsAnchors(teams));
   });
 
-  it("blocks a Round Robin Teams start with an odd team count", async () => {
+  it("blocks an American Whist start when a table is one pair short", async () => {
+    const seated = seatsForTables(5).filter((s) => s !== "A3EW");
     const result = await resolveSectionStart(
       "A",
       {
-        source: "ROUND_ROBIN_TEAMS",
-        roundRobinTeams: { teams: 5, rounds: 4, boardsPerRound: 4 },
-      },
-      seatsForTables(5),
-      "g1",
-    );
-
-    expect(result.validation.canStart).toBe(false);
-    expect(result.movement).toBeNull();
-    expect(result.validation.problems.map((p) => p.code)).toContain(
-      "ODD_TEAM_COUNT",
-    );
-  });
-
-  it("blocks a Round Robin Teams start when a table is one pair short", async () => {
-    const seated = seatsForTables(6).filter((s) => s !== "A3EW");
-
-    const result = await resolveSectionStart(
-      "A",
-      {
-        source: "ROUND_ROBIN_TEAMS",
-        roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 4 },
+        source: "AMERICAN_WHIST_TEAMS",
+        americanWhistTeams: { teams: 5, boardsPerRound: 4 },
       },
       seated,
       "g1",
     );
-
     expect(result.validation.canStart).toBe(false);
     expect(result.movement).toBeNull();
     expect(result.validation.problems.map((p) => p.code)).toContain(
       "TEAMS_SIT_OUT_NOT_ALLOWED",
     );
   });
+});
 
-  it("materializes a shortened Round Robin Teams (fewer than a full robin)", async () => {
+/** Each team's pairs keep their own seats' ids: "A{T}NS" and "A{T}EW". */
+function teamsAnchors(teams: number) {
+  return seatsForTables(teams).map((seat) => ({ seat, anchorId: seat }));
+}
+
+describe("teams seat anchors", () => {
+  it("keeps a Swiss Teams team's away pair on its own seat's id", async () => {
     const result = await resolveSectionStart(
       "A",
       {
-        source: "ROUND_ROBIN_TEAMS",
-        roundRobinTeams: { teams: 6, rounds: 3, boardsPerRound: 4 },
+        source: "SWISS_TEAMS",
+        swissTeams: { teams: 4, rounds: 3, boardsPerRound: 2 },
       },
-      seatsForTables(6),
+      seatsForTables(4),
       "g1",
     );
+    expect(result.anchors).toEqual(teamsAnchors(4));
+  });
 
+  it("keeps an American Whist team's away pair on its own seat's id", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "AMERICAN_WHIST_TEAMS",
+        americanWhistTeams: { teams: 3, boardsPerRound: 2 },
+      },
+      seatsForTables(3),
+      "g1",
+    );
+    expect(result.anchors).toEqual(teamsAnchors(3));
+  });
+});
+
+describe("stored teams movements", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // Three teams; a match's two rooms are in different rounds (team 1 hosts 2
+  // in round 1 on set 1, team 2 hosts 1 in round 2 on set 1).
+  const rooms = [
+    [1, 1, "2", 1],
+    [1, 2, "3", 2],
+    [2, 1, "3", 3],
+    [2, 2, "1", 1],
+    [3, 1, "1", 2],
+    [3, 2, "2", 3],
+  ].map(([tableNumber, roundNumber, ew, boardSet]) => ({
+    movementId: 5,
+    tableNumber: tableNumber as number,
+    roundNumber: roundNumber as number,
+    ns: `${tableNumber}`,
+    ew: ew as string,
+    boardSet: boardSet as number,
+  }));
+  const selected = {
+    source: "TEAMS_SPEC" as const,
+    specId: 5,
+    boardsPerRound: 2,
+  };
+
+  it("starts an odd field with the whole schedule and team anchors", async () => {
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(rooms);
+    const result = await resolveSectionStart(
+      "A",
+      selected,
+      seatsForTables(3),
+      "g1",
+    );
     expect(result.validation.canStart).toBe(true);
-    for (const table of result.movement!) {
-      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3]);
-    }
+    expect(result.anchors).toEqual(teamsAnchors(3));
+    const table1 = result.movement!.find((t) => t.tableNumber === 1)!;
+    expect(table1.rounds.map((r) => [r.ns, r.ew, r.match?.key])).toEqual([
+      ["1NS", "2EW", "teams|1-2"],
+      ["1NS", "3EW", "teams|1-3"],
+    ]);
+    // The match is numbered by its board set, not the room's round.
+    expect(table1.rounds.map((r) => r.match?.roundNumber)).toEqual([1, 2]);
+  });
+
+  it("refuses a table one pair short", async () => {
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(rooms);
+    const result = await resolveSectionStart(
+      "A",
+      selected,
+      seatsForTables(3).filter((s) => s !== "A2EW"),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(false);
+    expect(result.movement).toBeNull();
+    expect(result.validation.problems.map((p) => p.code)).toContain(
+      "TEAMS_SIT_OUT_NOT_ALLOWED",
+    );
   });
 });

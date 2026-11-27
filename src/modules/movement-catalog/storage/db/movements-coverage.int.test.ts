@@ -7,7 +7,8 @@ import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 /**
  * Fills the movements-catalogue coverage gaps left by movements.int.test.ts:
  *  - the TEAM movement spec / table-spec / round-spec create actions and the
- *    getTeamMovementSpecById + getTeamMovement read paths;
+ *    getTeamMovementSpecById, getTeamMovementSpecsForTables and
+ *    getTeamMovementRooms read paths;
  *  - the `.references(() => ...)` foreign-key thunks on the *tablespec and
  *    *roundspec tables (exercised via getTableConfig, which forces drizzle to
  *    evaluate the lazy reference closures).
@@ -44,14 +45,15 @@ describe("movements db: team specs and schema references", () => {
     expect(await getTeamMovementSpecById(9999)).toBeNull();
   });
 
-  it("assembles the full team movement tree (tables with their rounds)", async () => {
+  it("lists a team count's movements and reads their rooms", async () => {
     const { createTeamMovementSpec } =
       await import("./actions/create-movement-spec");
     const { createTeamMovementTableSpec } =
       await import("./actions/create-movement-table-spec");
     const { createTeamMovementRoundSpec } =
       await import("./actions/create-movement-round-spec");
-    const { getTeamMovement } = await import("./queries/get-movement");
+    const { getTeamMovementRooms, getTeamMovementSpecsForTables } =
+      await import("./queries/get-movements");
 
     const movementId = await createTeamMovementSpec({
       name: "Team 2",
@@ -82,11 +84,15 @@ describe("movements db: team specs and schema references", () => {
       boardSet: 2,
     });
 
-    const movement = await getTeamMovement(movementId);
-    expect(movement).toHaveLength(1);
-    expect(movement[0]).toMatchObject({ tableNumber: 1 });
-    expect(movement[0].rounds).toHaveLength(2);
-    expect(movement[0].rounds.map((r) => r.boardSet)).toEqual([1, 2]);
+    expect(
+      (await getTeamMovementSpecsForTables(2)).map((spec) => spec.id),
+    ).toEqual([movementId]);
+    const rooms = await getTeamMovementRooms([movementId]);
+    expect(rooms.map((r) => [r.tableNumber, r.roundNumber, r.ew])).toEqual([
+      [1, 1, "2"],
+      [1, 2, "3"],
+    ]);
+    expect(await getTeamMovementRooms([])).toEqual([]);
   });
 
   it("resolves the foreign-key thunks on every *spec table", async () => {

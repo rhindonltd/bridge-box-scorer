@@ -61,7 +61,6 @@ vi.mock("@/db/system/queries/find-login-session", () => ({
 
 vi.mock("@/modules/movement-catalog/storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
-  getTeamMovement: vi.fn(),
 }));
 
 vi.mock("@/db/games", () => ({

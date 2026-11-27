@@ -8,6 +8,7 @@ import {
   boardSetToBoardList,
 } from "@/modules/movement-catalog/shared";
 import { splitLinesOfFile } from "./movement-file";
+import { normaliseTeamsTables } from "@/modules/movement-catalog/teams/teams-library";
 import { PairParticipants, Table } from "@/model/movement";
 
 // ---- Parser ----
@@ -38,9 +39,9 @@ export const generateTeamsMovements = (): MovementFileEntry[] =>
     .map((lines) => {
       const header = parseHeader(lines);
 
-      const tables: Table[] = buildTables(
-        lines,
-        parsePairsRounds(header.defaultBoardsPerSet),
+      // Rows are tables; put them in team order so table T is team T's home.
+      const tables: Table[] = normaliseTeamsTables(
+        buildTables(lines, parsePairsRounds(header.defaultBoardsPerSet)),
       );
 
       return buildMovementBase(header, tables);

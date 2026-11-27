@@ -10,6 +10,8 @@ import {
   drawSwissRound,
   evaluateSwissSeating,
   isValidHalfMatchCommit,
+  nextSwissDrawRound,
+  PAIRS_ROUND_COMPLETION,
   pairsDrawInput,
   seatedSwissPairIds,
   serializeAdvisoryInputs,
@@ -17,6 +19,7 @@ import {
   swissPairsField,
   type RankedSwissPair,
   type SerializableAdvisoryInputs,
+  type SwissDrawGateRejection,
   type SwissDrawInput,
   type SwissHalfMatchSeating,
   type SwissPairId,
@@ -32,8 +35,7 @@ import type { SectionLetter } from "@/model/participants";
  * Why a Swiss draw could not proceed. Surfaced to the director so the "Draw
  * next round" control can explain the block.
  */
-export type DrawSwissRejection =
-  "NOT_SWISS" | "ROUND_INCOMPLETE" | "EVENT_COMPLETE";
+export type DrawSwissRejection = "NOT_SWISS" | SwissDrawGateRejection;
 
 /**
  * A previewed (but NOT committed) Swiss draw: the proposed seating with stable
@@ -82,32 +84,6 @@ export type { SerializableAdvisoryInputs };
 export type CommitSwissResult =
   | { ok: true; roundNumber: number }
   | { ok: false; reason: DrawSwissRejection | "INVALID_SEATING" };
-
-/**
- * Whether every playable board in a given round has a final result, so the
- * round is safe to draw from. A board is playable when it is neither a SIT_OUT
- * nor a HALF_AVERAGE; final means CONFIRMED, OVERRIDDEN, or CANCELLED (a fouled
- * board carrying its §3.3.2 adjusted score). An empty round (no playable
- * boards) is not "complete" — there is nothing to score from.
- *
- * SIT_OUT (a bye) and HALF_AVERAGE (a "2 half matches" compensation block for
- * the half a non-anchor misses) are both resolved by the scorer, never
- * submitted by players, so they must not count as outstanding — otherwise a
- * round containing a half-match group could never be drawn from.
- */
-function isRoundComplete(
-  db: Db,
-  section: SectionLetter,
-  roundNumber: number,
-): Promise<boolean> {
-  // Pairs: a bye's SIT_OUT and a "2 half matches" HALF_AVERAGE block are
-  // scorer-resolved and never submitted, so they are dropped from the playable
-  // set rather than counted — a round of only those has nothing to draw from.
-  return isSwissRoundComplete(db, section, roundNumber, {
-    completeStatuses: ["CONFIRMED", "OVERRIDDEN", "CANCELLED", "REMOVED_TEAMS"],
-    ignoreStatuses: ["SIT_OUT", "HALF_AVERAGE"],
-  });
-}
 
 /**
  * The stable Swiss pair ids actually SEATED in a section, read from the
@@ -188,24 +164,16 @@ async function resolveDrawContext(
   const { tables, rounds: totalRounds, boardsPerRound } = selected.swiss;
 
   const history = await getSwissBoardHistory(db, section, tables);
-  const currentRound = history.highestRound;
 
-  // The event is done once the last round has been materialized.
-  if (currentRound >= totalRounds) {
-    return { reason: "EVENT_COMPLETE" };
-  }
-
-  // The current round must be fully scored before drawing the next.
-  if (
-    currentRound >= 1 &&
-    !(await isRoundComplete(db, section, currentRound))
-  ) {
-    return { reason: "ROUND_INCOMPLETE" };
-  }
+  // The event must have rounds left and the current round must be scored.
+  const gate = await nextSwissDrawRound(history.highestRound, totalRounds, {
+    isRoundComplete: (round) =>
+      isSwissRoundComplete(db, section, round, PAIRS_ROUND_COMPLETION),
+  });
+  if (!gate.ok) return { reason: gate.reason };
+  const { nextRound } = gate;
 
   const { order, ranked } = await rankedStandings(db, gameId, section, tables);
-
-  const nextRound = currentRound + 1;
 
   return {
     db,

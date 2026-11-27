@@ -28,7 +28,6 @@ import {
 } from "@/services/materialize-movement";
 import {
   planMovement,
-  type FixedSelectedMovement,
   type MovementDescription,
 } from "@/modules/movement-catalog";
 import { describeMovement } from "@/modules/movement-catalog/server";
@@ -124,11 +123,15 @@ export async function resolveSectionStart(
 
   const validation = validateStart(expected, seatedSeats, expectedLateSeats);
 
-  // Teams Round Robin shares Swiss Teams' structural requirements (a full team
-  // at every table, an even team count) but, unlike Swiss Teams, its whole
-  // fixed schedule is materialized at start rather than drawn round by round.
-  if (selected.source === "ROUND_ROBIN_TEAMS") {
-    return resolveRoundRobinTeamsStart(selected, description, validation);
+  // A fixed teams movement (American Whist or a stored teams movement) shares
+  // Swiss Teams' full-team-per-table rule, but fills every table every round,
+  // so any team count it was built for can start. Its whole schedule is
+  // materialized at start.
+  if (
+    selected.source === "AMERICAN_WHIST_TEAMS" ||
+    selected.source === "TEAMS_SPEC"
+  ) {
+    return resolveFixedTeamsStart(section, description, validation);
   }
 
   if (!validation.canStart) {
@@ -212,25 +215,45 @@ function resolveSwissTeamsStart(
   return {
     validation,
     movement: swissTeamsRoundOnePlan(selected.swissTeams, gameId, section),
+    anchors: teamsAnchors(section, teams),
   };
 }
 
 /**
- * Resolve a Teams Round Robin section's start. It layers the shared teams
- * structural validations (full team per table, even team count) on the base
- * seat validation, then — when valid — generates the WHOLE fixed schedule
- * (every team plays every other once) and materializes all of its rounds up
- * front. There is no live draw: the schedule is deterministic from the spec.
+ * Every seat's anchor id in a teams section: a team is the two pairs seated at
+ * its home table, so each pair keeps its own seat's id ("A3NS" home pair,
+ * "A3EW" away pair) all event. The away pair moves to its round-1 table before
+ * play. Without this, the round-1 layout would stamp each EW seat with the
+ * visiting team's away-pair id (table 3 hosts another team's away pair in
+ * round 1), so a team's own away pair would be scored as another team's.
  */
-function resolveRoundRobinTeamsStart(
-  selected: Extract<FixedSelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>,
+function teamsAnchors(section: SectionLetter, teams: number): SeatAnchor[] {
+  const anchors: SeatAnchor[] = [];
+  for (let table = 1; table <= teams; table++) {
+    for (const direction of ["NS", "EW"] as const) {
+      anchors.push({
+        seat: `${section}${table}${direction}` as PairSeat,
+        anchorId: sectionParticipantId(section, `${table}${direction}`),
+      });
+    }
+  }
+  return anchors;
+}
+
+/**
+ * Resolve a fixed teams movement's start (American Whist or a stored teams
+ * movement): a full team at every table (no sit-out), any team count, then the
+ * movement's whole schedule, with each team's pairs keeping their seats' ids.
+ */
+function resolveFixedTeamsStart(
+  section: SectionLetter,
   description: MovementDescription,
   baseValidation: StartValidationResult,
 ): ResolvedStart {
-  const { teams } = selected.roundRobinTeams;
-  // Round Robin has no odd handling: an odd team count is always rejected.
+  const teams = description.layout.length;
   const validation = validateTeamsStructure(baseValidation, teams, {
-    label: "Round Robin Teams",
+    label: "Teams",
+    anyTeamCount: true,
   });
 
   if (!validation.canStart) {
@@ -240,6 +263,7 @@ function resolveRoundRobinTeamsStart(
   return {
     validation,
     movement: planMovement(description, { sitOutSeat: null }),
+    anchors: teamsAnchors(section, teams),
   };
 }
 

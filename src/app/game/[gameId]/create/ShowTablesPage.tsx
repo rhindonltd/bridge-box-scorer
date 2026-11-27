@@ -123,7 +123,6 @@ export function ShowTablesPage({ menu, backAction }: Props) {
     movementTables,
   } = useMovementResolution(
     currentSection?.selectedMovement ?? null,
-    game.gameType,
     currentSection?.tables ?? 0,
   );
 
@@ -146,7 +145,6 @@ export function ShowTablesPage({ menu, backAction }: Props) {
   // sees their choice.
   const selectedMovementName = useSelectedMovementName(
     currentSection?.selectedMovement ?? null,
-    game.gameType,
   );
 
   useSocketSWRSync(

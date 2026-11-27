@@ -194,8 +194,10 @@ Here you choose the movement — the schedule of who plays whom, at which table,
 on which boards. What this tab shows depends on the **Event Type** you picked
 when creating the game:
 
-- **Pairs** and **Teams** show the movement picker — a list of ready-made
-  movements to choose from (described below).
+- **Pairs** shows the movement picker — a list of ready-made movements to
+  choose from (described below).
+- **Teams** shows the teams movement list — ready-made teams movements for
+  your number of teams (see [Teams](#teams) below).
 - **Swiss Pairs** and **Swiss Teams** show only the Swiss setup instead, since
   a Swiss event has no fixed schedule to pick — it is drawn round by round as
   the event runs (see [Swiss Pairs](#swiss-pairs) and
@@ -234,6 +236,29 @@ details — the full round-by-round and table-by-table breakdown of who plays
 whom on which boards. If it's the one you want, tap **Select Movement** to lock
 it in for the section; otherwise tap back to return to the list and compare
 another.
+
+#### Teams
+
+For a **Teams** game, the Movements tab lists the teams movements available for
+your table count (one table per team), **grouped by how many boards each team
+plays**. Each card shows the movement name, the number of rounds, boards per
+round and the number of boards in play. Tap a card to see its round-by-round
+and table-by-table breakdown — each table shows its home team (North/South)
+and the visiting team (East/West) by number — then tap **Select Movement**.
+
+A team is the two pairs you seat at one table. The North/South pair stays at
+that table all session; the East/West pair moves each round to play another
+team's home pair, starting in round 1 — each player's screen shows where to go.
+A match is played on the same boards in both rooms, but in some movements the
+two halves of a match fall in different rounds.
+
+With an **odd number of teams** the list starts with **American Whist**, one
+card for each sensible number of boards per round. Each round the East/West
+pairs move down two tables and the boards move down one. There is one set of
+boards, every table is in play every round, and every team meets every other
+team once, over as many rounds as there are teams less one. The other cards
+are ready-made movements from the movement library. If no movement is listed
+for your table count, there is none for that number of teams.
 
 #### Swiss Pairs
 

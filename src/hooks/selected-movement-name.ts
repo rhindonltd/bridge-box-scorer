@@ -3,13 +3,11 @@
 import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
-import type { GameType } from "@/model/game-types";
+import { storedMovementDetailKey } from "@/swr/swr-keys";
 import type { SelectedMovement } from "@/model/selected-movement";
 import type { MitchellMovementSpec } from "@/modules/movement-catalog";
 
 type MovementDetailResult = {
-  type: GameType;
   name: string;
 };
 
@@ -32,20 +30,17 @@ function mitchellName(spec: MitchellMovementSpec | undefined): string {
  * Resolve a section's selected movement into its display name.
  *
  * - `MITCHELL` selections are named locally from their spec (no fetch).
- * - `SPEC` selections are fetched from the movement detail endpoint, which
- *   carries the seeded spec's name.
+ * - `SPEC` and `TEAMS_SPEC` selections (a pairs or teams library movement)
+ *   are fetched from the movement's detail endpoint, which carries its name.
  *
  * Returns null when no movement is selected, or while a SPEC lookup is still
  * loading, so callers can treat "no name" as "nothing to show yet".
  */
 export function useSelectedMovementName(
   selectedMovement: SelectedMovement | null,
-  gameType: GameType,
 ): string | null {
-  const isSpec = selectedMovement?.source === "SPEC";
-
   const { data } = useSWR<MovementDetailResult>(
-    isSpec ? swrKeys.movementDetail(gameType, selectedMovement.specId) : null,
+    storedMovementDetailKey(selectedMovement),
     fetcher,
   );
 
@@ -57,6 +52,10 @@ export function useSelectedMovementName(
 
   if (selectedMovement.source === "SWISS") {
     return "Swiss Pairs";
+  }
+
+  if (selectedMovement.source === "AMERICAN_WHIST_TEAMS") {
+    return "American Whist";
   }
 
   return data?.name ?? null;

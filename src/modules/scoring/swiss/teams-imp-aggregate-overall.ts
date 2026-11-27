@@ -60,7 +60,7 @@ function creditImps(
  * comparable scored result in both rooms count, so a round grows as results
  * come in. `barometer` is carried straight onto the result so the leaderboard
  * view knows whether to render a per-round table (Swiss Teams) or a single
- * cumulative total (Round Robin Teams); it does not affect the maths.
+ * cumulative total (a fixed teams movement); it does not affect the maths.
  */
 export function calculateTeamsImpAggregateOverall<R extends SwissVpBoardRow>(
   boardRows: R[],

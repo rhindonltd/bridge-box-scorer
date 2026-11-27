@@ -62,7 +62,8 @@ export interface TeamImpAggregateOverallScore {
  * (Board-a-Match = 1 point per board, Point-a-Board = 2) is applied at the
  * boundary. `byRound` maps a round number to that team's won/played for the
  * round, used by the barometer (Swiss Teams) per-round table; the cumulative
- * `totalWon` / `totalPlayed` drive the non-barometer (Round Robin) table and
+ * `totalWon` / `totalPlayed` drive the non-barometer (fixed teams movement)
+ * table and
  * the percentage view (`totalWon / totalPlayed * 100`, scale-independent).
  */
 export interface BoardComparisonOverallScore {
@@ -144,8 +145,9 @@ export type TeamSwissVpOverallScore = OverallScoreBase<"TEAM", "SWISS_VP">;
  * Board-a-Match teams standing. Carries an extra `barometer` flag (not part of
  * the generic score container) that tells the leaderboard view which layout to
  * render: a barometer movement (Swiss Teams, all tables on the same boards each
- * round) shows a per-round table; a non-barometer movement (Round Robin Teams,
- * teams meeting on different boards each round) shows a single cumulative total.
+ * round) shows a per-round table; a non-barometer movement (American Whist or a
+ * library teams movement, teams meeting on different boards each round) shows a
+ * single cumulative total.
  */
 export type TeamBamOverallScore = OverallScoreBase<"TEAM", "BAM"> & {
   barometer: boolean;
@@ -166,7 +168,8 @@ export type TeamPabOverallScore = OverallScoreBase<"TEAM", "PAB"> & {
  * teams on a running per-round total, but the total is the raw net IMP margin
  * (no VP conversion). Carries the same `barometer` flag as the board-comparison
  * scores so the view knows whether to render a per-round table (Swiss Teams) or
- * a single cumulative total (Round Robin Teams); it does not affect the maths.
+ * a single cumulative total (a fixed teams movement); it does not affect the
+ * maths.
  */
 export type TeamImpAggOverallScore = OverallScoreBase<"TEAM", "IMP_AGG"> & {
   barometer: boolean;

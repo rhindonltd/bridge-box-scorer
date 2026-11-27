@@ -1,9 +1,10 @@
 /**
  * Hand-built results for scoring tests.
  *
- * A Round Robin Teams match is played in two rooms. The HOME team's North/South
- * pair sits at its own table (the "home room") and the AWAY team's North/South
- * pair sits at the away team's table (the "away room"); each room's result is
+ * A teams match is played in two rooms. The HOME team's North/South pair sits
+ * at its own table (the "home room") and the AWAY team's North/South pair sits
+ * at the away team's table (the "away room"); in an American Whist the two
+ * rooms are played in different rounds, on the same boards; each room's result is
  * recorded from that room's North/South point of view. So a board's team result
  * for the home team is
  *
@@ -42,64 +43,48 @@ export function teamMatchOutcomes(
 }
 
 /**
- * A 4-team, 3-round, 2-boards-a-match round robin (team "A<n>NS" is the team
- * whose home table is n). Vulnerability by board: 1 none, 2 NS, 3 EW, 4 both,
- * 5 NS, 6 EW. Net IMPs for each home team, worked from the IMP scale:
+ * A 3-team American Whist at 2 boards a round (team "A<n>NS" is the team whose
+ * home table is n). Each pair of teams meets once, on its own board set, with
+ * the two rooms in different rounds:
  *
- *   M1  T1 v T4  boards 1-2   +30, -30            => +1, -1  = 0   (tie)
- *   M2  T2 v T3  boards 1-2   +60, +60            => +2, +2  = +4
- *   M3  T1 v T3  boards 3-4   -450, -530          => -10, -11 = -21
- *   M4  T2 v T4  boards 3-4   0, +30              => 0, +1   = +1
- *   M5  T1 v T2  boards 5-6   +30, +60            => +1, +2  = +3
- *   M6  T3 v T4  boards 5-6   -30, -30            => -1, -1  = -2
+ *   round 1: table 1 hosts T3 (boards 1-2), table 2 hosts T1 (3-4), table 3
+ *            hosts T2 (5-6)
+ *   round 2: table 1 hosts T2 (3-4), table 2 hosts T3 (5-6), table 3 hosts T1
+ *            (1-2)
  *
- * Net IMPs by round (round 1, 2, 3) and in total:
- *   T1: 0, -21, +3 = -18      T2: +4, +1, -3 = +2
- *   T3: -4, +21, -2 = +15     T4: 0, -1, +2 = +1
- * Boards won (win 1, tie 1/2) of 6: T1 3, T2 3.5, T3 2, T4 3.5.
+ * A match is numbered by its board set, so the leaderboard's per-match columns
+ * are 1 (T1 v T3), 2 (T1 v T2) and 3 (T2 v T3); each team plays two of them.
+ * Vulnerability by board: 1 none, 2 NS, 3 EW, 4 both, 5 NS, 6 EW. Net IMPs for
+ * each home team, worked from the IMP scale:
+ *
+ *   M1  T1 v T3  boards 1-2   +30, -30            => +1, -1  = 0   (tie)
+ *   M2  T1 v T2  boards 3-4   -450, -530          => -10, -11 = -21
+ *   M3  T2 v T3  boards 5-6   -30, 0              => -1, 0   = -1
+ *
+ * Net IMPs in total: T1 -21, T2 +20, T3 +1.
+ * Boards won (win 1, tie 1/2) of 4: T1 1, T2 2.5, T3 2.5.
  */
-export const FOUR_TEAM_MATCHES: TeamMatch[] = [
+export const THREE_TEAM_MATCHES: TeamMatch[] = [
   {
     boards: [1, 2],
     homeTable: 1,
-    awayTable: 4,
+    awayTable: 3,
     homeRoom: ["2SN+1", "1NTN="], // 140, 90
     awayRoom: ["2SN=", "2NTN="], // 110, 120
   },
   {
-    boards: [1, 2],
-    homeTable: 2,
-    awayTable: 3,
-    homeRoom: ["3SN+1", "2NTN+1"], // 170, 150
-    awayRoom: ["2SN=", "1NTN="], // 110, 90
-  },
-  {
     boards: [3, 4],
     homeTable: 1,
-    awayTable: 3,
+    awayTable: 2,
     homeRoom: ["3NTN-1", "1NTN="], // -50 (NS not vul), 90
     awayRoom: ["3NTN=", "4SN="], // 400 (NS not vul), 620 (both vul)
   },
   {
-    boards: [3, 4],
+    boards: [5, 6],
     homeTable: 2,
-    awayTable: 4,
-    homeRoom: ["2SN=", "2HN+1"], // 110, 140
-    awayRoom: ["2SN=", "2HN="], // 110, 110
-  },
-  {
-    boards: [5, 6],
-    homeTable: 1,
-    awayTable: 2,
-    homeRoom: ["2NTN+1", "3SN+1"], // 150, 170
-    awayRoom: ["2NTN=", "2SN="], // 120, 110
-  },
-  {
-    boards: [5, 6],
-    homeTable: 3,
-    awayTable: 4,
+    awayTable: 3,
     homeRoom: ["1NTN=", "2SN="], // 90, 110
-    awayRoom: ["2NTN=", "3SN="], // 120, 140
+    awayRoom: ["2NTN=", "2SN="], // 120, 110
   },
 ];
 

@@ -6,12 +6,7 @@ import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { matches } from "@/db/games/tables/matches";
 import { buildPerBoardPlayerLookup } from "@/db/games/queries/assignment-players";
 import { findTeams } from "@/db/games/queries/find-teams";
-import {
-  boardResult,
-  type TeamMatchRow,
-  outcomeToScore,
-  computeImps,
-} from "@/modules/scoring";
+import { teamRoomsImps, type TeamMatchRow } from "@/modules/scoring";
 import { parseSeat } from "@/model/participants";
 import type { TeamTravellerMatch } from "@/model/participants";
 import { readAbsences } from "@/db/games/queries/absences";
@@ -139,26 +134,6 @@ export async function buildTeamTravellerMatches(
   const nameById = new Map(teams.map((t) => [t.id, t.name]));
   const nameFor = (teamId: string) => nameById.get(teamId) ?? teamId;
 
-  /**
-   * This board's score for `teamId`, taken from the table whose recorded NS
-   * seat is `teamId`, else null.
-   *
-   * If the director marked that table "played the wrong way round", the team
-   * actually held the EW hands there, so the NS-hand score is credited to its
-   * opponents: the team's score is the negation. (This is the same transform as
-   * `applySeatSwaps`, expressed from the team's perspective so the lookup by
-   * recorded seat still finds the room.)
-   */
-  const scoreForTeam = (teamId: string): number | null => {
-    const row = rows.find((r) => r.ns === teamId);
-    if (!row) return null;
-    const outcome = boardResult(row);
-    if (outcome == null) return null;
-    const score = outcomeToScore(boardNumber, outcome);
-    if (score == null) return null;
-    return row.seatsSwapped ? -score : score;
-  };
-
   const result: TeamTravellerMatch[] = [];
   for (const m of matchRows) {
     // A teams/triple match always has both participants (opponent non-null).
@@ -167,14 +142,13 @@ export async function buildTeamTravellerMatches(
     const homeTable = parseSeat(m.home).tableNumber;
     const oppTable = parseSeat(m.opponent).tableNumber;
 
-    const homeScore = scoreForTeam(m.home);
-    const oppScore = scoreForTeam(m.opponent);
-    // Net IMP margin from the home (primary) team's perspective; null until
-    // both rooms have a comparable scored result on this board.
-    const margin =
-      homeScore != null && oppScore != null
-        ? computeImps(homeScore - oppScore)
-        : null;
+    // Net IMP margin from the home (primary) team's perspective, comparing
+    // the rooms whose recorded NS seat is each team; null until both rooms
+    // have a comparable scored result on this board.
+    const margin = teamRoomsImps(
+      rows.find((r) => r.ns === m.home),
+      rows.find((r) => r.ns === m.opponent),
+    );
 
     result.push({
       tables: [homeTable, oppTable],

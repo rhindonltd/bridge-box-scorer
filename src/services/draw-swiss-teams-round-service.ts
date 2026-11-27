@@ -9,14 +9,18 @@ import type { TeamId, TeamsMatch } from "@/model/teams-match-layout";
 import {
   drawSwissTeamsRound,
   isStructurallyValidTeamsRound,
+  nextSwissDrawRound,
   resolveTeamsOddRound,
   swissTeamsField,
   swissTeamsHistory,
+  swissTeamsOddFieldRejection,
+  TEAMS_ROUND_COMPLETION,
   teamOpponentKey,
   type OddHandling,
   type OddRoundResolution,
   type RankedSwissTeam,
   type SerializableTeamsAdvisoryInputs,
+  type SwissDrawGateRejection,
   type SwissStandingEntry,
   type SwissTeamsHistory,
   type TeamsTriple,
@@ -31,7 +35,9 @@ import type { SectionLetter } from "@/model/participants";
  * "Draw next round" control can explain the block.
  */
 export type DrawSwissTeamsRejection =
-  "NOT_SWISS_TEAMS" | "ROUND_INCOMPLETE" | "EVENT_COMPLETE" | "ODD_TEAM_COUNT";
+  | "NOT_SWISS_TEAMS"
+  | "ODD_TEAM_COUNT"
+  | SwissDrawGateRejection;
 
 /**
  * A previewed (but NOT committed) Swiss Teams draw: the proposed matches (stable
@@ -90,31 +96,6 @@ async function getSwissTeamsHistory(
   return swissTeamsHistory(
     await db.select().from(matches).where(eq(matches.section, section)),
   );
-}
-
-/**
- * Whether a round is safe to draw from: every playable board has a final result
- * (CONFIRMED, OVERRIDDEN, or CANCELLED). A bye's SIT_OUT boards are never
- * played, so they count as complete (they don't block the next draw). An empty
- * round is not "complete".
- */
-function isRoundComplete(
-  db: Db,
-  section: SectionLetter,
-  roundNumber: number,
-): Promise<boolean> {
-  // Teams: a bye's SIT_OUT boards are never played, so they count as resolved
-  // (they don't block the next draw) rather than being filtered out. Teams has
-  // no HALF_AVERAGE compensation blocks.
-  return isSwissRoundComplete(db, section, roundNumber, {
-    completeStatuses: [
-      "CONFIRMED",
-      "OVERRIDDEN",
-      "CANCELLED",
-      "REMOVED_TEAMS",
-      "SIT_OUT",
-    ],
-  });
 }
 
 /**
@@ -194,28 +175,21 @@ async function resolveTeamsDrawContext(
 
   // An odd field is resolved by a bye or a triple (both supported); a
   // triple needs at least three teams to form the three-way.
-  if (teams % 2 !== 0 && oddHandling === "TRIPLE" && teams < 3) {
-    return { reason: "ODD_TEAM_COUNT" };
-  }
+  const oddField = swissTeamsOddFieldRejection(teams, oddHandling);
+  if (oddField) return { reason: oddField };
 
   const { highestRound, playedOpponents, hadBye, hadTriple, triples } =
     await getSwissTeamsHistory(db, section);
-  const currentRound = highestRound;
 
-  if (currentRound >= totalRounds) {
-    return { reason: "EVENT_COMPLETE" };
-  }
-
-  if (
-    currentRound >= 1 &&
-    !(await isRoundComplete(db, section, currentRound))
-  ) {
-    return { reason: "ROUND_INCOMPLETE" };
-  }
+  // The event must have rounds left and the current round must be scored.
+  const gate = await nextSwissDrawRound(highestRound, totalRounds, {
+    isRoundComplete: (round) =>
+      isSwissRoundComplete(db, section, round, TEAMS_ROUND_COMPLETION),
+  });
+  if (!gate.ok) return { reason: gate.reason };
+  const { nextRound } = gate;
 
   const { order, ranked } = await rankedStandings(db, gameId, section, teams);
-
-  const nextRound = currentRound + 1;
   const { oddRound, fixedTriple } = resolveTeamsOddRound(
     oddHandling,
     oddRoundPlan,

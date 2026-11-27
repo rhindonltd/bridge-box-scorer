@@ -209,7 +209,11 @@ export function teamMatchStructureFromRows<R extends TeamMatchRow>(
         const key = `${section}|${round}|${lo}-${hi}`;
         if (emitted.has(key)) continue;
         emitted.add(key);
-        const boards = [...rel.boards].sort((a, b) => a - b);
+        // Both rooms' boards, as the materialiser widens a match's span.
+        const other = byHome.get(opp)?.get(home)?.boards ?? new Set<number>();
+        const boards = [...new Set([...rel.boards, ...other])].sort(
+          (a, b) => a - b,
+        );
         out.push({
           section,
           roundNumber: round,

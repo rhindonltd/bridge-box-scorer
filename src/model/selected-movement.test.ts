@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   SelectedMovement,
+  boardsPerRoundOf,
+  expectedRounds,
   parseSelectedMovement,
   serializeSelectedMovement,
   selectedMovementsEqual,
@@ -137,10 +139,10 @@ describe("SelectedMovement round-trip", () => {
     expect(parsed).toEqual(selected);
   });
 
-  it("round-trips a ROUND_ROBIN_TEAMS selection", () => {
+  it("round-trips an AMERICAN_WHIST_TEAMS selection", () => {
     const selected: SelectedMovement = {
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 4 },
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 5, boardsPerRound: 4 },
     };
 
     const parsed = parseSelectedMovement(serializeSelectedMovement(selected));
@@ -539,38 +541,40 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(swissTeams(), mitchell())).toBe(false);
   });
 
-  const roundRobinTeams = (
-    over: Partial<{
-      teams: number;
-      rounds: number;
-      boardsPerRound: number;
-    }> = {},
+  const americanWhist = (
+    over: Partial<{ teams: number; boardsPerRound: number }> = {},
   ): SelectedMovement => ({
-    source: "ROUND_ROBIN_TEAMS",
-    roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 4, ...over },
+    source: "AMERICAN_WHIST_TEAMS",
+    americanWhistTeams: { teams: 5, boardsPerRound: 4, ...over },
   });
 
-  it("compares ROUND_ROBIN_TEAMS selections by their defining fields", () => {
-    expect(selectedMovementsEqual(roundRobinTeams(), roundRobinTeams())).toBe(
-      true,
-    );
+  it("compares AMERICAN_WHIST_TEAMS selections by team count and boards per round", () => {
+    expect(selectedMovementsEqual(americanWhist(), americanWhist())).toBe(true);
     expect(
-      selectedMovementsEqual(roundRobinTeams(), roundRobinTeams({ rounds: 4 })),
-    ).toBe(false);
-    expect(
-      selectedMovementsEqual(roundRobinTeams(), roundRobinTeams({ teams: 8 })),
+      selectedMovementsEqual(americanWhist(), americanWhist({ teams: 7 })),
     ).toBe(false);
     expect(
       selectedMovementsEqual(
-        roundRobinTeams(),
-        roundRobinTeams({ boardsPerRound: 3 }),
+        americanWhist(),
+        americanWhist({ boardsPerRound: 3 }),
       ),
     ).toBe(false);
   });
 
-  it("treats ROUND_ROBIN_TEAMS as different from other sources", () => {
-    expect(selectedMovementsEqual(roundRobinTeams(), swissTeams())).toBe(false);
-    expect(selectedMovementsEqual(roundRobinTeams(), mitchell())).toBe(false);
+  it("treats AMERICAN_WHIST_TEAMS as different from other sources", () => {
+    expect(selectedMovementsEqual(americanWhist(), swissTeams())).toBe(false);
+    expect(selectedMovementsEqual(americanWhist(), mitchell())).toBe(false);
+  });
+
+  it("refuses an American Whist with an even number of teams", () => {
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "AMERICAN_WHIST_TEAMS",
+          americanWhistTeams: { teams: 4, boardsPerRound: 2 },
+        }),
+      ),
+    ).toBeNull();
   });
 });
 
@@ -729,5 +733,31 @@ describe("stationary pairs over the event", () => {
       };
       expect(withStationaryHistory(null, other, 0)).toBe(other);
     });
+  });
+});
+
+describe("stored teams movement selections", () => {
+  const teams = (specId: number, boardsPerRound = 4) => ({
+    source: "TEAMS_SPEC" as const,
+    specId,
+    boardsPerRound,
+  });
+
+  it("carries boards per round but no round count", () => {
+    expect(expectedRounds(teams(1))).toBeNull();
+    expect(boardsPerRoundOf(teams(1, 6))).toBe(6);
+  });
+
+  it("is equal only for the same movement at the same boards per round", () => {
+    expect(selectedMovementsEqual(teams(1), teams(1))).toBe(true);
+    expect(selectedMovementsEqual(teams(1), teams(2))).toBe(false);
+    expect(selectedMovementsEqual(teams(1, 4), teams(1, 5))).toBe(false);
+    expect(
+      selectedMovementsEqual(teams(1), {
+        source: "SPEC",
+        specId: 1,
+        boardsPerRound: 4,
+      }),
+    ).toBe(false);
   });
 });

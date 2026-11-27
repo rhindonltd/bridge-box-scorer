@@ -8,8 +8,6 @@ import { getSchedule } from "@/services/schedule-service";
 import { scoreGame } from "@/services/leaderboard-service";
 import {
   getCombination,
-  type AdjustedBoardScore,
-  type EventScore,
   type MatchpointLine,
   type XimpLine,
   scoreBoard,
@@ -19,9 +17,9 @@ import type { Traveller } from "@/model/traveller";
 import type {
   PairScorecard,
   ScorecardBoard,
-  ScorecardRoundVp,
   ScorecardScoring,
 } from "@/model/scorecard";
+import { adjustedScoreLookup, swissRoundVps } from "@/modules/results-views";
 
 /** A scored line as any of the pairs per-board plugins produce it. */
 type ScoredPairLine = Partial<MatchpointLine & XimpLine> & {
@@ -71,7 +69,7 @@ export async function buildPairScorecard(
   // One scoring run gives both the adjusted board figures and (for Swiss) the
   // per-round VP, the same run the leaderboard shows.
   const eventScore = await scoreGame(db, gameId);
-  const adjustedByBoard = adjustedFor(
+  const adjustedOf = adjustedScoreLookup(
     eventScore.adjustedBoards,
     fieldSection ?? gameId,
   );
@@ -128,7 +126,7 @@ export async function buildPairScorecard(
         outcome: mine.currentResult,
         score: rawScore,
       };
-      const adjusted = adjustedByBoard.get(adjustedKey(boardNumber, pairId));
+      const adjusted = adjustedOf(boardNumber, pairId);
       if (scoring === "MP") {
         entry.matchpoints = adjusted
           ? { value: adjusted.value, max: adjusted.top ?? 0 }
@@ -159,55 +157,3 @@ export async function buildPairScorecard(
   return { pairId, scoring, boards, roundVps };
 }
 
-/**
- * The Victory Points this pair earned in each Swiss round, read from the same
- * standings the leaderboard shows (a round's VP comes from the whole match, so
- * it is per round, not per board).
- */
-function swissRoundVps(
-  eventScore: EventScore,
-  pairId: string,
-  section: string,
-  separateSections: boolean,
-  boards: ScorecardBoard[],
-): ScorecardRoundVp[] {
-  const { overall: leaderboard, sections } = eventScore;
-  const board =
-    (separateSections ? null : leaderboard) ??
-    sections.find((s) => s.section === section) ??
-    null;
-  if (!board || board.overallScore.type !== "PAIR_SWISS_VP") return [];
-
-  const line = board.overallScore.lines.find(
-    (l) => "pairId" in l && l.pairId === pairId,
-  );
-  if (!line || !("vpByRound" in line)) return [];
-
-  const vpByRound = line.vpByRound as Record<number, number>;
-  return Object.keys(vpByRound)
-    .map(Number)
-    .sort((a, b) => a - b)
-    .map((roundNumber) => ({
-      roundNumber,
-      opponentId:
-        boards.find((b) => b.roundNumber === roundNumber)?.opponentId ?? null,
-      vp: vpByRound[roundNumber],
-    }));
-}
-
-/** The lookup key for one pair's adjusted score on one board. */
-function adjustedKey(boardNumber: number, pairId: string): string {
-  return `${boardNumber}|${pairId}`;
-}
-
-/** The adjusted board scores for one field, by board and pair. */
-function adjustedFor(
-  adjusted: AdjustedBoardScore[],
-  field: string,
-): Map<string, AdjustedBoardScore> {
-  const byKey = new Map<string, AdjustedBoardScore>();
-  for (const a of adjusted) {
-    if (a.field === field) byKey.set(adjustedKey(a.boardNumber, a.pairId), a);
-  }
-  return byKey;
-}

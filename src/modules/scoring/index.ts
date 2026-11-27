@@ -70,6 +70,7 @@ export {
   matchVoidCause,
   teamMatchBoardImps,
   teamMatchBoardWins,
+  teamRoomsImps,
   tripleVpPool,
   type TeamMatch,
   type TeamMatchRow,

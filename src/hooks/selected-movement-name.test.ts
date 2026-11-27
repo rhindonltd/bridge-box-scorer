@@ -31,7 +31,7 @@ describe("useSelectedMovementName", () => {
   });
 
   it("returns null with no movement selected", () => {
-    const { result } = renderHook(() => useSelectedMovementName(null, "PAIRS"));
+    const { result } = renderHook(() => useSelectedMovementName(null));
     expect(result.current).toBeNull();
   });
 
@@ -45,7 +45,7 @@ describe("useSelectedMovementName", () => {
       [mitchell({ americanWhist: true }), "American Whist"],
     ];
     for (const [m, expected] of cases) {
-      const { result } = renderHook(() => useSelectedMovementName(m, "PAIRS"));
+      const { result } = renderHook(() => useSelectedMovementName(m));
       expect(result.current).toBe(expected);
     }
   });
@@ -55,18 +55,28 @@ describe("useSelectedMovementName", () => {
       source: "SWISS",
       swiss: { tables: 5, rounds: 7, boardsPerRound: 2 },
     };
-    const { result } = renderHook(() => useSelectedMovementName(m, "PAIRS"));
+    const { result } = renderHook(() => useSelectedMovementName(m));
     expect(result.current).toBe("Swiss Pairs");
   });
 
+  it("names an American Whist teams movement locally", () => {
+    const m: SelectedMovement = {
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 5, boardsPerRound: 4 },
+    };
+    const { result } = renderHook(() => useSelectedMovementName(m));
+    expect(result.current).toBe("American Whist");
+    expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
+  });
+
   it("uses the fetched name for a SPEC selection", () => {
-    mockUseSWR.mockReturnValue({ data: { type: "PAIRS", name: "Howell 6T" } });
+    mockUseSWR.mockReturnValue({ data: { name: "Howell 6T" } });
     const m: SelectedMovement = {
       source: "SPEC",
       specId: 5,
       boardsPerRound: 2,
     };
-    const { result } = renderHook(() => useSelectedMovementName(m, "PAIRS"));
+    const { result } = renderHook(() => useSelectedMovementName(m));
     expect(result.current).toBe("Howell 6T");
   });
 
@@ -77,7 +87,7 @@ describe("useSelectedMovementName", () => {
       specId: 5,
       boardsPerRound: 2,
     };
-    const { result } = renderHook(() => useSelectedMovementName(m, "PAIRS"));
+    const { result } = renderHook(() => useSelectedMovementName(m));
     expect(result.current).toBeNull();
   });
 });

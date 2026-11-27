@@ -1,3 +1,4 @@
+import type { SelectedMovement } from "@/model/selected-movement";
 export const swrKeys = {
   pairs: (gameId: string) => `/api/games/${gameId}/participants`,
 
@@ -15,8 +16,11 @@ export const swrKeys = {
 
   sections: (gameId: string) => `/api/games/${gameId}/sections`,
 
-  movementDetail: (movementType: string, movementId: number) =>
-    `/api/movements/detail/${movementType}/${movementId}`,
+  movementDetail: (movementId: number) =>
+    `/api/movements/detail/${movementId}`,
+  teamsMovements: (tables: number) => `/api/movements/teams/${tables}`,
+  teamsMovementDetail: (movementId: number) =>
+    `/api/movements/teams/detail/${movementId}`,
 
   playState: (gameId: string, seat: string) =>
     `/api/games/${gameId}/play-state/${seat}`,
@@ -63,3 +67,20 @@ export const swrKeys = {
   directorValidate: (gameId: string) =>
     `/api/games/${gameId}/director/validate`,
 };
+
+/**
+ * The detail endpoint of a section's stored movement (a pairs library spec or
+ * a teams library movement), or null for a generated or Swiss movement, which
+ * needs no fetch.
+ */
+export function storedMovementDetailKey(
+  selected: SelectedMovement | null,
+): string | null {
+  if (selected?.source === "SPEC") {
+    return swrKeys.movementDetail(selected.specId);
+  }
+  if (selected?.source === "TEAMS_SPEC") {
+    return swrKeys.teamsMovementDetail(selected.specId);
+  }
+  return null;
+}

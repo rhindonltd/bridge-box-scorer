@@ -3,8 +3,7 @@
 import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
-import type { GameType } from "@/model/game-types";
+import { storedMovementDetailKey } from "@/swr/swr-keys";
 import type { SelectedMovement } from "@/model/selected-movement";
 import type { MovementByTable } from "@/modules/movement-catalog";
 
@@ -17,7 +16,6 @@ export interface MovementRoundInfo {
 }
 
 type MovementDetailResult = {
-  type: GameType;
   tables: MovementByTable[];
 };
 
@@ -27,22 +25,20 @@ type MovementDetailResult = {
  *
  * - `MITCHELL` selections carry `rounds` and `boardsPerRound` inline, so they
  *   resolve synchronously with no fetch.
- * - `SPEC` selections carry only `specId` + `boardsPerRound`; the round count is
- *   fetched from the movement detail endpoint and read off the first table
- *   (every table plays the same number of rounds).
+ * - `SPEC` and `TEAMS_SPEC` selections (a pairs or teams library movement)
+ *   carry only `specId` + `boardsPerRound`; the round count is fetched from the
+ *   movement's detail endpoint and read off the first table (every table plays
+ *   the same number of rounds).
  *
  * Returns `info: null` when no movement is selected or while a SPEC lookup is
  * still loading/errored, so callers can gate on a concrete result.
  */
 export function useMovementRoundInfo(
   selectedMovement: SelectedMovement | null,
-  gameType: GameType,
 ): { info: MovementRoundInfo | null; isLoading: boolean } {
-  const isSpec = selectedMovement?.source === "SPEC";
-
-  // Only fetch for SPEC selections; MITCHELL needs no network call.
+  // Only a stored (library) movement is fetched; the others need no call.
   const { data, isLoading } = useSWR<MovementDetailResult>(
-    isSpec ? swrKeys.movementDetail(gameType, selectedMovement.specId) : null,
+    storedMovementDetailKey(selectedMovement),
     fetcher,
   );
 
@@ -84,20 +80,19 @@ export function useMovementRoundInfo(
     };
   }
 
-  if (selectedMovement.source === "ROUND_ROBIN_TEAMS") {
-    // Teams Round Robin carries its round count and boards-per-round on the
-    // selection (the fixed schedule is regenerated from them at start); no
-    // fetch is needed.
+  if (selectedMovement.source === "AMERICAN_WHIST_TEAMS") {
+    // American Whist plays every round (teams − 1) at the selection's boards
+    // per round; no fetch is needed.
     return {
       info: {
-        rounds: selectedMovement.roundRobinTeams.rounds,
-        boardsPerRound: selectedMovement.roundRobinTeams.boardsPerRound,
+        rounds: selectedMovement.americanWhistTeams.teams - 1,
+        boardsPerRound: selectedMovement.americanWhistTeams.boardsPerRound,
       },
       isLoading: false,
     };
   }
 
-  // SPEC: rounds come from the fetched detail; boards-per-round is on the
+  // SPEC / TEAMS_SPEC: rounds come from the fetched detail; boards-per-round is on the
   // selection itself. Every table plays the same round count, so the first
   // table is representative.
   const rounds = data?.tables[0]?.rounds.length ?? null;

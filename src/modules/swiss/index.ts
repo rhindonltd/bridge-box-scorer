@@ -122,6 +122,19 @@ export {
   tripleBoardSets,
 } from "./teams/plan-round";
 
+/* ---------- Drawing the next round ---------- */
+export {
+  isSwissRoundFinal,
+  nextSwissDrawRound,
+  PAIRS_ROUND_COMPLETION,
+  swissTeamsOddFieldRejection,
+  TEAMS_ROUND_COMPLETION,
+  type RoundBoardState,
+  type RoundCompletionPolicy,
+  type SwissDrawGateReads,
+  type SwissDrawGateRejection,
+} from "./draw-gate";
+
 /* ---------- Round 1 (the start) ---------- */
 export {
   swissHomeAnchors,

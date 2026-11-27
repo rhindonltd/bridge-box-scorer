@@ -32,6 +32,7 @@ export {
   buildScorecardVpTable,
   scorecardViews,
 } from "./scorecard/scorecard-table";
+export { adjustedScoreLookup, swissRoundVps } from "./scorecard/scorecard-figures";
 
 /* ---------- teams board result ---------- */
 export { teamBoardResultTable } from "./team-board-result/team-board-result-table";

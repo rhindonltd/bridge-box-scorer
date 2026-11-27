@@ -7,7 +7,7 @@ import type { BoardOutcome } from "@/model/score";
 
 /**
  * End-to-end proof of the EBU White Book §2.4.3–§2.4.6 whole-TEAM withdrawal in
- * a Round-Robin / Swiss TEAMS event: a withdrawn team's UNPLAYED match scores
+ * a fixed-movement / Swiss TEAMS event: a withdrawn team's UNPLAYED match scores
  * as a §3.3.9 void — the withdrawing team below average (AVE−), its opponent
  * indemnified (AVE+) — WITHOUT persisting any ruling (the void is synthesised
  * in-memory at scoring time). A `REMOVE` withdrawal is additionally dropped from
@@ -24,8 +24,9 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
     gameType: "TEAMS",
     scoringType: "IMP_VP",
     selectedMovement: JSON.stringify({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 4, rounds: 2, boardsPerRound: 2 },
+      source: "TEAMS_SPEC",
+      specId: 1,
+      boardsPerRound: 2,
     }),
   })),
 }));

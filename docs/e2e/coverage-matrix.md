@@ -10,10 +10,10 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Pairs · Matchpoints (two-winner) | `MP`             | standard Mitchell | [02](02-scoring-matchpoint.md) | `MP-1..8` NS/EW split, percentage |
 | Pairs · Matchpoints (one-winner) | `MP`             | Howell            | [02](02-scoring-matchpoint.md) | `MP-9..11` single field           |
 | Pairs · Cross-IMPs               | `XIMP`           | Mitchell          | [03](03-scoring-ximp.md)       | `XIMP-1..9` cross-IMP, negatives  |
-| Teams · IMP (Victory Points)     | `IMP_VP`         | Round Robin       | [04](04-scoring-teams.md)      | `TEAM-1..5` VP scale              |
-| Teams · IMP (aggregate)          | `IMP`            | Round Robin       | [04](04-scoring-teams.md)      | `TEAM-6..8` net IMPs              |
-| Teams · Board-a-Match            | `BAM`            | Round Robin       | [04](04-scoring-teams.md)      | `TEAM-9..11` boards won           |
-| Teams · Point-a-Board            | `PAB`            | Round Robin       | [04](04-scoring-teams.md)      | `TEAM-12..13` 2pt scale           |
+| Teams · IMP (Victory Points)     | `IMP_VP`         | American Whist    | [04](04-scoring-teams.md)      | `TEAM-1..5` VP scale              |
+| Teams · IMP (aggregate)          | `IMP`            | American Whist    | [04](04-scoring-teams.md)      | `TEAM-6..8` net IMPs              |
+| Teams · Board-a-Match            | `BAM`            | American Whist    | [04](04-scoring-teams.md)      | `TEAM-9..11` boards won           |
+| Teams · Point-a-Board            | `PAB`            | American Whist    | [04](04-scoring-teams.md)      | `TEAM-12..13` 2pt scale           |
 | Swiss Pairs · MP→VP              | `MP` (SWISS)     | Swiss Pairs       | [05](05-scoring-swiss.md)      | `SWISS-1..2` VP from %            |
 | Swiss Pairs · XIMP→VP            | `XIMP` (SWISS)   | Swiss Pairs       | [05](05-scoring-swiss.md)      | `SWISS-3` VP from cross-IMP       |
 | Swiss Teams · IMP(VP)            | `IMP_VP` (SWISS) | Swiss Teams       | [05](05-scoring-swiss.md)      | `SWISS-20..26` barometer VP       |
@@ -27,7 +27,7 @@ gaps. "Logic area" is grouped by the subsystem it exercises.
 | Howell / library (SPEC)               | up front       | 02        | `MP-9..11`            |
 | Swiss Pairs (bye + half-matches)      | round by round | 05        | `SWISS-4..19`         |
 | Swiss Teams (bye + triples)           | round by round | 05        | `SWISS-20..26`        |
-| Round Robin Teams                     | up front       | 04        | `TEAM-*`              |
+| American Whist Teams                  | up front       | 04        | `TEAM-*`              |
 
 ## Special scoring behaviours
 

@@ -31,6 +31,12 @@ export interface MatchDescriptor {
   vpPool?: number | null;
   boardStart?: number;
   boardEnd?: number;
+  /**
+   * The match's round number, when it differs from this room's. A stored teams
+   * movement can play a match's two rooms in different rounds, so its match is
+   * numbered by its board set instead (each team plays each set once).
+   */
+  roundNumber?: number;
 }
 
 /**

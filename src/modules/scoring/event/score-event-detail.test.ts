@@ -170,10 +170,7 @@ describe("scoreEvent detail: teams", () => {
     const event: EventSettings = {
       gameType: "TEAMS",
       scoringType: "IMP_VP",
-      movement: {
-        source: "ROUND_ROBIN_TEAMS",
-        roundRobinTeams: { teams: 2, rounds: 1, boardsPerRound: 3 },
-      },
+      movement: { source: "TEAMS_SPEC", specId: 1, boardsPerRound: 3 },
       combinedRanking: true,
       combinedLabel: "game-1",
     };

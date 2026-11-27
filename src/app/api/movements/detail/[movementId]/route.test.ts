@@ -3,13 +3,11 @@ import { testApiHandler } from "next-test-api-route-handler";
 
 vi.mock("@/modules/movement-catalog/storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
-  getTeamMovement: vi.fn(),
 }));
 vi.mock(
   "@/modules/movement-catalog/storage/db/queries/get-movement-spec",
   () => ({
     getPairMovementSpecById: vi.fn(),
-    getTeamMovementSpecById: vi.fn(),
   }),
 );
 vi.mock("@/lib/log", () => ({
@@ -22,20 +20,14 @@ vi.mock("@/lib/log", () => ({
   }),
 }));
 
-import {
-  getPairMovement,
-  getTeamMovement,
-} from "@/modules/movement-catalog/storage/db/queries/get-movement";
-import {
-  getPairMovementSpecById,
-  getTeamMovementSpecById,
-} from "@/modules/movement-catalog/storage/db/queries/get-movement-spec";
+import { getPairMovement } from "@/modules/movement-catalog/storage/db/queries/get-movement";
+import { getPairMovementSpecById } from "@/modules/movement-catalog/storage/db/queries/get-movement-spec";
 import * as appHandler from "./route";
 
-describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
+describe("GET /api/movements/detail/[movementId]", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns PAIRS movement detail with computed board ranges", async () => {
+  it("returns a stored movement's detail with computed board ranges", async () => {
     vi.mocked(getPairMovementSpecById).mockResolvedValue({
       id: 1,
       name: "3 Table Howell",
@@ -50,13 +42,12 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
 
     await testApiHandler({
       appHandler,
-      params: { movementType: "PAIRS", movementId: "1" },
+      params: { movementId: "1" },
       test: async ({ fetch }) => {
         const res = await fetch({ method: "GET" });
         expect(res.status).toBe(200);
         const body = await res.json();
         expect(body.success).toBe(true);
-        expect(body.result.type).toBe("PAIRS");
         expect(body.result.name).toBe("3 Table Howell");
         expect(body.result.tables[0].tableNumber).toBe(1);
         expect(body.result.tables[0].rounds[0]).toMatchObject({
@@ -71,7 +62,7 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
   it("returns 400 for an invalid movement id", async () => {
     await testApiHandler({
       appHandler,
-      params: { movementType: "PAIRS", movementId: "abc" },
+      params: { movementId: "abc" },
       test: async ({ fetch }) => {
         expect((await fetch({ method: "GET" })).status).toBe(400);
       },
@@ -84,51 +75,7 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
 
     await testApiHandler({
       appHandler,
-      params: { movementType: "PAIRS", movementId: "99" },
-      test: async ({ fetch }) => {
-        expect((await fetch({ method: "GET" })).status).toBe(404);
-      },
-    });
-  });
-
-  it("returns TEAMS movement detail with computed board ranges", async () => {
-    vi.mocked(getTeamMovementSpecById).mockResolvedValue({
-      id: 1,
-      boardsPerRound: 3,
-    } as never);
-    vi.mocked(getTeamMovement).mockResolvedValue([
-      {
-        tableNumber: 2,
-        rounds: [{ roundNumber: 1, ns: "A", ew: "B", boardSet: 0 }],
-      },
-    ] as never);
-
-    await testApiHandler({
-      appHandler,
-      params: { movementType: "TEAMS", movementId: "1" },
-      test: async ({ fetch }) => {
-        const res = await fetch({ method: "GET" });
-        expect(res.status).toBe(200);
-        const body = await res.json();
-        expect(body.success).toBe(true);
-        expect(body.result.type).toBe("TEAMS");
-        expect(body.result.tables[0].tableNumber).toBe(2);
-        expect(body.result.tables[0].rounds[0]).toMatchObject({
-          roundNumber: 1,
-          ns: "A",
-          ew: "B",
-        });
-      },
-    });
-  });
-
-  it("returns 404 when the TEAMS spec is missing", async () => {
-    vi.mocked(getTeamMovementSpecById).mockResolvedValue(null as never);
-    vi.mocked(getTeamMovement).mockResolvedValue([] as never);
-
-    await testApiHandler({
-      appHandler,
-      params: { movementType: "TEAMS", movementId: "99" },
+      params: { movementId: "99" },
       test: async ({ fetch }) => {
         expect((await fetch({ method: "GET" })).status).toBe(404);
       },
@@ -141,20 +88,11 @@ describe("GET /api/movements/detail/[movementType]/[movementId]", () => {
 
     await testApiHandler({
       appHandler,
-      params: { movementType: "PAIRS", movementId: "1" },
+      params: { movementId: "1" },
       test: async ({ fetch }) => {
         expect((await fetch({ method: "GET" })).status).toBe(500);
       },
     });
   });
 
-  it("returns 400 for an unknown movement type", async () => {
-    await testApiHandler({
-      appHandler,
-      params: { movementType: "SOLO", movementId: "1" },
-      test: async ({ fetch }) => {
-        expect((await fetch({ method: "GET" })).status).toBe(400);
-      },
-    });
-  });
 });

@@ -52,7 +52,7 @@ function matchDraftFor(
   return {
     tempKey,
     section,
-    roundNumber: r.roundNumber,
+    roundNumber: d?.roundNumber ?? r.roundNumber,
     kind,
     scoredAsUnit: d?.scoredAsUnit ?? false,
     home: sectionParticipantId(section, homeMovementId),

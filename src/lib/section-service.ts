@@ -4,6 +4,7 @@ import {
   SwissMovementSpec,
   SwissTeamsMovementSpec,
 } from "@/model/selected-movement";
+import type { AmericanWhistTeamsSpec } from "@/modules/movement-catalog";
 
 /**
  * Director-only section management calls. These go over HTTP (not the socket):
@@ -111,6 +112,31 @@ export async function setSectionMovementSpec(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { id: specId, boardsPerRound },
+  });
+}
+
+/** Set the section's movement to an American Whist teams movement. */
+export async function setSectionAmericanWhistTeamsMovement(
+  gameId: string,
+  section: string,
+  americanWhistTeams: AmericanWhistTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { americanWhistTeams },
+  });
+}
+
+/** Set the section's movement to a stored teams movement from the library. */
+export async function setSectionTeamsMovementSpec(
+  gameId: string,
+  section: string,
+  teamsSpecId: number,
+  boardsPerRound: number,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { teamsSpecId, boardsPerRound },
   });
 }
 
