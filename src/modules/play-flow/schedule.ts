@@ -20,6 +20,8 @@ export type PairBoardRow = {
    * null/absent to play the round's boards in board-number order.
    */
   playOrder?: number | null;
+  /** The other table sharing this board this round, or null/absent for none. */
+  sharesWithTable?: number | null;
 };
 
 /** The two players seated as one pair, by the board id their rows carry. */
@@ -122,6 +124,11 @@ type ActiveRound = {
    * back to its home table. Absent otherwise (and always in a pairs game).
    */
   scoreBreakAfter?: boolean;
+  /**
+   * The other table playing the same boards this round, which this table
+   * shares them with (a Thurner's satellite table). Absent when none does.
+   */
+  sharesWithTable?: number;
 };
 
 export type ScheduleRound = Omit<
@@ -246,6 +253,9 @@ function assembleRound(
     players: tablePlayersFor(rows[0].ns, rows[0].ew, lookup),
     ...(opponentExpectedLate ? { opponentExpectedLate: true } : {}),
     ...(opponentWithdrawn ? { opponentWithdrawn: true } : {}),
+    ...(playedRows[0]?.sharesWithTable == null
+      ? {}
+      : { sharesWithTable: playedRows[0].sharesWithTable }),
   };
 
   if (isSitOut) return base;

@@ -60,6 +60,12 @@ export function useSelectedMovementName(
   if (selectedMovement.source === "CIRCULATION_TEAMS") {
     return "Circulation";
   }
+  if (selectedMovement.source === "THURNER_TEAMS") {
+    return "Thurner";
+  }
+  if (selectedMovement.source === "STAGGER_TEAMS") {
+    return "Stagger";
+  }
 
   return data?.name ?? null;
 }

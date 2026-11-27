@@ -33,6 +33,19 @@ describe("RoundInfo", () => {
       "Start with board 3",
     );
   });
+  it("names the table a round's boards are shared with", () => {
+    render(
+      <RoundInfo
+        table={6}
+        boards={[1, 2]}
+        players={players}
+        sharesWithTable={1}
+      />,
+    );
+    expect(screen.getByTestId("round-shared-boards")).toHaveTextContent(
+      "Share these boards with Table 1",
+    );
+  });
   it("gives no start board when the table plays in board order", () => {
     render(<RoundInfo table={1} boards={[1, 2]} players={players} />);
     expect(screen.queryByTestId("round-first-board")).not.toBeInTheDocument();

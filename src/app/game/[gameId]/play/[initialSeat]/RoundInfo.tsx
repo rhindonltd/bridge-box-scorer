@@ -29,6 +29,8 @@ interface Props {
   opponentExpectedLate?: boolean;
   /** Design §11: the opponents withdrew — these boards won't be played. */
   opponentWithdrawn?: boolean;
+  /** The other table these boards are shared with this round, if any. */
+  sharesWithTable?: number;
 }
 
 export default function RoundInfo({
@@ -38,6 +40,7 @@ export default function RoundInfo({
   halfMatch,
   opponentExpectedLate,
   opponentWithdrawn,
+  sharesWithTable,
 }: Props) {
   if (halfMatch) {
     return <HalfMatchRoundInfo table={table} halfMatch={halfMatch} />;
@@ -57,6 +60,14 @@ export default function RoundInfo({
             className="text-base font-medium text-gray-600"
           >
             Start with board {boards[0]}
+          </div>
+        )}
+        {sharesWithTable != null && (
+          <div
+            data-testid="round-shared-boards"
+            className="text-base font-medium text-gray-600"
+          >
+            Share these boards with Table {sharesWithTable}
           </div>
         )}
       </header>

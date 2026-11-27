@@ -206,6 +206,33 @@ describe("planMovement — Circulation", () => {
   });
 });
 
+describe("planMovement — Thurner", () => {
+  it("plans the whole schedule as teams matches", () => {
+    const description = describeGeneratedMovement({
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams: 6, boardsPerRound: 2 },
+    });
+    const plan = planMovement(description, { sitOutSeat: null });
+    expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 2));
+    expect(plan[5].rounds[0]).toMatchObject({
+      sharesWith: 1,
+      match: { key: "teams|1-6", roundNumber: 1 },
+    });
+  });
+});
+
+describe("planMovement — Stagger", () => {
+  it("plans the whole schedule as teams matches", () => {
+    const description = describeGeneratedMovement({
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams: 6, boardsPerRound: 2 },
+    });
+    const plan = planMovement(description, { sitOutSeat: null });
+    expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 2));
+    expect(plan[0].rounds[0].match).toMatchObject({ key: "teams|1-3" });
+  });
+});
+
 describe("teamsLayoutToMaterializable", () => {
   // Team 1 hosts 2 in round 1 on set 2; team 2 hosts 1 in round 2 on set 2.
   const layout = [

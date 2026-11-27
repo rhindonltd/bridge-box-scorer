@@ -19,11 +19,13 @@ import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
 import { closeSeatDevices, newParticipant } from "./support";
 
 /**
- * Teams games: American Whist, Circulation and the teams movement library.
+ * Teams games: American Whist, Circulation, Thurner and the teams movement
+ * library.
  *
  * A Teams (not Swiss Teams) game's movement picker lists American Whist (for
- * an odd number of teams), Circulation (for four teams) and the library's
- * teams movements for its table count, grouped by boards played. Many of them play a match's two rooms in
+ * an odd number of teams), Circulation (for four teams), Thurner (for an even
+ * number of teams) and the library's teams movements for its table count,
+ * grouped by boards played. Many of them play a match's two rooms in
  * different rounds (a team hosts one opponent while its away pair visits
  * another), so the seeded game below checks the scoring pairs those rooms up.
  */
@@ -236,6 +238,131 @@ test("a Circulation starts each table on its own boards and sends the away pair 
     await away.getByTestId("round-results-continue").click();
     await expect(away.getByText("Move to")).toBeVisible({ timeout: 15000 });
     await expect(away.getByText("Table 3")).toBeVisible();
+  } finally {
+    await deleteGame(director, gameId);
+    await director.context().close();
+    await closeSeatDevices(seats);
+  }
+});
+test("a Thurner shares the satellite table's boards and tells both tables", async ({
+  browser,
+}) => {
+  test.setTimeout(180_000);
+  const director = await newParticipant(browser);
+  const { gameId } = await createGame(director, {
+    eventName: `Thurner ${Date.now()}`,
+    recordOpeningLead: false,
+    gameType: "TEAMS",
+    teamsScoring: "IMP_VP",
+  });
+  let seats: Record<string, import("@playwright/test").Page> = {};
+  try {
+    await setTableCount(director, 6);
+    // The first Thurner card is 3 boards a round (15 boards a team).
+    const chosen = await pickMovementByName(
+      director,
+      "Thurner",
+      "teams-movement-card",
+    );
+    expect(chosen).toBe("Thurner");
+    seats = await seatSingleSectionFieldOnDevices(
+      () => newParticipant(browser),
+      gameId,
+      6,
+    );
+    await startGame(director, gameId);
+    // Round 1: team 6's away pair visits table 1, and the satellite table 6
+    // plays the same boards (1-3) against team 1's away pair.
+    for (const [seat, other] of [
+      ["A1NS", 6],
+      ["A6NS", 1],
+    ] as const) {
+      await seats[seat].goto(`/game/${gameId}/play/${seat}`);
+      await expect(seats[seat].getByTestId("round-shared-boards")).toHaveText(
+        `Share these boards with Table ${other}`,
+        { timeout: 15000 },
+      );
+    }
+    await seats["A2NS"].goto(`/game/${gameId}/play/A2NS`);
+    await expect(seats["A2NS"].getByTestId("play-enter-round")).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(seats["A2NS"].getByTestId("round-shared-boards")).toHaveCount(
+      0,
+    );
+    // The satellite's match is real: team 1's away pair confirms board 1 there.
+    await enterPassOut(seats["A6NS"], gameId, "A6NS", 1);
+    await expect(
+      seats["A6NS"].getByText("Waiting for confirmation"),
+    ).toBeVisible({ timeout: 15000 });
+    await enterPassOut(seats["A1EW"], gameId, "A1EW", 1);
+    await expect(seats["A6NS"].getByText("Board Results")).toBeVisible({
+      timeout: 15000,
+    });
+  } finally {
+    await deleteGame(director, gameId);
+    await director.context().close();
+    await closeSeatDevices(seats);
+  }
+});
+test("a Stagger shares each pair of tables' boards and scores up after the first stanza", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const director = await newParticipant(browser);
+  const { gameId } = await createGame(director, {
+    eventName: `Stagger ${Date.now()}`,
+    recordOpeningLead: false,
+    gameType: "TEAMS",
+    teamsScoring: "IMP_VP",
+  });
+  let seats: Record<string, import("@playwright/test").Page> = {};
+  try {
+    await setTableCount(director, 6);
+    // The first Stagger card is 3 boards a round (15 boards a team).
+    const chosen = await pickMovementByName(
+      director,
+      "Stagger",
+      "teams-movement-card",
+    );
+    expect(chosen).toBe("Stagger");
+    seats = await seatSingleSectionFieldOnDevices(
+      () => newParticipant(browser),
+      gameId,
+      6,
+    );
+    await startGame(director, gameId);
+    // Tables 1 and 4 share board set 1 every round of the first stanza.
+    await seats["A1NS"].goto(`/game/${gameId}/play/A1NS`);
+    await expect(seats["A1NS"].getByTestId("round-shared-boards")).toHaveText(
+      "Share these boards with Table 4",
+      { timeout: 15000 },
+    );
+    // The first stanza is rounds 1 and 2. Team 1's away pair plays at table 5
+    // (boards 4-6), then table 3 (boards 1-3). Table 3 first finishes its own
+    // round 1, against team 5's away pair on boards 7-9.
+    const away = seats["A1EW"];
+    for (const [home, visitor, boards] of [
+      ["A5NS", "A1EW", [4, 5, 6]],
+      ["A3NS", "A5EW", [7, 8, 9]],
+      ["A3NS", "A1EW", [1, 2, 3]],
+    ] as const) {
+      for (const board of boards) {
+        await enterPassOut(seats[home], gameId, home, board);
+        await expect(
+          seats[home].getByText("Waiting for confirmation"),
+        ).toBeVisible({ timeout: 15000 });
+        await enterPassOut(seats[visitor], gameId, visitor, board);
+        await expect(seats[visitor].getByText("Board Results")).toBeVisible({
+          timeout: 15000,
+        });
+      }
+    }
+    // Every match of the first stanza is finished: a score break.
+    await away.getByTestId("board-results-next").click();
+    await expect(away.getByTestId("score-break")).toContainText("Table 1", {
+      timeout: 15000,
+    });
   } finally {
     await deleteGame(director, gameId);
     await director.context().close();

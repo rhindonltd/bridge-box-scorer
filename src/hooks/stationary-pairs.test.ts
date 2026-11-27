@@ -142,6 +142,35 @@ describe("useMovementResolution", () => {
     });
   });
 
+  describe("STAGGER_TEAMS", () => {
+    it("keeps the home pairs stationary and sets out each pair of tables' set", () => {
+      const stagger: SelectedMovement = {
+        source: "STAGGER_TEAMS",
+        staggerTeams: { teams: 6, boardsPerRound: 4 },
+      };
+      const { result } = renderHook(() => useMovementResolution(stagger, 6));
+      expect(result.current.stationary.get(5)).toEqual({ ns: true, ew: false });
+      // Tables 2 and 5 both start on set 2.
+      expect(result.current.placement.get(5)).toMatchObject({
+        boardStart: 5,
+        boardEnd: 8,
+      });
+    });
+  });
+  describe("THURNER_TEAMS", () => {
+    it("keeps the home pairs stationary and starts the satellite on table 1's boards", () => {
+      const thurner: SelectedMovement = {
+        source: "THURNER_TEAMS",
+        thurnerTeams: { teams: 6, boardsPerRound: 3 },
+      };
+      const { result } = renderHook(() => useMovementResolution(thurner, 6));
+      expect(result.current.stationary.get(6)).toEqual({ ns: true, ew: false });
+      expect(result.current.placement.get(6)).toMatchObject({
+        boardStart: 1,
+        boardEnd: 3,
+      });
+    });
+  });
   describe("CIRCULATION_TEAMS", () => {
     it("sets out each table's own share of the round's boards", () => {
       const circulation: SelectedMovement = {

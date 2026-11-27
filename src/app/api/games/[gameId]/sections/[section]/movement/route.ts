@@ -18,6 +18,8 @@ import {
   swissTeamsSpecSchema,
   americanWhistTeamsSpecSchema,
   circulationTeamsSpecSchema,
+  thurnerTeamsSpecSchema,
+  staggerTeamsSpecSchema,
 } from "@/model/selected-movement";
 import { getTeamMovementDetail } from "@/modules/movement-catalog/server";
 
@@ -31,13 +33,16 @@ const bodySchema = z.object({
   swissTeams: swissTeamsSpecSchema.optional(),
   americanWhistTeams: americanWhistTeamsSpecSchema.optional(),
   circulationTeams: circulationTeamsSpecSchema.optional(),
+  thurnerTeams: thurnerTeamsSpecSchema.optional(),
+  staggerTeams: staggerTeamsSpecSchema.optional(),
 });
 
 /**
  * PUT /api/games/[gameId]/sections/[section]/movement — set (or clear) the
  * section's movement. A `mitchell` spec, a spec `id` + `boardsPerRound`, a
- * teams library `teamsSpecId` + `boardsPerRound`, an `americanWhistTeams` or
- * `circulationTeams` spec, or an empty body (clear) are accepted. On an actual change, the section's timer is
+ * teams library `teamsSpecId` + `boardsPerRound`, an `americanWhistTeams`,
+ * `circulationTeams`, `thurnerTeams` or `staggerTeams` spec, or an empty body (clear) are
+ * accepted. On an actual change, the section's timer is
  * cleared (its round structure is derived from the movement).
  */
 export const PUT = withDirectorEditRoute(
@@ -58,6 +63,8 @@ export const PUT = withDirectorEditRoute(
       swissTeams,
       americanWhistTeams,
       circulationTeams,
+      thurnerTeams,
+      staggerTeams,
     } = body;
 
     let selected: SelectedMovement | null;
@@ -65,6 +72,10 @@ export const PUT = withDirectorEditRoute(
       selected = { source: "AMERICAN_WHIST_TEAMS", americanWhistTeams };
     } else if (circulationTeams) {
       selected = { source: "CIRCULATION_TEAMS", circulationTeams };
+    } else if (thurnerTeams) {
+      selected = { source: "THURNER_TEAMS", thurnerTeams };
+    } else if (staggerTeams) {
+      selected = { source: "STAGGER_TEAMS", staggerTeams };
     } else if (swissTeams) {
       selected = { source: "SWISS_TEAMS", swissTeams };
     } else if (swiss) {

@@ -33,6 +33,14 @@ import { z } from "zod";
  *   three rounds, each a match between two pairs of teams, with the round's
  *   boards circulating round all four tables. Fixed, so materialized at start;
  *   the selection stores only the boards per round.
+ * - THURNER_TEAMS: the Thurner teams movement for an even number of teams
+ *   (a circuit of teams − 1 tables plus a satellite table that shares its
+ *   boards). Fixed, so materialized at start; the selection stores only the
+ *   team count and boards per round.
+ * - STAGGER_TEAMS: the Stagger teams movement for an even number of teams
+ *   (two stanzas on their own boards, each pair of tables sharing a set).
+ *   Fixed, so materialized at start; the selection stores only the team count
+ *   and boards per round.
  * - TEAMS_SPEC: a stored teams movement from the teams library.
  */
 
@@ -359,6 +367,41 @@ export type CirculationTeamsMovementSpec = z.infer<
   typeof circulationTeamsSpecSchema
 >;
 
+/**
+ * Thurner teams setup: the team count (even, at least 6, and teams − 1 not a
+ * multiple of 3, one table per team) and boards per round. It always plays
+ * every round (teams − 1).
+ */
+export const thurnerTeamsSpecSchema = z.object({
+  teams: z
+    .number()
+    .int()
+    .min(6)
+    .refine(
+      (teams) => teams % 2 === 0 && (teams - 1) % 3 !== 0,
+      "A Thurner needs an even number of teams, with teams − 1 not a multiple of 3",
+    ),
+  boardsPerRound: z.number().int().positive(),
+});
+export type ThurnerTeamsMovementSpec = z.infer<typeof thurnerTeamsSpecSchema>;
+
+/**
+ * Stagger teams setup: the team count (even, at least 4, one table per team)
+ * and boards per round. It always plays every round (teams − 1).
+ */
+export const staggerTeamsSpecSchema = z.object({
+  teams: z
+    .number()
+    .int()
+    .min(4)
+    .refine(
+      (teams) => teams % 2 === 0,
+      "A Stagger needs an even number of teams",
+    ),
+  boardsPerRound: z.number().int().positive(),
+});
+export type StaggerTeamsMovementSpec = z.infer<typeof staggerTeamsSpecSchema>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -396,6 +439,14 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
     source: z.literal("CIRCULATION_TEAMS"),
     circulationTeams: circulationTeamsSpecSchema,
   }),
+  z.object({
+    source: z.literal("THURNER_TEAMS"),
+    thurnerTeams: thurnerTeamsSpecSchema,
+  }),
+  z.object({
+    source: z.literal("STAGGER_TEAMS"),
+    staggerTeams: staggerTeamsSpecSchema,
+  }),
 ]);
 
 export type SelectedMovement = z.infer<typeof selectedMovementSchema>;
@@ -410,8 +461,8 @@ export function serializeSelectedMovement(selected: SelectedMovement): string {
 /**
  * The number of rounds a movement is configured to run. For the three movements
  * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS)
- * that value is authoritative; an American Whist plays teams − 1 rounds and a
- * Circulation 3. A SPEC (movement-library)
+ * that value is authoritative; an American Whist, Thurner or Stagger plays
+ * teams − 1 rounds and a Circulation 3. A SPEC (movement-library)
  * selection does not carry a round count in the stored selection — its schedule
  * is defined by the referenced spec and is fully materialized at start — so
  * null is returned and callers fall back to the materialized round count.
@@ -434,6 +485,10 @@ export function expectedRounds(
       return selected.americanWhistTeams.teams - 1;
     case "CIRCULATION_TEAMS":
       return 3;
+    case "THURNER_TEAMS":
+      return selected.thurnerTeams.teams - 1;
+    case "STAGGER_TEAMS":
+      return selected.staggerTeams.teams - 1;
     case "SPEC":
     case "TEAMS_SPEC":
       return null;
@@ -466,6 +521,10 @@ export function boardsPerRoundOf(
       return selected.americanWhistTeams.boardsPerRound;
     case "CIRCULATION_TEAMS":
       return selected.circulationTeams.boardsPerRound;
+    case "THURNER_TEAMS":
+      return selected.thurnerTeams.boardsPerRound;
+    case "STAGGER_TEAMS":
+      return selected.staggerTeams.boardsPerRound;
     case "SPEC":
     case "TEAMS_SPEC":
       return selected.boardsPerRound;
@@ -567,6 +626,22 @@ export function selectedMovementsEqual(
         b as Extract<SelectedMovement, { source: "CIRCULATION_TEAMS" }>
       ).circulationTeams;
       return a.circulationTeams.boardsPerRound === y.boardsPerRound;
+    }
+    case "THURNER_TEAMS": {
+      const y = (b as Extract<SelectedMovement, { source: "THURNER_TEAMS" }>)
+        .thurnerTeams;
+      return (
+        a.thurnerTeams.teams === y.teams &&
+        a.thurnerTeams.boardsPerRound === y.boardsPerRound
+      );
+    }
+    case "STAGGER_TEAMS": {
+      const y = (b as Extract<SelectedMovement, { source: "STAGGER_TEAMS" }>)
+        .staggerTeams;
+      return (
+        a.staggerTeams.teams === y.teams &&
+        a.staggerTeams.boardsPerRound === y.boardsPerRound
+      );
     }
   }
 }

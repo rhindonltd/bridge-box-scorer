@@ -268,6 +268,21 @@ there. When a table finishes its boards it passes them to the next table down
 (table 1 passes to table 4), so every table plays all of the round's boards.
 Each player's screen says which board their table starts with.
 
+With **6, 8 or 14 teams** the list also offers **Thurner**, one card for each
+sensible number of boards per round. Every team meets every other team once, over as many rounds as there are teams less one.
+The tables except the highest form a circuit: the boards move down one table
+each round there, as in an American Whist. The highest table plays the same
+boards as one of the circuit tables each round, so the two tables share them;
+both tables' screens say which table they share with.
+
+With an **even number of teams** the list also offers **Stagger**, one card for
+each sensible number of boards per round. Every team meets every other team
+once, over as many rounds as there are teams less one, in two parts with their
+own boards: the first part is one round short of half the session. Each table
+shares its boards with the table half-way round the room (with 6 teams, tables
+1 and 4, 2 and 5, and 3 and 6), and each player's screen says which table to
+share with. The teams score up between the two parts.
+
 The other cards are ready-made movements from the movement library. If no
 movement is listed for your table count, there is none for that number of
 teams.

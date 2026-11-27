@@ -22,10 +22,11 @@ import {
  * - Stored spec: a movement with a built-in missing pair is rotated so its
  *   phantom lines up with the empty seat; otherwise the position at the empty
  *   seat becomes the phantom.
- * - Teams (American Whist, Circulation or a stored teams movement): the
- *   described layout as it is, each match's two rooms grouped into one TEAMS
- *   match (see `teamsLayoutToMaterializable`). Teams never have a sit-out (the
- *   start check rejects one), so `sitOutSeat` is not read.
+ * - Teams (American Whist, Circulation, Thurner, Stagger or a stored teams
+ *   movement):
+ *   the described layout as it is, each match's two rooms grouped into one
+ *   TEAMS match (see `teamsLayoutToMaterializable`). Teams never have a sit-out
+ *   (the start check rejects one), so `sitOutSeat` is not read.
  */
 export function planMovement(
   description: MovementDescription,
@@ -33,8 +34,8 @@ export function planMovement(
 ): MovementPlan {
   const { selected, layout, missingPair } = description;
 
-  // A teams movement (American Whist, Circulation or a stored teams movement)
-  // is laid out in full by its description, and a teams start never has a
+  // A teams movement (American Whist, Circulation, Thurner, Stagger or a stored
+  // teams movement) is laid out in full by its description, and a teams start never has a
   // sit-out (a team needs both its pairs).
   if (selected.source === "AMERICAN_WHIST_TEAMS") {
     return teamsLayoutToMaterializable(
@@ -46,6 +47,18 @@ export function planMovement(
     return teamsLayoutToMaterializable(
       layout,
       selected.circulationTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "THURNER_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.thurnerTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "STAGGER_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.staggerTeams.boardsPerRound,
     );
   }
   if (selected.source === "TEAMS_SPEC") {

@@ -2033,7 +2033,7 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   descriptor parameter of `tablesToMaterializableMovement` went with Round Robin.
 - **Picker:** `teams/teams-options.ts` builds one American Whist card per
   boards-per-round from 2 to 12 where a team plays 12 to 36 boards
-  (`AMERICAN_WHIST_BOARDS_PER_ROUND`, `AMERICAN_WHIST_BOARDS_PER_TEAM`), listed
+  (`GENERATED_TEAMS_BOARDS_PER_ROUND`, `GENERATED_TEAMS_BOARDS_PER_TEAM`, named for American Whist at the time), listed
   before the library movements and grouped with them by boards per team. The
   preview is built locally (`americanWhistPreview`).
 - **Library:** `isAmericanWhistTeamsLayout` hides stored movements with the
@@ -2072,6 +2072,38 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   sets out each table's quarter (`circulationSetOut`). `isCirculationTeamsLayout`
   hides the library's NBL 4 Teams Circulation (M138), which put every table on
   board 1.
+
+**Thurner, as built.** `generation/thurner-teams/` for an even team count T
+with C = T − 1 not a multiple of 3 (6, 8, 12, 14, 18, 20 …). Circuit table t
+plays set t + r − 1; team T's away pair starts at table 1 and moves up s tables
+a round, with 3·s ≡ 1 (mod C); team i's away pair starts at table 3 − 2i and
+moves up one, playing at the satellite table T in the round it would reach its
+own home table (the round team T visits it); the satellite plays the set of the
+table team T visits. A match's two rooms are in two rounds, except the
+satellite's, which are in one round on one shared set. The generator reproduces
+the library's M140–M143 exactly, so `isThurnerTeamsLayout` hides them (92
+library movements listed). The shared table is carried as `sharesWith` on the
+generated round and the plan, written to `boards.shares_with_table` (games
+migration 0007), and shown on the round screen ("Share these boards with Table
+N"). Source `THURNER_TEAMS { thurnerTeams: { teams, boardsPerRound } }`; the
+picker offers it for 6, 8 and 14 teams only (`THURNER_RECOMMENDED_TEAMS`,
+though the generator and selection accept every count above, and the
+library's 12-team copy stays hidden), using the American Whist boards-per-round range, now
+`GENERATED_TEAMS_BOARDS_PER_ROUND` / `GENERATED_TEAMS_BOARDS_PER_TEAM`. Score
+breaks fall only at the end.
+
+**Stagger, as built.** `generation/stagger-teams/` for an even team count T
+(M = T / 2). Stanza 1 is rounds 1 … M − 1 on sets 1 … M (East/West at the
+table 2k above home in its k-th round); stanza 2 is rounds M … T − 1 on sets
+M + 1 … T (2k − 1 above). Tables t and t + M play the same set every round, and
+every room carries its partner as `sharesWith`. Each pair of teams plays an
+ordinary two-room match on one set, so the teams scorers apply as they are
+(the example code's "cross-IMP or datum" model is not needed), and since a
+stanza's matches finish within it the derived score break falls between the
+stanzas. It uses T board sets (the example said T − 1). Source
+`STAGGER_TEAMS { staggerTeams: { teams, boardsPerRound } }`, offered for every
+even count the boards-per-team range allows (4 … 18). The library's Stagger
+movements differ (two separate sessions) and stay listed.
 
 Code that looks like a candidate but should stay in the core:
 

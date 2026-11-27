@@ -240,3 +240,23 @@ describe("Circulation teams movements", () => {
     );
   });
 });
+describe("Thurner teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "THURNER_TEAMS",
+        thurnerTeams: { teams: 6, boardsPerRound: 3 },
+      }),
+    ).toBe(true);
+  });
+});
+describe("Stagger teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "STAGGER_TEAMS",
+        staggerTeams: { teams: 6, boardsPerRound: 4 },
+      }),
+    ).toBe(true);
+  });
+});

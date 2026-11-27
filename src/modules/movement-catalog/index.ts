@@ -24,8 +24,8 @@ export type {
   TeamsCatalogMovementSummary,
 } from "./catalog-summary";
 
-// Teams movements: the American Whist and Circulation generators and the
-// options a Teams game can choose (those two plus the teams library).
+// Teams movements: the American Whist, Circulation, Thurner and Stagger
+// generators and the options a Teams game can choose (those plus the teams library).
 export {
   generateAmericanWhistTeams,
   isAmericanWhistTeamCount,
@@ -36,9 +36,21 @@ export {
   type CirculationTeamsSpec,
 } from "./generation/circulation-teams/circulation-teams";
 export {
+  generateThurnerTeams,
+  isThurnerTeamCount,
+  type ThurnerTeamsSpec,
+} from "./generation/thurner-teams/thurner-teams";
+export {
+  generateStaggerTeams,
+  isStaggerTeamCount,
+  type StaggerTeamsSpec,
+} from "./generation/stagger-teams/stagger-teams";
+export {
   americanWhistPreview,
   circulationPreview,
   circulationSetOut,
+  staggerPreview,
+  thurnerPreview,
   teamsMovementOptions,
   type TeamsMovementOption,
   type TeamsMovementRef,

@@ -12,12 +12,24 @@ import {
   generateCirculationTeams,
   type CirculationTeamsSpec,
 } from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
+import {
+  generateThurnerTeams,
+  thurnerTeamsRounds,
+  type ThurnerTeamsSpec,
+} from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+import {
+  generateStaggerTeams,
+  isStaggerTeamCount,
+  staggerTeamsRounds,
+  type StaggerTeamsSpec,
+} from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
 import type { Tables } from "@/model/movement";
 
 /**
  * The movements a Teams game can choose for its team count: American Whist
- * (generated, odd team counts) and Circulation (generated, four teams) at a
- * range of boards per round, and the teams library's movements. The picker
+ * (generated, odd team counts), Circulation (generated, four teams) and
+ * Thurner and Stagger (generated, even team counts) at a range of boards per
+ * round, and the teams library's movements. The picker
  * groups them by the boards a team plays.
  */
 
@@ -25,6 +37,8 @@ import type { Tables } from "@/model/movement";
 export type TeamsMovementRef =
   | { source: "americanWhist"; spec: AmericanWhistTeamsSpec }
   | { source: "circulation"; spec: CirculationTeamsSpec }
+  | { source: "thurner"; spec: ThurnerTeamsSpec }
+  | { source: "stagger"; spec: StaggerTeamsSpec }
   | { source: "library"; id: number };
 
 /** One teams movement the director can pick. */
@@ -40,39 +54,44 @@ export interface TeamsMovementOption {
 }
 
 /**
- * The boards-per-round range American Whist is offered at, kept to sessions
- * where a team plays between `MIN` and `MAX` boards.
+ * The boards-per-round range the generated teams movements with a free boards
+ * per round (American Whist, Thurner) are offered at, kept to sessions where a
+ * team plays between `min` and `max` boards.
  */
-export const AMERICAN_WHIST_BOARDS_PER_ROUND = { min: 2, max: 12 } as const;
-export const AMERICAN_WHIST_BOARDS_PER_TEAM = { min: 12, max: 36 } as const;
+export const GENERATED_TEAMS_BOARDS_PER_ROUND = { min: 2, max: 12 } as const;
+export const GENERATED_TEAMS_BOARDS_PER_TEAM = { min: 12, max: 36 } as const;
+
+/** The boards per round to offer a movement of `rounds` rounds at. */
+function boardsPerRoundOptions(rounds: number): number[] {
+  const options: number[] = [];
+  for (
+    let boardsPerRound = GENERATED_TEAMS_BOARDS_PER_ROUND.min;
+    boardsPerRound <= GENERATED_TEAMS_BOARDS_PER_ROUND.max;
+    boardsPerRound++
+  ) {
+    const boardsPerTeam = rounds * boardsPerRound;
+    if (
+      boardsPerTeam >= GENERATED_TEAMS_BOARDS_PER_TEAM.min &&
+      boardsPerTeam <= GENERATED_TEAMS_BOARDS_PER_TEAM.max
+    ) {
+      options.push(boardsPerRound);
+    }
+  }
+  return options;
+}
 
 /** The American Whist options for a team count (none for an even count). */
 export function americanWhistOptions(teams: number): TeamsMovementOption[] {
   if (!isAmericanWhistTeamCount(teams)) return [];
   const rounds = americanWhistTeamsRounds(teams);
-  const options: TeamsMovementOption[] = [];
-  for (
-    let boardsPerRound = AMERICAN_WHIST_BOARDS_PER_ROUND.min;
-    boardsPerRound <= AMERICAN_WHIST_BOARDS_PER_ROUND.max;
-    boardsPerRound++
-  ) {
-    const boardsPerTeam = rounds * boardsPerRound;
-    if (
-      boardsPerTeam < AMERICAN_WHIST_BOARDS_PER_TEAM.min ||
-      boardsPerTeam > AMERICAN_WHIST_BOARDS_PER_TEAM.max
-    ) {
-      continue;
-    }
-    options.push({
-      name: "American Whist",
-      rounds,
-      boardsPerRound,
-      boardsPerTeam,
-      boardsInPlay: teams * boardsPerRound,
-      ref: { source: "americanWhist", spec: { teams, boardsPerRound } },
-    });
-  }
-  return options;
+  return boardsPerRoundOptions(rounds).map((boardsPerRound) => ({
+    name: "American Whist",
+    rounds,
+    boardsPerRound,
+    boardsPerTeam: rounds * boardsPerRound,
+    boardsInPlay: teams * boardsPerRound,
+    ref: { source: "americanWhist" as const, spec: { teams, boardsPerRound } },
+  }));
 }
 
 /**
@@ -96,6 +115,48 @@ export function circulationOptions(teams: number): TeamsMovementOption[] {
 }
 
 /**
+ * The team counts Thurner is offered for. The generator builds one for more
+ * counts (see `isThurnerTeamCount`), but it is only recommended for these.
+ */
+export const THURNER_RECOMMENDED_TEAMS: readonly number[] = [6, 8, 14];
+
+/**
+ * The Thurner options for a team count (none unless it is one Thurner is
+ * recommended for), at each boards per round in the same range as American
+ * Whist. Its circuit tables play teams − 1 board sets.
+ */
+export function thurnerOptions(teams: number): TeamsMovementOption[] {
+  if (!THURNER_RECOMMENDED_TEAMS.includes(teams)) return [];
+  const rounds = thurnerTeamsRounds(teams);
+  return boardsPerRoundOptions(rounds).map((boardsPerRound) => ({
+    name: "Thurner",
+    rounds,
+    boardsPerRound,
+    boardsPerTeam: rounds * boardsPerRound,
+    boardsInPlay: (teams - 1) * boardsPerRound,
+    ref: { source: "thurner" as const, spec: { teams, boardsPerRound } },
+  }));
+}
+
+/**
+ * The Stagger options for a team count (none for an odd count), at each
+ * boards per round in the same range as American Whist. Its two stanzas play
+ * teams board sets between them.
+ */
+export function staggerOptions(teams: number): TeamsMovementOption[] {
+  if (!isStaggerTeamCount(teams)) return [];
+  const rounds = staggerTeamsRounds(teams);
+  return boardsPerRoundOptions(rounds).map((boardsPerRound) => ({
+    name: "Stagger",
+    rounds,
+    boardsPerRound,
+    boardsPerTeam: rounds * boardsPerRound,
+    boardsInPlay: teams * boardsPerRound,
+    ref: { source: "stagger" as const, spec: { teams, boardsPerRound } },
+  }));
+}
+
+/**
  * Every movement a Teams game of `teams` teams can choose: American Whist and
  * Circulation first, then the library's movements (as `listTeamMovements`
  * returns them).
@@ -107,6 +168,8 @@ export function teamsMovementOptions(
   return [
     ...americanWhistOptions(teams),
     ...circulationOptions(teams),
+    ...thurnerOptions(teams),
+    ...staggerOptions(teams),
     ...library.map((movement) => ({
       name: movement.name,
       rounds: movement.rounds,
@@ -155,6 +218,22 @@ export function circulationSetOut(
       return { ...round, boardStart, boardEnd: boardStart + quarter - 1 };
     }),
   }));
+}
+
+/**
+ * A Thurner laid out by table for the movement preview, each round showing the
+ * home team (NS) and visiting team (EW) by number.
+ */
+export function thurnerPreview(spec: ThurnerTeamsSpec): MovementByTable[] {
+  return teamsPreview(generateThurnerTeams(spec));
+}
+
+/**
+ * A Stagger laid out by table for the movement preview, each round showing the
+ * home team (NS) and visiting team (EW) by number.
+ */
+export function staggerPreview(spec: StaggerTeamsSpec): MovementByTable[] {
+  return teamsPreview(generateStaggerTeams(spec));
 }
 
 /** A generated teams movement by table, teams shown by number. */

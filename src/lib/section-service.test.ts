@@ -17,6 +17,8 @@ import {
   setSectionAmericanWhistTeamsMovement,
   setSectionCirculationTeamsMovement,
   setSectionMitchellMovement,
+  setSectionThurnerTeamsMovement,
+  setSectionStaggerTeamsMovement,
   setSectionSwissMovement,
   setSectionSwissTeamsMovement,
 } from "./section-service";
@@ -90,6 +92,24 @@ describe("section-service (HTTP)", () => {
     });
   });
 
+  it("setSectionStaggerTeamsMovement PUTs the Stagger setup", async () => {
+    await setSectionStaggerTeamsMovement("g1", "A", {
+      teams: 6,
+      boardsPerRound: 4,
+    });
+    const { url, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(body).toEqual({ staggerTeams: { teams: 6, boardsPerRound: 4 } });
+  });
+  it("setSectionThurnerTeamsMovement PUTs the Thurner setup", async () => {
+    await setSectionThurnerTeamsMovement("g1", "A", {
+      teams: 6,
+      boardsPerRound: 3,
+    });
+    const { url, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(body).toEqual({ thurnerTeams: { teams: 6, boardsPerRound: 3 } });
+  });
   it("setSectionCirculationTeamsMovement PUTs the Circulation setup", async () => {
     await setSectionCirculationTeamsMovement("g1", "A", { boardsPerRound: 8 });
     const { url, init, body } = lastCall();

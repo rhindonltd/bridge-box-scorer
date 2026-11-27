@@ -59,6 +59,12 @@ export interface PlannedRound {
    */
   firstBoard?: number;
   /**
+   * The other table in the section playing the same boards this round, which
+   * the two tables share (a Thurner's satellite table and the circuit table
+   * it shares with). Absent when no other table plays them.
+   */
+  sharesWith?: number;
+  /**
    * The first-class match these boards belong to. Optional: when absent the
    * row builder synthesises an ordinary {@link MatchKind} `PAIRS` match
    * (`scoredAsUnit: false`) keyed by this round's `(table, round, ns, ew)` —

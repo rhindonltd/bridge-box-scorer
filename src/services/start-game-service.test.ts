@@ -700,6 +700,49 @@ describe("resolveSectionStart", () => {
     expect(result.anchors).toEqual(teamsAnchors(teams));
   });
 
+  it("resolves a fully-seated Stagger, each table sharing with its partner", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "STAGGER_TEAMS",
+        staggerTeams: { teams: 6, boardsPerRound: 4 },
+      },
+      seatsForTables(6),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement![3].rounds[0]).toMatchObject({
+      ns: "4NS",
+      ew: "6EW",
+      boardStart: 1,
+      sharesWith: 1,
+      match: { kind: "TEAMS", key: "teams|4-6" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(6));
+  });
+  it("resolves a fully-seated Thurner, the satellite sharing table 1's boards", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "THURNER_TEAMS",
+        thurnerTeams: { teams: 6, boardsPerRound: 3 },
+      },
+      seatsForTables(6),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement!.map((t) => t.rounds.length)).toEqual([
+      5, 5, 5, 5, 5, 5,
+    ]);
+    expect(result.movement![5].rounds[0]).toMatchObject({
+      ns: "6NS",
+      ew: "1EW",
+      boardStart: 1,
+      sharesWith: 1,
+      match: { kind: "TEAMS", key: "teams|1-6" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(6));
+  });
   it("resolves a fully-seated Circulation, with each team's pairs on their own seats", async () => {
     const result = await resolveSectionStart(
       "A",

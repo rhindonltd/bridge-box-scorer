@@ -175,6 +175,7 @@ export function buildSectionRows(
           ...(r.firstBoard == null
             ? {}
             : { playOrder: playOrderOf(boardNumber, r.firstBoard, r) }),
+          ...(r.sharesWith == null ? {} : { sharesWithTable: r.sharesWith }),
         });
       }
 

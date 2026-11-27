@@ -42,6 +42,22 @@ describe("expectedRounds", () => {
     expect(expectedRounds(m)).toBe(6);
   });
 
+  it("plays every round of a Thurner (teams − 1)", () => {
+    const m: SelectedMovement = {
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams: 8, boardsPerRound: 3 },
+    };
+    expect(expectedRounds(m)).toBe(7);
+    expect(boardsPerRoundOf(m)).toBe(3);
+  });
+  it("plays every round of a Stagger (teams − 1)", () => {
+    const m: SelectedMovement = {
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams: 6, boardsPerRound: 4 },
+    };
+    expect(expectedRounds(m)).toBe(5);
+    expect(boardsPerRoundOf(m)).toBe(4);
+  });
   it("plays three rounds of a Circulation", () => {
     const m: SelectedMovement = {
       source: "CIRCULATION_TEAMS",

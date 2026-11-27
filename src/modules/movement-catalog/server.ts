@@ -38,6 +38,7 @@ import {
   isAmericanWhistTeamsLayout,
   isCirculationTeamsLayout,
   isSupportedTeamsMovement,
+  isThurnerTeamsLayout,
 } from "./teams/teams-library";
 
 export { refreshCatalog } from "./storage/db/actions/refresh-movements";
@@ -53,8 +54,8 @@ export function listPairMovements(
 /**
  * The stored teams movements for a team count that the app can run (see
  * `isSupportedTeamsMovement`), in the library's order. The library's American
- * Whist and Circulation movements are left out: the app generates those
- * itself.
+ * Whist, Circulation and Thurner movements are left out: the app generates
+ * those itself.
  */
 export async function listTeamMovements(
   teams: number,
@@ -69,7 +70,8 @@ export async function listTeamMovements(
       return (
         isSupportedTeamsMovement(tables) &&
         !isAmericanWhistTeamsLayout(tables) &&
-        !isCirculationTeamsLayout(tables)
+        !isCirculationTeamsLayout(tables) &&
+        !isThurnerTeamsLayout(tables)
       );
     })
     .map(({ id, name, tables, boards, boardsPerRound, rounds }) => ({

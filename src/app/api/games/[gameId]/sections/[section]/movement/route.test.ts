@@ -98,6 +98,24 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     );
   });
 
+  it("sets a STAGGER_TEAMS movement", async () => {
+    const staggerTeams = { teams: 6, boardsPerRound: 4 };
+    const res = await invoke("g1", "A", { staggerTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "STAGGER_TEAMS",
+      staggerTeams,
+    });
+  });
+  it("sets a THURNER_TEAMS movement", async () => {
+    const thurnerTeams = { teams: 8, boardsPerRound: 3 };
+    const res = await invoke("g1", "A", { thurnerTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "THURNER_TEAMS",
+      thurnerTeams,
+    });
+  });
   it("sets a CIRCULATION_TEAMS movement", async () => {
     const circulationTeams = { boardsPerRound: 8 };
     const res = await invoke("g1", "A", { circulationTeams });

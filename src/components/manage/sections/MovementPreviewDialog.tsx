@@ -8,6 +8,8 @@ import { swrKeys } from "@/swr/swr-keys";
 import {
   americanWhistPreview,
   circulationPreview,
+  thurnerPreview,
+  staggerPreview,
   MovementByTable,
   RecommendedMovementSpecRef,
   TeamsMovementRef,
@@ -133,6 +135,12 @@ function MovementPreviewContent({
     }
     if (movement.specRef.source === "circulation") {
       return circulationPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "thurner") {
+      return thurnerPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "stagger") {
+      return staggerPreview(movement.specRef.spec);
     }
     if (movement.specRef.source === "americanWhist") {
       return americanWhistPreview(movement.specRef.spec);

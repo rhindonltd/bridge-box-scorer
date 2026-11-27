@@ -169,6 +169,54 @@ describe("describeGeneratedMovement — Circulation teams", () => {
   });
 });
 
+describe("describeGeneratedMovement — Thurner teams", () => {
+  it("lays out the whole schedule, the satellite sharing a table's boards", () => {
+    const result = describeGeneratedMovement({
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams: 6, boardsPerRound: 2 },
+    });
+    expect(result.missingPair).toBeNull();
+    expect(result.layout).toHaveLength(6);
+    // Round 1: team 6's away pair visits table 1, whose boards the satellite
+    // (table 6) shares, against team 1's away pair.
+    expect(result.layout[0].rounds[0]).toEqual({
+      roundNumber: 1,
+      ns: "1NS",
+      ew: "6EW",
+      boardStart: 1,
+      boardEnd: 2,
+      sharesWith: 6,
+      boardCopy: "A",
+    });
+    expect(result.layout[5].rounds[0]).toMatchObject({
+      ns: "6NS",
+      ew: "1EW",
+      boardStart: 1,
+      sharesWith: 1,
+    });
+    expect(result.layout[1].rounds[0].sharesWith).toBeUndefined();
+  });
+});
+
+describe("describeGeneratedMovement — Stagger teams", () => {
+  it("lays out the whole schedule, each table sharing with its partner", () => {
+    const result = describeGeneratedMovement({
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams: 6, boardsPerRound: 2 },
+    });
+    expect(result.missingPair).toBeNull();
+    expect(result.layout[0].rounds[0]).toEqual({
+      roundNumber: 1,
+      ns: "1NS",
+      ew: "3EW",
+      boardStart: 1,
+      boardEnd: 2,
+      sharesWith: 4,
+      boardCopy: "A",
+    });
+  });
+});
+
 describe("describeStoredMovement", () => {
   const selected = { source: "SPEC", specId: 42, boardsPerRound: 2 } as const;
   const rows = [

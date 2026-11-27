@@ -13,6 +13,8 @@ import {
   fixedMovementSetup,
   americanWhistPreview,
   circulationSetOut,
+  thurnerPreview,
+  staggerPreview,
   generatedToMovementByTable,
   generateMitchell,
   type MovementByTable,
@@ -73,8 +75,8 @@ function swissResolution(
  * pair positions and board placement (round-1 boards, physical copy, and any
  * share/relay), keyed by table number.
  *
- * - `MITCHELL`, `AMERICAN_WHIST_TEAMS` and `CIRCULATION_TEAMS` selections are
- *   generated locally (no fetch).
+ * - `MITCHELL`, `AMERICAN_WHIST_TEAMS`, `CIRCULATION_TEAMS`, `THURNER_TEAMS`
+ *   and `STAGGER_TEAMS` selections are generated locally (no fetch).
  * - `SPEC` and `TEAMS_SPEC` selections (a pairs or teams library movement)
  *   are fetched from the movement's detail endpoint.
  *
@@ -123,6 +125,14 @@ export function useMovementResolution(
     // Generated locally. Each table starts on its own share of the round's
     // boards, so that share is what is set out on it.
     tables = circulationSetOut(selectedMovement.circulationTeams);
+  } else if (selectedMovement.source === "THURNER_TEAMS") {
+    // Generated locally. The satellite table starts on the same boards as
+    // table 1, which the setup notes as shared.
+    tables = thurnerPreview(selectedMovement.thurnerTeams);
+  } else if (selectedMovement.source === "STAGGER_TEAMS") {
+    // Generated locally. Each table starts on the same boards as the table
+    // half-way round, which the setup notes as shared.
+    tables = staggerPreview(selectedMovement.staggerTeams);
   } else {
     // SPEC / TEAMS_SPEC: computed from the fetched detail (empty until it
     // loads). Seeded specs never carry a provable relay, so shareAndRelay

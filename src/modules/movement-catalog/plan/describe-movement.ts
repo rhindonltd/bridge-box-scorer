@@ -4,6 +4,8 @@ import { SelectedMovement } from "@/model/selected-movement";
 import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
 import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
 import { generateCirculationTeams } from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+import { generateStaggerTeams } from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
 import { boardRangeForSet } from "@/modules/movement-catalog/shared";
 import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams-library";
 
@@ -19,7 +21,9 @@ export type FixedSelectedMovement = Extract<
       | "TEAMS_SPEC"
       | "MITCHELL"
       | "AMERICAN_WHIST_TEAMS"
-      | "CIRCULATION_TEAMS";
+      | "CIRCULATION_TEAMS"
+      | "THURNER_TEAMS"
+      | "STAGGER_TEAMS";
   }
 >;
 
@@ -34,8 +38,8 @@ export interface MovementDescription {
   /**
    * The movement with concrete board numbers and no sit-out flagged. A stored
    * spec's board-set indices are expanded with the selection's boards-per-round.
-   * A generated teams movement (American Whist, Circulation) is its whole
-   * fixed schedule.
+   * A generated teams movement (American Whist, Circulation, Thurner,
+   * Stagger) is its whole fixed schedule.
    */
   layout: MovementPlan;
   /** A stored movement's built-in phantom pair number, or null when it has none. */
@@ -52,7 +56,9 @@ export interface StoredMovementTable {
  * Convert a generated movement into a layout. A round's boards are a run of
  * consecutive numbers listed in the order the table plays them; when that
  * starts part-way through the run (a Circulation's boards pass round the
- * tables) the start is kept as `firstBoard`. Only Web Mitchell uses more than
+ * tables) the start is kept as `firstBoard`, and a table sharing its boards
+ * with another this round (a Thurner's satellite) keeps that table as
+ * `sharesWith` (a Thurner's satellite, or a Stagger's partner tables). Only Web Mitchell uses more than
  * one physical copy of the boards, so every other round plays copy "A".
  */
 function generatedLayout(tables: Tables): MovementPlan {
@@ -68,6 +74,7 @@ function generatedLayout(tables: Tables): MovementPlan {
         boardStart,
         boardEnd: Math.max(...round.boards),
         ...(firstBoard === boardStart ? {} : { firstBoard }),
+        ...(round.sharesWith == null ? {} : { sharesWith: round.sharesWith }),
         boardCopy: round.boardCopy ?? "A",
       };
     }),
@@ -75,14 +82,21 @@ function generatedLayout(tables: Tables): MovementPlan {
 }
 
 /**
- * Describe a generated movement (a Mitchell variant, or an American Whist or
- * Circulation teams movement). No database access: the layout comes from the
- * selection's spec.
+ * Describe a generated movement (a Mitchell variant, or an American Whist,
+ * Circulation, Thurner or Stagger teams movement). No database access: the layout comes
+ * from the selection's spec.
  */
 export function describeGeneratedMovement(
   selected: Extract<
     FixedSelectedMovement,
-    { source: "MITCHELL" | "AMERICAN_WHIST_TEAMS" | "CIRCULATION_TEAMS" }
+    {
+      source:
+        | "MITCHELL"
+        | "AMERICAN_WHIST_TEAMS"
+        | "CIRCULATION_TEAMS"
+        | "THURNER_TEAMS"
+        | "STAGGER_TEAMS";
+    }
   >,
 ): MovementDescription {
   if (selected.source === "MITCHELL") {
@@ -102,6 +116,24 @@ export function describeGeneratedMovement(
       layout: generatedLayout(
         generateCirculationTeams(selected.circulationTeams),
       ),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "THURNER_TEAMS") {
+    // Thurner: the whole fixed schedule, every table filled.
+    return {
+      selected,
+      layout: generatedLayout(generateThurnerTeams(selected.thurnerTeams)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "STAGGER_TEAMS") {
+    // Stagger: the whole fixed schedule, every table filled.
+    return {
+      selected,
+      layout: generatedLayout(generateStaggerTeams(selected.staggerTeams)),
       missingPair: null,
     };
   }

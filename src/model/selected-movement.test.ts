@@ -588,6 +588,48 @@ describe("selectedMovementsEqual", () => {
       ),
     ).toBeNull();
   });
+  it("compares THURNER_TEAMS selections by team count and boards per round, and refuses a count with no Thurner", () => {
+    const thurner = (teams = 6, boardsPerRound = 3): SelectedMovement => ({
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams, boardsPerRound },
+    });
+    expect(selectedMovementsEqual(thurner(), thurner())).toBe(true);
+    expect(selectedMovementsEqual(thurner(), thurner(8))).toBe(false);
+    expect(selectedMovementsEqual(thurner(), thurner(6, 4))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(thurner(8, 2))),
+    ).toEqual(thurner(8, 2));
+    for (const teams of [10, 7]) {
+      expect(
+        parseSelectedMovement(
+          JSON.stringify({
+            source: "THURNER_TEAMS",
+            thurnerTeams: { teams, boardsPerRound: 2 },
+          }),
+        ),
+      ).toBeNull();
+    }
+  });
+  it("compares STAGGER_TEAMS selections by team count and boards per round, and refuses an odd count", () => {
+    const stagger = (teams = 6, boardsPerRound = 3): SelectedMovement => ({
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams, boardsPerRound },
+    });
+    expect(selectedMovementsEqual(stagger(), stagger())).toBe(true);
+    expect(selectedMovementsEqual(stagger(), stagger(8))).toBe(false);
+    expect(selectedMovementsEqual(stagger(), stagger(6, 4))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(stagger(4, 4))),
+    ).toEqual(stagger(4, 4));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "STAGGER_TEAMS",
+          staggerTeams: { teams: 7, boardsPerRound: 2 },
+        }),
+      ),
+    ).toBeNull();
+  });
   it("refuses an American Whist with an even number of teams", () => {
     expect(
       parseSelectedMovement(

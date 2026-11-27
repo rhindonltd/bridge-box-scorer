@@ -179,6 +179,30 @@ describe("schedule-service", () => {
       expect(result!.rounds.some((r) => r.scoreBreakAfter)).toBe(false);
     });
 
+    it("says which table a round's boards are shared with", async () => {
+      const row = (roundNumber: number, sharesWithTable: number | null) => ({
+        roundNumber,
+        tableNumber: 6,
+        boardNumber: roundNumber,
+        ns: "A6NS",
+        ew: "A1EW",
+        status: "NOT_PLAYED",
+        sharesWithTable,
+      });
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "A6NS", anchorId: "A6NS" } },
+        { kind: "where", value: [row(1, 1), row(2, null)] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }, { roundNumber: 2 }] },
+      ]);
+
+      const result = await getSchedule(db, "A6NS");
+
+      expect(result!.rounds[0].sharesWithTable).toBe(1);
+      expect(result!.rounds[1]).not.toHaveProperty("sharesWithTable");
+    });
+
     it("orders a round's boards by the table's play order when it has one", async () => {
       const row = (boardNumber: number, playOrder: number) => ({
         roundNumber: 1,

@@ -22,6 +22,9 @@ export const boards = sqliteTable(
     // boards circulate round the tables within a round, so each table starts
     // on its own boards.
     playOrder: integer("play_order"),
+    // The other table playing this board in the same round, which the two
+    // tables share (a Thurner's satellite table), or null when none does.
+    sharesWithTable: integer("shares_with_table"),
     ns: text("ns").notNull(),
     ew: text("ew").notNull(),
     confirmedResult: text("confirmed_result").$type<BoardOutcome>(),

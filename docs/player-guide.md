@@ -73,7 +73,8 @@ At the start of each round you see a summary:
 - The **board(s)** you will play this round. In a movement where the boards
   pass round the tables during the round, it also says which board your table
   **starts with**; play on in order from there, taking the boards passed to
-  you.
+  you. If another table is playing the same boards this round, it says which
+  table to **share the boards with**.
 - The **four players** at the table
 
 Tap **Enter Round** when you are ready to start entering results.

@@ -5,9 +5,11 @@ import {
   isAmericanWhistTeamsLayout,
   isCirculationTeamsLayout,
   isSupportedTeamsMovement,
+  isThurnerTeamsLayout,
   normaliseTeamsTables,
 } from "./teams-library";
 import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
 
 /** A stored table from per-round [home, visitor, set] triples. */
 function table(
@@ -283,5 +285,42 @@ describe("isCirculationTeamsLayout", () => {
         : t,
     );
     expect(isCirculationTeamsLayout(staggered)).toBe(false);
+  });
+});
+
+describe("isThurnerTeamsLayout", () => {
+  /** A Thurner as the library stores it: bare team numbers and set indices. */
+  function storedThurner(teams: number): StoredMovementTable[] {
+    return generateThurnerTeams({ teams, boardsPerRound: 1 }).tables.map((t) =>
+      table(
+        t.table,
+        t.rounds.map((r) => [
+          parseInt(r.participants.nsId, 10),
+          parseInt(r.participants.ewId, 10),
+          r.boards[0],
+        ]),
+      ),
+    );
+  }
+
+  it("recognises the generated Thurner", () => {
+    expect(isSupportedTeamsMovement(storedThurner(8))).toBe(true);
+    expect(isThurnerTeamsLayout(storedThurner(8))).toBe(true);
+  });
+
+  it("is not a Thurner for a team count with none", () => {
+    expect(isThurnerTeamsLayout(crossRound)).toBe(false);
+  });
+
+  it("is not the Thurner when a room or the round count differs", () => {
+    const thurner = storedThurner(6);
+    const swapped = thurner.map((t, i) =>
+      i === 0
+        ? { ...t, rounds: t.rounds.map((r) => ({ ...r, boardSet: 9 })) }
+        : t,
+    );
+    expect(isThurnerTeamsLayout(swapped)).toBe(false);
+    const short = thurner.map((t) => ({ ...t, rounds: t.rounds.slice(1) }));
+    expect(isThurnerTeamsLayout(short)).toBe(false);
   });
 });

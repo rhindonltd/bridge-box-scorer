@@ -126,6 +126,7 @@ export function PlayStateRouter({
           halfMatch={round.halfMatch}
           opponentExpectedLate={round.opponentExpectedLate}
           opponentWithdrawn={round.opponentWithdrawn}
+          sharesWithTable={round.sharesWithTable}
           onEnterRound={handlers.handleEnterRound}
           // Moving past an expected-late opponent reuses the sit-out advance
           // (next round, no server write) — both are "nothing to play here".

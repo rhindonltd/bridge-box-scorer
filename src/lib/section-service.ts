@@ -7,6 +7,8 @@ import {
 import type {
   AmericanWhistTeamsSpec,
   CirculationTeamsSpec,
+  StaggerTeamsSpec,
+  ThurnerTeamsSpec,
 } from "@/modules/movement-catalog";
 
 /**
@@ -139,6 +141,30 @@ export async function setSectionCirculationTeamsMovement(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { circulationTeams },
+  });
+}
+
+/** Set the section's movement to a Thurner teams movement. */
+export async function setSectionThurnerTeamsMovement(
+  gameId: string,
+  section: string,
+  thurnerTeams: ThurnerTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { thurnerTeams },
+  });
+}
+
+/** Set the section's movement to a Stagger teams movement. */
+export async function setSectionStaggerTeamsMovement(
+  gameId: string,
+  section: string,
+  staggerTeams: StaggerTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { staggerTeams },
   });
 }
 

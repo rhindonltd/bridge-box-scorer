@@ -58,6 +58,22 @@ describe("useMovementRoundInfo", () => {
     expect(result.current.info).toEqual({ rounds: 4, boardsPerRound: 6 });
   });
 
+  it("gives a Stagger teams − 1 rounds", () => {
+    const m: SelectedMovement = {
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams: 6, boardsPerRound: 4 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m));
+    expect(result.current.info).toEqual({ rounds: 5, boardsPerRound: 4 });
+  });
+  it("gives a Thurner teams − 1 rounds", () => {
+    const m: SelectedMovement = {
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams: 8, boardsPerRound: 3 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m));
+    expect(result.current.info).toEqual({ rounds: 7, boardsPerRound: 3 });
+  });
   it("gives a Circulation three rounds at its boards per round", () => {
     const m: SelectedMovement = {
       source: "CIRCULATION_TEAMS",

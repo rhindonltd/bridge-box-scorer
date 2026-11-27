@@ -1,5 +1,9 @@
 import type { Table } from "@/model/movement";
 import type { StoredMovementTable } from "@/modules/movement-catalog/plan/describe-movement";
+import {
+  generateThurnerTeams,
+  isThurnerTeamCount,
+} from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
 
 /**
  * The stored teams movement library (TSMovements.txt). Each row of a movement
@@ -131,4 +135,33 @@ export function isCirculationTeamsLayout(
     }
   }
   return true;
+}
+
+/**
+ * Whether a stored teams movement is exactly the Thurner the app generates
+ * for its team count (`generateThurnerTeams`), so the library's copy is not
+ * listed.
+ */
+export function isThurnerTeamsLayout(tables: StoredMovementTable[]): boolean {
+  if (!isThurnerTeamCount(tables.length)) return false;
+  // With one board a round, a generated board number is its board set.
+  const generated = generateThurnerTeams({
+    teams: tables.length,
+    boardsPerRound: 1,
+  }).tables;
+  return tables.every((table, i) => {
+    const rounds = generated[i].rounds;
+    return (
+      table.rounds.length === rounds.length &&
+      table.rounds.every((round, k) => {
+        const expected = rounds[k];
+        return (
+          round.roundNumber === expected.round &&
+          `${round.ns}NS` === expected.participants.nsId &&
+          `${round.ew}EW` === expected.participants.ewId &&
+          round.boardSet === expected.boards[0]
+        );
+      })
+    );
+  });
 }
