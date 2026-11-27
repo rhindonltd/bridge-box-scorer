@@ -140,13 +140,12 @@ function teamsSeatTable(seatId: string): number {
 
 /**
  * Tag a teams movement's rooms with their `TEAMS` match, so a match's two
- * rooms group into ONE match scored as a unit. A match's two rooms play the
- * same board set, so the match is keyed by the unordered home-table pair and
- * that set: the two rooms may be played in different rounds, and two teams
- * that meet again on another set (a head-to-head's second stanza) play a
- * second match. The match is numbered by its board set (each team plays each
- * set once), which gives every team one match per number for the per-round
- * scorers.
+ * rooms group into ONE match scored as a unit. Two teams play one match, so
+ * the match is keyed by the unordered home-table pair alone: the two rooms may
+ * be played in different rounds, and a head-to-head's two stanzas are one
+ * match over both stanzas' boards. The match is numbered by its (first) board
+ * set (each team plays each set once), which gives every team one match per
+ * number for the per-round scorers.
  */
 export function teamsLayoutToMaterializable(
   layout: MovementPlan,
@@ -159,17 +158,16 @@ export function teamsLayoutToMaterializable(
       const oppTable = teamsSeatTable(round.ew);
       const lo = Math.min(homeTable, oppTable);
       const hi = Math.max(homeTable, oppTable);
-      const boardSet = boardSetFor(round.boardStart, boardsPerRound);
       return {
         ...round,
         match: {
           kind: "TEAMS" as const,
           scoredAsUnit: true,
-          key: `teams|${lo}-${hi}|${boardSet}`,
+          key: `teams|${lo}-${hi}`,
           home: `${lo}NS`,
           opponent: `${hi}NS`,
           vpPool: 20,
-          roundNumber: boardSet,
+          roundNumber: boardSetFor(round.boardStart, boardsPerRound),
         },
       };
     }),

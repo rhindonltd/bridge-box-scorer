@@ -14,6 +14,9 @@ import {
 } from "@/modules/play-flow";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
 import { readTeamMatchRounds } from "@/db/games/queries/team-match-rounds";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { declaredScoreBreakRounds } from "@/modules/movement-catalog";
+import { sectionOf } from "@/model/participants";
 
 /**
  * Build a player schedule for a single seat: which boards this pair plays in
@@ -21,9 +24,10 @@ import { readTeamMatchRounds } from "@/db/games/queries/team-match-rounds";
  *
  * The DB reads run in a fixed order (assignment lookup → this pair's boards →
  * the game-wide player lookup → expected-late seats → total rounds → the teams
- * match rounds); the rounds are then built by `buildScheduleRounds`
- * (`@/modules/play-flow`). In a teams game each round is flagged when the
- * pair's team scores up after it; a pairs game has no teams matches, so none.
+ * match rounds → the section's movement); the rounds are then built by
+ * `buildScheduleRounds` (`@/modules/play-flow`). In a teams game each round is
+ * flagged when the pair's team scores up after it; a pairs game has no teams
+ * matches and declares no score breaks, so none.
  */
 export async function getSchedule(db: Db, seat: string) {
   const anchorId = await seatAnchorId(db, seat);
@@ -49,10 +53,15 @@ export async function getSchedule(db: Db, seat: string) {
   const expectedLateSeats = await readExpectedLateSeats(db);
 
   const totalRounds = await countTotalRounds(db);
-  const scoreBreaks = scoreBreakRounds(
-    await readTeamMatchRounds(db),
-    teamOfPair(assignmentId),
-  );
+  // A team scores up where its matches so far are finished, and wherever its
+  // movement calls a score-up mid-match (a head-to-head's stanzas).
+  const scoreBreaks = new Set([
+    ...scoreBreakRounds(
+      await readTeamMatchRounds(db),
+      teamOfPair(assignmentId),
+    ),
+    ...declaredScoreBreakRounds(await getSectionMovement(db, sectionOf(seat))),
+  ]);
 
   return {
     assignmentId,

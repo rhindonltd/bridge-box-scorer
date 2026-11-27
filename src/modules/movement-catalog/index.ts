@@ -87,3 +87,5 @@ export type {
   MovementDescription,
 } from "./plan/describe-movement";
 export { planMovement } from "./plan/plan-movement";
+// Where a movement calls a score-up beyond its match ends.
+export { declaredScoreBreakRounds } from "./teams/score-breaks";

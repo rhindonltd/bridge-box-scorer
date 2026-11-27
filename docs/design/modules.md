@@ -2105,6 +2105,33 @@ stanzas. It uses T board sets (the example said T − 1). Source
 even count the boards-per-team range allows (4 … 18). The library's Stagger
 movements differ (two separate sessions) and stay listed.
 
+**Head to Head, as built.** `generation/head-to-head-teams/`: two teams, two
+stanzas of their own boards (`HEAD_TO_HEAD_TEAMS { headToHeadTeams:
+{ boardsPerRound } }`, even, offered at 6, 8, 10 and 12). Stanza 1 is 1NS v 2EW
+and 2NS v 1EW; in stanza 2 team 2's pairs swap tables and directions (1NS v
+2NS, 2EW v 1EW), so team 1 still holds North/South at table 1 and each stanza
+compares as a two-room match. Table 2 starts each stanza on its second half
+(`firstBoard`).
+
+- **One match over both stanzas.** `teamsLayoutToMaterializable` keys a match
+  by the two teams alone, so both stanzas' rooms are one TEAMS match (numbered
+  1, spanning both stanzas' boards) and IMP (VP) converts the combined margin
+  once, at the end. (An interim version keyed matches by board set too, which
+  made each stanza its own match; that was reverted.)
+- **Declared score breaks.** A team's matches only finish at the end, so the
+  derived score breaks give none between the stanzas. A movement can now
+  declare extra ones (`declaredScoreBreakRounds`, in `teams/score-breaks.ts`):
+  a head-to-head declares a break after round 1. `schedule-service.ts` reads
+  the section's movement and adds them to the match-derived breaks.
+- **A pair's side comes from the board row, not its seat.** The submit and
+  withdraw handlers read the side from where the pair's id sits on the board
+  row (`seatSideAtBoard`, falling back to the seat's direction), and the
+  play-state resolver uses the round's side. Before this, a pair sitting the
+  other way from its starting seat collided with the other pair's side. That
+  also affected a Howell's later rounds; the e2e helpers that confirmed whole
+  rounds from each table's own seats (`confirmEntireGame`, `confirmRound`) had
+  relied on it and now submit from the pairs the board rows name.
+
 Code that looks like a candidate but should stay in the core:
 
 - `src/socket/handlers/results/director-board-ruling.ts`: a handler factory

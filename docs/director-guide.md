@@ -284,6 +284,18 @@ shares its boards with the table half-way round the room (with 6 teams, tables
 1 and 4, 2 and 5, and 3 and 6), and each player's screen says which table to
 share with. The teams score up between the two parts.
 
+With **two teams** the list offers **Head to Head**: one match in two stanzas,
+each on its own boards, with a card for each even number of boards per stanza.
+In the first stanza team 1's North/South pair plays team 2's East/West pair at
+table 1, and team 2's North/South pair plays team 1's East/West pair at
+table 2. For the second stanza team 2's pairs swap tables and directions, so
+each pair meets the other team's other pair; their screens say where to sit.
+Put the first half of each stanza's boards on table 1 and the second half on
+table 2, and swap them halfway; each player's screen says which board to
+start with. The teams score up after each stanza, and the result is the two
+stanzas' IMPs added together; with **IMP (Victory Points)** scoring, the
+Victory Points are worked out once, at the end, on that total.
+
 The other cards are ready-made movements from the movement library. If no
 movement is listed for your table count, there is none for that number of
 teams.

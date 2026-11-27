@@ -12,6 +12,8 @@ import {
   materializeSections,
   resolveMatchIds,
 } from "./materialize-movement";
+import { planMovement } from "@/modules/movement-catalog";
+import { describeMovement } from "@/modules/movement-catalog/server";
 import { getDb } from "@/db/games";
 
 describe("sectionParticipantId", () => {
@@ -46,6 +48,26 @@ describe("buildSectionRows", () => {
       status: "NOT_PLAYED",
     });
     expect(boardRows[1].boardNumber).toBe(2);
+  });
+
+  it("writes a head-to-head's two stanzas as one match over all its boards", async () => {
+    const plan = planMovement(
+      await describeMovement({
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      }),
+      { sitOutSeat: null },
+    );
+    const { matchRows } = buildSectionRows("A", plan);
+    expect(matchRows).toHaveLength(1);
+    expect(matchRows[0]).toMatchObject({
+      kind: "TEAMS",
+      roundNumber: 1,
+      home: "A1NS",
+      opponent: "A2NS",
+      boardStart: 1,
+      boardEnd: 24,
+    });
   });
 
   it("records the table a round's boards are shared with", () => {

@@ -33,6 +33,9 @@ vi.mock("@/db/games/queries/expected-late-seats", () => ({
 vi.mock("@/db/games/queries/team-match-rounds", () => ({
   readTeamMatchRounds: vi.fn().mockResolvedValue([]),
 }));
+vi.mock("@/db/games/queries/get-section-movement", () => ({
+  getSectionMovement: vi.fn().mockResolvedValue(null),
+}));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: any[]) => args),
   or: vi.fn((...args: any[]) => args),
@@ -40,6 +43,7 @@ vi.mock("drizzle-orm", () => ({
 
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
 import { readTeamMatchRounds } from "@/db/games/queries/team-match-rounds";
 
 /**
@@ -93,7 +97,7 @@ describe("schedule-service", () => {
       const db = mockDbFromSteps([{ kind: "get", value: undefined }]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "99NS");
+      const result = await getSchedule(db, "A99NS");
 
       expect(result).toBeNull();
     });
@@ -161,7 +165,7 @@ describe("schedule-service", () => {
       ]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("NS");
@@ -227,6 +231,41 @@ describe("schedule-service", () => {
       expect(result!.rounds[0].boardStatuses.map((b) => b.boardNumber)).toEqual(
         [3, 4, 1, 2],
       );
+    });
+
+    it("adds the score-up a head-to-head calls between its stanzas", async () => {
+      // One match over both stanzas, so the match alone gives a break only
+      // after round 2.
+      vi.mocked(readTeamMatchRounds).mockResolvedValueOnce([
+        { home: "A1NS", opponent: "A2NS", firstRound: 1, lastRound: 2 },
+      ]);
+      vi.mocked(getSectionMovement).mockResolvedValueOnce({
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      });
+      const row = (roundNumber: number, ns: string) => ({
+        roundNumber,
+        tableNumber: 1,
+        boardNumber: roundNumber,
+        ns,
+        ew: "A2NS",
+        status: "NOT_PLAYED",
+      });
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "A2NS", anchorId: "A2NS" } },
+        { kind: "where", value: [row(1, "A2NS"), row(2, "A1NS")] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }, { roundNumber: 2 }] },
+      ]);
+
+      const result = await getSchedule(db, "A2NS");
+
+      expect(getSectionMovement).toHaveBeenCalledWith(db, "A");
+      expect(result!.rounds.map((r) => r.scoreBreakAfter ?? false)).toEqual([
+        true,
+        true,
+      ]);
     });
 
     it("flags the rounds after which the pair's team scores up", async () => {
@@ -312,7 +351,7 @@ describe("schedule-service", () => {
       ]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
 
       expect(result).not.toBeNull();
       const sitOutRound = result!.rounds.find((r) => r.roundNumber === 2)!;
@@ -341,7 +380,7 @@ describe("schedule-service", () => {
         { kind: "from", value: [] },
         { kind: "from", value: [{ roundNumber: 1 }] },
       ]);
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
       expect(result!.assignmentId).toBe("1NS");
     });
     it("flags an opponent seat that is expected late and still empty", async () => {
@@ -365,7 +404,7 @@ describe("schedule-service", () => {
         { kind: "from", value: [] },
         { kind: "from", value: [{ roundNumber: 1 }] },
       ]);
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
       expect(result!.rounds[0].opponentExpectedLate).toBe(true);
       expect(result!.rounds[0].opponentWithdrawn).toBeUndefined();
     });
@@ -399,7 +438,7 @@ describe("schedule-service", () => {
         },
         { kind: "from", value: [{ roundNumber: 1 }] },
       ]);
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
       expect(result!.rounds[0].opponentExpectedLate).toBeUndefined();
     });
     it("flags a round whose every board was missed because the opponents withdrew", async () => {
@@ -430,7 +469,7 @@ describe("schedule-service", () => {
         { kind: "from", value: [] },
         { kind: "from", value: [{ roundNumber: 1 }] },
       ]);
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
       expect(result!.rounds[0].opponentWithdrawn).toBe(true);
     });
     it("treats a round with only compensated boards as an ordinary round", async () => {
@@ -453,7 +492,7 @@ describe("schedule-service", () => {
         { kind: "from", value: [] },
         { kind: "from", value: [{ roundNumber: 1 }] },
       ]);
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
       expect(result!.rounds[0].boards).toEqual([]);
       expect(result!.rounds[0].halfMatch).toBeUndefined();
     });
@@ -485,7 +524,7 @@ describe("schedule-service", () => {
       ]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "1EW");
+      const result = await getSchedule(db, "A1EW");
 
       expect(result).not.toBeNull();
       expect(result!.side).toBe("EW");
@@ -530,7 +569,7 @@ describe("schedule-service", () => {
       ]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
 
       expect(result).not.toBeNull();
       expect(result!.rounds[0].players.N).toMatchObject({ firstName: "Alice" });
@@ -548,7 +587,7 @@ describe("schedule-service", () => {
       ]);
       vi.mocked(getPairsDb).mockResolvedValue(db as any);
 
-      const result = await getSchedule(db, "1NS");
+      const result = await getSchedule(db, "A1NS");
 
       expect(result).not.toBeNull();
       expect(result!.rounds).toHaveLength(0);

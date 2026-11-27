@@ -176,11 +176,11 @@ describe("planMovement", () => {
     // Team 1 hosts team 3 in round 1 on set 1; team 3 hosts team 1 in round 2
     // on the same set: one match, numbered by its set.
     expect(plan[0].rounds[0].match).toMatchObject({
-      key: "teams|1-3|1",
+      key: "teams|1-3",
       roundNumber: 1,
     });
     expect(plan[2].rounds[1].match).toMatchObject({
-      key: "teams|1-3|1",
+      key: "teams|1-3",
       roundNumber: 1,
     });
   });
@@ -196,12 +196,12 @@ describe("planMovement — Circulation", () => {
     expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 8));
     // Round 2: team 1 hosts team 3, and team 3 hosts team 1, on boards 9-16.
     expect(plan[0].rounds[1].match).toMatchObject({
-      key: "teams|1-3|2",
+      key: "teams|1-3",
       roundNumber: 2,
     });
     expect(plan[2].rounds[1]).toMatchObject({
       firstBoard: 13,
-      match: { key: "teams|1-3|2", roundNumber: 2 },
+      match: { key: "teams|1-3", roundNumber: 2 },
     });
   });
 });
@@ -216,7 +216,7 @@ describe("planMovement — Thurner", () => {
     expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 2));
     expect(plan[5].rounds[0]).toMatchObject({
       sharesWith: 1,
-      match: { key: "teams|1-6|1", roundNumber: 1 },
+      match: { key: "teams|1-6", roundNumber: 1 },
     });
   });
 });
@@ -229,23 +229,24 @@ describe("planMovement — Stagger", () => {
     });
     const plan = planMovement(description, { sitOutSeat: null });
     expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 2));
-    expect(plan[0].rounds[0].match).toMatchObject({ key: "teams|1-3|1" });
+    expect(plan[0].rounds[0].match).toMatchObject({ key: "teams|1-3" });
   });
 });
 
 describe("planMovement — head-to-head", () => {
-  it("plans each stanza as its own match between the two teams", () => {
+  it("plans both stanzas as one match between the two teams", () => {
     const description = describeGeneratedMovement({
       source: "HEAD_TO_HEAD_TEAMS",
       headToHeadTeams: { boardsPerRound: 12 },
     });
     const plan = planMovement(description, { sitOutSeat: null });
     expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 12));
-    // Team 2's pairs have swapped tables and directions in stanza 2, but each
-    // stanza's two rooms are one match on its own boards.
+    // Team 2's pairs have swapped tables and directions in stanza 2, but both
+    // stanzas' rooms are the one match, so its Victory Points are worked out
+    // on the IMPs of both stanzas together.
     expect(plan.map((t) => t.rounds.map((r) => r.match?.key))).toEqual([
-      ["teams|1-2|1", "teams|1-2|2"],
-      ["teams|1-2|1", "teams|1-2|2"],
+      ["teams|1-2", "teams|1-2"],
+      ["teams|1-2", "teams|1-2"],
     ]);
     expect(plan[1].rounds[1].match).toMatchObject({
       home: "1NS",
@@ -274,7 +275,7 @@ describe("teamsLayoutToMaterializable", () => {
   const match = {
     kind: "TEAMS",
     scoredAsUnit: true,
-    key: "teams|1-2|2",
+    key: "teams|1-2",
     home: "1NS",
     opponent: "2NS",
     vpPool: 20,

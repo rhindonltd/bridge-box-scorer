@@ -715,7 +715,7 @@ describe("resolveSectionStart", () => {
       ns: "1NS",
       ew: "2NS",
       boardStart: 13,
-      match: { kind: "TEAMS", key: "teams|1-2|2" },
+      match: { kind: "TEAMS", key: "teams|1-2" },
     });
     expect(result.anchors).toEqual(teamsAnchors(2));
   });
@@ -735,7 +735,7 @@ describe("resolveSectionStart", () => {
       ew: "6EW",
       boardStart: 1,
       sharesWith: 1,
-      match: { kind: "TEAMS", key: "teams|4-6|1" },
+      match: { kind: "TEAMS", key: "teams|4-6" },
     });
     expect(result.anchors).toEqual(teamsAnchors(6));
   });
@@ -758,7 +758,7 @@ describe("resolveSectionStart", () => {
       ew: "1EW",
       boardStart: 1,
       sharesWith: 1,
-      match: { kind: "TEAMS", key: "teams|1-6|1" },
+      match: { kind: "TEAMS", key: "teams|1-6" },
     });
     expect(result.anchors).toEqual(teamsAnchors(6));
   });
@@ -775,7 +775,7 @@ describe("resolveSectionStart", () => {
       boardStart: 1,
       boardEnd: 8,
       firstBoard: 3,
-      match: { kind: "TEAMS", key: "teams|1-2|1", roundNumber: 1 },
+      match: { kind: "TEAMS", key: "teams|1-2", roundNumber: 1 },
     });
     expect(result.anchors).toEqual(teamsAnchors(4));
   });
@@ -869,8 +869,8 @@ describe("stored teams movements", () => {
     expect(result.anchors).toEqual(teamsAnchors(3));
     const table1 = result.movement!.find((t) => t.tableNumber === 1)!;
     expect(table1.rounds.map((r) => [r.ns, r.ew, r.match?.key])).toEqual([
-      ["1NS", "2EW", "teams|1-2|1"],
-      ["1NS", "3EW", "teams|1-3|2"],
+      ["1NS", "2EW", "teams|1-2"],
+      ["1NS", "3EW", "teams|1-3"],
     ]);
     // The match is numbered by its board set, not the room's round.
     expect(table1.rounds.map((r) => r.match?.roundNumber)).toEqual([1, 2]);

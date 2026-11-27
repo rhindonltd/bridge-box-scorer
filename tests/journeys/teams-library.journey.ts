@@ -420,7 +420,8 @@ test("a Head to Head swaps team 2's pairs for the second stanza, and they score 
     for (const board of [4, 5, 6, 1, 2, 3]) {
       await confirm("A1EW", "A2NS", board);
     }
-    // The stanza is a whole match: a score break, then the team results.
+    // The teams score up between the stanzas: a score break, then the team
+    // results for the stanza.
     const pair = seats["A2NS"];
     await pair.getByTestId("board-results-next").click();
     await expect(pair.getByTestId("score-break")).toContainText(
