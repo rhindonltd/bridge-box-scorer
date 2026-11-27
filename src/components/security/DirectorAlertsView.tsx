@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Dialog } from "@headlessui/react";
 import { BellRing, ShieldAlert } from "lucide-react";
 import {
@@ -37,6 +38,7 @@ export function DirectorAlertsView({ alerts, onDismiss }: Props) {
   const allCalls =
     alerts.length > 0 && alerts.every((a) => a.kind === "callDirector");
   const Icon = allCalls ? BellRing : ShieldAlert;
+  const titleId = useId();
   return (
     <Dialog
       open={alerts.length > 0}
@@ -48,9 +50,14 @@ export function DirectorAlertsView({ alerts, onDismiss }: Props) {
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel
           role="alertdialog"
+          // The panel is the alert dialog, so it takes its name from the title.
+          aria-labelledby={titleId}
           className="flex max-h-[85dvh] w-full max-w-sm flex-col rounded-2xl bg-white shadow-xl"
         >
-          <Dialog.Title className="flex items-center gap-2 border-b border-gray-200 px-5 py-4 text-lg font-semibold text-gray-900">
+          <Dialog.Title
+            id={titleId}
+            className="flex items-center gap-2 border-b border-gray-200 px-5 py-4 text-lg font-semibold text-gray-900"
+          >
             <Icon
               className={`h-5 w-5 ${allCalls ? "text-blue-600" : "text-red-600"}`}
               aria-hidden="true"
@@ -64,7 +71,7 @@ export function DirectorAlertsView({ alerts, onDismiss }: Props) {
                 data-testid="director-alert"
                 className={`rounded-xl border p-3 ${CARD_STYLE[alert.kind]}`}
               >
-                <p className="text-xs font-medium text-gray-500">
+                <p className="text-xs font-medium text-gray-600">
                   {alertTime(alert.at)}
                 </p>
                 {alert.kind === "callDirector" && (
