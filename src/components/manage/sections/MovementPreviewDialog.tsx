@@ -10,6 +10,7 @@ import {
   circulationPreview,
   thurnerPreview,
   staggerPreview,
+  headToHeadPreview,
   MovementByTable,
   RecommendedMovementSpecRef,
   TeamsMovementRef,
@@ -141,6 +142,9 @@ function MovementPreviewContent({
     }
     if (movement.specRef.source === "stagger") {
       return staggerPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "headToHead") {
+      return headToHeadPreview(movement.specRef.spec);
     }
     if (movement.specRef.source === "americanWhist") {
       return americanWhistPreview(movement.specRef.spec);

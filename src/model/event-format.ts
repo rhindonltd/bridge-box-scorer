@@ -79,8 +79,8 @@ export interface EventClassification {
  */
 /**
  * Whether a selected movement is a teams movement (scored by the shared teams
- * scorer). Swiss Teams, American Whist, Circulation, Thurner, Stagger and a
- * stored teams movement all qualify — they differ only in how the schedule is produced (live draw,
+ * scorer). Swiss Teams, American Whist, Circulation, Thurner, Stagger, a
+ * head-to-head and a stored teams movement all qualify — they differ only in how the schedule is produced (live draw,
  * generated or stored), not in how they are scored.
  */
 export function isTeamsMovement(movement: SelectedMovement | null): boolean {
@@ -90,6 +90,7 @@ export function isTeamsMovement(movement: SelectedMovement | null): boolean {
     movement?.source === "CIRCULATION_TEAMS" ||
     movement?.source === "THURNER_TEAMS" ||
     movement?.source === "STAGGER_TEAMS" ||
+    movement?.source === "HEAD_TO_HEAD_TEAMS" ||
     movement?.source === "TEAMS_SPEC"
   );
 }

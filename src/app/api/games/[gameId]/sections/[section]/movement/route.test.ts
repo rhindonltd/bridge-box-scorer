@@ -98,6 +98,15 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     );
   });
 
+  it("sets a HEAD_TO_HEAD_TEAMS movement", async () => {
+    const headToHeadTeams = { boardsPerRound: 12 };
+    const res = await invoke("g1", "A", { headToHeadTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams,
+    });
+  });
   it("sets a STAGGER_TEAMS movement", async () => {
     const staggerTeams = { teams: 6, boardsPerRound: 4 };
     const res = await invoke("g1", "A", { staggerTeams });

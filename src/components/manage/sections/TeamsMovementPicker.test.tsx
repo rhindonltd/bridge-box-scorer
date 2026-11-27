@@ -14,6 +14,7 @@ vi.mock("@/lib/section-service", () => ({
   setSectionCirculationTeamsMovement: vi.fn(),
   setSectionThurnerTeamsMovement: vi.fn(),
   setSectionStaggerTeamsMovement: vi.fn(),
+  setSectionHeadToHeadTeamsMovement: vi.fn(),
 }));
 
 import {
@@ -21,6 +22,7 @@ import {
   setSectionCirculationTeamsMovement,
   setSectionThurnerTeamsMovement,
   setSectionStaggerTeamsMovement,
+  setSectionHeadToHeadTeamsMovement,
   setSectionTeamsMovementSpec,
 } from "@/lib/section-service";
 import { TeamsMovementPicker } from "./TeamsMovementPicker";
@@ -324,6 +326,43 @@ describe("TeamsMovementPicker — American Whist", () => {
         teams: 10,
         boardsPerRound: 2,
       });
+    });
+  });
+  describe("Head to Head", () => {
+    it("offers it for two teams, marks the selected one and saves a choice", async () => {
+      swrData.set("/api/movements/teams/2", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={2}
+          selectedMovement={{
+            source: "HEAD_TO_HEAD_TEAMS",
+            headToHeadTeams: { boardsPerRound: 12 },
+          }}
+          onSelected={onSelected}
+        />,
+      );
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(["12 boards", "16 boards", "20 boards", "24 boards"]);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toContain("24Boards in Play");
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Head to Head/ })[0],
+      );
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionHeadToHeadTeamsMovement).toHaveBeenCalledWith(
+        "g1",
+        "A",
+        { boardsPerRound: 6 },
+      );
     });
   });
 });

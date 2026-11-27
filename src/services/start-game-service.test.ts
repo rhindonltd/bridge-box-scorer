@@ -700,6 +700,25 @@ describe("resolveSectionStart", () => {
     expect(result.anchors).toEqual(teamsAnchors(teams));
   });
 
+  it("resolves a fully-seated head-to-head, team 2 swapping for stanza 2", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      },
+      seatsForTables(2),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement![0].rounds[1]).toMatchObject({
+      ns: "1NS",
+      ew: "2NS",
+      boardStart: 13,
+      match: { kind: "TEAMS", key: "teams|1-2|2" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(2));
+  });
   it("resolves a fully-seated Stagger, each table sharing with its partner", async () => {
     const result = await resolveSectionStart(
       "A",
@@ -716,7 +735,7 @@ describe("resolveSectionStart", () => {
       ew: "6EW",
       boardStart: 1,
       sharesWith: 1,
-      match: { kind: "TEAMS", key: "teams|4-6" },
+      match: { kind: "TEAMS", key: "teams|4-6|1" },
     });
     expect(result.anchors).toEqual(teamsAnchors(6));
   });
@@ -739,7 +758,7 @@ describe("resolveSectionStart", () => {
       ew: "1EW",
       boardStart: 1,
       sharesWith: 1,
-      match: { kind: "TEAMS", key: "teams|1-6" },
+      match: { kind: "TEAMS", key: "teams|1-6|1" },
     });
     expect(result.anchors).toEqual(teamsAnchors(6));
   });
@@ -756,7 +775,7 @@ describe("resolveSectionStart", () => {
       boardStart: 1,
       boardEnd: 8,
       firstBoard: 3,
-      match: { kind: "TEAMS", key: "teams|1-2", roundNumber: 1 },
+      match: { kind: "TEAMS", key: "teams|1-2|1", roundNumber: 1 },
     });
     expect(result.anchors).toEqual(teamsAnchors(4));
   });
@@ -850,8 +869,8 @@ describe("stored teams movements", () => {
     expect(result.anchors).toEqual(teamsAnchors(3));
     const table1 = result.movement!.find((t) => t.tableNumber === 1)!;
     expect(table1.rounds.map((r) => [r.ns, r.ew, r.match?.key])).toEqual([
-      ["1NS", "2EW", "teams|1-2"],
-      ["1NS", "3EW", "teams|1-3"],
+      ["1NS", "2EW", "teams|1-2|1"],
+      ["1NS", "3EW", "teams|1-3|2"],
     ]);
     // The match is numbered by its board set, not the room's round.
     expect(table1.rounds.map((r) => r.match?.roundNumber)).toEqual([1, 2]);

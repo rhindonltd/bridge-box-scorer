@@ -6,6 +6,9 @@ import {
   circulationPreview,
   circulationSetOut,
   teamsMovementOptions,
+  headToHeadOptions,
+  headToHeadPreview,
+  headToHeadSetOut,
   staggerOptions,
   staggerPreview,
   thurnerOptions,
@@ -194,6 +197,45 @@ describe("staggerPreview", () => {
       ["3", 1],
       ["2", 5],
       ["4", 7],
+    ]);
+  });
+});
+describe("headToHeadOptions", () => {
+  it("offers a head-to-head for two teams at even boards per stanza", () => {
+    const options = headToHeadOptions(2);
+    expect(options.map((o) => o.boardsPerRound)).toEqual([6, 8, 10, 12]);
+    expect(options[3]).toEqual({
+      name: "Head to Head",
+      rounds: 2,
+      boardsPerRound: 12,
+      boardsPerTeam: 24,
+      boardsInPlay: 24,
+      ref: { source: "headToHead", spec: { boardsPerRound: 12 } },
+    });
+    expect(teamsMovementOptions(2, [])).toEqual(options);
+  });
+  it("offers nothing for more teams", () => {
+    expect(headToHeadOptions(3)).toEqual([]);
+  });
+});
+describe("headToHeadPreview and headToHeadSetOut", () => {
+  it("shows the stanza's boards, and sets out each table's half", () => {
+    const spec = { boardsPerRound: 12 };
+    expect(headToHeadPreview(spec)[1].rounds[1]).toEqual({
+      roundNumber: 2,
+      ns: "2",
+      ew: "1",
+      boardStart: 13,
+      boardEnd: 24,
+    });
+    expect(
+      headToHeadSetOut(spec).map((t) => [
+        t.rounds[0].boardStart,
+        t.rounds[0].boardEnd,
+      ]),
+    ).toEqual([
+      [1, 6],
+      [7, 12],
     ]);
   });
 });

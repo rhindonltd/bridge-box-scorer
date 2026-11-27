@@ -23,13 +23,20 @@ import {
   staggerTeamsRounds,
   type StaggerTeamsSpec,
 } from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
+import {
+  HEAD_TO_HEAD_ROUNDS,
+  HEAD_TO_HEAD_TEAMS,
+  generateHeadToHeadTeams,
+  type HeadToHeadTeamsSpec,
+} from "@/modules/movement-catalog/generation/head-to-head-teams/head-to-head-teams";
 import type { Tables } from "@/model/movement";
 
 /**
  * The movements a Teams game can choose for its team count: American Whist
  * (generated, odd team counts), Circulation (generated, four teams) and
- * Thurner and Stagger (generated, even team counts) at a range of boards per
- * round, and the teams library's movements. The picker
+ * Thurner and Stagger (generated, even team counts) and a head-to-head
+ * (generated, two teams) at a range of boards per round, and the teams
+ * library's movements. The picker
  * groups them by the boards a team plays.
  */
 
@@ -39,6 +46,7 @@ export type TeamsMovementRef =
   | { source: "circulation"; spec: CirculationTeamsSpec }
   | { source: "thurner"; spec: ThurnerTeamsSpec }
   | { source: "stagger"; spec: StaggerTeamsSpec }
+  | { source: "headToHead"; spec: HeadToHeadTeamsSpec }
   | { source: "library"; id: number };
 
 /** One teams movement the director can pick. */
@@ -158,6 +166,24 @@ export function staggerOptions(teams: number): TeamsMovementOption[] {
 }
 
 /**
+ * The head-to-head options (two teams only), at each even boards per stanza in
+ * the same range as American Whist, so the tables can swap halves.
+ */
+export function headToHeadOptions(teams: number): TeamsMovementOption[] {
+  if (teams !== HEAD_TO_HEAD_TEAMS) return [];
+  return boardsPerRoundOptions(HEAD_TO_HEAD_ROUNDS)
+    .filter((boardsPerRound) => boardsPerRound % 2 === 0)
+    .map((boardsPerRound) => ({
+      name: "Head to Head",
+      rounds: HEAD_TO_HEAD_ROUNDS,
+      boardsPerRound,
+      boardsPerTeam: HEAD_TO_HEAD_ROUNDS * boardsPerRound,
+      boardsInPlay: HEAD_TO_HEAD_ROUNDS * boardsPerRound,
+      ref: { source: "headToHead" as const, spec: { boardsPerRound } },
+    }));
+}
+
+/**
  * Every movement a Teams game of `teams` teams can choose: American Whist and
  * Circulation first, then the library's movements (as `listTeamMovements`
  * returns them).
@@ -171,6 +197,7 @@ export function teamsMovementOptions(
     ...circulationOptions(teams),
     ...thurnerOptions(teams),
     ...staggerOptions(teams),
+    ...headToHeadOptions(teams),
     ...library.map((movement) => ({
       name: movement.name,
       rounds: movement.rounds,
@@ -235,6 +262,29 @@ export function thurnerPreview(spec: ThurnerTeamsSpec): MovementByTable[] {
  */
 export function staggerPreview(spec: StaggerTeamsSpec): MovementByTable[] {
   return teamsPreview(generateStaggerTeams(spec));
+}
+
+/**
+ * A head-to-head laid out by table for the movement preview: each stanza shows
+ * the teams at each table and the stanza's boards (which both tables play).
+ */
+export function headToHeadPreview(spec: HeadToHeadTeamsSpec): MovementByTable[] {
+  return teamsPreview(generateHeadToHeadTeams(spec));
+}
+
+/**
+ * A head-to-head by table for setting out the boards: each stanza shows only
+ * the half of its boards the table starts on.
+ */
+export function headToHeadSetOut(spec: HeadToHeadTeamsSpec): MovementByTable[] {
+  const half = spec.boardsPerRound / 2;
+  return headToHeadPreview(spec).map((table) => ({
+    ...table,
+    rounds: table.rounds.map((round) => {
+      const boardStart = round.boardStart + (table.tableNumber - 1) * half;
+      return { ...round, boardStart, boardEnd: boardStart + half - 1 };
+    }),
+  }));
 }
 
 /** A generated teams movement by table, teams shown by number. */

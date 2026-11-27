@@ -6,6 +6,7 @@ import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generatio
 import { generateCirculationTeams } from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
 import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
 import { generateStaggerTeams } from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
+import { generateHeadToHeadTeams } from "@/modules/movement-catalog/generation/head-to-head-teams/head-to-head-teams";
 import { boardRangeForSet } from "@/modules/movement-catalog/shared";
 import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams-library";
 
@@ -23,7 +24,8 @@ export type FixedSelectedMovement = Extract<
       | "AMERICAN_WHIST_TEAMS"
       | "CIRCULATION_TEAMS"
       | "THURNER_TEAMS"
-      | "STAGGER_TEAMS";
+      | "STAGGER_TEAMS"
+      | "HEAD_TO_HEAD_TEAMS";
   }
 >;
 
@@ -39,7 +41,7 @@ export interface MovementDescription {
    * The movement with concrete board numbers and no sit-out flagged. A stored
    * spec's board-set indices are expanded with the selection's boards-per-round.
    * A generated teams movement (American Whist, Circulation, Thurner,
-   * Stagger) is its whole fixed schedule.
+   * Stagger, head-to-head) is its whole fixed schedule.
    */
   layout: MovementPlan;
   /** A stored movement's built-in phantom pair number, or null when it has none. */
@@ -83,7 +85,7 @@ function generatedLayout(tables: Tables): MovementPlan {
 
 /**
  * Describe a generated movement (a Mitchell variant, or an American Whist,
- * Circulation, Thurner or Stagger teams movement). No database access: the layout comes
+ * Circulation, Thurner, Stagger or head-to-head teams movement). No database access: the layout comes
  * from the selection's spec.
  */
 export function describeGeneratedMovement(
@@ -95,7 +97,8 @@ export function describeGeneratedMovement(
         | "AMERICAN_WHIST_TEAMS"
         | "CIRCULATION_TEAMS"
         | "THURNER_TEAMS"
-        | "STAGGER_TEAMS";
+        | "STAGGER_TEAMS"
+        | "HEAD_TO_HEAD_TEAMS";
     }
   >,
 ): MovementDescription {
@@ -125,6 +128,15 @@ export function describeGeneratedMovement(
     return {
       selected,
       layout: generatedLayout(generateThurnerTeams(selected.thurnerTeams)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "HEAD_TO_HEAD_TEAMS") {
+    // Head-to-head: both stanzas, each table starting on its own half.
+    return {
+      selected,
+      layout: generatedLayout(generateHeadToHeadTeams(selected.headToHeadTeams)),
       missingPair: null,
     };
   }

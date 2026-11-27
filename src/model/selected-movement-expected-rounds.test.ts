@@ -58,6 +58,14 @@ describe("expectedRounds", () => {
     expect(expectedRounds(m)).toBe(5);
     expect(boardsPerRoundOf(m)).toBe(4);
   });
+  it("plays two stanzas of a head-to-head", () => {
+    const m: SelectedMovement = {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound: 12 },
+    };
+    expect(expectedRounds(m)).toBe(2);
+    expect(boardsPerRoundOf(m)).toBe(12);
+  });
   it("plays three rounds of a Circulation", () => {
     const m: SelectedMovement = {
       source: "CIRCULATION_TEAMS",

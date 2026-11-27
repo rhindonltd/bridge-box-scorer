@@ -67,6 +67,9 @@ export function useSelectedMovementName(
   if (selectedMovement.source === "STAGGER_TEAMS") {
     return "Stagger";
   }
+  if (selectedMovement.source === "HEAD_TO_HEAD_TEAMS") {
+    return "Head to Head";
+  }
 
   return data?.name ?? null;
 }

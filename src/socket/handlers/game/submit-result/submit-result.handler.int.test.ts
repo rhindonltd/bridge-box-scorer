@@ -31,6 +31,10 @@ vi.mock("@/db/games", () => ({
 
 // The SIT_OUT guard reads the board status via getBoardStatus; default to a
 // playable board. The sit-out test overrides this to "SIT_OUT".
+// Every pair here plays from its seat's direction.
+vi.mock("@/db/games/queries/seat-side", () => ({
+  seatSideAtBoard: vi.fn(async () => null),
+}));
 vi.mock("@/db/games/queries/get-board-status", () => ({
   getBoardStatus: vi.fn(async () => "NOT_PLAYED"),
 }));

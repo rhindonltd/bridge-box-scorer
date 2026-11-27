@@ -20,6 +20,7 @@ import {
   circulationTeamsSpecSchema,
   thurnerTeamsSpecSchema,
   staggerTeamsSpecSchema,
+  headToHeadTeamsSpecSchema,
 } from "@/model/selected-movement";
 import { getTeamMovementDetail } from "@/modules/movement-catalog/server";
 
@@ -35,13 +36,14 @@ const bodySchema = z.object({
   circulationTeams: circulationTeamsSpecSchema.optional(),
   thurnerTeams: thurnerTeamsSpecSchema.optional(),
   staggerTeams: staggerTeamsSpecSchema.optional(),
+  headToHeadTeams: headToHeadTeamsSpecSchema.optional(),
 });
 
 /**
  * PUT /api/games/[gameId]/sections/[section]/movement — set (or clear) the
  * section's movement. A `mitchell` spec, a spec `id` + `boardsPerRound`, a
  * teams library `teamsSpecId` + `boardsPerRound`, an `americanWhistTeams`,
- * `circulationTeams`, `thurnerTeams` or `staggerTeams` spec, or an empty body (clear) are
+ * `circulationTeams`, `thurnerTeams`, `staggerTeams` or `headToHeadTeams` spec, or an empty body (clear) are
  * accepted. On an actual change, the section's timer is
  * cleared (its round structure is derived from the movement).
  */
@@ -65,6 +67,7 @@ export const PUT = withDirectorEditRoute(
       circulationTeams,
       thurnerTeams,
       staggerTeams,
+      headToHeadTeams,
     } = body;
 
     let selected: SelectedMovement | null;
@@ -76,6 +79,8 @@ export const PUT = withDirectorEditRoute(
       selected = { source: "THURNER_TEAMS", thurnerTeams };
     } else if (staggerTeams) {
       selected = { source: "STAGGER_TEAMS", staggerTeams };
+    } else if (headToHeadTeams) {
+      selected = { source: "HEAD_TO_HEAD_TEAMS", headToHeadTeams };
     } else if (swissTeams) {
       selected = { source: "SWISS_TEAMS", swissTeams };
     } else if (swiss) {

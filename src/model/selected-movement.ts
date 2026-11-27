@@ -41,6 +41,9 @@ import { z } from "zod";
  *   (two stanzas on their own boards, each pair of tables sharing a set).
  *   Fixed, so materialized at start; the selection stores only the team count
  *   and boards per round.
+ * - HEAD_TO_HEAD_TEAMS: two teams playing one match in two stanzas, team 2's
+ *   pairs swapping tables and directions for the second. Fixed, so
+ *   materialized at start; the selection stores only the boards per stanza.
  * - TEAMS_SPEC: a stored teams movement from the teams library.
  */
 
@@ -402,6 +405,24 @@ export const staggerTeamsSpecSchema = z.object({
 });
 export type StaggerTeamsMovementSpec = z.infer<typeof staggerTeamsSpecSchema>;
 
+/**
+ * Head-to-head teams setup: the boards per stanza (one round), even so the two
+ * tables can swap halves. Always two teams and two stanzas.
+ */
+export const headToHeadTeamsSpecSchema = z.object({
+  boardsPerRound: z
+    .number()
+    .int()
+    .positive()
+    .refine(
+      (boards) => boards % 2 === 0,
+      "A head-to-head needs an even number of boards per stanza",
+    ),
+});
+export type HeadToHeadTeamsMovementSpec = z.infer<
+  typeof headToHeadTeamsSpecSchema
+>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -447,6 +468,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
     source: z.literal("STAGGER_TEAMS"),
     staggerTeams: staggerTeamsSpecSchema,
   }),
+  z.object({
+    source: z.literal("HEAD_TO_HEAD_TEAMS"),
+    headToHeadTeams: headToHeadTeamsSpecSchema,
+  }),
 ]);
 
 export type SelectedMovement = z.infer<typeof selectedMovementSchema>;
@@ -462,7 +487,7 @@ export function serializeSelectedMovement(selected: SelectedMovement): string {
  * The number of rounds a movement is configured to run. For the three movements
  * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS)
  * that value is authoritative; an American Whist, Thurner or Stagger plays
- * teams − 1 rounds and a Circulation 3. A SPEC (movement-library)
+ * teams − 1 rounds, a Circulation 3 and a head-to-head 2. A SPEC (movement-library)
  * selection does not carry a round count in the stored selection — its schedule
  * is defined by the referenced spec and is fully materialized at start — so
  * null is returned and callers fall back to the materialized round count.
@@ -489,6 +514,8 @@ export function expectedRounds(
       return selected.thurnerTeams.teams - 1;
     case "STAGGER_TEAMS":
       return selected.staggerTeams.teams - 1;
+    case "HEAD_TO_HEAD_TEAMS":
+      return 2;
     case "SPEC":
     case "TEAMS_SPEC":
       return null;
@@ -525,6 +552,8 @@ export function boardsPerRoundOf(
       return selected.thurnerTeams.boardsPerRound;
     case "STAGGER_TEAMS":
       return selected.staggerTeams.boardsPerRound;
+    case "HEAD_TO_HEAD_TEAMS":
+      return selected.headToHeadTeams.boardsPerRound;
     case "SPEC":
     case "TEAMS_SPEC":
       return selected.boardsPerRound;
@@ -642,6 +671,12 @@ export function selectedMovementsEqual(
         a.staggerTeams.teams === y.teams &&
         a.staggerTeams.boardsPerRound === y.boardsPerRound
       );
+    }
+    case "HEAD_TO_HEAD_TEAMS": {
+      const y = (
+        b as Extract<SelectedMovement, { source: "HEAD_TO_HEAD_TEAMS" }>
+      ).headToHeadTeams;
+      return a.headToHeadTeams.boardsPerRound === y.boardsPerRound;
     }
   }
 }

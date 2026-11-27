@@ -630,6 +630,25 @@ describe("selectedMovementsEqual", () => {
       ),
     ).toBeNull();
   });
+  it("compares HEAD_TO_HEAD_TEAMS selections by boards per stanza, and refuses an odd count", () => {
+    const headToHead = (boardsPerRound = 12): SelectedMovement => ({
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound },
+    });
+    expect(selectedMovementsEqual(headToHead(), headToHead())).toBe(true);
+    expect(selectedMovementsEqual(headToHead(), headToHead(8))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(headToHead(10))),
+    ).toEqual(headToHead(10));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "HEAD_TO_HEAD_TEAMS",
+          headToHeadTeams: { boardsPerRound: 9 },
+        }),
+      ),
+    ).toBeNull();
+  });
   it("refuses an American Whist with an even number of teams", () => {
     expect(
       parseSelectedMovement(

@@ -69,6 +69,14 @@ describe("useSelectedMovementName", () => {
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
   });
 
+  it("names a head-to-head teams movement locally", () => {
+    const m: SelectedMovement = {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound: 12 },
+    };
+    const { result } = renderHook(() => useSelectedMovementName(m));
+    expect(result.current).toBe("Head to Head");
+  });
   it("names a Stagger teams movement locally", () => {
     const m: SelectedMovement = {
       source: "STAGGER_TEAMS",

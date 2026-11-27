@@ -11,11 +11,15 @@ vi.mock("@/db/games/queries/get-board-status", () => ({
 vi.mock("@/db/games/actions/delete-submissions", () => ({
   deleteSideSubmission: vi.fn(),
 }));
+vi.mock("@/db/games/queries/seat-side", () => ({
+  seatSideAtBoard: vi.fn(async () => null),
+}));
 
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { getDb } from "@/db/games";
 import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteSideSubmission } from "@/db/games/actions/delete-submissions";
+import { seatSideAtBoard } from "@/db/games/queries/seat-side";
 import { registerWithdrawSubmissionHandler } from "./withdraw-submission.handler";
 
 function makeSocket() {
@@ -69,6 +73,13 @@ describe("registerWithdrawSubmissionHandler", () => {
     expect(cb).toHaveBeenCalledWith({ success: true, data: undefined });
   });
 
+  it("withdraws from the side the pair sits on this board", async () => {
+    vi.mocked(seatSideAtBoard).mockResolvedValueOnce("NS");
+    const socket = makeSocket();
+    registerWithdrawSubmissionHandler(socket, makeIo());
+    await getHandler(socket)(payload, vi.fn());
+    expect(deleteSideSubmission).toHaveBeenCalledWith("g1", "A", 3, 2, "NS");
+  });
   it("does nothing when the token isn't authorised", async () => {
     vi.mocked(assertPlayer).mockResolvedValue(false);
     const socket = makeSocket();

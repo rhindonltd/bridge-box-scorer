@@ -11,8 +11,15 @@ import { gotoStable } from "../journeys/support";
  * screen, and read where pairs sat from the game's SQLite file.
  */
 
-/** Read each seat's secret token from the game's SQLite file (seat -> token). */
-function readSeatSecrets(gameId: string): Map<string, string> {
+/**
+ * Read each seat's secret token (seat -> token) and the seat of each pair id
+ * the board rows carry (its anchor id, or the seat itself) from the game's
+ * SQLite file.
+ */
+function readSeats(gameId: string): {
+  secrets: Map<string, string>;
+  seatByPairId: Map<string, string>;
+} {
   const dataDir = E2E_GAMES_DIR;
   const db = new Database(path.join(dataDir, `${gameId}.db`), {
     readonly: true,
@@ -20,10 +27,17 @@ function readSeatSecrets(gameId: string): Map<string, string> {
   try {
     const rows = db
       .prepare(
-        "SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
+        "SELECT seat, anchor_id AS anchorId, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
       )
-      .all() as Array<{ seat: string; secret: string }>;
-    return new Map(rows.map((r) => [r.seat, r.secret]));
+      .all() as Array<{
+      seat: string;
+      anchorId: string | null;
+      secret: string;
+    }>;
+    return {
+      secrets: new Map(rows.map((r) => [r.seat, r.secret])),
+      seatByPairId: new Map(rows.map((r) => [r.anchorId ?? r.seat, r.seat])),
+    };
   } finally {
     db.close();
   }
@@ -31,7 +45,9 @@ function readSeatSecrets(gameId: string): Map<string, string> {
 
 /**
  * Confirm every playable board of a single round by submitting a matching Pass
- * Out from both seats of each table, over a socket from the test process.
+ * Out from both pairs at each table, over a socket from the test process. The
+ * pairs are the ones the board row names: a Swiss draw moves pairs between
+ * tables and directions, and a result counts for the side the pair sits.
  */
 export async function confirmRound(
   gameId: string,
@@ -39,7 +55,7 @@ export async function confirmRound(
   tables: number,
   section = "A",
 ): Promise<void> {
-  const secrets = readSeatSecrets(gameId);
+  const { secrets, seatByPairId } = readSeats(gameId);
 
   // Read the round's board rows straight from the DB to know which
   // (table, board) instances are playable this round.
@@ -47,17 +63,19 @@ export async function confirmRound(
   const db = new Database(path.join(dataDir, `${gameId}.db`), {
     readonly: true,
   });
-  let instances: Array<{ tableNumber: number; boardNumber: number }>;
+  let instances: Array<{
+    tableNumber: number;
+    boardNumber: number;
+    ns: string;
+    ew: string;
+  }>;
   try {
     instances = db
       .prepare(
-        "SELECT DISTINCT table_number AS tableNumber, board_number AS boardNumber " +
+        "SELECT table_number AS tableNumber, board_number AS boardNumber, ns, ew " +
           "FROM boards WHERE section = ? AND round_number = ? AND status != 'SIT_OUT'",
       )
-      .all(section, roundNumber) as Array<{
-      tableNumber: number;
-      boardNumber: number;
-    }>;
+      .all(section, roundNumber) as typeof instances;
   } finally {
     db.close();
   }
@@ -91,13 +109,13 @@ export async function confirmRound(
 
     for (const inst of instances) {
       const ns = await submit(
-        `${section}${inst.tableNumber}NS`,
+        seatByPairId.get(inst.ns) ?? `${section}${inst.tableNumber}NS`,
         inst.tableNumber,
         inst.boardNumber,
       );
       expect(ns.success, `NS submit failed: ${ns.error}`).toBeTruthy();
       const ew = await submit(
-        `${section}${inst.tableNumber}EW`,
+        seatByPairId.get(inst.ew) ?? `${section}${inst.tableNumber}EW`,
         inst.tableNumber,
         inst.boardNumber,
       );

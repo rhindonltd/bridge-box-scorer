@@ -260,3 +260,13 @@ describe("Stagger teams movements", () => {
     ).toBe(true);
   });
 });
+describe("head-to-head teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      }),
+    ).toBe(true);
+  });
+});

@@ -15,6 +15,7 @@ import {
   circulationSetOut,
   thurnerPreview,
   staggerPreview,
+  headToHeadSetOut,
   generatedToMovementByTable,
   generateMitchell,
   type MovementByTable,
@@ -75,8 +76,9 @@ function swissResolution(
  * pair positions and board placement (round-1 boards, physical copy, and any
  * share/relay), keyed by table number.
  *
- * - `MITCHELL`, `AMERICAN_WHIST_TEAMS`, `CIRCULATION_TEAMS`, `THURNER_TEAMS`
- *   and `STAGGER_TEAMS` selections are generated locally (no fetch).
+ * - `MITCHELL` and the generated teams selections (`AMERICAN_WHIST_TEAMS`,
+ *   `CIRCULATION_TEAMS`, `THURNER_TEAMS`, `STAGGER_TEAMS`,
+ *   `HEAD_TO_HEAD_TEAMS`) are generated locally (no fetch).
  * - `SPEC` and `TEAMS_SPEC` selections (a pairs or teams library movement)
  *   are fetched from the movement's detail endpoint.
  *
@@ -129,6 +131,10 @@ export function useMovementResolution(
     // Generated locally. The satellite table starts on the same boards as
     // table 1, which the setup notes as shared.
     tables = thurnerPreview(selectedMovement.thurnerTeams);
+  } else if (selectedMovement.source === "HEAD_TO_HEAD_TEAMS") {
+    // Generated locally. Each table starts on its own half of the stanza's
+    // boards, so that half is what is set out on it.
+    tables = headToHeadSetOut(selectedMovement.headToHeadTeams);
   } else if (selectedMovement.source === "STAGGER_TEAMS") {
     // Generated locally. Each table starts on the same boards as the table
     // half-way round, which the setup notes as shared.

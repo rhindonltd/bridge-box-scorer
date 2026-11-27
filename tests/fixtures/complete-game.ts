@@ -14,8 +14,10 @@ import path from "node:path";
  * single pair to completion through the UI is fragile. The board set is fully
  * described by the boards API: for each board number we read its instances
  * (round/table/status) and confirm the non-sit-out ones. Submitting from both
- * the NS and EW seat of a table/round matches server-side and flips the board
- * to CONFIRMED, exactly as two tablets would.
+ * the two pairs at a table/round matches server-side and flips the board to
+ * CONFIRMED, exactly as two tablets would. The pairs are the ones the board
+ * row names, not the table's own seats: in a Howell a pair moves tables and
+ * can sit either way, and its result counts for the side it sits.
  *
  * `game:submitResult` is player-authorised: each submission must carry the
  * seat's secret token (issued at join). We read those secrets directly from the
@@ -27,7 +29,11 @@ export async function confirmEntireGame(
   gameId: string,
   section = "A",
 ): Promise<void> {
-  const seatSecrets = readSeatSecrets(gameId);
+  const {
+    secretBySeat: seatSecrets,
+    seatByPairId,
+    pairsAt,
+  } = readSeating(gameId);
 
   const boardsRes = await request.get(`/api/games/${gameId}/boards`);
   expect(boardsRes.ok()).toBeTruthy();
@@ -89,11 +95,20 @@ export async function confirmEntireGame(
       });
 
     for (const inst of instances) {
-      // Submit both seats of a single instance back-to-back so the board
+      // Submit both pairs of a single instance back-to-back so the board
       // confirms (and its pending submissions clear) before the next one.
-      const ns = await submit(`${section}${inst.tableNumber}NS`, inst);
+      const pairs = pairsAt(section, inst);
+      const seatOf = (pairId: string | undefined, fallback: string) =>
+        (pairId && seatByPairId.get(pairId)) ?? fallback;
+      const ns = await submit(
+        seatOf(pairs?.ns, `${section}${inst.tableNumber}NS`),
+        inst,
+      );
       expect(ns.success, `NS submit failed: ${ns.error}`).toBeTruthy();
-      const ew = await submit(`${section}${inst.tableNumber}EW`, inst);
+      const ew = await submit(
+        seatOf(pairs?.ew, `${section}${inst.tableNumber}EW`),
+        inst,
+      );
       expect(ew.success, `EW submit failed: ${ew.error}`).toBeTruthy();
     }
   } finally {
@@ -102,27 +117,63 @@ export async function confirmEntireGame(
 }
 
 /**
- * Read every seat's secret token straight from the game's SQLite file, keyed by
- * the section-qualified initial seat (e.g. "A1NS"). This mirrors how the
- * participant-auth middleware looks up the seat secret server-side.
+ * Read the seating straight from the game's SQLite file: every seat's secret
+ * token keyed by the section-qualified initial seat (e.g. "A1NS"), mirroring
+ * how the participant-auth middleware looks it up; the seat of each pair id
+ * the board rows carry (its anchor id, or the seat itself); and the two pairs
+ * a board row names.
  */
-function readSeatSecrets(gameId: string): Map<string, string> {
+function readSeating(gameId: string): {
+  secretBySeat: Map<string, string>;
+  seatByPairId: Map<string, string>;
+  pairsAt: (
+    section: string,
+    inst: { roundNumber: number; tableNumber: number; boardNumber: number },
+  ) => { ns: string; ew: string } | undefined;
+} {
   const dataDir = E2E_GAMES_DIR;
   const dbFile = path.join(dataDir, `${gameId}.db`);
-
   const db = new Database(dbFile, { readonly: true });
   try {
-    const rows = db
+    const seats = db
       .prepare(
-        "SELECT seat, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
+        "SELECT seat, anchor_id AS anchorId, secret_key AS secret FROM seat_occupancy WHERE standing != 'WITHOUT_STANDING' ORDER BY id ASC",
       )
-      .all() as Array<{ seat: string; secret: string }>;
-
-    const map = new Map<string, string>();
-    for (const row of rows) {
-      map.set(row.seat, row.secret);
+      .all() as Array<{
+      seat: string;
+      anchorId: string | null;
+      secret: string;
+    }>;
+    const secretBySeat = new Map<string, string>();
+    const seatByPairId = new Map<string, string>();
+    for (const row of seats) {
+      secretBySeat.set(row.seat, row.secret);
+      seatByPairId.set(row.anchorId ?? row.seat, row.seat);
     }
-    return map;
+    const boardRows = db
+      .prepare(
+        "SELECT section, round_number AS roundNumber, table_number AS tableNumber, board_number AS boardNumber, ns, ew FROM boards",
+      )
+      .all() as Array<{
+      section: string;
+      roundNumber: number;
+      tableNumber: number;
+      boardNumber: number;
+      ns: string;
+      ew: string;
+    }>;
+    const key = (
+      section: string,
+      r: { roundNumber: number; tableNumber: number; boardNumber: number },
+    ) => `${section}|${r.roundNumber}|${r.tableNumber}|${r.boardNumber}`;
+    const pairs = new Map(
+      boardRows.map((r) => [key(r.section, r), { ns: r.ns, ew: r.ew }]),
+    );
+    return {
+      secretBySeat,
+      seatByPairId,
+      pairsAt: (section, inst) => pairs.get(key(section, inst)),
+    };
   } finally {
     db.close();
   }

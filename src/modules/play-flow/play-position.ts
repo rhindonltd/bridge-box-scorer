@@ -147,7 +147,9 @@ export async function resolvePlayPhase(
     return { kind: "expectedLate", roundIndex: currentRoundIndex };
   }
 
-  const position = await resolveWithinRound(side, round, reads);
+  // The pair's side this round, from its board rows: a pair need not keep its
+  // seat's direction (a Howell, or a head-to-head's second stanza).
+  const position = await resolveWithinRound(round.side ?? side, round, reads);
   return { kind: "round", roundIndex: currentRoundIndex, position };
 }
 

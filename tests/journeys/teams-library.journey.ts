@@ -370,3 +370,75 @@ test("a Stagger shares each pair of tables' boards and scores up after the first
     await closeSeatDevices(seats);
   }
 });
+test("a Head to Head swaps team 2's pairs for the second stanza, and they score from their new side", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const director = await newParticipant(browser);
+  const { gameId } = await createGame(director, {
+    eventName: `Head to Head ${Date.now()}`,
+    recordOpeningLead: false,
+    gameType: "TEAMS",
+    teamsScoring: "IMP",
+  });
+  let seats: Record<string, import("@playwright/test").Page> = {};
+  try {
+    await setTableCount(director, 2);
+    // The first card is 6 boards a stanza (12 boards a team).
+    const chosen = await pickMovementByName(
+      director,
+      "Head to Head",
+      "teams-movement-card",
+    );
+    expect(chosen).toBe("Head to Head");
+    seats = await seatSingleSectionFieldOnDevices(
+      () => newParticipant(browser),
+      gameId,
+      2,
+    );
+    await startGame(director, gameId);
+    // Stanza 1: table 1 is 1NS v 2EW on boards 1-6 in order; table 2 is
+    // 2NS v 1EW, starting on board 4.
+    const confirm = async (first: string, second: string, board: number) => {
+      await enterPassOut(seats[first], gameId, first, board);
+      await expect(
+        seats[first].getByText("Waiting for confirmation"),
+      ).toBeVisible({ timeout: 15000 });
+      await enterPassOut(seats[second], gameId, second, board);
+      await expect(seats[second].getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+    };
+    await seats["A2NS"].goto(`/game/${gameId}/play/A2NS`);
+    await expect(seats["A2NS"].getByTestId("round-first-board")).toHaveText(
+      "Start with board 4",
+      { timeout: 15000 },
+    );
+    for (const board of [1, 2, 3, 4, 5, 6]) {
+      await confirm("A1NS", "A2EW", board);
+    }
+    for (const board of [4, 5, 6, 1, 2, 3]) {
+      await confirm("A1EW", "A2NS", board);
+    }
+    // The stanza is a whole match: a score break, then the team results.
+    const pair = seats["A2NS"];
+    await pair.getByTestId("board-results-next").click();
+    await expect(pair.getByTestId("score-break")).toContainText(
+      "Your team-mates are coming back to",
+      { timeout: 15000 },
+    );
+    await pair.getByTestId("score-break-continue").click();
+    await pair.getByTestId("round-results-continue").click();
+    // Stanza 2: team 2's North/South pair moves to table 1 to sit East/West.
+    await expect(pair.getByText("Move to")).toBeVisible({ timeout: 15000 });
+    await expect(pair.getByText("Table 1")).toBeVisible();
+    await expect(pair.getByText("Sit East / West")).toBeVisible();
+    // It enters a result from East/West, and the board confirms against team
+    // 1's North/South pair.
+    await confirm("A1NS", "A2NS", 7);
+  } finally {
+    await deleteGame(director, gameId);
+    await director.context().close();
+    await closeSeatDevices(seats);
+  }
+});

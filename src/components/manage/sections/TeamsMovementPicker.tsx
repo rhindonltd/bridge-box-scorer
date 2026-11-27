@@ -18,6 +18,7 @@ import {
   setSectionTeamsMovementSpec,
   setSectionThurnerTeamsMovement,
   setSectionStaggerTeamsMovement,
+  setSectionHeadToHeadTeamsMovement,
 } from "@/lib/section-service";
 import { errorMessage } from "@/lib/error-message";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
@@ -32,7 +33,8 @@ interface TeamsPreview {
 /**
  * The movement list for a Teams (not Swiss Teams) game: American Whist (for an
  * odd number of teams), Circulation (for four teams), Thurner and Stagger (for
- * an even number of teams) at a range of boards per round, and the teams library's
+ * an even number of teams) and Head to Head (for two teams) at a range of
+ * boards per round, and the teams library's
  * movements for the section's team count, grouped by how many boards each
  * team plays. Selecting a card opens its preview; "Select Movement" saves it.
  */
@@ -84,6 +86,12 @@ export function TeamsMovementPicker({
         await setSectionThurnerTeamsMovement(gameId, section, option.ref.spec);
       } else if (option.ref.source === "stagger") {
         await setSectionStaggerTeamsMovement(gameId, section, option.ref.spec);
+      } else if (option.ref.source === "headToHead") {
+        await setSectionHeadToHeadTeamsMovement(
+          gameId,
+          section,
+          option.ref.spec,
+        );
       } else {
         await setSectionTeamsMovementSpec(
           gameId,
@@ -161,6 +169,8 @@ function optionKey(ref: TeamsMovementRef): string {
       return `thurner-${ref.spec.boardsPerRound}`;
     case "stagger":
       return `stagger-${ref.spec.boardsPerRound}`;
+    case "headToHead":
+      return `head-to-head-${ref.spec.boardsPerRound}`;
     case "library":
       return `library-${ref.id}`;
   }
@@ -191,6 +201,11 @@ function isSelected(
       return (
         selected?.source === "STAGGER_TEAMS" &&
         selected.staggerTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "headToHead":
+      return (
+        selected?.source === "HEAD_TO_HEAD_TEAMS" &&
+        selected.headToHeadTeams.boardsPerRound === ref.spec.boardsPerRound
       );
     case "library":
       return selected?.source === "TEAMS_SPEC" && selected.specId === ref.id;

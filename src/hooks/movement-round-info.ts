@@ -112,6 +112,16 @@ export function useMovementRoundInfo(
       isLoading: false,
     };
   }
+  if (selectedMovement.source === "HEAD_TO_HEAD_TEAMS") {
+    // A head-to-head always plays two stanzas; no fetch is needed.
+    return {
+      info: {
+        rounds: 2,
+        boardsPerRound: selectedMovement.headToHeadTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
   if (selectedMovement.source === "STAGGER_TEAMS") {
     // A Stagger plays every round (teams − 1); no fetch is needed.
     return {

@@ -142,6 +142,21 @@ describe("useMovementResolution", () => {
     });
   });
 
+  describe("HEAD_TO_HEAD_TEAMS", () => {
+    it("sets out table 2 on the second half of the first stanza's boards", () => {
+      const headToHead: SelectedMovement = {
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      };
+      const { result } = renderHook(() =>
+        useMovementResolution(headToHead, 2),
+      );
+      expect(result.current.placement.get(2)).toMatchObject({
+        boardStart: 7,
+        boardEnd: 12,
+      });
+    });
+  });
   describe("STAGGER_TEAMS", () => {
     it("keeps the home pairs stationary and sets out each pair of tables' set", () => {
       const stagger: SelectedMovement = {

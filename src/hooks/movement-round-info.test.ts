@@ -58,6 +58,14 @@ describe("useMovementRoundInfo", () => {
     expect(result.current.info).toEqual({ rounds: 4, boardsPerRound: 6 });
   });
 
+  it("gives a head-to-head two rounds", () => {
+    const m: SelectedMovement = {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound: 12 },
+    };
+    const { result } = renderHook(() => useMovementRoundInfo(m));
+    expect(result.current.info).toEqual({ rounds: 2, boardsPerRound: 12 });
+  });
   it("gives a Stagger teams − 1 rounds", () => {
     const m: SelectedMovement = {
       source: "STAGGER_TEAMS",

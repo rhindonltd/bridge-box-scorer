@@ -7,6 +7,7 @@ import {
 import type {
   AmericanWhistTeamsSpec,
   CirculationTeamsSpec,
+  HeadToHeadTeamsSpec,
   StaggerTeamsSpec,
   ThurnerTeamsSpec,
 } from "@/modules/movement-catalog";
@@ -153,6 +154,18 @@ export async function setSectionThurnerTeamsMovement(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { thurnerTeams },
+  });
+}
+
+/** Set the section's movement to a head-to-head teams movement. */
+export async function setSectionHeadToHeadTeamsMovement(
+  gameId: string,
+  section: string,
+  headToHeadTeams: HeadToHeadTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { headToHeadTeams },
   });
 }
 

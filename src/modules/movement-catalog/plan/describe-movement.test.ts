@@ -217,6 +217,36 @@ describe("describeGeneratedMovement — Stagger teams", () => {
   });
 });
 
+describe("describeGeneratedMovement — head-to-head teams", () => {
+  it("lays out both stanzas, table 2 starting on the second half", () => {
+    const result = describeGeneratedMovement({
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound: 12 },
+    });
+    expect(result.missingPair).toBeNull();
+    expect(result.layout[1].rounds).toEqual([
+      {
+        roundNumber: 1,
+        ns: "2NS",
+        ew: "1EW",
+        boardStart: 1,
+        boardEnd: 12,
+        firstBoard: 7,
+        boardCopy: "A",
+      },
+      {
+        roundNumber: 2,
+        ns: "2EW",
+        ew: "1EW",
+        boardStart: 13,
+        boardEnd: 24,
+        firstBoard: 19,
+        boardCopy: "A",
+      },
+    ]);
+  });
+});
+
 describe("describeStoredMovement", () => {
   const selected = { source: "SPEC", specId: 42, boardsPerRound: 2 } as const;
   const rows = [

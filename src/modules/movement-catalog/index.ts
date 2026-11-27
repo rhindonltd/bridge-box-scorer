@@ -46,8 +46,14 @@ export {
   type StaggerTeamsSpec,
 } from "./generation/stagger-teams/stagger-teams";
 export {
+  generateHeadToHeadTeams,
+  type HeadToHeadTeamsSpec,
+} from "./generation/head-to-head-teams/head-to-head-teams";
+export {
   americanWhistPreview,
   circulationPreview,
+  headToHeadPreview,
+  headToHeadSetOut,
   circulationSetOut,
   staggerPreview,
   thurnerPreview,
