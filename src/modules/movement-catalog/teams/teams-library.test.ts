@@ -3,6 +3,7 @@ import type { Table } from "@/model/movement";
 import type { StoredMovementTable } from "@/modules/movement-catalog/plan/describe-movement";
 import {
   isAmericanWhistTeamsLayout,
+  isCirculationTeamsLayout,
   isSupportedTeamsMovement,
   normaliseTeamsTables,
 } from "./teams-library";
@@ -216,5 +217,71 @@ describe("isAmericanWhistTeamsLayout", () => {
     expect(isAmericanWhistTeamsLayout(americanWhist(3).slice(0, 2))).toBe(
       false,
     );
+  });
+});
+
+describe("isCirculationTeamsLayout", () => {
+  // The NBL 4 Teams Circulation: every table on the same set each round.
+  const circulation: StoredMovementTable[] = [
+    table(1, [
+      [1, 2, 1],
+      [1, 3, 2],
+      [1, 4, 3],
+    ]),
+    table(2, [
+      [2, 1, 1],
+      [2, 4, 2],
+      [2, 3, 3],
+    ]),
+    table(3, [
+      [3, 4, 1],
+      [3, 1, 2],
+      [3, 2, 3],
+    ]),
+    table(4, [
+      [4, 3, 1],
+      [4, 2, 2],
+      [4, 1, 3],
+    ]),
+  ];
+
+  it("recognises a four-team Circulation", () => {
+    expect(isSupportedTeamsMovement(circulation)).toBe(true);
+    expect(isCirculationTeamsLayout(circulation)).toBe(true);
+  });
+
+  it("is not a Circulation for another team count or round count", () => {
+    expect(isCirculationTeamsLayout(crossRound)).toBe(false);
+    expect(
+      isCirculationTeamsLayout(
+        circulation.map((t) => ({ ...t, rounds: t.rounds.slice(1) })),
+      ),
+    ).toBe(false);
+  });
+
+  it("is not a Circulation when a team meets another twice", () => {
+    const repeat = circulation.map((t, i) =>
+      i === 0
+        ? table(1, [
+            [1, 2, 1],
+            [1, 2, 2],
+            [1, 4, 3],
+          ])
+        : t,
+    );
+    expect(isCirculationTeamsLayout(repeat)).toBe(false);
+  });
+
+  it("is not a Circulation when the tables play different sets in a round", () => {
+    const staggered = circulation.map((t, i) =>
+      i === 3
+        ? table(4, [
+            [4, 3, 2],
+            [4, 2, 2],
+            [4, 1, 3],
+          ])
+        : t,
+    );
+    expect(isCirculationTeamsLayout(staggered)).toBe(false);
   });
 });

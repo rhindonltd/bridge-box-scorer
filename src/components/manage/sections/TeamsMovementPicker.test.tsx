@@ -11,10 +11,12 @@ vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 vi.mock("@/lib/section-service", () => ({
   setSectionTeamsMovementSpec: vi.fn(),
   setSectionAmericanWhistTeamsMovement: vi.fn(),
+  setSectionCirculationTeamsMovement: vi.fn(),
 }));
 
 import {
   setSectionAmericanWhistTeamsMovement,
+  setSectionCirculationTeamsMovement,
   setSectionTeamsMovementSpec,
 } from "@/lib/section-service";
 import { TeamsMovementPicker } from "./TeamsMovementPicker";
@@ -198,5 +200,49 @@ describe("TeamsMovementPicker — American Whist", () => {
       { teams: 3, boardsPerRound: 6 },
     );
     expect(setSectionTeamsMovementSpec).not.toHaveBeenCalled();
+  });
+  describe("four teams", () => {
+    function renderFour(selectedMovement: SelectedMovement | null = null) {
+      swrData.set("/api/movements/teams/4", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={4}
+          selectedMovement={selectedMovement}
+          onSelected={onSelected}
+        />,
+      );
+      return onSelected;
+    }
+    it("offers Circulation at 12, 24 and 36 boards and marks the selected one", () => {
+      renderFour({
+        source: "CIRCULATION_TEAMS",
+        circulationTeams: { boardsPerRound: 8 },
+      });
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(["12 boards", "24 boards", "36 boards"]);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toContain("24");
+    });
+    it("previews a Circulation without fetching and saves its setup", async () => {
+      const onSelected = renderFour();
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Circulation/ })[1],
+      );
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionCirculationTeamsMovement).toHaveBeenCalledWith(
+        "g1",
+        "A",
+        { boardsPerRound: 8 },
+      );
+    });
   });
 });

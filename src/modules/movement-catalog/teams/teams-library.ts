@@ -106,3 +106,29 @@ export function isAmericanWhistTeamsLayout(
   }
   return visitorOffset.size === 1 && setOffset.size === 1;
 }
+
+/**
+ * Whether a stored teams movement is a four-team Circulation: three rounds, in
+ * each of which every table plays the same board set against a different
+ * team. The app generates Circulation itself (`generateCirculationTeams`),
+ * which also gives each table its own starting boards, so the library's copies
+ * are not listed. Read alongside {@link isSupportedTeamsMovement}, which checks
+ * that the rooms pair up into matches.
+ */
+export function isCirculationTeamsLayout(
+  tables: StoredMovementTable[],
+): boolean {
+  if (tables.length !== 4) return false;
+  const setByRound = new Map<number, number>();
+  for (const table of tables) {
+    if (table.rounds.length !== 3) return false;
+    const visitors = new Set(table.rounds.map((round) => round.ew));
+    if (visitors.size !== 3) return false;
+    for (const round of table.rounds) {
+      const set = setByRound.get(round.roundNumber) ?? round.boardSet;
+      if (set !== round.boardSet) return false;
+      setByRound.set(round.roundNumber, set);
+    }
+  }
+  return true;
+}

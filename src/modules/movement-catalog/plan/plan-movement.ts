@@ -22,10 +22,10 @@ import {
  * - Stored spec: a movement with a built-in missing pair is rotated so its
  *   phantom lines up with the empty seat; otherwise the position at the empty
  *   seat becomes the phantom.
- * - Teams (American Whist or a stored teams movement): the described layout as
- *   it is, each match's two rooms grouped into one TEAMS match (see
- *   `teamsLayoutToMaterializable`). Teams never have a sit-out (the start check
- *   rejects one), so `sitOutSeat` is not read.
+ * - Teams (American Whist, Circulation or a stored teams movement): the
+ *   described layout as it is, each match's two rooms grouped into one TEAMS
+ *   match (see `teamsLayoutToMaterializable`). Teams never have a sit-out (the
+ *   start check rejects one), so `sitOutSeat` is not read.
  */
 export function planMovement(
   description: MovementDescription,
@@ -33,13 +33,19 @@ export function planMovement(
 ): MovementPlan {
   const { selected, layout, missingPair } = description;
 
-  // A teams movement (American Whist or a stored teams movement) is laid out
-  // in full by its description, and a teams start never has a sit-out (a team
-  // needs both its pairs).
+  // A teams movement (American Whist, Circulation or a stored teams movement)
+  // is laid out in full by its description, and a teams start never has a
+  // sit-out (a team needs both its pairs).
   if (selected.source === "AMERICAN_WHIST_TEAMS") {
     return teamsLayoutToMaterializable(
       layout,
       selected.americanWhistTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "CIRCULATION_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.circulationTeams.boardsPerRound,
     );
   }
   if (selected.source === "TEAMS_SPEC") {
@@ -76,21 +82,28 @@ export function planMovement(
  * Convert a generated, fully-expanded {@link Tables} movement (board numbers
  * already applied) into the {@link MovementPlan} shape the DB writers
  * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
- * every pairs generator that emits `Tables` shares it. Every round gets the
- * default ordinary-pairs match (`PAIRS`, `scoredAsUnit: false`).
+ * every generator that emits `Tables` shares it. A round whose boards are
+ * listed starting part-way through their run gets that start as its
+ * `firstBoard`. Every round gets the default ordinary-pairs match (`PAIRS`,
+ * `scoredAsUnit: false`).
  */
 export function tablesToMaterializableMovement(tables: Tables): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
     rounds: table.rounds.map((round) => {
-      const boardStart = round.boards[0];
-      const boardEnd = round.boards[round.boards.length - 1];
+      // A round's boards are a run of consecutive numbers, listed in the order
+      // the table plays them: usually ascending, or starting part-way through
+      // when the boards circulate round the tables.
+      const boardStart = Math.min(...round.boards);
+      const boardEnd = Math.max(...round.boards);
+      const firstBoard = round.boards[0];
       return {
         roundNumber: round.round,
         ns: round.participants.nsId,
         ew: round.participants.ewId,
         boardStart,
         boardEnd,
+        ...(firstBoard === boardStart ? {} : { firstBoard }),
         boardCopy: round.boardCopy,
       };
     }),

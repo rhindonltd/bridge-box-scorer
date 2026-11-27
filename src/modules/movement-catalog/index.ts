@@ -24,15 +24,21 @@ export type {
   TeamsCatalogMovementSummary,
 } from "./catalog-summary";
 
-// Teams movements: the American Whist generator and the options a Teams game
-// can choose (American Whist plus the teams library).
+// Teams movements: the American Whist and Circulation generators and the
+// options a Teams game can choose (those two plus the teams library).
 export {
   generateAmericanWhistTeams,
   isAmericanWhistTeamCount,
   type AmericanWhistTeamsSpec,
 } from "./generation/american-whist-teams/american-whist-teams";
 export {
+  generateCirculationTeams,
+  type CirculationTeamsSpec,
+} from "./generation/circulation-teams/circulation-teams";
+export {
   americanWhistPreview,
+  circulationPreview,
+  circulationSetOut,
   teamsMovementOptions,
   type TeamsMovementOption,
   type TeamsMovementRef,

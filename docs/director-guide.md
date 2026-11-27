@@ -256,9 +256,27 @@ With an **odd number of teams** the list starts with **American Whist**, one
 card for each sensible number of boards per round. Each round the East/West
 pairs move down two tables and the boards move down one. There is one set of
 boards, every table is in play every round, and every team meets every other
-team once, over as many rounds as there are teams less one. The other cards
-are ready-made movements from the movement library. If no movement is listed
-for your table count, there is none for that number of teams.
+team once, over as many rounds as there are teams less one.
+
+With **four teams** the list starts with **Circulation**, at one, two or three
+boards to a table (12, 24 or 36 boards for each team). It is three rounds, each
+a whole match: team 1 against 2 and 3 against 4, then 1 against 3 and 2 against
+4, then 1 against 4 and 2 against 3, with new boards every round. At the start
+of each round share the round's boards out evenly, table 1 taking the first
+ones, table 2 the next, and so on; each table shows the boards to put out
+there. When a table finishes its boards it passes them to the next table down
+(table 1 passes to table 4), so every table plays all of the round's boards.
+Each player's screen says which board their table starts with.
+
+The other cards are ready-made movements from the movement library. If no
+movement is listed for your table count, there is none for that number of
+teams.
+
+At each **score break** the East/West pairs are told to go back to their home
+table to score up with their team-mates, and both pairs then see their team's
+results since the last break. The movement decides where the breaks fall: after
+every round in a Circulation (each round is a whole match), and only at the end
+in an American Whist.
 
 #### Swiss Pairs
 

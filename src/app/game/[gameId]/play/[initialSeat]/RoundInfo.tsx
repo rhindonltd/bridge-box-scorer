@@ -49,6 +49,16 @@ export default function RoundInfo({
         <div>
           {boards.length === 1 ? "Board" : "Boards"} {formatBoardRange(boards)}
         </div>
+        {boards.length > 1 && boards[0] !== Math.min(...boards) && (
+          // The boards circulate round the tables, so this table starts on its
+          // own board rather than the lowest.
+          <div
+            data-testid="round-first-board"
+            className="text-base font-medium text-gray-600"
+          >
+            Start with board {boards[0]}
+          </div>
+        )}
       </header>
       {opponentWithdrawn && (
         <div

@@ -57,6 +57,9 @@ export function useSelectedMovementName(
   if (selectedMovement.source === "AMERICAN_WHIST_TEAMS") {
     return "American Whist";
   }
+  if (selectedMovement.source === "CIRCULATION_TEAMS") {
+    return "Circulation";
+  }
 
   return data?.name ?? null;
 }

@@ -700,6 +700,23 @@ describe("resolveSectionStart", () => {
     expect(result.anchors).toEqual(teamsAnchors(teams));
   });
 
+  it("resolves a fully-seated Circulation, with each team's pairs on their own seats", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      { source: "CIRCULATION_TEAMS", circulationTeams: { boardsPerRound: 8 } },
+      seatsForTables(4),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement!.map((t) => t.rounds.length)).toEqual([3, 3, 3, 3]);
+    expect(result.movement![1].rounds[0]).toMatchObject({
+      boardStart: 1,
+      boardEnd: 8,
+      firstBoard: 3,
+      match: { kind: "TEAMS", key: "teams|1-2", roundNumber: 1 },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(4));
+  });
   it("blocks an American Whist start when a table is one pair short", async () => {
     const seated = seatsForTables(5).filter((s) => s !== "A3EW");
     const result = await resolveSectionStart(

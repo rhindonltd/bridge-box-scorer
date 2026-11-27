@@ -3,6 +3,7 @@ import type { MovementPlan } from "@/model/movement-plan";
 import { SelectedMovement } from "@/model/selected-movement";
 import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
 import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
+import { generateCirculationTeams } from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
 import { boardRangeForSet } from "@/modules/movement-catalog/shared";
 import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams-library";
 
@@ -12,7 +13,14 @@ import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams
  */
 export type FixedSelectedMovement = Extract<
   SelectedMovement,
-  { source: "SPEC" | "TEAMS_SPEC" | "MITCHELL" | "AMERICAN_WHIST_TEAMS" }
+  {
+    source:
+      | "SPEC"
+      | "TEAMS_SPEC"
+      | "MITCHELL"
+      | "AMERICAN_WHIST_TEAMS"
+      | "CIRCULATION_TEAMS";
+  }
 >;
 
 /**
@@ -26,7 +34,8 @@ export interface MovementDescription {
   /**
    * The movement with concrete board numbers and no sit-out flagged. A stored
    * spec's board-set indices are expanded with the selection's boards-per-round.
-   * An American Whist teams movement is its whole fixed schedule.
+   * A generated teams movement (American Whist, Circulation) is its whole
+   * fixed schedule.
    */
   layout: MovementPlan;
   /** A stored movement's built-in phantom pair number, or null when it has none. */
@@ -40,32 +49,40 @@ export interface StoredMovementTable {
 }
 
 /**
- * Convert a generated movement into a layout. Only Web Mitchell uses more than
+ * Convert a generated movement into a layout. A round's boards are a run of
+ * consecutive numbers listed in the order the table plays them; when that
+ * starts part-way through the run (a Circulation's boards pass round the
+ * tables) the start is kept as `firstBoard`. Only Web Mitchell uses more than
  * one physical copy of the boards, so every other round plays copy "A".
  */
 function generatedLayout(tables: Tables): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
-    rounds: table.rounds.map((round) => ({
-      roundNumber: round.round,
-      ns: round.participants.nsId,
-      ew: round.participants.ewId,
-      boardStart: round.boards[0],
-      boardEnd: round.boards[round.boards.length - 1],
-      boardCopy: round.boardCopy ?? "A",
-    })),
+    rounds: table.rounds.map((round) => {
+      const boardStart = Math.min(...round.boards);
+      const firstBoard = round.boards[0];
+      return {
+        roundNumber: round.round,
+        ns: round.participants.nsId,
+        ew: round.participants.ewId,
+        boardStart,
+        boardEnd: Math.max(...round.boards),
+        ...(firstBoard === boardStart ? {} : { firstBoard }),
+        boardCopy: round.boardCopy ?? "A",
+      };
+    }),
   }));
 }
 
 /**
- * Describe a generated movement (a Mitchell variant or an American Whist
- * teams movement). No database access: the layout comes from the selection's
- * spec.
+ * Describe a generated movement (a Mitchell variant, or an American Whist or
+ * Circulation teams movement). No database access: the layout comes from the
+ * selection's spec.
  */
 export function describeGeneratedMovement(
   selected: Extract<
     FixedSelectedMovement,
-    { source: "MITCHELL" | "AMERICAN_WHIST_TEAMS" }
+    { source: "MITCHELL" | "AMERICAN_WHIST_TEAMS" | "CIRCULATION_TEAMS" }
   >,
 ): MovementDescription {
   if (selected.source === "MITCHELL") {
@@ -74,6 +91,17 @@ export function describeGeneratedMovement(
     return {
       selected,
       layout: generatedLayout(generateMitchell(selected.mitchell)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "CIRCULATION_TEAMS") {
+    // Circulation: the whole fixed schedule for its four teams.
+    return {
+      selected,
+      layout: generatedLayout(
+        generateCirculationTeams(selected.circulationTeams),
+      ),
       missingPair: null,
     };
   }

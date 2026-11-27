@@ -26,6 +26,17 @@ describe("RoundInfo", () => {
     render(<RoundInfo table={1} boards={[1, 2]} players={players} />);
     expect(screen.getByText(/Boards\s*1 to 2/)).toBeInTheDocument();
   });
+  it("says which board to start with when the table does not start on the lowest", () => {
+    render(<RoundInfo table={2} boards={[3, 4, 1, 2]} players={players} />);
+    expect(screen.getByText(/Boards\s*1 to 4/)).toBeInTheDocument();
+    expect(screen.getByTestId("round-first-board")).toHaveTextContent(
+      "Start with board 3",
+    );
+  });
+  it("gives no start board when the table plays in board order", () => {
+    render(<RoundInfo table={1} boards={[1, 2]} players={players} />);
+    expect(screen.queryByTestId("round-first-board")).not.toBeInTheDocument();
+  });
 
   it("renders the anchor's two half-match segments with a midpoint-switch instruction", () => {
     render(

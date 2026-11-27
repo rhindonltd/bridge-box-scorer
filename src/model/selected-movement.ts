@@ -29,6 +29,10 @@ import { z } from "zod";
  *   round). Its whole schedule is fixed, so it is materialized at start; the
  *   selection stores only the team count and boards-per-round, and the
  *   schedule is regenerated from them.
+ * - CIRCULATION_TEAMS: the Circulation teams movement for exactly 4 teams:
+ *   three rounds, each a match between two pairs of teams, with the round's
+ *   boards circulating round all four tables. Fixed, so materialized at start;
+ *   the selection stores only the boards per round.
  * - TEAMS_SPEC: a stored teams movement from the teams library.
  */
 
@@ -336,6 +340,25 @@ export type AmericanWhistTeamsMovementSpec = z.infer<
   typeof americanWhistTeamsSpecSchema
 >;
 
+/**
+ * Circulation teams setup: the boards per round (one match), which the four
+ * tables share out evenly at the start of the round, so a multiple of 4. The
+ * team count is always 4 and it always plays 3 rounds.
+ */
+export const circulationTeamsSpecSchema = z.object({
+  boardsPerRound: z
+    .number()
+    .int()
+    .positive()
+    .refine(
+      (boards) => boards % 4 === 0,
+      "A Circulation needs a multiple of 4 boards per round",
+    ),
+});
+export type CirculationTeamsMovementSpec = z.infer<
+  typeof circulationTeamsSpecSchema
+>;
+
 export const selectedMovementSchema = z.discriminatedUnion("source", [
   z.object({
     source: z.literal("SPEC"),
@@ -369,6 +392,10 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
     source: z.literal("AMERICAN_WHIST_TEAMS"),
     americanWhistTeams: americanWhistTeamsSpecSchema,
   }),
+  z.object({
+    source: z.literal("CIRCULATION_TEAMS"),
+    circulationTeams: circulationTeamsSpecSchema,
+  }),
 ]);
 
 export type SelectedMovement = z.infer<typeof selectedMovementSchema>;
@@ -383,7 +410,8 @@ export function serializeSelectedMovement(selected: SelectedMovement): string {
 /**
  * The number of rounds a movement is configured to run. For the three movements
  * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS)
- * that value is authoritative; an American Whist plays teams − 1 rounds. A SPEC (movement-library)
+ * that value is authoritative; an American Whist plays teams − 1 rounds and a
+ * Circulation 3. A SPEC (movement-library)
  * selection does not carry a round count in the stored selection — its schedule
  * is defined by the referenced spec and is fully materialized at start — so
  * null is returned and callers fall back to the materialized round count.
@@ -404,6 +432,8 @@ export function expectedRounds(
       return selected.swissTeams.rounds;
     case "AMERICAN_WHIST_TEAMS":
       return selected.americanWhistTeams.teams - 1;
+    case "CIRCULATION_TEAMS":
+      return 3;
     case "SPEC":
     case "TEAMS_SPEC":
       return null;
@@ -434,6 +464,8 @@ export function boardsPerRoundOf(
       return selected.swissTeams.boardsPerRound;
     case "AMERICAN_WHIST_TEAMS":
       return selected.americanWhistTeams.boardsPerRound;
+    case "CIRCULATION_TEAMS":
+      return selected.circulationTeams.boardsPerRound;
     case "SPEC":
     case "TEAMS_SPEC":
       return selected.boardsPerRound;
@@ -529,6 +561,12 @@ export function selectedMovementsEqual(
         a.americanWhistTeams.teams === y.teams &&
         a.americanWhistTeams.boardsPerRound === y.boardsPerRound
       );
+    }
+    case "CIRCULATION_TEAMS": {
+      const y = (
+        b as Extract<SelectedMovement, { source: "CIRCULATION_TEAMS" }>
+      ).circulationTeams;
+      return a.circulationTeams.boardsPerRound === y.boardsPerRound;
     }
   }
 }

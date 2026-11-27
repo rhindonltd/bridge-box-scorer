@@ -52,6 +52,13 @@ export interface PlannedRound {
   boardStart: number;
   boardEnd: number;
   /**
+   * The board this table starts the round on, when it is not `boardStart`:
+   * the table plays from here to `boardEnd`, then on from `boardStart`. Used
+   * when the boards circulate round the tables within a round, so each table
+   * starts on its own boards. Absent: the table plays them in board order.
+   */
+  firstBoard?: number;
+  /**
    * The first-class match these boards belong to. Optional: when absent the
    * row builder synthesises an ordinary {@link MatchKind} `PAIRS` match
    * (`scoredAsUnit: false`) keyed by this round's `(table, round, ns, ew)` —

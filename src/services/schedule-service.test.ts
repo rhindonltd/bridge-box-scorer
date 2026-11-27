@@ -30,6 +30,9 @@ vi.mock("@/db/games/queries/expected-late-seats", () => ({
   readExpectedLateSeats: vi.fn().mockResolvedValue(new Set<string>()),
 }));
 
+vi.mock("@/db/games/queries/team-match-rounds", () => ({
+  readTeamMatchRounds: vi.fn().mockResolvedValue([]),
+}));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((...args: any[]) => args),
   or: vi.fn((...args: any[]) => args),
@@ -37,6 +40,7 @@ vi.mock("drizzle-orm", () => ({
 
 import { Db, getDb as getPairsDb } from "@/db/games";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
+import { readTeamMatchRounds } from "@/db/games/queries/team-match-rounds";
 
 /**
  * The schedule service reads, in order:
@@ -171,6 +175,70 @@ describe("schedule-service", () => {
       expect(result!.rounds[2].roundNumber).toBe(3);
       expect(result!.rounds[2].sitOut).toBe(true);
       expect(result!.rounds[2].boards).toEqual([]);
+      // A pairs game has no teams matches, so no round ends a score break.
+      expect(result!.rounds.some((r) => r.scoreBreakAfter)).toBe(false);
+    });
+
+    it("orders a round's boards by the table's play order when it has one", async () => {
+      const row = (boardNumber: number, playOrder: number) => ({
+        roundNumber: 1,
+        tableNumber: 2,
+        boardNumber,
+        ns: "A2NS",
+        ew: "A1EW",
+        status: "NOT_PLAYED",
+        playOrder,
+      });
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "A2NS", anchorId: "A2NS" } },
+        { kind: "where", value: [row(1, 3), row(2, 4), row(3, 1), row(4, 2)] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        { kind: "from", value: [{ roundNumber: 1 }] },
+      ]);
+
+      const result = await getSchedule(db, "A2NS");
+
+      expect(result!.rounds[0].boards).toEqual([3, 4, 1, 2]);
+      expect(result!.rounds[0].boardStatuses.map((b) => b.boardNumber)).toEqual(
+        [3, 4, 1, 2],
+      );
+    });
+
+    it("flags the rounds after which the pair's team scores up", async () => {
+      vi.mocked(readTeamMatchRounds).mockResolvedValueOnce([
+        { home: "A1NS", opponent: "A2NS", firstRound: 1, lastRound: 1 },
+        { home: "A1NS", opponent: "A3NS", firstRound: 2, lastRound: 3 },
+      ]);
+      const row = (roundNumber: number, ns: string) => ({
+        roundNumber,
+        tableNumber: roundNumber,
+        boardNumber: roundNumber,
+        ns,
+        ew: "A1EW",
+        status: "NOT_PLAYED",
+      });
+      const db = mockDbFromSteps([
+        { kind: "get", value: { seat: "A1EW", anchorId: "A1EW" } },
+        {
+          kind: "where",
+          value: [row(1, "A2NS"), row(2, "A3NS"), row(3, "A3NS")],
+        },
+        { kind: "from", value: [] },
+        { kind: "from", value: [] },
+        {
+          kind: "from",
+          value: [{ roundNumber: 1 }, { roundNumber: 2 }, { roundNumber: 3 }],
+        },
+      ]);
+
+      const result = await getSchedule(db, "A1EW");
+
+      expect(result!.rounds.map((r) => r.scoreBreakAfter ?? false)).toEqual([
+        true,
+        false,
+        true,
+      ]);
     });
 
     it("marks a round whose boards are all SIT_OUT as a sit-out, keeping its table", async () => {

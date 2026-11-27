@@ -15,6 +15,11 @@ export type PairBoardRow = {
   status: string | null;
   ns: string;
   ew: string;
+  /**
+   * The board's place in the order its table plays the round (1 = first), or
+   * null/absent to play the round's boards in board-number order.
+   */
+  playOrder?: number | null;
 };
 
 /** The two players seated as one pair, by the board id their rows carry. */
@@ -35,19 +40,25 @@ export interface ScheduleInput {
   expectedLateSeats: Set<string>;
   /** The game's total rounds, so rounds this pair has no boards in are padded. */
   totalRounds: number;
+  /**
+   * The rounds after which this pair's team scores up (see
+   * `scoreBreakRounds`). Empty for a pairs game, which has none.
+   */
+  scoreBreakRounds: Set<number>;
 }
 
 /** The pair's rounds, in round order, padded to the game's total rounds. */
 export function buildScheduleRounds(input: ScheduleInput): ScheduleRound[] {
-  return padSitOutRounds(
-    assembleRounds(
-      input.pairBoards,
-      input.players,
-      input.assignmentId,
-      input.expectedLateSeats,
-    ),
-    input.totalRounds,
+  const breaks = input.scoreBreakRounds;
+  const rounds = assembleRounds(
+    input.pairBoards,
+    input.players,
+    input.assignmentId,
+    input.expectedLateSeats,
+  ).map((round) =>
+    breaks.has(round.roundNumber) ? { ...round, scoreBreakAfter: true } : round,
   );
+  return padSitOutRounds(rounds, input.totalRounds);
 }
 
 /** The four seat players for one table, as resolved from an assignment lookup. */
@@ -106,6 +117,11 @@ type ActiveRound = {
    * resolver; this only labels it when the client walks onto it.)
    */
   opponentWithdrawn?: boolean;
+  /**
+   * True when the pair's team scores up after this round: the away pair goes
+   * back to its home table. Absent otherwise (and always in a pairs game).
+   */
+  scoreBreakAfter?: boolean;
 };
 
 export type ScheduleRound = Omit<
@@ -210,10 +226,14 @@ function assembleRound(
   const opponentWithdrawn =
     playedRows.length > 0 && playedRows.every((r) => r.status === "ABSENT");
 
-  // The played boards (never SIT_OUT / HALF_AVERAGE), ascending.
-  const boardStatuses = playedRows
-    .map((r) => ({ boardNumber: r.boardNumber, status: r.status }))
-    .sort((a, b) => a.boardNumber - b.boardNumber);
+  // The played boards (never SIT_OUT / HALF_AVERAGE), in the order the table
+  // plays them: its own start when the boards circulate round the tables,
+  // otherwise ascending.
+  const boardStatuses = [...playedRows]
+    .sort(
+      (a, b) => (a.playOrder ?? a.boardNumber) - (b.playOrder ?? b.boardNumber),
+    )
+    .map((r) => ({ boardNumber: r.boardNumber, status: r.status }));
   const boards = boardStatuses.map((b) => b.boardNumber);
 
   const base: ActiveRound = {

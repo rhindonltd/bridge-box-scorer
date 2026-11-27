@@ -566,6 +566,28 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(americanWhist(), mitchell())).toBe(false);
   });
 
+  const circulation = (boardsPerRound = 8): SelectedMovement => ({
+    source: "CIRCULATION_TEAMS",
+    circulationTeams: { boardsPerRound },
+  });
+  it("compares CIRCULATION_TEAMS selections by boards per round", () => {
+    expect(selectedMovementsEqual(circulation(), circulation())).toBe(true);
+    expect(selectedMovementsEqual(circulation(), circulation(4))).toBe(false);
+    expect(selectedMovementsEqual(circulation(), americanWhist())).toBe(false);
+  });
+  it("round-trips a CIRCULATION_TEAMS selection and refuses a board count not a multiple of 4", () => {
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(circulation(12))),
+    ).toEqual(circulation(12));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "CIRCULATION_TEAMS",
+          circulationTeams: { boardsPerRound: 6 },
+        }),
+      ),
+    ).toBeNull();
+  });
   it("refuses an American Whist with an even number of teams", () => {
     expect(
       parseSelectedMovement(

@@ -2,6 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   americanWhistOptions,
   americanWhistPreview,
+  circulationOptions,
+  circulationPreview,
+  circulationSetOut,
   teamsMovementOptions,
 } from "./teams-options";
 
@@ -70,5 +73,55 @@ describe("americanWhistPreview", () => {
       ["1", "3", 1],
       ["1", "2", 3],
     ]);
+  });
+});
+describe("circulationOptions", () => {
+  it("offers Circulation for four teams at one to three boards a table", () => {
+    const options = circulationOptions(4);
+    expect(options.map((o) => o.boardsPerTeam)).toEqual([12, 24, 36]);
+    expect(options[1]).toEqual({
+      name: "Circulation",
+      rounds: 3,
+      boardsPerRound: 8,
+      boardsPerTeam: 24,
+      boardsInPlay: 24,
+      ref: { source: "circulation", spec: { boardsPerRound: 8 } },
+    });
+  });
+  it("offers nothing for another number of teams", () => {
+    expect(circulationOptions(5)).toEqual([]);
+  });
+  it("is listed among a four-team game's options", () => {
+    expect(teamsMovementOptions(4, []).map((o) => o.ref.source)).toEqual([
+      "circulation",
+      "circulation",
+      "circulation",
+    ]);
+  });
+});
+describe("circulationPreview", () => {
+  it("shows the round's boards and the teams at each table", () => {
+    const tables = circulationPreview({ boardsPerRound: 8 });
+    expect(
+      tables[1].rounds.map((r) => [r.ns, r.ew, r.boardStart, r.boardEnd]),
+    ).toEqual([
+      ["2", "1", 1, 8],
+      ["2", "4", 9, 16],
+      ["2", "3", 17, 24],
+    ]);
+  });
+});
+describe("circulationSetOut", () => {
+  it("sets out each table's own share of the round's boards", () => {
+    const tables = circulationSetOut({ boardsPerRound: 8 });
+    expect(
+      tables.map((t) => [t.rounds[0].boardStart, t.rounds[0].boardEnd]),
+    ).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+      [7, 8],
+    ]);
+    expect(tables[3].rounds[2]).toMatchObject({ boardStart: 23, boardEnd: 24 });
   });
 });

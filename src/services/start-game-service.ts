@@ -123,12 +123,13 @@ export async function resolveSectionStart(
 
   const validation = validateStart(expected, seatedSeats, expectedLateSeats);
 
-  // A fixed teams movement (American Whist or a stored teams movement) shares
-  // Swiss Teams' full-team-per-table rule, but fills every table every round,
-  // so any team count it was built for can start. Its whole schedule is
-  // materialized at start.
+  // A fixed teams movement (American Whist, Circulation or a stored teams
+  // movement) shares Swiss Teams' full-team-per-table rule, but fills every
+  // table every round, so any team count it was built for can start. Its whole
+  // schedule is materialized at start.
   if (
     selected.source === "AMERICAN_WHIST_TEAMS" ||
+    selected.source === "CIRCULATION_TEAMS" ||
     selected.source === "TEAMS_SPEC"
   ) {
     return resolveFixedTeamsStart(section, description, validation);
@@ -241,8 +242,8 @@ function teamsAnchors(section: SectionLetter, teams: number): SeatAnchor[] {
 }
 
 /**
- * Resolve a fixed teams movement's start (American Whist or a stored teams
- * movement): a full team at every table (no sit-out), any team count, then the
+ * Resolve a fixed teams movement's start (American Whist, Circulation or a
+ * stored teams movement): a full team at every table (no sit-out), any team count, then the
  * movement's whole schedule, with each team's pairs keeping their seats' ids.
  */
 function resolveFixedTeamsStart(

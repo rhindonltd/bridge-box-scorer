@@ -141,6 +141,34 @@ describe("describeGeneratedMovement — American Whist teams", () => {
   });
 });
 
+describe("describeGeneratedMovement — Circulation teams", () => {
+  it("lays out three matches, each table starting on its own boards", () => {
+    const result = describeGeneratedMovement({
+      source: "CIRCULATION_TEAMS",
+      circulationTeams: { boardsPerRound: 8 },
+    });
+    expect(result.missingPair).toBeNull();
+    expect(result.layout[1].rounds[0]).toEqual({
+      roundNumber: 1,
+      ns: "2NS",
+      ew: "1EW",
+      boardStart: 1,
+      boardEnd: 8,
+      firstBoard: 3,
+      boardCopy: "A",
+    });
+    // Table 1 starts on the lowest board, so it plays in board order.
+    expect(result.layout[0].rounds[2]).toEqual({
+      roundNumber: 3,
+      ns: "1NS",
+      ew: "4EW",
+      boardStart: 17,
+      boardEnd: 24,
+      boardCopy: "A",
+    });
+  });
+});
+
 describe("describeStoredMovement", () => {
   const selected = { source: "SPEC", specId: 42, boardsPerRound: 2 } as const;
   const rows = [

@@ -196,6 +196,24 @@ describe("stored teams movements", () => {
     expect(await listTeamMovements(3)).toEqual([]);
   });
 
+  it("leaves out the library's Circulation movements", async () => {
+    // Four teams, every table on the round's one set: 1v2 3v4, 1v3 2v4, 1v4 2v3.
+    const opponents = [
+      [2, 3, 4],
+      [1, 4, 3],
+      [4, 1, 2],
+      [3, 2, 1],
+    ];
+    const circulation = opponents.flatMap((row, t) =>
+      row.map((visitor, k) => room(5, t + 1, k + 1, `${visitor}`, k + 1)),
+    );
+    vi.mocked(getTeamMovementSpecsForTables).mockResolvedValue([
+      { ...teamSpec(5, "Circulation"), tables: 4, rounds: 3 },
+    ]);
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(circulation);
+    expect(await listTeamMovements(4)).toEqual([]);
+  });
+
   it("lays out a supported movement for the preview", async () => {
     vi.mocked(getTeamMovementRooms).mockResolvedValue(
       teamRooms.filter((r) => r.movementId === 1),

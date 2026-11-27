@@ -19,11 +19,11 @@ import { closeDevices, openDirector, seedGame } from "../fixtures/seeded-game";
 import { closeSeatDevices, newParticipant } from "./support";
 
 /**
- * Teams games: American Whist and the teams movement library.
+ * Teams games: American Whist, Circulation and the teams movement library.
  *
  * A Teams (not Swiss Teams) game's movement picker lists American Whist (for
- * an odd number of teams) and the library's teams movements for its table
- * count, grouped by boards played. Many of them play a match's two rooms in
+ * an odd number of teams), Circulation (for four teams) and the library's
+ * teams movements for its table count, grouped by boards played. Many of them play a match's two rooms in
  * different rounds (a team hosts one opponent while its away pair visits
  * another), so the seeded game below checks the scoring pairs those rooms up.
  */
@@ -172,6 +172,70 @@ test("an American Whist sends each away pair down two tables and plays", async (
     await expect(seats["A2NS"].getByText("Board Results")).toBeVisible({
       timeout: 15000,
     });
+  } finally {
+    await deleteGame(director, gameId);
+    await director.context().close();
+    await closeSeatDevices(seats);
+  }
+});
+test("a Circulation starts each table on its own boards and sends the away pair home to score up", async ({
+  browser,
+}) => {
+  test.setTimeout(240_000);
+  const director = await newParticipant(browser);
+  const { gameId } = await createGame(director, {
+    eventName: `Circulation ${Date.now()}`,
+    recordOpeningLead: false,
+    gameType: "TEAMS",
+    teamsScoring: "IMP_VP",
+  });
+  let seats: Record<string, import("@playwright/test").Page> = {};
+  try {
+    await setTableCount(director, 4);
+    // The first Circulation card is 4 boards a round: one to a table.
+    const chosen = await pickMovementByName(
+      director,
+      "Circulation",
+      "teams-movement-card",
+    );
+    expect(chosen).toBe("Circulation");
+    seats = await seatSingleSectionFieldOnDevices(
+      () => newParticipant(browser),
+      gameId,
+      4,
+    );
+    await startGame(director, gameId);
+    // Round 1 is team 1 v team 2: team 1's away pair plays at table 2, which
+    // starts on board 2 and then plays the boards passed down to it.
+    const home = seats["A2NS"];
+    const away = seats["A1EW"];
+    await home.goto(`/game/${gameId}/play/A2NS`);
+    await expect(home.getByTestId("round-first-board")).toHaveText(
+      "Start with board 2",
+      { timeout: 15000 },
+    );
+    for (const board of [2, 3, 4, 1]) {
+      await enterPassOut(home, gameId, "A2NS", board);
+      await expect(home.getByText("Waiting for confirmation")).toBeVisible({
+        timeout: 15000,
+      });
+      await enterPassOut(away, gameId, "A1EW", board);
+      await expect(away.getByText("Board Results")).toBeVisible({
+        timeout: 15000,
+      });
+    }
+    // The round is the whole match, so the away pair goes home to score up.
+    await away.getByTestId("board-results-next").click();
+    await expect(away.getByTestId("score-break")).toContainText(
+      "Go back to your home table",
+      { timeout: 15000 },
+    );
+    await expect(away.getByTestId("score-break")).toContainText("Table 1");
+    await away.getByTestId("score-break-continue").click();
+    // Then the team results, and on to team 3's table for round 2.
+    await away.getByTestId("round-results-continue").click();
+    await expect(away.getByText("Move to")).toBeVisible({ timeout: 15000 });
+    await expect(away.getByText("Table 3")).toBeVisible();
   } finally {
     await deleteGame(director, gameId);
     await director.context().close();

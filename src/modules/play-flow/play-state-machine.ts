@@ -25,10 +25,11 @@ export interface Schedule {
   rounds: ScheduleRound[];
   handEntryEnabled?: boolean;
   /**
-   * Whether to show the post-round "team results" summary (a teams game only):
-   * a screen listing the round's boards with the team's IMP result on each,
-   * shown when a played round completes, before the optional deal-entry step
-   * and the move screen. Off for pairs games.
+   * Whether this is a teams game, which scores up at its score breaks: after a
+   * round flagged `scoreBreakAfter`, the pair is sent to its home table and
+   * then shown the "team results" summary (the boards played since the last
+   * break, with the team's result on each), before the optional deal-entry
+   * step and the move screen. Off for pairs games.
    */
   teamRoundResults?: boolean;
 }
@@ -62,9 +63,15 @@ export type PlayState =
     }
   | { state: "boardResults"; roundIndex: number; boardIndex: number }
   /**
-   * Post-round team results summary (a teams game only): the round's boards
-   * with the team's IMP result on each. Shown when a played round completes,
-   * before the optional deal-entry step, and always continued past.
+   * Score break (a teams game only): the round just played ends a score break,
+   * so the away pair goes back to its home table and the home pair waits for
+   * it there. Continuing shows the team results summary.
+   */
+  | { state: "scoreBreak"; roundIndex: number; nextRoundIndex: number }
+  /**
+   * Team results summary at a score break (a teams game only): the boards
+   * played since the last score break, with the team's result on each. Always
+   * continued past, into the optional deal-entry step.
    */
   | { state: "roundResults"; roundIndex: number; nextRoundIndex: number }
   /**
@@ -97,6 +104,8 @@ export type PlayAction =
   | { type: "submit"; boardNumber: number; result?: string; lead?: string }
   | { type: "reenter" }
   | { type: "boardResultsNext" }
+  /** Leave the score break screen for the team results (teams game only). */
+  | { type: "scoreBreakContinue" }
   /** Leave the post-round team results summary (teams game only). */
   | { type: "roundResultsContinue" }
   /** Leave the optional post-round deal-entry step (finished or skipped). */
@@ -224,11 +233,15 @@ function afterPlayedRound(
   completedRoundIndex: number,
   schedule: Schedule,
 ): PlayState {
-  // A teams game shows the round's team results first; continuing past it runs
-  // the same deal/move chain as a game without the summary.
-  if (schedule.teamRoundResults) {
+  // At a teams score break the pair first goes back to its home table, then
+  // sees the team results; continuing past them runs the same deal/move chain
+  // as a round without a break.
+  if (
+    schedule.teamRoundResults &&
+    schedule.rounds[completedRoundIndex].scoreBreakAfter
+  ) {
     return {
-      state: "roundResults",
+      state: "scoreBreak",
       roundIndex: completedRoundIndex,
       nextRoundIndex: completedRoundIndex + 1,
     };
@@ -332,6 +345,15 @@ export function playReducer(
       // Round complete — offer the optional deal-entry step for it (skipped
       // when the game doesn't have hand entry enabled).
       return afterPlayedRound(prev.roundIndex, schedule);
+    }
+
+    case "scoreBreakContinue": {
+      if (prev.state !== "scoreBreak") return prev;
+      return {
+        state: "roundResults",
+        roundIndex: prev.roundIndex,
+        nextRoundIndex: prev.nextRoundIndex,
+      };
     }
 
     case "roundResultsContinue": {

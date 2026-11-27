@@ -15,6 +15,7 @@ import {
   setSectionMovementSpec,
   setSectionTeamsMovementSpec,
   setSectionAmericanWhistTeamsMovement,
+  setSectionCirculationTeamsMovement,
   setSectionMitchellMovement,
   setSectionSwissMovement,
   setSectionSwissTeamsMovement,
@@ -89,6 +90,13 @@ describe("section-service (HTTP)", () => {
     });
   });
 
+  it("setSectionCirculationTeamsMovement PUTs the Circulation setup", async () => {
+    await setSectionCirculationTeamsMovement("g1", "A", { boardsPerRound: 8 });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ circulationTeams: { boardsPerRound: 8 } });
+  });
   it("setSectionTeamsMovementSpec PUTs the teams library id + boardsPerRound", async () => {
     await setSectionTeamsMovementSpec("g1", "A", 7, 4);
     const { url, init, body } = lastCall();

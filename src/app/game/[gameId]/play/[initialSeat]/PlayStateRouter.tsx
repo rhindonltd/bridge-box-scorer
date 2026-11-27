@@ -22,10 +22,16 @@ import { teamBoardResultTable } from "@/modules/results-views";
 import type { Player } from "@/db/games/tables/players";
 import { SitOutPage } from "@/app/game/[gameId]/play/[initialSeat]/SitOutPage";
 import { usePlayFlow } from "@/hooks/play-flow";
-import type { PlayState, Schedule } from "@/modules/play-flow";
+import {
+  boardsSinceScoreBreak,
+  type PlayState,
+  type Schedule,
+} from "@/modules/play-flow";
 import { MoveInfoPage } from "@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage";
 import { AwaitingNextRoundPage } from "@/app/game/[gameId]/play/[initialSeat]/AwaitingNextRoundPage";
 import { RoundResultsLoader } from "@/app/game/[gameId]/play/[initialSeat]/RoundResultsPage";
+import { ScoreBreakPage } from "@/app/game/[gameId]/play/[initialSeat]/ScoreBreakPage";
+import { parseSeat } from "@/model/participants";
 import { PlayHeaderMenu } from "@/app/game/[gameId]/play/[initialSeat]/PlayHeaderMenu";
 import type { HeaderMenuItem } from "@/components/layout/HeaderMenu";
 import { FullScreenSpinner } from "@/components/common/Spinner";
@@ -37,6 +43,7 @@ export type PlayHandlers = Pick<
   | "handleSitOutContinue"
   | "handleMoveInfoContinue"
   | "handleBoardResultsNext"
+  | "handleScoreBreakContinue"
   | "handleRoundResultsContinue"
   | "handleDealsContinue"
   | "handleReenter"
@@ -227,18 +234,30 @@ export function PlayStateRouter({
       );
     }
 
-    case "roundResults": {
-      const round = schedule.rounds[playState.roundIndex];
+    case "scoreBreak": {
+      // A team's pairs keep their own seats' ids, so the pair's id names its
+      // home table and whether it is the away (East/West) pair.
+      const home = parseSeat(schedule.assignmentId);
       return (
-        <RoundResultsLoader
-          gameId={gameId}
-          seat={seat}
-          boards={round.boards}
-          onContinue={handlers.handleRoundResultsContinue}
+        <ScoreBreakPage
+          homeTable={home.tableNumber}
+          away={home.direction === "EW"}
+          onContinue={handlers.handleScoreBreakContinue}
           headerRight={headerRight}
         />
       );
     }
+
+    case "roundResults":
+      return (
+        <RoundResultsLoader
+          gameId={gameId}
+          seat={seat}
+          boards={boardsSinceScoreBreak(schedule.rounds, playState.roundIndex)}
+          onContinue={handlers.handleRoundResultsContinue}
+          headerRight={headerRight}
+        />
+      );
 
     case "enterDeals": {
       const round = schedule.rounds[playState.roundIndex];

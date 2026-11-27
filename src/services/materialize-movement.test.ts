@@ -48,6 +48,39 @@ describe("buildSectionRows", () => {
     expect(boardRows[1].boardNumber).toBe(2);
   });
 
+  it("numbers each board's place in play when the table starts on its own board", () => {
+    const movement: MovementPlan = [
+      {
+        tableNumber: 2,
+        rounds: [
+          {
+            roundNumber: 1,
+            ns: "2NS",
+            ew: "1EW",
+            boardStart: 1,
+            boardEnd: 4,
+            firstBoard: 3,
+          },
+          { roundNumber: 2, ns: "2NS", ew: "3EW", boardStart: 5, boardEnd: 6 },
+        ],
+      },
+    ];
+
+    const { boardRows } = buildSectionRows("A", movement);
+
+    expect(
+      boardRows.map((b) => [b.roundNumber, b.boardNumber, b.playOrder]),
+    ).toEqual([
+      [1, 1, 3],
+      [1, 2, 4],
+      [1, 3, 1],
+      [1, 4, 2],
+      // A round played in board order leaves the order unset.
+      [2, 5, undefined],
+      [2, 6, undefined],
+    ]);
+  });
+
   it("only derives seat anchors from round 1, section-qualified and seated", () => {
     const movement: MovementPlan = [
       {

@@ -69,6 +69,14 @@ describe("useSelectedMovementName", () => {
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
   });
 
+  it("names a Circulation teams movement locally", () => {
+    const m: SelectedMovement = {
+      source: "CIRCULATION_TEAMS",
+      circulationTeams: { boardsPerRound: 8 },
+    };
+    const { result } = renderHook(() => useSelectedMovementName(m));
+    expect(result.current).toBe("Circulation");
+  });
   it("uses the fetched name for a SPEC selection", () => {
     mockUseSWR.mockReturnValue({ data: { name: "Howell 6T" } });
     const m: SelectedMovement = {

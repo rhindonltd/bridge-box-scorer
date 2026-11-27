@@ -11,6 +11,32 @@ import {
 } from "./plan-movement";
 
 describe("tablesToMaterializableMovement", () => {
+  it("records the start board of a round listed part-way through its run", () => {
+    const tables: Tables = {
+      tables: [
+        {
+          table: 2,
+          rounds: [
+            {
+              round: 1,
+              boards: [3, 4, 1, 2],
+              participants: { nsId: "2NS", ewId: "1EW" },
+            },
+          ],
+        },
+      ],
+    };
+    expect(tablesToMaterializableMovement(tables)[0].rounds[0]).toEqual({
+      roundNumber: 1,
+      ns: "2NS",
+      ew: "1EW",
+      boardStart: 1,
+      boardEnd: 4,
+      firstBoard: 3,
+      boardCopy: undefined,
+    });
+  });
+
   it("maps table/round shape and derives boardStart/boardEnd from the boards array", () => {
     const tables: Tables = {
       tables: [
@@ -156,6 +182,26 @@ describe("planMovement", () => {
     expect(plan[2].rounds[1].match).toMatchObject({
       key: "teams|1-3",
       roundNumber: 1,
+    });
+  });
+});
+
+describe("planMovement — Circulation", () => {
+  it("plans each round as one match per pair of teams, numbered by round", () => {
+    const description = describeGeneratedMovement({
+      source: "CIRCULATION_TEAMS",
+      circulationTeams: { boardsPerRound: 8 },
+    });
+    const plan = planMovement(description, { sitOutSeat: null });
+    expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 8));
+    // Round 2: team 1 hosts team 3, and team 3 hosts team 1, on boards 9-16.
+    expect(plan[0].rounds[1].match).toMatchObject({
+      key: "teams|1-3",
+      roundNumber: 2,
+    });
+    expect(plan[2].rounds[1]).toMatchObject({
+      firstBoard: 13,
+      match: { key: "teams|1-3", roundNumber: 2 },
     });
   });
 });

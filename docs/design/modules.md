@@ -2041,6 +2041,38 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   and 9 teams and the EBU "6R/8R/12R No Scorebreak SPECIAL" blocks. 97 of the
   105 supported movements are listed.
 
+**Score breaks, board order and Circulation, as built.**
+
+- **Score breaks** (`play-flow/score-breaks.ts`): the movement's matches decide
+  them, so nothing extra is stored. A team scores up after round r when r ends
+  one of its matches and none of its matches is part-played across r
+  (`scoreBreakRounds`). `services/schedule-service.ts` reads every TEAMS and
+  TRIPLE match's first and last board rounds (`readTeamMatchRounds`) and flags
+  each of the pair's rounds `scoreBreakAfter`. In a teams game the player flow
+  goes `boardResults` → `scoreBreak` (the away pair is sent home, the home pair
+  waits) → `roundResults` (every board since the last break,
+  `boardsSinceScoreBreak`) → deals → move. A round without a break goes straight
+  to the deal/move chain; board results after each board are unchanged. Like
+  the team results, the break screen is not resumed on reload. Circulation and
+  Swiss Teams break after every round, American Whist only after the last.
+- **Board order within a round**: `PlannedRound.firstBoard` (optional) says
+  where a table starts in its `boardStart..boardEnd` run; materialisation
+  writes each board's place as `boards.play_order` (games migration 0006, null
+  for every other movement), the schedule orders a round's boards by it, and
+  the round screen shows "Start with board N". A generator lists a round's
+  boards in play order; `tablesToMaterializableMovement` and
+  `generatedLayout` take the start from the list.
+- **Circulation** (`generation/circulation-teams/`): four teams, three rounds
+  (1v2 3v4, 1v3 2v4, 1v4 2v3: the opponent is the team number, from 0, with
+  the round's bits flipped), new boards each round, each table starting on its
+  own quarter and passing boards down a table. Source `CIRCULATION_TEAMS
+{ circulationTeams: { boardsPerRound } }` (a multiple of 4), planned by
+  `teamsLayoutToMaterializable`, so a match is numbered by its round. The picker
+  offers 4, 8 and 12 boards a round (`circulationOptions`); the Tables screen
+  sets out each table's quarter (`circulationSetOut`). `isCirculationTeamsLayout`
+  hides the library's NBL 4 Teams Circulation (M138), which put every table on
+  board 1.
+
 Code that looks like a candidate but should stay in the core:
 
 - `src/socket/handlers/results/director-board-ruling.ts`: a handler factory

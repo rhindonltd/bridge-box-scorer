@@ -17,6 +17,7 @@ import {
   swissSpecSchema,
   swissTeamsSpecSchema,
   americanWhistTeamsSpecSchema,
+  circulationTeamsSpecSchema,
 } from "@/model/selected-movement";
 import { getTeamMovementDetail } from "@/modules/movement-catalog/server";
 
@@ -29,13 +30,14 @@ const bodySchema = z.object({
   swiss: swissSpecSchema.optional(),
   swissTeams: swissTeamsSpecSchema.optional(),
   americanWhistTeams: americanWhistTeamsSpecSchema.optional(),
+  circulationTeams: circulationTeamsSpecSchema.optional(),
 });
 
 /**
  * PUT /api/games/[gameId]/sections/[section]/movement — set (or clear) the
  * section's movement. A `mitchell` spec, a spec `id` + `boardsPerRound`, a
- * teams library `teamsSpecId` + `boardsPerRound`, or an empty body (clear) are
- * accepted. On an actual change, the section's timer is
+ * teams library `teamsSpecId` + `boardsPerRound`, an `americanWhistTeams` or
+ * `circulationTeams` spec, or an empty body (clear) are accepted. On an actual change, the section's timer is
  * cleared (its round structure is derived from the movement).
  */
 export const PUT = withDirectorEditRoute(
@@ -55,11 +57,14 @@ export const PUT = withDirectorEditRoute(
       swiss,
       swissTeams,
       americanWhistTeams,
+      circulationTeams,
     } = body;
 
     let selected: SelectedMovement | null;
     if (americanWhistTeams) {
       selected = { source: "AMERICAN_WHIST_TEAMS", americanWhistTeams };
+    } else if (circulationTeams) {
+      selected = { source: "CIRCULATION_TEAMS", circulationTeams };
     } else if (swissTeams) {
       selected = { source: "SWISS_TEAMS", swissTeams };
     } else if (swiss) {

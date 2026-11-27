@@ -309,7 +309,7 @@ export function usePlayFlow(
   /*
    * The no-payload "continue"/"advance" buttons each just dispatch their own
    * action type. One memoised factory builds the stable handler for each,
-   * rather than seven near-identical `useCallback(() => dispatch({ type }))`.
+   * rather than eight near-identical `useCallback(() => dispatch({ type }))`.
    * The listed types are exactly the PlayAction members that carry only a
    * `type` (every action except `submit` / `boardConfirmed` / `boardMismatch`).
    */
@@ -317,6 +317,7 @@ export function usePlayFlow(
     | "enterRound"
     | "reenter"
     | "boardResultsNext"
+    | "scoreBreakContinue"
     | "roundResultsContinue"
     | "dealsContinue"
     | "moveInfoContinue"
@@ -348,6 +349,10 @@ export function usePlayFlow(
   );
   const handleDealsContinue = useMemo(
     () => makeDispatcher("dealsContinue"),
+    [makeDispatcher],
+  );
+  const handleScoreBreakContinue = useMemo(
+    () => makeDispatcher("scoreBreakContinue"),
     [makeDispatcher],
   );
   const handleRoundResultsContinue = useMemo(
@@ -384,6 +389,7 @@ export function usePlayFlow(
     handleSitOutContinue,
     handleMoveInfoContinue,
     handleBoardResultsNext,
+    handleScoreBreakContinue,
     handleRoundResultsContinue,
     handleDealsContinue,
     handleReenter,

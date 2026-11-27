@@ -142,6 +142,22 @@ describe("useMovementResolution", () => {
     });
   });
 
+  describe("CIRCULATION_TEAMS", () => {
+    it("sets out each table's own share of the round's boards", () => {
+      const circulation: SelectedMovement = {
+        source: "CIRCULATION_TEAMS",
+        circulationTeams: { boardsPerRound: 8 },
+      };
+      const { result } = renderHook(() =>
+        useMovementResolution(circulation, 4),
+      );
+      expect(result.current.stationary.get(3)).toEqual({ ns: true, ew: false });
+      expect(result.current.placement.get(3)).toMatchObject({
+        boardStart: 5,
+        boardEnd: 6,
+      });
+    });
+  });
   describe("SPEC", () => {
     const spec: SelectedMovement = {
       source: "SPEC",

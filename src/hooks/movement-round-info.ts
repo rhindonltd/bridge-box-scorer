@@ -92,6 +92,16 @@ export function useMovementRoundInfo(
     };
   }
 
+  if (selectedMovement.source === "CIRCULATION_TEAMS") {
+    // A Circulation always plays three rounds; no fetch is needed.
+    return {
+      info: {
+        rounds: 3,
+        boardsPerRound: selectedMovement.circulationTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
   // SPEC / TEAMS_SPEC: rounds come from the fetched detail; boards-per-round is on the
   // selection itself. Every table plays the same round count, so the first
   // table is representative.

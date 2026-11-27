@@ -228,3 +228,15 @@ describe("stored teams movements", () => {
     expect(classifyEvent("TEAMS", "IMP", stored).format).toBe("TEAMS_IMP_AGG");
   });
 });
+describe("Circulation teams movements", () => {
+  const circulation: SelectedMovement = {
+    source: "CIRCULATION_TEAMS",
+    circulationTeams: { boardsPerRound: 8 },
+  };
+  it("are teams movements, scored as teams", () => {
+    expect(isTeamsMovement(circulation)).toBe(true);
+    expect(classifyEvent("TEAMS", "IMP_VP", circulation).format).toBe(
+      "TEAMS_VP",
+    );
+  });
+});
