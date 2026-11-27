@@ -6,8 +6,10 @@ import {
   seatStorage,
   seedGame,
 } from "../fixtures/seeded-game";
-import { openSetupStep } from "../fixtures/game-setup";
-import { gotoStable } from "./support";
+import { openSetupStep, setTableCount } from "../fixtures/game-setup";
+import { createGame } from "../fixtures/game-create";
+import { deleteGame } from "../fixtures/delete-game";
+import { gotoStable, newParticipant } from "./support";
 
 /**
  * Pre-start setup screens that sit around the movement picker: editing the
@@ -220,6 +222,41 @@ test.describe("Splitting into sections with pairs already seated", () => {
       expect(mover.url()).not.toContain("/play/A5NS");
     } finally {
       await closeDevices(director, mover);
+    }
+  });
+});
+
+test.describe("Game lists", () => {
+  test("the Create Game list shows the table count after it is changed", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const director = await newParticipant(browser);
+    const eventName = `Table Count ${Date.now()}`;
+    const { gameId } = await createGame(director, {
+      eventName,
+      recordOpeningLead: false,
+      gameType: "TEAMS",
+      teamsScoring: "IMP",
+    });
+    try {
+      await setTableCount(director, 5);
+      await setTableCount(director, 2);
+      // Each change is saved as it is made; the list shows the latest count.
+      await expect
+        .poll(
+          async () => {
+            await gotoStable(director, "/create");
+            return director
+              .getByRole("button", { name: new RegExp(eventName) })
+              .textContent();
+          },
+          { timeout: 20000 },
+        )
+        .toContain("2 tables");
+    } finally {
+      await deleteGame(director, gameId);
+      await director.context().close();
     }
   });
 });

@@ -7,6 +7,7 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { splitSection } from "@/db/games/actions/split-section";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
 import { clearEngine } from "@/services/timer/game-store";
@@ -56,6 +57,7 @@ export const POST = withDirectorEditRoute(
 
     try {
       const moves = await splitSection(gameId, body);
+      await syncGameTableCount(gameId);
       await broadcastSections(gameId);
       // Seated pairs changed section, so refresh the participant list too.
       await broadcastParticipants(gameId);

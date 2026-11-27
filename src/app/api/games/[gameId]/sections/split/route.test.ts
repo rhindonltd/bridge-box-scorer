@@ -13,6 +13,9 @@ vi.mock("@/db/games/queries/is-game-started", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/services/game-table-count", () => ({
+  syncGameTableCount: vi.fn(),
+}));
 vi.mock("@/socket/broadcast/participant-broadcast", () => ({
   broadcastParticipants: vi.fn(),
 }));
@@ -36,6 +39,7 @@ import { validateDirectorToken } from "@/services/security/director-token";
 import { splitSection } from "@/db/games/actions/split-section";
 import { isGameStarted } from "@/db/games/queries/is-game-started";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 import { broadcastParticipants } from "@/socket/broadcast/participant-broadcast";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
 import { clearEngine } from "@/services/timer/game-store";
@@ -83,6 +87,8 @@ describe("POST /api/games/[gameId]/sections/split", () => {
     const res = await invoke("g1", validBody);
     expect(res.status).toBe(200);
     expect(splitSection).toHaveBeenCalledWith("g1", validBody);
+    // The game lists' table count is brought up to date first.
+    expect(syncGameTableCount).toHaveBeenCalledWith("g1");
     expect(broadcastSections).toHaveBeenCalledWith("g1");
     expect(broadcastParticipants).toHaveBeenCalledWith("g1");
 

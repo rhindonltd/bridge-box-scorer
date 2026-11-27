@@ -8,6 +8,7 @@ import { createSection } from "@/db/games/actions/create-section";
 import { findSections } from "@/db/games/queries/find-sections";
 import { parseSelectedMovement } from "@/model/selected-movement";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 
 /**
  * GET /api/games/[gameId]/sections — list the game's sections with each
@@ -43,6 +44,7 @@ export const POST = withDirectorEditRoute(
 
     try {
       await createSection(gameId, { section, label, tables });
+      await syncGameTableCount(gameId);
       await broadcastSections(gameId);
       return success({});
     } catch (err) {

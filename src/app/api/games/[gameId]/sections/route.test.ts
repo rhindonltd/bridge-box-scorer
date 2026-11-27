@@ -13,6 +13,9 @@ vi.mock("@/db/games/queries/find-sections", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/services/game-table-count", () => ({
+  syncGameTableCount: vi.fn(),
+}));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
   childLogger: () => ({
@@ -28,6 +31,7 @@ import { validateDirectorToken } from "@/services/security/director-token";
 import { createSection } from "@/db/games/actions/create-section";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 import { ClientError } from "@/lib/api/client-error";
 import { logger } from "@/lib/log";
 import { GET, POST } from "./route";
@@ -57,6 +61,8 @@ describe("POST /api/games/[gameId]/sections", () => {
       label: "Blue",
       tables: 3,
     });
+    // The game lists' table count is brought up to date first.
+    expect(syncGameTableCount).toHaveBeenCalledWith("g1");
     expect(broadcastSections).toHaveBeenCalledWith("g1");
   });
 
