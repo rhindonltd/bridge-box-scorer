@@ -252,8 +252,9 @@ team's home pair, starting in round 1 — each player's screen shows where to go
 A match is played on the same boards in both rooms, but in some movements the
 two halves of a match fall in different rounds.
 
-With an **odd number of teams** the list starts with **American Whist**, one
-card for each sensible number of boards per round. Each round the East/West
+With an **odd number of teams** the list starts with **All Play All** (an
+American Whist teams movement), one card for each sensible number of boards per
+round. Each round the East/West
 pairs move down two tables and the boards move down one. There is one set of
 boards, every table is in play every round, and every team meets every other
 team once, over as many rounds as there are teams less one.
@@ -271,7 +272,7 @@ Each player's screen says which board their table starts with.
 With **6, 8 or 14 teams** the list also offers **Thurner**, one card for each
 sensible number of boards per round. Every team meets every other team once, over as many rounds as there are teams less one.
 The tables except the highest form a circuit: the boards move down one table
-each round there, as in an American Whist. The highest table plays the same
+each round there, as in an All Play All. The highest table plays the same
 boards as one of the circuit tables each round, so the two tables share them;
 both tables' screens say which table they share with.
 
@@ -291,7 +292,7 @@ At each **score break** the East/West pairs are told to go back to their home
 table to score up with their team-mates, and both pairs then see their team's
 results since the last break. The movement decides where the breaks fall: after
 every round in a Circulation (each round is a whole match), and only at the end
-in an American Whist.
+in an All Play All.
 
 #### Swiss Pairs
 

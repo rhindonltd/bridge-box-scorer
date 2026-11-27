@@ -146,13 +146,14 @@ test("an American Whist sends each away pair down two tables and plays", async (
   let seats: Record<string, import("@playwright/test").Page> = {};
   try {
     await setTableCount(director, 3);
-    // The first card is American Whist at 6 boards a round (12 boards a team).
+    // The first card is the American Whist, shown as All Play All, at 6 boards
+    // a round (12 boards a team).
     const chosen = await pickMovementByName(
       director,
-      "American Whist",
+      "All Play All",
       "teams-movement-card",
     );
-    expect(chosen).toBe("American Whist");
+    expect(chosen).toBe("All Play All");
     seats = await seatSingleSectionFieldOnDevices(
       () => newParticipant(browser),
       gameId,

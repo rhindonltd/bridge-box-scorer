@@ -85,7 +85,8 @@ export function americanWhistOptions(teams: number): TeamsMovementOption[] {
   if (!isAmericanWhistTeamCount(teams)) return [];
   const rounds = americanWhistTeamsRounds(teams);
   return boardsPerRoundOptions(rounds).map((boardsPerRound) => ({
-    name: "American Whist",
+    // Clubs know the teams American Whist as an all-play-all.
+    name: "All Play All",
     rounds,
     boardsPerRound,
     boardsPerTeam: rounds * boardsPerRound,

@@ -18,7 +18,7 @@ describe("americanWhistOptions", () => {
     const options = americanWhistOptions(5);
     expect(options.map((o) => o.boardsPerRound)).toEqual([3, 4, 5, 6, 7, 8, 9]);
     expect(options[0]).toEqual({
-      name: "American Whist",
+      name: "All Play All",
       rounds: 4,
       boardsPerRound: 3,
       boardsPerTeam: 12,

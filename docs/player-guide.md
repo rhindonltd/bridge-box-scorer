@@ -181,7 +181,7 @@ comes, your screen says so after the last board of the round:
 Tap **Continue** to see the **Team Results** screen. It lists every board your
 team has played since the last score break, with your team's IMP result on
 each. Tap **Continue** again to move on. The movement decides where the score
-breaks fall: usually after each match, and in an American Whist only at the
+breaks fall: usually after each match, and in an All Play All only at the
 end. You still see each board's result after you play it, as usual.
 
 ### Moving on

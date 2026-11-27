@@ -64,7 +64,7 @@ step-by-step instructions.
 - **Score break** — in a Teams game, a point where each team's two pairs meet
   back at their home table to score up. The movement sets where they fall:
   after every match in a Circulation or Swiss Teams, between the two parts of a
-  Stagger, and only at the end in an American Whist or Thurner, whose matches
+  Stagger, and only at the end in an All Play All or Thurner, whose matches
   are spread over the whole session.
 - **Stationary pair** — a pair that stays at the same table and direction for
   the whole event, with their opponents coming to them. In Swiss Pairs the

@@ -193,7 +193,7 @@ describe("TeamsMovementPicker — American Whist", () => {
   it("previews American Whist without fetching and saves its setup", async () => {
     const onSelected = renderOdd();
     fireEvent.click(
-      screen.getAllByRole("button", { name: /American Whist/ })[0],
+      screen.getAllByRole("button", { name: /All Play All/ })[0],
     );
     // Table 1, round 1: team 1 at home to team 3.
     expect(await screen.findByRole("dialog")).toBeInTheDocument();

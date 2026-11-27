@@ -65,7 +65,7 @@ describe("useSelectedMovementName", () => {
       americanWhistTeams: { teams: 5, boardsPerRound: 4 },
     };
     const { result } = renderHook(() => useSelectedMovementName(m));
-    expect(result.current).toBe("American Whist");
+    expect(result.current).toBe("All Play All");
     expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
   });
 

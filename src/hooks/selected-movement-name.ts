@@ -55,7 +55,8 @@ export function useSelectedMovementName(
   }
 
   if (selectedMovement.source === "AMERICAN_WHIST_TEAMS") {
-    return "American Whist";
+    // The same name as its picker card.
+    return "All Play All";
   }
   if (selectedMovement.source === "CIRCULATION_TEAMS") {
     return "Circulation";
