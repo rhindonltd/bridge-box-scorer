@@ -1,8 +1,12 @@
 import { Tables } from "@/model/movement";
 import type { MovementPlan } from "@/model/movement-plan";
 import { SelectedMovement } from "@/model/selected-movement";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
-import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
+import { generateAmericanWhistTeams } from "@/modules/movement-catalog/teams/american-whist-teams/american-whist-teams";
+import { generateCirculationTeams } from "@/modules/movement-catalog/teams/circulation-teams/circulation-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
+import { generateStaggerTeams } from "@/modules/movement-catalog/teams/stagger-teams/stagger-teams";
+import { generateHeadToHeadTeams } from "@/modules/movement-catalog/teams/head-to-head-teams/head-to-head-teams";
 import { boardRangeForSet } from "@/modules/movement-catalog/shared";
 import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams-library";
 
@@ -12,7 +16,17 @@ import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams
  */
 export type FixedSelectedMovement = Extract<
   SelectedMovement,
-  { source: "SPEC" | "TEAMS_SPEC" | "MITCHELL" | "AMERICAN_WHIST_TEAMS" }
+  {
+    source:
+      | "SPEC"
+      | "TEAMS_SPEC"
+      | "MITCHELL"
+      | "AMERICAN_WHIST_TEAMS"
+      | "CIRCULATION_TEAMS"
+      | "THURNER_TEAMS"
+      | "STAGGER_TEAMS"
+      | "HEAD_TO_HEAD_TEAMS";
+  }
 >;
 
 /**
@@ -26,7 +40,8 @@ export interface MovementDescription {
   /**
    * The movement with concrete board numbers and no sit-out flagged. A stored
    * spec's board-set indices are expanded with the selection's boards-per-round.
-   * An American Whist teams movement is its whole fixed schedule.
+   * A generated teams movement (American Whist, Circulation, Thurner,
+   * Stagger, head-to-head) is its whole fixed schedule.
    */
   layout: MovementPlan;
   /** A stored movement's built-in phantom pair number, or null when it has none. */
@@ -40,32 +55,51 @@ export interface StoredMovementTable {
 }
 
 /**
- * Convert a generated movement into a layout. Only Web Mitchell uses more than
+ * Convert a generated movement into a layout. A round's boards are a run of
+ * consecutive numbers listed in the order the table plays them; when that
+ * starts part-way through the run (a Circulation's boards pass round the
+ * tables) the start is kept as `firstBoard`, and a table sharing its boards
+ * with another this round (a Thurner's satellite) keeps that table as
+ * `sharesWith` (a Thurner's satellite, or a Stagger's partner tables). Only Web Mitchell uses more than
  * one physical copy of the boards, so every other round plays copy "A".
  */
 function generatedLayout(tables: Tables): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
-    rounds: table.rounds.map((round) => ({
-      roundNumber: round.round,
-      ns: round.participants.nsId,
-      ew: round.participants.ewId,
-      boardStart: round.boards[0],
-      boardEnd: round.boards[round.boards.length - 1],
-      boardCopy: round.boardCopy ?? "A",
-    })),
+    rounds: table.rounds.map((round) => {
+      const boardStart = Math.min(...round.boards);
+      const firstBoard = round.boards[0];
+      return {
+        roundNumber: round.round,
+        ns: round.participants.nsId,
+        ew: round.participants.ewId,
+        boardStart,
+        boardEnd: Math.max(...round.boards),
+        ...(firstBoard === boardStart ? {} : { firstBoard }),
+        ...(round.sharesWith == null ? {} : { sharesWith: round.sharesWith }),
+        boardCopy: round.boardCopy ?? "A",
+      };
+    }),
   }));
 }
 
 /**
- * Describe a generated movement (a Mitchell variant or an American Whist
- * teams movement). No database access: the layout comes from the selection's
- * spec.
+ * Describe a generated movement (a Mitchell variant, or an American Whist,
+ * Circulation, Thurner, Stagger or head-to-head teams movement). No database access: the layout comes
+ * from the selection's spec.
  */
 export function describeGeneratedMovement(
   selected: Extract<
     FixedSelectedMovement,
-    { source: "MITCHELL" | "AMERICAN_WHIST_TEAMS" }
+    {
+      source:
+        | "MITCHELL"
+        | "AMERICAN_WHIST_TEAMS"
+        | "CIRCULATION_TEAMS"
+        | "THURNER_TEAMS"
+        | "STAGGER_TEAMS"
+        | "HEAD_TO_HEAD_TEAMS";
+    }
   >,
 ): MovementDescription {
   if (selected.source === "MITCHELL") {
@@ -74,6 +108,44 @@ export function describeGeneratedMovement(
     return {
       selected,
       layout: generatedLayout(generateMitchell(selected.mitchell)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "CIRCULATION_TEAMS") {
+    // Circulation: the whole fixed schedule for its four teams.
+    return {
+      selected,
+      layout: generatedLayout(
+        generateCirculationTeams(selected.circulationTeams),
+      ),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "THURNER_TEAMS") {
+    // Thurner: the whole fixed schedule, every table filled.
+    return {
+      selected,
+      layout: generatedLayout(generateThurnerTeams(selected.thurnerTeams)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "HEAD_TO_HEAD_TEAMS") {
+    // Head-to-head: both stanzas, each table starting on its own half.
+    return {
+      selected,
+      layout: generatedLayout(generateHeadToHeadTeams(selected.headToHeadTeams)),
+      missingPair: null,
+    };
+  }
+
+  if (selected.source === "STAGGER_TEAMS") {
+    // Stagger: the whole fixed schedule, every table filled.
+    return {
+      selected,
+      layout: generatedLayout(generateStaggerTeams(selected.staggerTeams)),
       missingPair: null,
     };
   }

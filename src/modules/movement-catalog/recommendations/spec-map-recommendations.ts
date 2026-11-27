@@ -1,6 +1,6 @@
 import type { CatalogMovementSummary } from "@/modules/movement-catalog/catalog-summary";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
-import { MitchellMovementSpec } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
+import { MitchellMovementSpec } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 import {
   MovementDescriptor,
   descriptorToSelectedMovement,

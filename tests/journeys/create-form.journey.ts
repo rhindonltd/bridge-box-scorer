@@ -25,31 +25,20 @@ test.describe("Create game form", () => {
     let gameId: string | null = null;
 
     try {
-      // New Game opens the Set Up Game menu with only Game Details available.
+      // New Game opens the Game Details form straight away; its back arrow
+      // returns to the Create Game screen without creating anything.
       await page.goto("/create");
       await page.getByRole("link", { name: "New Game", exact: true }).click();
       await expect(page).toHaveURL(/\/create\/new$/, { timeout: 15000 });
-      for (const name of [
-        "Tables",
-        "Movement",
-        "Timer",
-        "Start Game",
-        "Delete Game",
-      ]) {
-        await expect(
-          page.getByRole("button", { name, exact: true }),
-        ).toBeDisabled();
-      }
-      // Game Details opens the form; its back arrow returns to the menu.
-      await page.getByRole("button", { name: "Game Details" }).click();
       await expect(page.getByLabel("Event Name")).toBeVisible({
         timeout: 15000,
       });
       await page.getByRole("button", { name: "Go back" }).click();
-      await expect(
-        page.getByRole("button", { name: "Tables", exact: true }),
-      ).toBeDisabled({ timeout: 15000 });
-      await page.getByRole("button", { name: "Game Details" }).click();
+      await expect(page).toHaveURL(/\/create$/, { timeout: 15000 });
+      await page.getByRole("link", { name: "New Game", exact: true }).click();
+      await expect(page.getByLabel("Event Name")).toBeVisible({
+        timeout: 15000,
+      });
       // Let the on-mount BridgeWebs fetch settle before filling; its re-render
       // can otherwise drop the field values by submit time (WebKit).
       await page.waitForLoadState("networkidle");
@@ -127,7 +116,7 @@ test.describe("Create game form", () => {
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create/new?step=details");
+      await page.goto("/create/new");
       // The page fires a BridgeWebs-events fetch on mount that re-renders the
       // form; let it settle before submitting so the click isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
@@ -144,7 +133,7 @@ test.describe("Create game form", () => {
         "aria-invalid",
         "true",
       );
-      await expect(page).toHaveURL(/\/create\/new\?step=details$/);
+      await expect(page).toHaveURL(/\/create\/new$/);
     } finally {
       await page.context().close();
     }
@@ -157,7 +146,7 @@ test.describe("Create game form", () => {
     const page = await newParticipant(browser);
 
     try {
-      await page.goto("/create/new?step=details");
+      await page.goto("/create/new");
       // Let the on-mount fetch settle so the field fill isn't lost (WebKit).
       await page.waitForLoadState("networkidle");
       await page.getByLabel("Event Name").fill("Doomed Game");

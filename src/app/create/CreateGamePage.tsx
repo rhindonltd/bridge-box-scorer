@@ -29,20 +29,12 @@ function todayDateOnly(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-interface Props {
-  /**
-   * Back arrow on the first step. The new-game menu passes this to return to
-   * itself; without it the arrow pops the history stack.
-   */
-  onBack?: () => void;
-}
-
 /**
- * The details for a new game (name, director, type, scoring and options). It is
- * opened from Game Details on the new-game menu, and saving it creates the game
- * and opens that game's Set Up Game menu.
+ * The details for a new game (name, director, type, scoring and options). New
+ * Game opens it directly, and saving it creates the game and opens that game's
+ * Set Up Game menu.
  */
-export function CreateGamePage({ onBack }: Props = {}) {
+export function CreateGamePage() {
   const t = useTranslations();
   const [eventName, setEventName] = useState("");
   const [director, setDirector] = useState("");
@@ -169,9 +161,9 @@ export function CreateGamePage({ onBack }: Props = {}) {
   return (
     <PageLayout
       headerTitle="Game Details"
-      // Back returns to the new-game menu (or pops the stack).
-      backAction={onBack}
-      backFallbackHref="/create/new"
+      // Back returns to where New Game was tapped (or the list of games not
+      // yet started).
+      backFallbackHref="/create"
       actions={
         <button
           type="submit"

@@ -1,7 +1,7 @@
 import { Tables } from "@/model/movement";
 import type { MovementPlan } from "@/model/movement-plan";
 import type { PairSeat } from "@/model/participants";
-import { generateStandardMitchellWithSitOut } from "@/modules/movement-catalog/generation/mitchell/sit-out";
+import { generateStandardMitchellWithSitOut } from "@/modules/movement-catalog/pairs/mitchell/sit-out";
 import { boardSetFor } from "@/modules/movement-catalog/shared";
 import type { MovementDescription } from "./describe-movement";
 import {
@@ -22,10 +22,11 @@ import {
  * - Stored spec: a movement with a built-in missing pair is rotated so its
  *   phantom lines up with the empty seat; otherwise the position at the empty
  *   seat becomes the phantom.
- * - Teams (American Whist or a stored teams movement): the described layout as
- *   it is, each match's two rooms grouped into one TEAMS match (see
- *   `teamsLayoutToMaterializable`). Teams never have a sit-out (the start check
- *   rejects one), so `sitOutSeat` is not read.
+ * - Teams (American Whist, Circulation, Thurner, Stagger, head-to-head or a
+ *   stored teams movement):
+ *   the described layout as it is, each match's two rooms grouped into one
+ *   TEAMS match (see `teamsLayoutToMaterializable`). Teams never have a sit-out
+ *   (the start check rejects one), so `sitOutSeat` is not read.
  */
 export function planMovement(
   description: MovementDescription,
@@ -33,13 +34,37 @@ export function planMovement(
 ): MovementPlan {
   const { selected, layout, missingPair } = description;
 
-  // A teams movement (American Whist or a stored teams movement) is laid out
-  // in full by its description, and a teams start never has a sit-out (a team
-  // needs both its pairs).
+  // A teams movement (American Whist, Circulation, Thurner, Stagger,
+  // head-to-head or a stored teams movement) is laid out in full by its description, and a teams start never has a
+  // sit-out (a team needs both its pairs).
   if (selected.source === "AMERICAN_WHIST_TEAMS") {
     return teamsLayoutToMaterializable(
       layout,
       selected.americanWhistTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "CIRCULATION_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.circulationTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "THURNER_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.thurnerTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "HEAD_TO_HEAD_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.headToHeadTeams.boardsPerRound,
+    );
+  }
+  if (selected.source === "STAGGER_TEAMS") {
+    return teamsLayoutToMaterializable(
+      layout,
+      selected.staggerTeams.boardsPerRound,
     );
   }
   if (selected.source === "TEAMS_SPEC") {
@@ -76,21 +101,28 @@ export function planMovement(
  * Convert a generated, fully-expanded {@link Tables} movement (board numbers
  * already applied) into the {@link MovementPlan} shape the DB writers
  * consume. Movement-agnostic: it only reads the per-table, per-round layout, so
- * every pairs generator that emits `Tables` shares it. Every round gets the
- * default ordinary-pairs match (`PAIRS`, `scoredAsUnit: false`).
+ * every generator that emits `Tables` shares it. A round whose boards are
+ * listed starting part-way through their run gets that start as its
+ * `firstBoard`. Every round gets the default ordinary-pairs match (`PAIRS`,
+ * `scoredAsUnit: false`).
  */
 export function tablesToMaterializableMovement(tables: Tables): MovementPlan {
   return tables.tables.map((table) => ({
     tableNumber: table.table,
     rounds: table.rounds.map((round) => {
-      const boardStart = round.boards[0];
-      const boardEnd = round.boards[round.boards.length - 1];
+      // A round's boards are a run of consecutive numbers, listed in the order
+      // the table plays them: usually ascending, or starting part-way through
+      // when the boards circulate round the tables.
+      const boardStart = Math.min(...round.boards);
+      const boardEnd = Math.max(...round.boards);
+      const firstBoard = round.boards[0];
       return {
         roundNumber: round.round,
         ns: round.participants.nsId,
         ew: round.participants.ewId,
         boardStart,
         boardEnd,
+        ...(firstBoard === boardStart ? {} : { firstBoard }),
         boardCopy: round.boardCopy,
       };
     }),
@@ -108,11 +140,12 @@ function teamsSeatTable(seatId: string): number {
 
 /**
  * Tag a teams movement's rooms with their `TEAMS` match, so a match's two
- * rooms group into ONE match scored as a unit. Two teams meet once, so the
- * match is keyed by the unordered home-table pair alone: the two rooms may be
- * played in different rounds. The match is numbered by
- * its board set (each team plays each set once), which gives every team one
- * match per number for the per-round scorers.
+ * rooms group into ONE match scored as a unit. Two teams play one match, so
+ * the match is keyed by the unordered home-table pair alone: the two rooms may
+ * be played in different rounds, and a head-to-head's two stanzas are one
+ * match over both stanzas' boards. The match is numbered by its (first) board
+ * set (each team plays each set once), which gives every team one match per
+ * number for the per-round scorers.
  */
 export function teamsLayoutToMaterializable(
   layout: MovementPlan,

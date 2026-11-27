@@ -228,3 +228,45 @@ describe("stored teams movements", () => {
     expect(classifyEvent("TEAMS", "IMP", stored).format).toBe("TEAMS_IMP_AGG");
   });
 });
+describe("Circulation teams movements", () => {
+  const circulation: SelectedMovement = {
+    source: "CIRCULATION_TEAMS",
+    circulationTeams: { boardsPerRound: 8 },
+  };
+  it("are teams movements, scored as teams", () => {
+    expect(isTeamsMovement(circulation)).toBe(true);
+    expect(classifyEvent("TEAMS", "IMP_VP", circulation).format).toBe(
+      "TEAMS_VP",
+    );
+  });
+});
+describe("Thurner teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "THURNER_TEAMS",
+        thurnerTeams: { teams: 6, boardsPerRound: 3 },
+      }),
+    ).toBe(true);
+  });
+});
+describe("Stagger teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "STAGGER_TEAMS",
+        staggerTeams: { teams: 6, boardsPerRound: 4 },
+      }),
+    ).toBe(true);
+  });
+});
+describe("head-to-head teams movements", () => {
+  it("are teams movements", () => {
+    expect(
+      isTeamsMovement({
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      }),
+    ).toBe(true);
+  });
+});

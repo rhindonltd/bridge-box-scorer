@@ -9,8 +9,8 @@
  */
 
 // Generation.
-export { generateMitchell } from "./generation/mitchell/mitchell";
-export type { MitchellMovementSpec } from "./generation/mitchell/mitchell-utils";
+export { generateMitchell } from "./pairs/mitchell/mitchell";
+export type { MitchellMovementSpec } from "./pairs/mitchell/mitchell-utils";
 
 // Recommendations. The stored movements are passed in, because the picker
 // computes recommendations in the browser.
@@ -24,15 +24,39 @@ export type {
   TeamsCatalogMovementSummary,
 } from "./catalog-summary";
 
-// Teams movements: the American Whist generator and the options a Teams game
-// can choose (American Whist plus the teams library).
+// Teams movements: the American Whist, Circulation, Thurner and Stagger
+// generators and the options a Teams game can choose (those plus the teams library).
 export {
   generateAmericanWhistTeams,
   isAmericanWhistTeamCount,
   type AmericanWhistTeamsSpec,
-} from "./generation/american-whist-teams/american-whist-teams";
+} from "./teams/american-whist-teams/american-whist-teams";
+export {
+  generateCirculationTeams,
+  type CirculationTeamsSpec,
+} from "./teams/circulation-teams/circulation-teams";
+export {
+  generateThurnerTeams,
+  isThurnerTeamCount,
+  type ThurnerTeamsSpec,
+} from "./teams/thurner-teams/thurner-teams";
+export {
+  generateStaggerTeams,
+  isStaggerTeamCount,
+  type StaggerTeamsSpec,
+} from "./teams/stagger-teams/stagger-teams";
+export {
+  generateHeadToHeadTeams,
+  type HeadToHeadTeamsSpec,
+} from "./teams/head-to-head-teams/head-to-head-teams";
 export {
   americanWhistPreview,
+  circulationPreview,
+  headToHeadPreview,
+  headToHeadSetOut,
+  circulationSetOut,
+  staggerPreview,
+  thurnerPreview,
   teamsMovementOptions,
   type TeamsMovementOption,
   type TeamsMovementRef,
@@ -63,3 +87,5 @@ export type {
   MovementDescription,
 } from "./plan/describe-movement";
 export { planMovement } from "./plan/plan-movement";
+// Where a movement calls a score-up beyond its match ends.
+export { declaredScoreBreakRounds } from "./teams/score-breaks";

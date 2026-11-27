@@ -6,16 +6,28 @@ import { boards as pairsBoards } from "@/db/games/tables/boards";
 import { seatOccupancy } from "@/db/games/tables/seat-occupancy";
 import { PairSeat } from "@/model/participants";
 import { buildAssignmentPlayerLookup } from "@/db/games/queries/assignment-players";
-import { buildScheduleRounds, type PairBoardRow } from "@/modules/play-flow";
+import {
+  buildScheduleRounds,
+  scoreBreakRounds,
+  teamOfPair,
+  type PairBoardRow,
+} from "@/modules/play-flow";
 import { readExpectedLateSeats } from "@/db/games/queries/expected-late-seats";
+import { readTeamMatchRounds } from "@/db/games/queries/team-match-rounds";
+import { getSectionMovement } from "@/db/games/queries/get-section-movement";
+import { declaredScoreBreakRounds } from "@/modules/movement-catalog";
+import { sectionOf } from "@/model/participants";
 
 /**
  * Build a player schedule for a single seat: which boards this pair plays in
  * which round, at which table, against whom, plus sit-out rounds padded in.
  *
  * The DB reads run in a fixed order (assignment lookup → this pair's boards →
- * the game-wide player lookup → expected-late seats → total rounds); the
- * rounds are then built by `buildScheduleRounds` (`@/modules/play-flow`).
+ * the game-wide player lookup → expected-late seats → total rounds → the teams
+ * match rounds → the section's movement); the rounds are then built by
+ * `buildScheduleRounds` (`@/modules/play-flow`). In a teams game each round is
+ * flagged when the pair's team scores up after it; a pairs game has no teams
+ * matches and declares no score breaks, so none.
  */
 export async function getSchedule(db: Db, seat: string) {
   const anchorId = await seatAnchorId(db, seat);
@@ -41,6 +53,15 @@ export async function getSchedule(db: Db, seat: string) {
   const expectedLateSeats = await readExpectedLateSeats(db);
 
   const totalRounds = await countTotalRounds(db);
+  // A team scores up where its matches so far are finished, and wherever its
+  // movement calls a score-up mid-match (a head-to-head's stanzas).
+  const scoreBreaks = new Set([
+    ...scoreBreakRounds(
+      await readTeamMatchRounds(db),
+      teamOfPair(assignmentId),
+    ),
+    ...declaredScoreBreakRounds(await getSectionMovement(db, sectionOf(seat))),
+  ]);
 
   return {
     assignmentId,
@@ -51,6 +72,7 @@ export async function getSchedule(db: Db, seat: string) {
       assignmentId,
       expectedLateSeats,
       totalRounds,
+      scoreBreakRounds: scoreBreaks,
     }),
   };
 }

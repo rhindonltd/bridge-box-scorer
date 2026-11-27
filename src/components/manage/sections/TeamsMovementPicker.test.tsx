@@ -11,10 +11,18 @@ vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 vi.mock("@/lib/section-service", () => ({
   setSectionTeamsMovementSpec: vi.fn(),
   setSectionAmericanWhistTeamsMovement: vi.fn(),
+  setSectionCirculationTeamsMovement: vi.fn(),
+  setSectionThurnerTeamsMovement: vi.fn(),
+  setSectionStaggerTeamsMovement: vi.fn(),
+  setSectionHeadToHeadTeamsMovement: vi.fn(),
 }));
 
 import {
   setSectionAmericanWhistTeamsMovement,
+  setSectionCirculationTeamsMovement,
+  setSectionThurnerTeamsMovement,
+  setSectionStaggerTeamsMovement,
+  setSectionHeadToHeadTeamsMovement,
   setSectionTeamsMovementSpec,
 } from "@/lib/section-service";
 import { TeamsMovementPicker } from "./TeamsMovementPicker";
@@ -23,19 +31,20 @@ import type { SelectedMovement } from "@/model/selected-movement";
 const stagger = {
   id: 3,
   name: "Stagger",
-  tables: 6,
+  tables: 10,
   boards: 40,
   boardsPerRound: 8,
   rounds: 5,
 };
 const short = { ...stagger, id: 4, name: "Short", boardsPerRound: 4 };
 
+// Twenty teams: no generated movement suits, so only the library is listed.
 function renderPicker(onSelected = vi.fn()) {
   render(
     <TeamsMovementPicker
       gameId="g1"
       section="A"
-      tables={6}
+      tables={20}
       selectedMovement={{ source: "TEAMS_SPEC", specId: 3, boardsPerRound: 8 }}
       onSelected={onSelected}
     />,
@@ -47,7 +56,7 @@ describe("TeamsMovementPicker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     swrData.clear();
-    swrData.set("/api/movements/teams/6", [stagger, short]);
+    swrData.set("/api/movements/teams/20", [stagger, short]);
     swrData.set("/api/movements/teams/detail/3", {
       name: "Stagger",
       tables: [
@@ -123,15 +132,15 @@ describe("TeamsMovementPicker", () => {
   });
 
   it("says so when the library has nothing for the team count", () => {
-    swrData.set("/api/movements/teams/6", []);
+    swrData.set("/api/movements/teams/20", []);
     renderPicker();
     expect(
-      screen.getByText("No teams movements are available for 6 tables."),
+      screen.getByText("No teams movements are available for 20 tables."),
     ).toBeTruthy();
   });
 
   it("shows nothing while the list is loading", () => {
-    swrData.delete("/api/movements/teams/6");
+    swrData.delete("/api/movements/teams/20");
     renderPicker();
     expect(screen.queryByTestId("teams-movement-card")).toBeNull();
     expect(screen.queryByText(/No teams movements/)).toBeNull();
@@ -186,7 +195,7 @@ describe("TeamsMovementPicker — American Whist", () => {
   it("previews American Whist without fetching and saves its setup", async () => {
     const onSelected = renderOdd();
     fireEvent.click(
-      screen.getAllByRole("button", { name: /American Whist/ })[0],
+      screen.getAllByRole("button", { name: /All Play All/ })[0],
     );
     // Table 1, round 1: team 1 at home to team 3.
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
@@ -198,5 +207,162 @@ describe("TeamsMovementPicker — American Whist", () => {
       { teams: 3, boardsPerRound: 6 },
     );
     expect(setSectionTeamsMovementSpec).not.toHaveBeenCalled();
+  });
+  describe("four teams", () => {
+    function renderFour(selectedMovement: SelectedMovement | null = null) {
+      swrData.set("/api/movements/teams/4", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={4}
+          selectedMovement={selectedMovement}
+          onSelected={onSelected}
+        />,
+      );
+      return onSelected;
+    }
+    it("offers Circulation at 12, 24 and 36 boards and marks the selected one", () => {
+      renderFour({
+        source: "CIRCULATION_TEAMS",
+        circulationTeams: { boardsPerRound: 8 },
+      });
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(
+        expect.arrayContaining(["12 boards", "24 boards", "36 boards"]),
+      );
+      expect(
+        screen.getAllByRole("button", { name: /Circulation/ }),
+      ).toHaveLength(3);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toContain("24");
+    });
+    it("previews a Circulation without fetching and saves its setup", async () => {
+      const onSelected = renderFour();
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Circulation/ })[1],
+      );
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionCirculationTeamsMovement).toHaveBeenCalledWith(
+        "g1",
+        "A",
+        { boardsPerRound: 8 },
+      );
+    });
+  });
+  describe("eight teams", () => {
+    it("offers Thurner, marks the selected one and saves a choice", async () => {
+      swrData.set("/api/movements/teams/8", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={8}
+          selectedMovement={{
+            source: "THURNER_TEAMS",
+            thurnerTeams: { teams: 8, boardsPerRound: 3 },
+          }}
+          onSelected={onSelected}
+        />,
+      );
+      // Thurner and Stagger share the 7-round boards-per-round options.
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(["14 boards", "21 boards", "28 boards", "35 boards"]);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toContain("21");
+      fireEvent.click(screen.getAllByRole("button", { name: /Thurner/ })[0]);
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionThurnerTeamsMovement).toHaveBeenCalledWith("g1", "A", {
+        teams: 8,
+        boardsPerRound: 2,
+      });
+    });
+  });
+  describe("Stagger", () => {
+    it("marks a selected Stagger and saves a choice", async () => {
+      swrData.set("/api/movements/teams/10", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={10}
+          selectedMovement={{
+            source: "STAGGER_TEAMS",
+            staggerTeams: { teams: 10, boardsPerRound: 3 },
+          }}
+          onSelected={onSelected}
+        />,
+      );
+      // 10 teams play 9 rounds: 2..4 boards a round.
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(["18 boards", "27 boards", "36 boards"]);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      // 3 boards a round over 10 board sets: 30 boards in play.
+      expect(selected[0].textContent).toContain("30Boards in Play");
+      fireEvent.click(screen.getAllByRole("button", { name: /Stagger/ })[0]);
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionStaggerTeamsMovement).toHaveBeenCalledWith("g1", "A", {
+        teams: 10,
+        boardsPerRound: 2,
+      });
+    });
+  });
+  describe("Head to Head", () => {
+    it("offers it for two teams, marks the selected one and saves a choice", async () => {
+      swrData.set("/api/movements/teams/2", []);
+      const onSelected = vi.fn();
+      render(
+        <TeamsMovementPicker
+          gameId="g1"
+          section="A"
+          tables={2}
+          selectedMovement={{
+            source: "HEAD_TO_HEAD_TEAMS",
+            headToHeadTeams: { boardsPerRound: 12 },
+          }}
+          onSelected={onSelected}
+        />,
+      );
+      expect(
+        screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+      ).toEqual(["12 boards", "16 boards", "20 boards", "24 boards"]);
+      const selected = screen
+        .getAllByTestId("teams-movement-card")
+        .filter((c) => c.getAttribute("data-selected") === "true");
+      expect(selected).toHaveLength(1);
+      expect(selected[0].textContent).toContain("24Boards in Play");
+      fireEvent.click(
+        screen.getAllByRole("button", { name: /Head to Head/ })[0],
+      );
+      expect(await screen.findByRole("dialog")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Select Movement" }));
+      await waitFor(() => expect(onSelected).toHaveBeenCalled());
+      expect(setSectionHeadToHeadTeamsMovement).toHaveBeenCalledWith(
+        "g1",
+        "A",
+        { boardsPerRound: 6 },
+      );
+    });
   });
 });

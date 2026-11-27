@@ -14,7 +14,11 @@ import {
 import type { SelectedMovement } from "@/model/selected-movement";
 import {
   setSectionAmericanWhistTeamsMovement,
+  setSectionCirculationTeamsMovement,
   setSectionTeamsMovementSpec,
+  setSectionThurnerTeamsMovement,
+  setSectionStaggerTeamsMovement,
+  setSectionHeadToHeadTeamsMovement,
 } from "@/lib/section-service";
 import { errorMessage } from "@/lib/error-message";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
@@ -28,7 +32,9 @@ interface TeamsPreview {
 
 /**
  * The movement list for a Teams (not Swiss Teams) game: American Whist (for an
- * odd number of teams) at a range of boards per round, and the teams library's
+ * odd number of teams), Circulation (for four teams), Thurner and Stagger (for
+ * an even number of teams) and Head to Head (for two teams) at a range of
+ * boards per round, and the teams library's
  * movements for the section's team count, grouped by how many boards each
  * team plays. Selecting a card opens its preview; "Select Movement" saves it.
  */
@@ -66,6 +72,22 @@ export function TeamsMovementPicker({
     try {
       if (option.ref.source === "americanWhist") {
         await setSectionAmericanWhistTeamsMovement(
+          gameId,
+          section,
+          option.ref.spec,
+        );
+      } else if (option.ref.source === "circulation") {
+        await setSectionCirculationTeamsMovement(
+          gameId,
+          section,
+          option.ref.spec,
+        );
+      } else if (option.ref.source === "thurner") {
+        await setSectionThurnerTeamsMovement(gameId, section, option.ref.spec);
+      } else if (option.ref.source === "stagger") {
+        await setSectionStaggerTeamsMovement(gameId, section, option.ref.spec);
+      } else if (option.ref.source === "headToHead") {
+        await setSectionHeadToHeadTeamsMovement(
           gameId,
           section,
           option.ref.spec,
@@ -138,9 +160,20 @@ export function TeamsMovementPicker({
 
 /** A stable key for an option's card. */
 function optionKey(ref: TeamsMovementRef): string {
-  return ref.source === "americanWhist"
-    ? `aw-${ref.spec.boardsPerRound}`
-    : `library-${ref.id}`;
+  switch (ref.source) {
+    case "americanWhist":
+      return `aw-${ref.spec.boardsPerRound}`;
+    case "circulation":
+      return `circulation-${ref.spec.boardsPerRound}`;
+    case "thurner":
+      return `thurner-${ref.spec.boardsPerRound}`;
+    case "stagger":
+      return `stagger-${ref.spec.boardsPerRound}`;
+    case "headToHead":
+      return `head-to-head-${ref.spec.boardsPerRound}`;
+    case "library":
+      return `library-${ref.id}`;
+  }
 }
 
 /** Whether an option is the section's selected movement. */
@@ -148,13 +181,35 @@ function isSelected(
   ref: TeamsMovementRef,
   selected: SelectedMovement | null,
 ): boolean {
-  if (ref.source === "americanWhist") {
-    return (
-      selected?.source === "AMERICAN_WHIST_TEAMS" &&
-      selected.americanWhistTeams.boardsPerRound === ref.spec.boardsPerRound
-    );
+  switch (ref.source) {
+    case "americanWhist":
+      return (
+        selected?.source === "AMERICAN_WHIST_TEAMS" &&
+        selected.americanWhistTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "circulation":
+      return (
+        selected?.source === "CIRCULATION_TEAMS" &&
+        selected.circulationTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "thurner":
+      return (
+        selected?.source === "THURNER_TEAMS" &&
+        selected.thurnerTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "stagger":
+      return (
+        selected?.source === "STAGGER_TEAMS" &&
+        selected.staggerTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "headToHead":
+      return (
+        selected?.source === "HEAD_TO_HEAD_TEAMS" &&
+        selected.headToHeadTeams.boardsPerRound === ref.spec.boardsPerRound
+      );
+    case "library":
+      return selected?.source === "TEAMS_SPEC" && selected.specId === ref.id;
   }
-  return selected?.source === "TEAMS_SPEC" && selected.specId === ref.id;
 }
 
 /** Group options by the boards a team plays, fewest first. */

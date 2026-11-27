@@ -1,5 +1,9 @@
 import type { Table } from "@/model/movement";
 import type { StoredMovementTable } from "@/modules/movement-catalog/plan/describe-movement";
+import {
+  generateThurnerTeams,
+  isThurnerTeamCount,
+} from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 /**
  * The stored teams movement library (TSMovements.txt). Each row of a movement
@@ -105,4 +109,59 @@ export function isAmericanWhistTeamsLayout(
     }
   }
   return visitorOffset.size === 1 && setOffset.size === 1;
+}
+
+/**
+ * Whether a stored teams movement is a four-team Circulation: three rounds, in
+ * each of which every table plays the same board set against a different
+ * team. The app generates Circulation itself (`generateCirculationTeams`),
+ * which also gives each table its own starting boards, so the library's copies
+ * are not listed. Read alongside {@link isSupportedTeamsMovement}, which checks
+ * that the rooms pair up into matches.
+ */
+export function isCirculationTeamsLayout(
+  tables: StoredMovementTable[],
+): boolean {
+  if (tables.length !== 4) return false;
+  const setByRound = new Map<number, number>();
+  for (const table of tables) {
+    if (table.rounds.length !== 3) return false;
+    const visitors = new Set(table.rounds.map((round) => round.ew));
+    if (visitors.size !== 3) return false;
+    for (const round of table.rounds) {
+      const set = setByRound.get(round.roundNumber) ?? round.boardSet;
+      if (set !== round.boardSet) return false;
+      setByRound.set(round.roundNumber, set);
+    }
+  }
+  return true;
+}
+
+/**
+ * Whether a stored teams movement is exactly the Thurner the app generates
+ * for its team count (`generateThurnerTeams`), so the library's copy is not
+ * listed.
+ */
+export function isThurnerTeamsLayout(tables: StoredMovementTable[]): boolean {
+  if (!isThurnerTeamCount(tables.length)) return false;
+  // With one board a round, a generated board number is its board set.
+  const generated = generateThurnerTeams({
+    teams: tables.length,
+    boardsPerRound: 1,
+  }).tables;
+  return tables.every((table, i) => {
+    const rounds = generated[i].rounds;
+    return (
+      table.rounds.length === rounds.length &&
+      table.rounds.every((round, k) => {
+        const expected = rounds[k];
+        return (
+          round.roundNumber === expected.round &&
+          `${round.ns}NS` === expected.participants.nsId &&
+          `${round.ew}EW` === expected.participants.ewId &&
+          round.boardSet === expected.boards[0]
+        );
+      })
+    );
+  });
 }

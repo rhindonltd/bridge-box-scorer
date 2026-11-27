@@ -42,6 +42,37 @@ describe("expectedRounds", () => {
     expect(expectedRounds(m)).toBe(6);
   });
 
+  it("plays every round of a Thurner (teams − 1)", () => {
+    const m: SelectedMovement = {
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams: 8, boardsPerRound: 3 },
+    };
+    expect(expectedRounds(m)).toBe(7);
+    expect(boardsPerRoundOf(m)).toBe(3);
+  });
+  it("plays every round of a Stagger (teams − 1)", () => {
+    const m: SelectedMovement = {
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams: 6, boardsPerRound: 4 },
+    };
+    expect(expectedRounds(m)).toBe(5);
+    expect(boardsPerRoundOf(m)).toBe(4);
+  });
+  it("plays two stanzas of a head-to-head", () => {
+    const m: SelectedMovement = {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound: 12 },
+    };
+    expect(expectedRounds(m)).toBe(2);
+    expect(boardsPerRoundOf(m)).toBe(12);
+  });
+  it("plays three rounds of a Circulation", () => {
+    const m: SelectedMovement = {
+      source: "CIRCULATION_TEAMS",
+      circulationTeams: { boardsPerRound: 8 },
+    };
+    expect(expectedRounds(m)).toBe(3);
+  });
   it("returns null for a SPEC selection (no round count in the stored selection)", () => {
     const m: SelectedMovement = {
       source: "SPEC",
@@ -89,6 +120,13 @@ describe("boardsPerRoundOf", () => {
     expect(boardsPerRoundOf(m)).toBe(2);
   });
 
+  it("reads boards-per-round from a nested CIRCULATION_TEAMS spec", () => {
+    const m: SelectedMovement = {
+      source: "CIRCULATION_TEAMS",
+      circulationTeams: { boardsPerRound: 12 },
+    };
+    expect(boardsPerRoundOf(m)).toBe(12);
+  });
   it("reads the top-level boards-per-round from a SPEC selection", () => {
     const m: SelectedMovement = {
       source: "SPEC",

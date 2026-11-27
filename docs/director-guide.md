@@ -22,11 +22,10 @@ started yet (**Not started yet**). Tap one of those to carry on setting it up;
 from a different device you are asked for a share code first (see
 [Sharing director access](#sharing-director-access)).
 
-To set up a new game, tap **New Game** at the top. This opens the **Set Up
-Game** menu with only **Game Details** available: the other buttons stay greyed
-out until the game exists. Tap **Game Details** and fill it in. Tapping
-**Create Game** at the end creates the game and returns you to its Set Up Game
-menu, now with every option available.
+To set up a new game, tap **New Game** at the top. This opens **Game Details**
+straight away; fill it in and tap **Create Game** at the end. That creates the
+game and takes you to its **Set Up Game** menu. The back arrow on Game Details
+returns to the Create Game screen without creating anything.
 
 ### Step 2: Fill in Game Details
 
@@ -83,6 +82,8 @@ After you create a game, or pick one that is still being set up under
 - **Movement**: choose the movement.
 - **Timer**: optional session timer.
 - **Start Game**: shows anything still needed, then starts the game.
+- **Share Director Access**: lets a co-director manage the game from their own
+  device (see [Sharing director access](#sharing-director-access)).
 - **Delete Game** _(red)_: deletes the game after a confirmation.
 
 You can do them in any order. The back arrow (top-left) on each page returns to
@@ -91,8 +92,7 @@ The back arrow on the menu itself returns to the list of games not yet started.
 The top-right menu on Tables, Movement, Timer and Start Game only has **Share
 Director Access**.
 
-The menu's own top-right menu only has **Share Director Access**. To get back
-to the main menu, use the back arrow: from the menu to the list of games not
+The menu itself has no top-right menu. To get back to the main menu, use the back arrow: from the menu to the list of games not
 yet started, then once more.
 
 **Game Details** is pre-filled with what you set when creating the game: the
@@ -252,13 +252,59 @@ team's home pair, starting in round 1 — each player's screen shows where to go
 A match is played on the same boards in both rooms, but in some movements the
 two halves of a match fall in different rounds.
 
-With an **odd number of teams** the list starts with **American Whist**, one
-card for each sensible number of boards per round. Each round the East/West
+With an **odd number of teams** the list starts with **All Play All** (an
+American Whist teams movement), one card for each sensible number of boards per
+round. Each round the East/West
 pairs move down two tables and the boards move down one. There is one set of
 boards, every table is in play every round, and every team meets every other
-team once, over as many rounds as there are teams less one. The other cards
-are ready-made movements from the movement library. If no movement is listed
-for your table count, there is none for that number of teams.
+team once, over as many rounds as there are teams less one.
+
+With **four teams** the list starts with **Circulation**, at one, two or three
+boards to a table (12, 24 or 36 boards for each team). It is three rounds, each
+a whole match: team 1 against 2 and 3 against 4, then 1 against 3 and 2 against
+4, then 1 against 4 and 2 against 3, with new boards every round. At the start
+of each round share the round's boards out evenly, table 1 taking the first
+ones, table 2 the next, and so on; each table shows the boards to put out
+there. When a table finishes its boards it passes them to the next table down
+(table 1 passes to table 4), so every table plays all of the round's boards.
+Each player's screen says which board their table starts with.
+
+With **6, 8 or 14 teams** the list also offers **Thurner**, one card for each
+sensible number of boards per round. Every team meets every other team once, over as many rounds as there are teams less one.
+The tables except the highest form a circuit: the boards move down one table
+each round there, as in an All Play All. The highest table plays the same
+boards as one of the circuit tables each round, so the two tables share them;
+both tables' screens say which table they share with.
+
+With an **even number of teams** the list also offers **Stagger**, one card for
+each sensible number of boards per round. Every team meets every other team
+once, over as many rounds as there are teams less one, in two parts with their
+own boards: the first part is one round short of half the session. Each table
+shares its boards with the table half-way round the room (with 6 teams, tables
+1 and 4, 2 and 5, and 3 and 6), and each player's screen says which table to
+share with. The teams score up between the two parts.
+
+With **two teams** the list offers **Head to Head**: one match in two stanzas,
+each on its own boards, with a card for each even number of boards per stanza.
+In the first stanza team 1's North/South pair plays team 2's East/West pair at
+table 1, and team 2's North/South pair plays team 1's East/West pair at
+table 2. For the second stanza team 2's pairs swap tables and directions, so
+each pair meets the other team's other pair; their screens say where to sit.
+Put the first half of each stanza's boards on table 1 and the second half on
+table 2, and swap them halfway; each player's screen says which board to
+start with. The teams score up after each stanza, and the result is the two
+stanzas' IMPs added together; with **IMP (Victory Points)** scoring, the
+Victory Points are worked out once, at the end, on that total.
+
+The other cards are ready-made movements from the movement library. If no
+movement is listed for your table count, there is none for that number of
+teams.
+
+At each **score break** the East/West pairs are told to go back to their home
+table to score up with their team-mates, and both pairs then see their team's
+results since the last break. The movement decides where the breaks fall: after
+every round in a Circulation (each round is a whole match), and only at the end
+in an All Play All.
 
 #### Swiss Pairs
 
@@ -729,8 +775,9 @@ If a co-director needs to help manage the game from their own phone or tablet,
 share access with a short code:
 
 1. Tap the menu (hamburger) icon in the header of any director screen and
-   choose **Share Director Access**. Use the back arrow afterwards to return
-   to the page you were on.
+   choose **Share Director Access** (on the **Set Up Game** menu it is one of
+   the buttons). Use the back arrow afterwards to return to the page you were
+   on.
 2. A short share code appears on screen.
 3. The other person opens **Manage Game** (or **Create Game**, for a game that
    hasn't started yet), taps the same game, and enters the code on the

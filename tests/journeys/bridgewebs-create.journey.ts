@@ -79,7 +79,7 @@ test.describe("Create-page BridgeWebs event picker", () => {
     let gameId: string | null = null;
 
     try {
-      await page.goto("/create/new?step=details");
+      await page.goto("/create/new");
       // Wait for the on-mount events fetch to settle so the picker renders.
       await page.waitForLoadState("networkidle");
 

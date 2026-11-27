@@ -76,16 +76,16 @@ export function SetupGamePage() {
 
   if (step === "menu") {
     // The landing page after creating a game or picking one still being set
-    // up. Game Details is one of its buttons; the hamburger only holds sharing.
-    const landingItems: HeaderMenuItem[] = [shareItem];
+    // up. Game Details and Share Director Access are among its buttons, so it
+    // has no hamburger.
     return (
       <SetupMenuPage
-        headerRight={<HeaderMenu items={landingItems} label="Setup options" />}
         onGameDetailsClick={() => setEditingDetails(true)}
         onTablesClick={() => goTo("tables")}
         onMovementClick={() => goTo("movements")}
         onTimerClick={() => goTo("timer")}
         onStartGameClick={() => goTo("start")}
+        onShareAccessClick={shareItem.onSelect}
         onDeleteGameClick={deleteGame}
       />
     );

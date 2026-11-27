@@ -5,7 +5,7 @@ import {
   Table,
   Tables,
 } from "@/model/movement";
-import { boardsForSet } from "./generation/mitchell/mitchell-utils";
+import { boardsForSet } from "./pairs/mitchell/mitchell-utils";
 
 // ---- Types ----
 

@@ -21,6 +21,13 @@ export {
   type TablePlayers,
 } from "./schedule";
 
+// When a team scores up.
+export {
+  boardsSinceScoreBreak,
+  scoreBreakRounds,
+  teamOfPair,
+  type TeamMatchRounds,
+} from "./score-breaks";
 // Where a seat is in the event.
 export {
   resolvePlayPhase,

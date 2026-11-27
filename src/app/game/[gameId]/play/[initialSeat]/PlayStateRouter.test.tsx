@@ -139,6 +139,23 @@ vi.mock("@/app/game/[gameId]/play/[initialSeat]/ResultMismatch", () => ({
   ),
 }));
 
+vi.mock("@/app/game/[gameId]/play/[initialSeat]/ScoreBreakPage", () => ({
+  ScoreBreakPage: ({
+    homeTable,
+    away,
+    onContinue,
+  }: {
+    homeTable: number;
+    away: boolean;
+    onContinue: () => void;
+  }) => (
+    <div data-testid="score-break">
+      {`t${homeTable}${away ? "-away" : "-home"}`}
+      <button onClick={onContinue}>score-break-continue</button>
+    </div>
+  ),
+}));
+
 vi.mock("@/app/game/[gameId]/play/[initialSeat]/MoveInfoPage", () => ({
   MoveInfoPage: ({
     roundNumber,
@@ -289,6 +306,7 @@ function makeHandlers(): PlayHandlers {
     handleSitOutContinue: vi.fn(),
     handleMoveInfoContinue: vi.fn(),
     handleBoardResultsNext: vi.fn(),
+    handleScoreBreakContinue: vi.fn(),
     handleRoundResultsContinue: vi.fn(),
     handleDealsContinue: vi.fn(),
     handleReenter: vi.fn(),
@@ -471,6 +489,52 @@ describe("PlayStateRouter", () => {
     fireEvent.click(screen.getByText("results-continue"));
     expect(handlers.handleRoundResultsContinue).toHaveBeenCalled();
   });
+  it.each([
+    ["A2EW", "t2-away"],
+    ["A3NS", "t3-home"],
+  ])(
+    "sends pair %s to its home table at a score break and wires continue",
+    (assignmentId, text) => {
+      const handlers = makeHandlers();
+      render(
+        <PlayStateRouter
+          schedule={{ ...schedule, assignmentId }}
+          playState={{ state: "scoreBreak", roundIndex: 0, nextRoundIndex: 1 }}
+          gameId="g1"
+          seat={assignmentId}
+          gameType="TEAMS"
+          scoringType="IMP"
+          leadCardRequired={false}
+          handlers={handlers}
+        />,
+      );
+      expect(screen.getByTestId("score-break")).toHaveTextContent(text);
+      fireEvent.click(screen.getByText("score-break-continue"));
+      expect(handlers.handleScoreBreakContinue).toHaveBeenCalled();
+    },
+  );
+
+  it("shows the team results for every board since the last score break", () => {
+    const rounds = [
+      { ...schedule.rounds[0], scoreBreakAfter: true },
+      { ...schedule.rounds[1], sitOut: false, boards: [3, 4] },
+      { ...schedule.rounds[1], roundNumber: 3, sitOut: false, boards: [5, 6] },
+    ];
+    render(
+      <PlayStateRouter
+        schedule={{ ...schedule, rounds }}
+        playState={{ state: "roundResults", roundIndex: 2, nextRoundIndex: 3 }}
+        gameId="g1"
+        seat="1NS"
+        gameType="TEAMS"
+        scoringType="IMP"
+        leadCardRequired={false}
+        handlers={makeHandlers()}
+      />,
+    );
+    expect(screen.getByTestId("round-results")).toHaveTextContent("3,4,5,6");
+  });
+
   it("scores a teams board cross-IMP and builds the Team Result table from the pooled rows", () => {
     mockTraveller.mockReturnValue({
       deal: null,

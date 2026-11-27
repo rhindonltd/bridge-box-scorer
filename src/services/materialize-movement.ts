@@ -38,6 +38,19 @@ function matchKeyFor(
   return `${section}|${r.roundNumber}|${tableNumber}|${r.ns}|${r.ew}`;
 }
 
+/**
+ * A board's place (1-based) in the order its table plays a round that starts on
+ * `firstBoard`: from there to `boardEnd`, then on from `boardStart`.
+ */
+function playOrderOf(
+  boardNumber: number,
+  firstBoard: number,
+  { boardStart, boardEnd }: PlannedRound,
+): number {
+  const count = boardEnd - boardStart + 1;
+  return ((boardNumber - firstBoard + count) % count) + 1;
+}
+
 /** Build the match draft for a round's descriptor (or the default pairs match). */
 function matchDraftFor(
   section: SectionLetter,
@@ -159,6 +172,10 @@ export function buildSectionRows(
               ? "HALF_AVERAGE"
               : "NOT_PLAYED",
           matchTempKey: tempKey,
+          ...(r.firstBoard == null
+            ? {}
+            : { playOrder: playOrderOf(boardNumber, r.firstBoard, r) }),
+          ...(r.sharesWith == null ? {} : { sharesWithTable: r.sharesWith }),
         });
       }
 

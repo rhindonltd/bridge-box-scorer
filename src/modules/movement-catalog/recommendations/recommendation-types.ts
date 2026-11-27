@@ -1,4 +1,4 @@
-import { MitchellMovementSpec } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import { MitchellMovementSpec } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 
 /**
  * A movement "family" groups the concrete movements the system can produce

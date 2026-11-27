@@ -17,6 +17,14 @@ export const boards = sqliteTable(
     tableNumber: integer("table_number").notNull(),
     boardNumber: integer("board_number").notNull(),
     copy: text("copy").notNull().default("A"),
+    // This board's place in the order its table plays the round's boards
+    // (1 = first), or null to play them in board-number order. Set when the
+    // boards circulate round the tables within a round, so each table starts
+    // on its own boards.
+    playOrder: integer("play_order"),
+    // The other table playing this board in the same round, which the two
+    // tables share (a Thurner's satellite table), or null when none does.
+    sharesWithTable: integer("shares_with_table"),
     ns: text("ns").notNull(),
     ew: text("ew").notNull(),
     confirmedResult: text("confirmed_result").$type<BoardOutcome>(),

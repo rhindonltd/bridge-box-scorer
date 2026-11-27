@@ -10,7 +10,7 @@ import type { ResolvedPlayState } from "./play-position";
 function round(
   roundNumber: number,
   boards: number[],
-  opts: { sitOut?: boolean; confirmed?: boolean } = {},
+  opts: { sitOut?: boolean; confirmed?: boolean; scoreBreak?: boolean } = {},
 ) {
   return {
     roundNumber,
@@ -22,6 +22,7 @@ function round(
     })),
     players: { N: null, S: null, E: null, W: null },
     sitOut: opts.sitOut,
+    scoreBreakAfter: opts.scoreBreak,
   };
 }
 
@@ -38,11 +39,14 @@ function schedule(
   };
 }
 
-describe("play reducer — team results summary (teams)", () => {
-  it("routes to roundResults when a round's last board finishes for a teams game", () => {
-    const sch = schedule([round(1, [1, 2]), round(2, [3])], {
-      teamRoundResults: true,
-    });
+describe("play reducer — score breaks and team results (teams)", () => {
+  it("routes to the score break when a round ending one finishes in a teams game", () => {
+    const sch = schedule(
+      [round(1, [1, 2], { scoreBreak: true }), round(2, [3])],
+      {
+        teamRoundResults: true,
+      },
+    );
     const prev: PlayState = {
       state: "boardResults",
       roundIndex: 0,
@@ -50,10 +54,55 @@ describe("play reducer — team results summary (teams)", () => {
     };
     const next = playReducer(prev, { type: "boardResultsNext" }, sch);
     expect(next).toEqual({
+      state: "scoreBreak",
+      roundIndex: 0,
+      nextRoundIndex: 1,
+    });
+  });
+
+  it("goes straight to the move screen after a teams round with no score break", () => {
+    const sch = schedule([round(1, [1, 2]), round(2, [3])], {
+      teamRoundResults: true,
+    });
+    const prev: PlayState = {
+      state: "boardResults",
+      roundIndex: 0,
+      boardIndex: 1,
+    };
+    const next = playReducer(prev, { type: "boardResultsNext" }, sch);
+    expect(next).toEqual({ state: "moveInfo", nextRoundIndex: 1 });
+  });
+
+  it("continues from the score break to the team results", () => {
+    const prev: PlayState = {
+      state: "scoreBreak",
+      roundIndex: 0,
+      nextRoundIndex: 1,
+    };
+    expect(playReducer(prev, { type: "scoreBreakContinue" }, null)).toEqual({
       state: "roundResults",
       roundIndex: 0,
       nextRoundIndex: 1,
     });
+  });
+
+  it("scoreBreakContinue is a no-op outside the score break", () => {
+    const prev: PlayState = { state: "roundInfo", roundIndex: 0 };
+    expect(playReducer(prev, { type: "scoreBreakContinue" }, null)).toBe(prev);
+  });
+
+  it("does not show a score break in a pairs game, even on a flagged round", () => {
+    const sch = schedule([
+      round(1, [1, 2], { scoreBreak: true }),
+      round(2, [3]),
+    ]);
+    const prev: PlayState = {
+      state: "boardResults",
+      roundIndex: 0,
+      boardIndex: 1,
+    };
+    const next = playReducer(prev, { type: "boardResultsNext" }, sch);
+    expect(next).toEqual({ state: "moveInfo", nextRoundIndex: 1 });
   });
 
   it("continues from roundResults to the move screen (no hand entry)", () => {

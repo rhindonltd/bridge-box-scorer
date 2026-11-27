@@ -20,6 +20,11 @@ vi.mock("@/db/games/queries/get-board-status", () => ({
   getBoardStatus: vi.fn(async () => "NOT_PLAYED"),
 }));
 
+// The side comes from where the pair sits on the board row; default to "not
+// found" so the seat's own direction is used, as for most movements.
+vi.mock("@/db/games/queries/seat-side", () => ({
+  seatSideAtBoard: vi.fn(async () => null),
+}));
 vi.mock("@/socket/handlers/results/broadcast-results", () => ({
   broadcastResultsChanged: vi.fn().mockResolvedValue(undefined),
 }));
@@ -65,6 +70,7 @@ import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { broadcastResultsChanged } from "@/socket/handlers/results/broadcast-results";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
+import { seatSideAtBoard } from "@/db/games/queries/seat-side";
 import { registerSubmitResultHandler } from "./submit-result.handler";
 
 function makeSocket() {
@@ -173,6 +179,36 @@ describe("registerSubmitResultHandler", () => {
     expect(io._emit).not.toHaveBeenCalled();
   });
 
+  it("submits from the side the pair sits on this board, not its seat's direction", async () => {
+    // Team 2's "North/South" pair sits East/West in a head-to-head's second
+    // stanza.
+    vi.mocked(seatSideAtBoard).mockResolvedValueOnce("EW");
+    const socket = makeSocket();
+    registerSubmitResultHandler(socket, makeIo());
+    const handler = socket.on.mock.calls[0][1];
+    await handler(
+      {
+        gameId: "g1",
+        seat: "A2NS",
+        token: "tok",
+        roundNumber: 2,
+        tableNumber: 1,
+        boardNumber: 13,
+        result: "3NTN=",
+      },
+      vi.fn(),
+    );
+    expect(seatSideAtBoard).toHaveBeenCalledWith(mockDb, "A2NS", {
+      section: "A",
+      roundNumber: 2,
+      tableNumber: 1,
+      boardNumber: 13,
+    });
+    expect(createBoardSubmission).toHaveBeenCalledWith(
+      "g1",
+      expect.objectContaining({ side: "EW" }),
+    );
+  });
   it("confirms result when both NS and EW agree", async () => {
     vi.mocked(findBoardSubmissions).mockResolvedValue([
       submission("NS", 1, "4HS+1"),

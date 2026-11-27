@@ -9,7 +9,7 @@ import {
   stationaryPairsForRound,
   withStationaryHistory,
 } from "./selected-movement";
-import type { MitchellMovementSpec } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import type { MitchellMovementSpec } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 
 describe("SelectedMovement round-trip", () => {
   it("round-trips a SPEC selection", () => {
@@ -566,6 +566,89 @@ describe("selectedMovementsEqual", () => {
     expect(selectedMovementsEqual(americanWhist(), mitchell())).toBe(false);
   });
 
+  const circulation = (boardsPerRound = 8): SelectedMovement => ({
+    source: "CIRCULATION_TEAMS",
+    circulationTeams: { boardsPerRound },
+  });
+  it("compares CIRCULATION_TEAMS selections by boards per round", () => {
+    expect(selectedMovementsEqual(circulation(), circulation())).toBe(true);
+    expect(selectedMovementsEqual(circulation(), circulation(4))).toBe(false);
+    expect(selectedMovementsEqual(circulation(), americanWhist())).toBe(false);
+  });
+  it("round-trips a CIRCULATION_TEAMS selection and refuses a board count not a multiple of 4", () => {
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(circulation(12))),
+    ).toEqual(circulation(12));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "CIRCULATION_TEAMS",
+          circulationTeams: { boardsPerRound: 6 },
+        }),
+      ),
+    ).toBeNull();
+  });
+  it("compares THURNER_TEAMS selections by team count and boards per round, and refuses a count with no Thurner", () => {
+    const thurner = (teams = 6, boardsPerRound = 3): SelectedMovement => ({
+      source: "THURNER_TEAMS",
+      thurnerTeams: { teams, boardsPerRound },
+    });
+    expect(selectedMovementsEqual(thurner(), thurner())).toBe(true);
+    expect(selectedMovementsEqual(thurner(), thurner(8))).toBe(false);
+    expect(selectedMovementsEqual(thurner(), thurner(6, 4))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(thurner(8, 2))),
+    ).toEqual(thurner(8, 2));
+    for (const teams of [10, 7]) {
+      expect(
+        parseSelectedMovement(
+          JSON.stringify({
+            source: "THURNER_TEAMS",
+            thurnerTeams: { teams, boardsPerRound: 2 },
+          }),
+        ),
+      ).toBeNull();
+    }
+  });
+  it("compares STAGGER_TEAMS selections by team count and boards per round, and refuses an odd count", () => {
+    const stagger = (teams = 6, boardsPerRound = 3): SelectedMovement => ({
+      source: "STAGGER_TEAMS",
+      staggerTeams: { teams, boardsPerRound },
+    });
+    expect(selectedMovementsEqual(stagger(), stagger())).toBe(true);
+    expect(selectedMovementsEqual(stagger(), stagger(8))).toBe(false);
+    expect(selectedMovementsEqual(stagger(), stagger(6, 4))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(stagger(4, 4))),
+    ).toEqual(stagger(4, 4));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "STAGGER_TEAMS",
+          staggerTeams: { teams: 7, boardsPerRound: 2 },
+        }),
+      ),
+    ).toBeNull();
+  });
+  it("compares HEAD_TO_HEAD_TEAMS selections by boards per stanza, and refuses an odd count", () => {
+    const headToHead = (boardsPerRound = 12): SelectedMovement => ({
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams: { boardsPerRound },
+    });
+    expect(selectedMovementsEqual(headToHead(), headToHead())).toBe(true);
+    expect(selectedMovementsEqual(headToHead(), headToHead(8))).toBe(false);
+    expect(
+      parseSelectedMovement(serializeSelectedMovement(headToHead(10))),
+    ).toEqual(headToHead(10));
+    expect(
+      parseSelectedMovement(
+        JSON.stringify({
+          source: "HEAD_TO_HEAD_TEAMS",
+          headToHeadTeams: { boardsPerRound: 9 },
+        }),
+      ),
+    ).toBeNull();
+  });
   it("refuses an American Whist with an even number of teams", () => {
     expect(
       parseSelectedMovement(

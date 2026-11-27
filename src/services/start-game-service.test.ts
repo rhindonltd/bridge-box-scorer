@@ -700,6 +700,85 @@ describe("resolveSectionStart", () => {
     expect(result.anchors).toEqual(teamsAnchors(teams));
   });
 
+  it("resolves a fully-seated head-to-head, team 2 swapping for stanza 2", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      },
+      seatsForTables(2),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement![0].rounds[1]).toMatchObject({
+      ns: "1NS",
+      ew: "2NS",
+      boardStart: 13,
+      match: { kind: "TEAMS", key: "teams|1-2" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(2));
+  });
+  it("resolves a fully-seated Stagger, each table sharing with its partner", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "STAGGER_TEAMS",
+        staggerTeams: { teams: 6, boardsPerRound: 4 },
+      },
+      seatsForTables(6),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement![3].rounds[0]).toMatchObject({
+      ns: "4NS",
+      ew: "6EW",
+      boardStart: 1,
+      sharesWith: 1,
+      match: { kind: "TEAMS", key: "teams|4-6" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(6));
+  });
+  it("resolves a fully-seated Thurner, the satellite sharing table 1's boards", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      {
+        source: "THURNER_TEAMS",
+        thurnerTeams: { teams: 6, boardsPerRound: 3 },
+      },
+      seatsForTables(6),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement!.map((t) => t.rounds.length)).toEqual([
+      5, 5, 5, 5, 5, 5,
+    ]);
+    expect(result.movement![5].rounds[0]).toMatchObject({
+      ns: "6NS",
+      ew: "1EW",
+      boardStart: 1,
+      sharesWith: 1,
+      match: { kind: "TEAMS", key: "teams|1-6" },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(6));
+  });
+  it("resolves a fully-seated Circulation, with each team's pairs on their own seats", async () => {
+    const result = await resolveSectionStart(
+      "A",
+      { source: "CIRCULATION_TEAMS", circulationTeams: { boardsPerRound: 8 } },
+      seatsForTables(4),
+      "g1",
+    );
+    expect(result.validation.canStart).toBe(true);
+    expect(result.movement!.map((t) => t.rounds.length)).toEqual([3, 3, 3, 3]);
+    expect(result.movement![1].rounds[0]).toMatchObject({
+      boardStart: 1,
+      boardEnd: 8,
+      firstBoard: 3,
+      match: { kind: "TEAMS", key: "teams|1-2", roundNumber: 1 },
+    });
+    expect(result.anchors).toEqual(teamsAnchors(4));
+  });
   it("blocks an American Whist start when a table is one pair short", async () => {
     const seated = seatsForTables(5).filter((s) => s !== "A3EW");
     const result = await resolveSectionStart(

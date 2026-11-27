@@ -4,7 +4,13 @@ import {
   SwissMovementSpec,
   SwissTeamsMovementSpec,
 } from "@/model/selected-movement";
-import type { AmericanWhistTeamsSpec } from "@/modules/movement-catalog";
+import type {
+  AmericanWhistTeamsSpec,
+  CirculationTeamsSpec,
+  HeadToHeadTeamsSpec,
+  StaggerTeamsSpec,
+  ThurnerTeamsSpec,
+} from "@/modules/movement-catalog";
 
 /**
  * Director-only section management calls. These go over HTTP (not the socket):
@@ -124,6 +130,54 @@ export async function setSectionAmericanWhistTeamsMovement(
   await directorFetch(gameId, `${sectionPath(section)}/movement`, {
     method: "PUT",
     body: { americanWhistTeams },
+  });
+}
+
+/** Set the section's movement to a Circulation teams movement. */
+export async function setSectionCirculationTeamsMovement(
+  gameId: string,
+  section: string,
+  circulationTeams: CirculationTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { circulationTeams },
+  });
+}
+
+/** Set the section's movement to a Thurner teams movement. */
+export async function setSectionThurnerTeamsMovement(
+  gameId: string,
+  section: string,
+  thurnerTeams: ThurnerTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { thurnerTeams },
+  });
+}
+
+/** Set the section's movement to a head-to-head teams movement. */
+export async function setSectionHeadToHeadTeamsMovement(
+  gameId: string,
+  section: string,
+  headToHeadTeams: HeadToHeadTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { headToHeadTeams },
+  });
+}
+
+/** Set the section's movement to a Stagger teams movement. */
+export async function setSectionStaggerTeamsMovement(
+  gameId: string,
+  section: string,
+  staggerTeams: StaggerTeamsSpec,
+): Promise<void> {
+  await directorFetch(gameId, `${sectionPath(section)}/movement`, {
+    method: "PUT",
+    body: { staggerTeams },
   });
 }
 

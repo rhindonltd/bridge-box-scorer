@@ -45,6 +45,12 @@ export type Table = {
     boards: number[];
     boardCopy?: BoardCopy;
     participants: PairParticipants;
+    /**
+     * The other table playing the same boards this round, which the two share
+     * (a Thurner's satellite table and the circuit table it shares with).
+     * Absent when no other table plays them.
+     */
+    sharesWith?: number;
   }[];
 };
 

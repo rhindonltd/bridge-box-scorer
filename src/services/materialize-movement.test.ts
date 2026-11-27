@@ -12,6 +12,8 @@ import {
   materializeSections,
   resolveMatchIds,
 } from "./materialize-movement";
+import { planMovement } from "@/modules/movement-catalog";
+import { describeMovement } from "@/modules/movement-catalog/server";
 import { getDb } from "@/db/games";
 
 describe("sectionParticipantId", () => {
@@ -46,6 +48,85 @@ describe("buildSectionRows", () => {
       status: "NOT_PLAYED",
     });
     expect(boardRows[1].boardNumber).toBe(2);
+  });
+
+  it("writes a head-to-head's two stanzas as one match over all its boards", async () => {
+    const plan = planMovement(
+      await describeMovement({
+        source: "HEAD_TO_HEAD_TEAMS",
+        headToHeadTeams: { boardsPerRound: 12 },
+      }),
+      { sitOutSeat: null },
+    );
+    const { matchRows } = buildSectionRows("A", plan);
+    expect(matchRows).toHaveLength(1);
+    expect(matchRows[0]).toMatchObject({
+      kind: "TEAMS",
+      roundNumber: 1,
+      home: "A1NS",
+      opponent: "A2NS",
+      boardStart: 1,
+      boardEnd: 24,
+    });
+  });
+
+  it("records the table a round's boards are shared with", () => {
+    const movement: MovementPlan = [
+      {
+        tableNumber: 6,
+        rounds: [
+          {
+            roundNumber: 1,
+            ns: "6NS",
+            ew: "1EW",
+            boardStart: 1,
+            boardEnd: 2,
+            sharesWith: 1,
+          },
+          { roundNumber: 2, ns: "6NS", ew: "3EW", boardStart: 7, boardEnd: 8 },
+        ],
+      },
+    ];
+    const { boardRows } = buildSectionRows("A", movement);
+    expect(boardRows.map((b) => b.sharesWithTable)).toEqual([
+      1,
+      1,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it("numbers each board's place in play when the table starts on its own board", () => {
+    const movement: MovementPlan = [
+      {
+        tableNumber: 2,
+        rounds: [
+          {
+            roundNumber: 1,
+            ns: "2NS",
+            ew: "1EW",
+            boardStart: 1,
+            boardEnd: 4,
+            firstBoard: 3,
+          },
+          { roundNumber: 2, ns: "2NS", ew: "3EW", boardStart: 5, boardEnd: 6 },
+        ],
+      },
+    ];
+
+    const { boardRows } = buildSectionRows("A", movement);
+
+    expect(
+      boardRows.map((b) => [b.roundNumber, b.boardNumber, b.playOrder]),
+    ).toEqual([
+      [1, 1, 3],
+      [1, 2, 4],
+      [1, 3, 1],
+      [1, 4, 2],
+      // A round played in board order leaves the order unset.
+      [2, 5, undefined],
+      [2, 6, undefined],
+    ]);
   });
 
   it("only derives seat anchors from round 1, section-qualified and seated", () => {

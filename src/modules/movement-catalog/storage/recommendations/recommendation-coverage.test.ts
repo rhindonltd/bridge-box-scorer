@@ -7,7 +7,7 @@ import {
   RecommendationEntryInput,
 } from "@/modules/movement-catalog/recommendations/resolve-recommendation";
 import { descriptorToSelectedMovement } from "@/modules/movement-catalog/recommendations/movement-descriptor";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
 
 /**
  * Coverage harness for the recommendation-to-spec mapping.

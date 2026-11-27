@@ -3,10 +3,13 @@ import type { Table } from "@/model/movement";
 import type { StoredMovementTable } from "@/modules/movement-catalog/plan/describe-movement";
 import {
   isAmericanWhistTeamsLayout,
+  isCirculationTeamsLayout,
   isSupportedTeamsMovement,
+  isThurnerTeamsLayout,
   normaliseTeamsTables,
 } from "./teams-library";
-import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
+import { generateAmericanWhistTeams } from "@/modules/movement-catalog/teams/american-whist-teams/american-whist-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 /** A stored table from per-round [home, visitor, set] triples. */
 function table(
@@ -216,5 +219,108 @@ describe("isAmericanWhistTeamsLayout", () => {
     expect(isAmericanWhistTeamsLayout(americanWhist(3).slice(0, 2))).toBe(
       false,
     );
+  });
+});
+
+describe("isCirculationTeamsLayout", () => {
+  // The NBL 4 Teams Circulation: every table on the same set each round.
+  const circulation: StoredMovementTable[] = [
+    table(1, [
+      [1, 2, 1],
+      [1, 3, 2],
+      [1, 4, 3],
+    ]),
+    table(2, [
+      [2, 1, 1],
+      [2, 4, 2],
+      [2, 3, 3],
+    ]),
+    table(3, [
+      [3, 4, 1],
+      [3, 1, 2],
+      [3, 2, 3],
+    ]),
+    table(4, [
+      [4, 3, 1],
+      [4, 2, 2],
+      [4, 1, 3],
+    ]),
+  ];
+
+  it("recognises a four-team Circulation", () => {
+    expect(isSupportedTeamsMovement(circulation)).toBe(true);
+    expect(isCirculationTeamsLayout(circulation)).toBe(true);
+  });
+
+  it("is not a Circulation for another team count or round count", () => {
+    expect(isCirculationTeamsLayout(crossRound)).toBe(false);
+    expect(
+      isCirculationTeamsLayout(
+        circulation.map((t) => ({ ...t, rounds: t.rounds.slice(1) })),
+      ),
+    ).toBe(false);
+  });
+
+  it("is not a Circulation when a team meets another twice", () => {
+    const repeat = circulation.map((t, i) =>
+      i === 0
+        ? table(1, [
+            [1, 2, 1],
+            [1, 2, 2],
+            [1, 4, 3],
+          ])
+        : t,
+    );
+    expect(isCirculationTeamsLayout(repeat)).toBe(false);
+  });
+
+  it("is not a Circulation when the tables play different sets in a round", () => {
+    const staggered = circulation.map((t, i) =>
+      i === 3
+        ? table(4, [
+            [4, 3, 2],
+            [4, 2, 2],
+            [4, 1, 3],
+          ])
+        : t,
+    );
+    expect(isCirculationTeamsLayout(staggered)).toBe(false);
+  });
+});
+
+describe("isThurnerTeamsLayout", () => {
+  /** A Thurner as the library stores it: bare team numbers and set indices. */
+  function storedThurner(teams: number): StoredMovementTable[] {
+    return generateThurnerTeams({ teams, boardsPerRound: 1 }).tables.map((t) =>
+      table(
+        t.table,
+        t.rounds.map((r) => [
+          parseInt(r.participants.nsId, 10),
+          parseInt(r.participants.ewId, 10),
+          r.boards[0],
+        ]),
+      ),
+    );
+  }
+
+  it("recognises the generated Thurner", () => {
+    expect(isSupportedTeamsMovement(storedThurner(8))).toBe(true);
+    expect(isThurnerTeamsLayout(storedThurner(8))).toBe(true);
+  });
+
+  it("is not a Thurner for a team count with none", () => {
+    expect(isThurnerTeamsLayout(crossRound)).toBe(false);
+  });
+
+  it("is not the Thurner when a room or the round count differs", () => {
+    const thurner = storedThurner(6);
+    const swapped = thurner.map((t, i) =>
+      i === 0
+        ? { ...t, rounds: t.rounds.map((r) => ({ ...r, boardSet: 9 })) }
+        : t,
+    );
+    expect(isThurnerTeamsLayout(swapped)).toBe(false);
+    const short = thurner.map((t) => ({ ...t, rounds: t.rounds.slice(1) }));
+    expect(isThurnerTeamsLayout(short)).toBe(false);
   });
 });

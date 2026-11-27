@@ -13,7 +13,7 @@ vi.mock("@/lib/fetcher", () => ({ fetcher: vi.fn() }));
 // The Mitchell generator is mocked so a test can force it to throw, exercising
 // the preview's defensive catch -> null (spinner) path.
 const mockGenerateMitchell = vi.fn();
-vi.mock("@/modules/movement-catalog/generation/mitchell/mitchell", () => ({
+vi.mock("@/modules/movement-catalog/pairs/mitchell/mitchell", () => ({
   generateMitchell: (...a: unknown[]) => mockGenerateMitchell(...a),
 }));
 

@@ -8,6 +8,7 @@ import type { Card } from "@/model/common";
 import { parseSeat, PairSeat } from "@/model/participants";
 import { createBoardSubmission } from "@/db/games/actions/create-submission";
 import { findBoardSubmissions } from "@/db/games/queries/find-submissions";
+import { seatSideAtBoard } from "@/db/games/queries/seat-side";
 import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteBoardSubmissions } from "@/db/games/actions/delete-submissions";
 import { confirmBoardResult } from "@/db/games/actions/set-board-result";
@@ -83,6 +84,20 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
           }
         }
 
+        // The side the pair plays this board from: where its id sits on the
+        // board row, which need not be its seat's direction (a Howell, or the
+        // second stanza of a head-to-head teams match). Falls back to the
+        // seat's direction when the row doesn't name the pair.
+        const side =
+          (db &&
+            (await seatSideAtBoard(db, seat, {
+              section,
+              roundNumber,
+              tableNumber,
+              boardNumber,
+            }))) ||
+          direction;
+
         // Store the board submission. A failure here is in the submitter's own
         // path (before we ack success), so surface it as a submit failure.
         try {
@@ -91,7 +106,7 @@ export function registerSubmitResultHandler(socket: Socket, io: Server) {
             roundNumber,
             tableNumber,
             boardNumber,
-            side: direction,
+            side,
             result,
             lead: (lead ?? null) as Card | null,
           });

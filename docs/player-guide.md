@@ -70,7 +70,11 @@ board you had already submitted.
 At the start of each round you see a summary:
 
 - Your **table** and **round** number
-- The **board(s)** you will play this round
+- The **board(s)** you will play this round. In a movement where the boards
+  pass round the tables during the round, it also says which board your table
+  **starts with**; play on in order from there, taking the boards passed to
+  you. If another table is playing the same boards this round, it says which
+  table to **share the boards with**.
 - The **four players** at the table
 
 Tap **Enter Round** when you are ready to start entering results.
@@ -164,17 +168,26 @@ after any board. If someone at another table has already entered a board's
 cards, you will see their entry instead — the first person to record a board's
 cards sets them for everyone.
 
-### Team results for the round (Teams only)
+### Score breaks and team results (Teams only)
 
-In a **Teams** game, when you finish the last board of a round you see a **Team
-Results** screen listing that round's boards with your team's IMP result on
-each — a quick summary of how your team fared against the other room. Tap
-**Continue** to move on.
+In a **Teams** game your team scores up at each **score break**. When one
+comes, your screen says so after the last board of the round:
+
+- the East/West pair is told to **go back to your home table** to score up with
+  your team-mates;
+- the North/South pair is told **your team-mates are coming back** to your
+  table.
+
+Tap **Continue** to see the **Team Results** screen. It lists every board your
+team has played since the last score break, with your team's IMP result on
+each. Tap **Continue** again to move on. The movement decides where the score
+breaks fall: usually after each match, and in an All Play All only at the
+end. You still see each board's result after you play it, as usual.
 
 ### Moving on
 
-When you finish the last board of a round (the Team Results screen for Teams,
-and the optional Enter cards step), the app shows a **move** screen telling you
+When you finish the last board of a round (any score break and Team Results
+screen for Teams, and the optional Enter cards step), the app shows a **move** screen telling you
 which table and direction to go to for the next round. Tap continue when you
 have moved. After the final round you see the **leaderboard**, with your own
 pair highlighted.

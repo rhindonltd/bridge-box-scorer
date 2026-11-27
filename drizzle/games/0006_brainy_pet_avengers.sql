@@ -1,0 +1,1 @@
+ALTER TABLE `boards` ADD `play_order` integer;

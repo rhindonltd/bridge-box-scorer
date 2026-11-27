@@ -2019,7 +2019,7 @@ it put every table on the same set each round, so it needed board copies and
 did not match any club movement. A stored `ROUND_ROBIN_TEAMS` value now parses
 to null. In its place:
 
-- **Generator:** `generation/american-whist-teams/` (`generateAmericanWhistTeams`).
+- **Generator:** `teams/american-whist-teams/` (`generateAmericanWhistTeams`).
   For n teams (odd, at least 3), in round k at table t the home pair is team t,
   East/West is team `t + 2k` and the board set is `t + k - 1` (wrapping round
   n). That is n - 1 rounds and n sets with one copy each; a match's two rooms
@@ -2033,13 +2033,112 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   descriptor parameter of `tablesToMaterializableMovement` went with Round Robin.
 - **Picker:** `teams/teams-options.ts` builds one American Whist card per
   boards-per-round from 2 to 12 where a team plays 12 to 36 boards
-  (`AMERICAN_WHIST_BOARDS_PER_ROUND`, `AMERICAN_WHIST_BOARDS_PER_TEAM`), listed
+  (`GENERATED_TEAMS_BOARDS_PER_ROUND`, `GENERATED_TEAMS_BOARDS_PER_TEAM`, named for American Whist at the time), listed
   before the library movements and grouped with them by boards per team. The
   preview is built locally (`americanWhistPreview`).
 - **Library:** `isAmericanWhistTeamsLayout` hides stored movements with the
   same layout, because the generator replaces them: the NBL blocks for 5, 7
   and 9 teams and the EBU "6R/8R/12R No Scorebreak SPECIAL" blocks. 97 of the
   105 supported movements are listed.
+
+**Score breaks, board order and Circulation, as built.**
+
+- **Score breaks** (`play-flow/score-breaks.ts`): the movement's matches decide
+  them, so nothing extra is stored. A team scores up after round r when r ends
+  one of its matches and none of its matches is part-played across r
+  (`scoreBreakRounds`). `services/schedule-service.ts` reads every TEAMS and
+  TRIPLE match's first and last board rounds (`readTeamMatchRounds`) and flags
+  each of the pair's rounds `scoreBreakAfter`. In a teams game the player flow
+  goes `boardResults` → `scoreBreak` (the away pair is sent home, the home pair
+  waits) → `roundResults` (every board since the last break,
+  `boardsSinceScoreBreak`) → deals → move. A round without a break goes straight
+  to the deal/move chain; board results after each board are unchanged. Like
+  the team results, the break screen is not resumed on reload. Circulation and
+  Swiss Teams break after every round, American Whist only after the last.
+- **Board order within a round**: `PlannedRound.firstBoard` (optional) says
+  where a table starts in its `boardStart..boardEnd` run; materialisation
+  writes each board's place as `boards.play_order` (games migration 0006, null
+  for every other movement), the schedule orders a round's boards by it, and
+  the round screen shows "Start with board N". A generator lists a round's
+  boards in play order; `tablesToMaterializableMovement` and
+  `generatedLayout` take the start from the list.
+- **Circulation** (`teams/circulation-teams/`): four teams, three rounds
+  (1v2 3v4, 1v3 2v4, 1v4 2v3: the opponent is the team number, from 0, with
+  the round's bits flipped), new boards each round, each table starting on its
+  own quarter and passing boards down a table. Source `CIRCULATION_TEAMS
+{ circulationTeams: { boardsPerRound } }` (a multiple of 4), planned by
+  `teamsLayoutToMaterializable`, so a match is numbered by its round. The picker
+  offers 4, 8 and 12 boards a round (`circulationOptions`); the Tables screen
+  sets out each table's quarter (`circulationSetOut`). `isCirculationTeamsLayout`
+  hides the library's NBL 4 Teams Circulation (M138), which put every table on
+  board 1.
+
+**Thurner, as built.** `teams/thurner-teams/` for an even team count T
+with C = T − 1 not a multiple of 3 (6, 8, 12, 14, 18, 20 …). Circuit table t
+plays set t + r − 1; team T's away pair starts at table 1 and moves up s tables
+a round, with 3·s ≡ 1 (mod C); team i's away pair starts at table 3 − 2i and
+moves up one, playing at the satellite table T in the round it would reach its
+own home table (the round team T visits it); the satellite plays the set of the
+table team T visits. A match's two rooms are in two rounds, except the
+satellite's, which are in one round on one shared set. The generator reproduces
+the library's M140–M143 exactly, so `isThurnerTeamsLayout` hides them (92
+library movements listed). The shared table is carried as `sharesWith` on the
+generated round and the plan, written to `boards.shares_with_table` (games
+migration 0007), and shown on the round screen ("Share these boards with Table
+N"). Source `THURNER_TEAMS { thurnerTeams: { teams, boardsPerRound } }`; the
+picker offers it for 6, 8 and 14 teams only (`THURNER_RECOMMENDED_TEAMS`,
+though the generator and selection accept every count above, and the
+library's 12-team copy stays hidden), using the American Whist boards-per-round range, now
+`GENERATED_TEAMS_BOARDS_PER_ROUND` / `GENERATED_TEAMS_BOARDS_PER_TEAM`. Score
+breaks fall only at the end.
+
+**Stagger, as built.** `teams/stagger-teams/` for an even team count T
+(M = T / 2). Stanza 1 is rounds 1 … M − 1 on sets 1 … M (East/West at the
+table 2k above home in its k-th round); stanza 2 is rounds M … T − 1 on sets
+M + 1 … T (2k − 1 above). Tables t and t + M play the same set every round, and
+every room carries its partner as `sharesWith`. Each pair of teams plays an
+ordinary two-room match on one set, so the teams scorers apply as they are
+(the example code's "cross-IMP or datum" model is not needed), and since a
+stanza's matches finish within it the derived score break falls between the
+stanzas. It uses T board sets (the example said T − 1). Source
+`STAGGER_TEAMS { staggerTeams: { teams, boardsPerRound } }`, offered for every
+even count the boards-per-team range allows (4 … 18). The library's Stagger
+movements differ (two separate sessions) and stay listed.
+
+**Head to Head, as built.** `teams/head-to-head-teams/`: two teams, two
+stanzas of their own boards (`HEAD_TO_HEAD_TEAMS { headToHeadTeams:
+{ boardsPerRound } }`, even, offered at 6, 8, 10 and 12). Stanza 1 is 1NS v 2EW
+and 2NS v 1EW; in stanza 2 team 2's pairs swap tables and directions (1NS v
+2NS, 2EW v 1EW), so team 1 still holds North/South at table 1 and each stanza
+compares as a two-room match. Table 2 starts each stanza on its second half
+(`firstBoard`).
+
+- **One match over both stanzas.** `teamsLayoutToMaterializable` keys a match
+  by the two teams alone, so both stanzas' rooms are one TEAMS match (numbered
+  1, spanning both stanzas' boards) and IMP (VP) converts the combined margin
+  once, at the end. (An interim version keyed matches by board set too, which
+  made each stanza its own match; that was reverted.)
+- **Declared score breaks.** A team's matches only finish at the end, so the
+  derived score breaks give none between the stanzas. A movement can now
+  declare extra ones (`declaredScoreBreakRounds`, in `teams/score-breaks.ts`):
+  a head-to-head declares a break after round 1. `schedule-service.ts` reads
+  the section's movement and adds them to the match-derived breaks.
+
+**Generator layout, as built.** `generation/` was split by event type: the
+Mitchell generators moved to `pairs/mitchell/`, and the teams generators to
+`teams/` beside the teams library and options (`teams/american-whist-teams/`,
+`teams/circulation-teams/`, `teams/thurner-teams/`, `teams/stagger-teams/`,
+`teams/head-to-head-teams/`). The `generation/` paths in the sections above
+are as they were at the time.
+
+- **A pair's side comes from the board row, not its seat.** The submit and
+  withdraw handlers read the side from where the pair's id sits on the board
+  row (`seatSideAtBoard`, falling back to the seat's direction), and the
+  play-state resolver uses the round's side. Before this, a pair sitting the
+  other way from its starting seat collided with the other pair's side. That
+  also affected a Howell's later rounds; the e2e helpers that confirmed whole
+  rounds from each table's own seats (`confirmEntireGame`, `confirmRound`) had
+  relied on it and now submit from the pairs the board rows name.
 
 Code that looks like a candidate but should stay in the core:
 

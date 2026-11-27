@@ -22,6 +22,8 @@ interface Props {
   opponentExpectedLate?: boolean;
   /** Design §11: the opponents withdrew — nothing to play this round. */
   opponentWithdrawn?: boolean;
+  /** The other table these boards are shared with this round, if any. */
+  sharesWithTable?: number;
   onEnterRound: () => void;
   /**
    * Move past a round whose opponent is expected-late and has not arrived. The
@@ -42,6 +44,7 @@ export function RoundInfoPage({
   halfMatch,
   opponentExpectedLate,
   opponentWithdrawn,
+  sharesWithTable,
   onEnterRound,
   onContinuePastLateOpponent,
   headerRight,
@@ -85,6 +88,7 @@ export function RoundInfoPage({
         halfMatch={halfMatch}
         opponentExpectedLate={opponentExpectedLate}
         opponentWithdrawn={opponentWithdrawn}
+        sharesWithTable={sharesWithTable}
       />
     </GamePageLayout>
   );

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 vi.mock("./storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),
@@ -194,6 +195,46 @@ describe("stored teams movements", () => {
     ]);
     vi.mocked(getTeamMovementRooms).mockResolvedValue(aw);
     expect(await listTeamMovements(3)).toEqual([]);
+  });
+
+  it("leaves out the library's Thurner movements", async () => {
+    const thurner = generateThurnerTeams({
+      teams: 6,
+      boardsPerRound: 1,
+    }).tables.flatMap((t) =>
+      t.rounds.map((r) =>
+        room(
+          6,
+          t.table,
+          r.round,
+          `${parseInt(r.participants.ewId, 10)}`,
+          r.boards[0],
+        ),
+      ),
+    );
+    vi.mocked(getTeamMovementSpecsForTables).mockResolvedValue([
+      { ...teamSpec(6, "Thurner"), tables: 6, rounds: 5 },
+    ]);
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(thurner);
+    expect(await listTeamMovements(6)).toEqual([]);
+  });
+
+  it("leaves out the library's Circulation movements", async () => {
+    // Four teams, every table on the round's one set: 1v2 3v4, 1v3 2v4, 1v4 2v3.
+    const opponents = [
+      [2, 3, 4],
+      [1, 4, 3],
+      [4, 1, 2],
+      [3, 2, 1],
+    ];
+    const circulation = opponents.flatMap((row, t) =>
+      row.map((visitor, k) => room(5, t + 1, k + 1, `${visitor}`, k + 1)),
+    );
+    vi.mocked(getTeamMovementSpecsForTables).mockResolvedValue([
+      { ...teamSpec(5, "Circulation"), tables: 4, rounds: 3 },
+    ]);
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(circulation);
+    expect(await listTeamMovements(4)).toEqual([]);
   });
 
   it("lays out a supported movement for the preview", async () => {

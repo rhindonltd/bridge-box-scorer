@@ -92,6 +92,46 @@ export function useMovementRoundInfo(
     };
   }
 
+  if (selectedMovement.source === "CIRCULATION_TEAMS") {
+    // A Circulation always plays three rounds; no fetch is needed.
+    return {
+      info: {
+        rounds: 3,
+        boardsPerRound: selectedMovement.circulationTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
+  if (selectedMovement.source === "THURNER_TEAMS") {
+    // A Thurner plays every round (teams − 1); no fetch is needed.
+    return {
+      info: {
+        rounds: selectedMovement.thurnerTeams.teams - 1,
+        boardsPerRound: selectedMovement.thurnerTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
+  if (selectedMovement.source === "HEAD_TO_HEAD_TEAMS") {
+    // A head-to-head always plays two stanzas; no fetch is needed.
+    return {
+      info: {
+        rounds: 2,
+        boardsPerRound: selectedMovement.headToHeadTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
+  if (selectedMovement.source === "STAGGER_TEAMS") {
+    // A Stagger plays every round (teams − 1); no fetch is needed.
+    return {
+      info: {
+        rounds: selectedMovement.staggerTeams.teams - 1,
+        boardsPerRound: selectedMovement.staggerTeams.boardsPerRound,
+      },
+      isLoading: false,
+    };
+  }
   // SPEC / TEAMS_SPEC: rounds come from the fetched detail; boards-per-round is on the
   // selection itself. Every table plays the same round count, so the first
   // table is representative.

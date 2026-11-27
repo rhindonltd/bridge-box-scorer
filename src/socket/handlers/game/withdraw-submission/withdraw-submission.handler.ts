@@ -4,6 +4,7 @@ import { z } from "zod";
 import { SocketEvents } from "@/socket/socket-events";
 import { assertPlayer } from "@/socket/middleware/participant-auth";
 import { getDb } from "@/db/games";
+import { seatSideAtBoard } from "@/db/games/queries/seat-side";
 import { getBoardStatus } from "@/db/games/queries/get-board-status";
 import { deleteSideSubmission } from "@/db/games/actions/delete-submissions";
 import { parseSeat, PairSeat } from "@/model/participants";
@@ -61,12 +62,21 @@ export function registerWithdrawSubmissionHandler(socket: Socket, io: Server) {
         );
       }
 
+      // Withdraw from the side the pair plays this board from (see the submit
+      // handler), falling back to the seat's direction.
+      const side =
+        (await seatSideAtBoard(db, seat, {
+          section,
+          roundNumber,
+          tableNumber,
+          boardNumber,
+        })) ?? direction;
       await deleteSideSubmission(
         gameId,
         section,
         tableNumber,
         roundNumber,
-        direction,
+        side,
       );
       ack({ success: true, data: undefined });
     },

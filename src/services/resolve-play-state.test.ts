@@ -103,6 +103,37 @@ describe("resolvePlayState", () => {
     });
   });
 
+  it("reads the pair's own submission from the side it sits this round", async () => {
+    // The seat is North/South, but this round the pair sits East/West (a
+    // head-to-head's second stanza): the East/West submission is its own.
+    withSchedule([
+      {
+        ...round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),
+        side: "EW",
+      },
+    ]);
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "EW", boardNumber: 1, result: "3NTN=" },
+    ] as never);
+    const state = await resolvePlayState(db, "g1", "A2NS");
+    expect(state!.phase).toMatchObject({
+      position: { at: "waitingConfirmation", result: "3NTN=" },
+    });
+  });
+  it("falls back to the seat's side for a round that names none", async () => {
+    const { side: _side, ...noSide } = round(1, [
+      { boardNumber: 1, status: "PENDING_CONFIRMATION" },
+    ]);
+    withSchedule([noSide]);
+    vi.mocked(findBoardSubmissions).mockResolvedValue([
+      { side: "EW", boardNumber: 1, result: "3NTN=" },
+    ] as never);
+    const state = await resolvePlayState(db, "g1", "A1NS");
+    // The schedule's side is NS, and only East/West has submitted.
+    expect(state!.phase).toMatchObject({
+      position: { at: "entering", boardNumber: 1 },
+    });
+  });
   it("waits with no result and the lead when only a lead was recorded", async () => {
     withSchedule([
       round(1, [{ boardNumber: 1, status: "PENDING_CONFIRMATION" }]),

@@ -1,0 +1,1 @@
+ALTER TABLE `boards` ADD `shares_with_table` integer;

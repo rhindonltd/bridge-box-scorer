@@ -7,6 +7,10 @@ import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import {
   americanWhistPreview,
+  circulationPreview,
+  thurnerPreview,
+  staggerPreview,
+  headToHeadPreview,
   MovementByTable,
   RecommendedMovementSpecRef,
   TeamsMovementRef,
@@ -129,6 +133,18 @@ function MovementPreviewContent({
       } catch {
         return null;
       }
+    }
+    if (movement.specRef.source === "circulation") {
+      return circulationPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "thurner") {
+      return thurnerPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "stagger") {
+      return staggerPreview(movement.specRef.spec);
+    }
+    if (movement.specRef.source === "headToHead") {
+      return headToHeadPreview(movement.specRef.spec);
     }
     if (movement.specRef.source === "americanWhist") {
       return americanWhistPreview(movement.specRef.spec);

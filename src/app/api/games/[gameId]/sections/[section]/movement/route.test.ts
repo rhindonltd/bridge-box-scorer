@@ -98,6 +98,49 @@ describe("PUT /api/games/[gameId]/sections/[section]/movement", () => {
     );
   });
 
+  it("sets a HEAD_TO_HEAD_TEAMS movement", async () => {
+    const headToHeadTeams = { boardsPerRound: 12 };
+    const res = await invoke("g1", "A", { headToHeadTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "HEAD_TO_HEAD_TEAMS",
+      headToHeadTeams,
+    });
+  });
+  it("sets a STAGGER_TEAMS movement", async () => {
+    const staggerTeams = { teams: 6, boardsPerRound: 4 };
+    const res = await invoke("g1", "A", { staggerTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "STAGGER_TEAMS",
+      staggerTeams,
+    });
+  });
+  it("sets a THURNER_TEAMS movement", async () => {
+    const thurnerTeams = { teams: 8, boardsPerRound: 3 };
+    const res = await invoke("g1", "A", { thurnerTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "THURNER_TEAMS",
+      thurnerTeams,
+    });
+  });
+  it("sets a CIRCULATION_TEAMS movement", async () => {
+    const circulationTeams = { boardsPerRound: 8 };
+    const res = await invoke("g1", "A", { circulationTeams });
+    expect(res.status).toBe(200);
+    expect(setSectionMovement).toHaveBeenCalledWith("g1", "A", {
+      source: "CIRCULATION_TEAMS",
+      circulationTeams,
+    });
+  });
+  it("refuses a Circulation whose boards don't share out over four tables", async () => {
+    const res = await invoke("g1", "A", {
+      circulationTeams: { boardsPerRound: 6 },
+    });
+    expect(res.status).toBe(400);
+    expect(setSectionMovement).not.toHaveBeenCalled();
+  });
   it("refuses an American Whist with an even number of teams", async () => {
     const res = await invoke("g1", "A", {
       americanWhistTeams: { teams: 4, boardsPerRound: 4 },
