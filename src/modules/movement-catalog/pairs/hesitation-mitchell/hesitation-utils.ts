@@ -1,4 +1,4 @@
-import { boardsForSet } from "./mitchell-utils";
+import { boardsForSet } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 import { Table, Tables } from "@/model/movement";
 
 /**

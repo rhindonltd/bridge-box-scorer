@@ -2,7 +2,7 @@ import {
   assertPositiveBoardsPerRound,
   MitchellMovementSpec,
   wrapValue,
-} from "./mitchell-utils";
+} from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 import {
   buildPivotLayout,
   layoutToTables,

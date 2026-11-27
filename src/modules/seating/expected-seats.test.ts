@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { deriveExpectedSeats } from "./expected-seats";
-import { generateStandardMitchell } from "@/modules/movement-catalog/pairs/mitchell/standard-mitchell";
+import { generateStandardMitchell } from "@/modules/movement-catalog/pairs/standard-mitchell/standard-mitchell";
 import { Tables } from "@/model/movement";
 
 describe("deriveExpectedSeats", () => {

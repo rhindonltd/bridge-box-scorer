@@ -1,7 +1,7 @@
 import { Tables } from "@/model/movement";
 import type { MovementPlan } from "@/model/movement-plan";
 import type { PairSeat } from "@/model/participants";
-import { generateStandardMitchellWithSitOut } from "@/modules/movement-catalog/pairs/mitchell/sit-out";
+import { generateStandardMitchellWithSitOut } from "@/modules/movement-catalog/pairs/standard-mitchell/sit-out";
 import { boardSetFor } from "@/modules/movement-catalog/shared";
 import type { MovementDescription } from "./describe-movement";
 import {

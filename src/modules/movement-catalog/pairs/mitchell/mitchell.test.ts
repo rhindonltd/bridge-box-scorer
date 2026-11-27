@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { generateMitchell } from "./mitchell";
-import { generateStandardMitchell } from "./standard-mitchell";
-import { generateSkipMitchell } from "./skip-mitchell";
-import { generateShareAndRelayMitchell } from "./share-and-relay-mitchell";
-import { generateBlackpool } from "./blackpool";
-import { generateHesitationMitchell } from "./hesitation-mitchell";
-import { generateDoubleHesitationMitchell } from "./double-hesitation-mitchell";
+import { generateStandardMitchell } from "@/modules/movement-catalog/pairs/standard-mitchell/standard-mitchell";
+import { generateSkipMitchell } from "@/modules/movement-catalog/pairs/skip-mitchell/skip-mitchell";
+import { generateShareAndRelayMitchell } from "@/modules/movement-catalog/pairs/share-and-relay-mitchell/share-and-relay-mitchell";
+import { generateBlackpool } from "@/modules/movement-catalog/pairs/blackpool/blackpool";
+import { generateHesitationMitchell } from "@/modules/movement-catalog/pairs/hesitation-mitchell/hesitation-mitchell";
+import { generateDoubleHesitationMitchell } from "@/modules/movement-catalog/pairs/hesitation-mitchell/double-hesitation-mitchell";
 
 describe("generateMitchell dispatch", () => {
   it("produces a Standard Mitchell when no flag is set", () => {

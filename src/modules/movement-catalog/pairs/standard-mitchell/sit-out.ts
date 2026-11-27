@@ -1,6 +1,6 @@
 import { Tables } from "@/model/movement";
 import { PairSeat, parseSeat } from "@/model/participants";
-import { MitchellMovementSpec } from "./mitchell-utils";
+import { MitchellMovementSpec } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 import { generateStandardMitchell } from "./standard-mitchell";
 import { MovementPlan, PlannedRound } from "@/model/movement-plan";
 
