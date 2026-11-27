@@ -1,19 +1,16 @@
 "use client";
-
-import type { ReactNode } from "react";
-
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import { PageLayout } from "@/components/layout/PageLayout";
 
 export interface SetupMenuPageProps {
-  /** Header right-hand content: the hamburger with the less common actions. */
-  headerRight?: ReactNode;
   /** Open Game Details (the create-form options, prefilled). */
   onGameDetailsClick: () => void;
   onTablesClick?: () => void;
   onMovementClick?: () => void;
   onTimerClick?: () => void;
   onStartGameClick?: () => void;
+  /** Open Share Director Access, to let a co-director manage the game. */
+  onShareAccessClick?: () => void;
   onDeleteGameClick?: () => void;
   /**
    * A game not created yet (the other handlers may then be omitted): only Game Details is available. The rest unlock
@@ -30,17 +27,17 @@ const deleteButtonClass =
 
 /**
  * The menu a director lands on after creating a game, or after picking a game
- * that is still being set up. Each button opens the same page as the matching
- * entry in the setup screens' hamburger menu. Presentational only: the wiring
- * is in {@link SetupGamePage}.
+ * that is still being set up, with a button for each setup screen and for
+ * sharing director access. Presentational only: the wiring is in
+ * {@link SetupGamePage}.
  */
 export function SetupMenuPage({
-  headerRight,
   onGameDetailsClick,
   onTablesClick,
   onMovementClick,
   onTimerClick,
   onStartGameClick,
+  onShareAccessClick,
   onDeleteGameClick,
   draft = false,
 }: SetupMenuPageProps) {
@@ -77,6 +74,13 @@ export function SetupMenuPage({
       >
         Start Game
       </button>
+      <button
+        onClick={onShareAccessClick}
+        disabled={draft}
+        className={standardButtonClass}
+      >
+        Share Director Access
+      </button>
 
       <div className="mt-6">
         <button
@@ -99,7 +103,6 @@ export function SetupMenuPage({
       // Back to the list of games still being set up.
       backHref="/create"
       centerContent={true}
-      headerRight={headerRight}
     >
       {buttons}
     </Layout>

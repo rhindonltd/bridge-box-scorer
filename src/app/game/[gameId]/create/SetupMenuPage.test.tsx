@@ -22,16 +22,13 @@ vi.mock("@/components/layout/PageLayout", () => ({
 vi.mock("@/components/layout/GamePageLayout", () => ({
   GamePageLayout: ({
     headerTitle,
-    headerRight,
     children,
   }: {
     headerTitle: string;
-    headerRight?: React.ReactNode;
     children: React.ReactNode;
   }) => (
     <div>
       <h1>{headerTitle}</h1>
-      {headerRight}
       {children}
     </div>
   ),
@@ -46,19 +43,17 @@ function setup() {
     onMovementClick: vi.fn(),
     onTimerClick: vi.fn(),
     onStartGameClick: vi.fn(),
+    onShareAccessClick: vi.fn(),
     onDeleteGameClick: vi.fn(),
   };
-  render(
-    <SetupMenuPage headerRight={<span>header-right</span>} {...handlers} />,
-  );
+  render(<SetupMenuPage {...handlers} />);
   return handlers;
 }
 
 describe("SetupMenuPage", () => {
-  it("is titled Set Up Game and shows the header content", () => {
+  it("is titled Set Up Game", () => {
     setup();
     expect(screen.getByText("Set Up Game")).toBeInTheDocument();
-    expect(screen.getByText("header-right")).toBeInTheDocument();
   });
 
   it.each([
@@ -67,6 +62,7 @@ describe("SetupMenuPage", () => {
     ["Movement", "onMovementClick"],
     ["Timer", "onTimerClick"],
     ["Start Game", "onStartGameClick"],
+    ["Share Director Access", "onShareAccessClick"],
     ["Delete Game", "onDeleteGameClick"],
   ] as const)("%s calls its handler", async (label, handler) => {
     const handlers = setup();
@@ -85,6 +81,7 @@ describe("SetupMenuPage", () => {
       "Movement",
       "Timer",
       "Start Game",
+      "Share Director Access",
       "Delete Game",
     ]) {
       expect(screen.getByRole("button", { name })).toBeDisabled();

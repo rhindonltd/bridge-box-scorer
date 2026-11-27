@@ -83,6 +83,8 @@ After you create a game, or pick one that is still being set up under
 - **Movement**: choose the movement.
 - **Timer**: optional session timer.
 - **Start Game**: shows anything still needed, then starts the game.
+- **Share Director Access**: lets a co-director manage the game from their own
+  device (see [Sharing director access](#sharing-director-access)).
 - **Delete Game** _(red)_: deletes the game after a confirmation.
 
 You can do them in any order. The back arrow (top-left) on each page returns to
@@ -91,8 +93,7 @@ The back arrow on the menu itself returns to the list of games not yet started.
 The top-right menu on Tables, Movement, Timer and Start Game only has **Share
 Director Access**.
 
-The menu's own top-right menu only has **Share Director Access**. To get back
-to the main menu, use the back arrow: from the menu to the list of games not
+The menu itself has no top-right menu. To get back to the main menu, use the back arrow: from the menu to the list of games not
 yet started, then once more.
 
 **Game Details** is pre-filled with what you set when creating the game: the
@@ -775,8 +776,9 @@ If a co-director needs to help manage the game from their own phone or tablet,
 share access with a short code:
 
 1. Tap the menu (hamburger) icon in the header of any director screen and
-   choose **Share Director Access**. Use the back arrow afterwards to return
-   to the page you were on.
+   choose **Share Director Access** (on the **Set Up Game** menu it is one of
+   the buttons). Use the back arrow afterwards to return to the page you were
+   on.
 2. A short share code appears on screen.
 3. The other person opens **Manage Game** (or **Create Game**, for a game that
    hasn't started yet), taps the same game, and enters the code on the

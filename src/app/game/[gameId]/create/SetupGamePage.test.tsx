@@ -187,16 +187,15 @@ describe("SetupGamePage setup menu page", () => {
     expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/delete-game");
   });
 
-  it("only offers Share Director Access in its own menu", async () => {
+  it("opens Share Director Access from its button, with no hamburger", async () => {
     render(<SetupGamePage />);
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Setup options" }),
-    );
-    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
     expect(
-      screen.getByRole("menuitem", { name: "Share Director Access" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: "Setup options" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Share Director Access" }),
+    );
+    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
   });
 
   it("opens the event-details editor and returns to the menu when done", async () => {

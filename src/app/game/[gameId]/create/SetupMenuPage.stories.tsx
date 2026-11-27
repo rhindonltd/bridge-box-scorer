@@ -18,6 +18,7 @@ const meta: Meta<typeof SetupMenuPage> = {
     onMovementClick: fn(),
     onTimerClick: fn(),
     onStartGameClick: fn(),
+    onShareAccessClick: fn(),
     onDeleteGameClick: fn(),
   },
 };
