@@ -12,17 +12,18 @@ the **same** boards. Teams can be scored four ways, chosen on the create form:
 | **Board-a-Match**        | `BAM`    | **boards won** (win 1 / tie ½ / loss 0)                             | boards won, 1 pt/board scale |
 | **Point-a-Board**        | `PAB`    | **boards won** — same ranking as BAM                                | boards won, 2 pt/board scale |
 
-This file uses a **Teams Round Robin** (whole schedule known up front, so every
-board exists at start). Swiss Teams (drawn round by round) is in
+This file uses a **Teams American Whist** (whole schedule known up front, so
+every board exists at start; it needs an odd number of teams and plays teams − 1
+rounds). Swiss Teams (drawn round by round) is in
 [file 05](05-scoring-swiss.md).
 
 **Fastest setup (one per method):**
 
 ```bash
-npm run seed:e2e -- --scoring TEAMS_IMP_VP  --tables 4 --rounds 3 --play all
-npm run seed:e2e -- --scoring TEAMS_IMP_AGG --tables 4 --rounds 3 --play all
-npm run seed:e2e -- --scoring TEAMS_BAM     --tables 4 --rounds 3 --play all
-npm run seed:e2e -- --scoring TEAMS_PAB     --tables 4 --rounds 3 --play all
+npm run seed:e2e -- --scoring TEAMS_IMP_VP  --tables 5 --play all
+npm run seed:e2e -- --scoring TEAMS_IMP_AGG --tables 5 --play all
+npm run seed:e2e -- --scoring TEAMS_BAM     --tables 5 --play all
+npm run seed:e2e -- --scoring TEAMS_PAB     --tables 5 --play all
 ```
 
 Plant the director token and open each event.

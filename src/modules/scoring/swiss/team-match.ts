@@ -164,6 +164,38 @@ function indexRoomsByHomeTable<R extends TeamMatchRow>(
 }
 
 /**
+ * The board rows at `seat`'s home table within `[start, end]`, keyed by board.
+ * A room is found by its home table and its boards, not its round: a stored
+ * teams movement can play a match's two rooms in different rounds, and a
+ * triple home table hosts two opponents across two rounds or sets. A home
+ * table plays each board at most once, so the span picks out the room.
+ */
+function roomBoardsAt<R extends TeamMatchRow>(
+  byRoom: Map<string, Map<number, R>>,
+  section: string,
+  seat: string,
+  start: number,
+  end: number,
+): Map<number, R> {
+  let table: number;
+  try {
+    table = parseSeat(seat).tableNumber;
+  } catch {
+    /* v8 ignore next -- unreachable: every seat passed here was already parsed (and would have thrown) when the match's table numbers were read */
+    return new Map<number, R>();
+  }
+  const out = new Map<number, R>();
+  for (const [key, map] of byRoom) {
+    const [sec, , tbl] = key.split("|");
+    if (sec !== section || Number(tbl) !== table) continue;
+    for (const [board, row] of map) {
+      if (board >= start && board <= end) out.set(board, row);
+    }
+  }
+  return out;
+}
+
+/**
  * Reconstruct the Swiss Teams two-team matches from the authoritative `matches`
  * rows (the TEAMS kind), gathering each encounter's two rooms' board rows.
  *
@@ -179,20 +211,6 @@ export function groupTeamMatches<R extends TeamMatchRow>(
   matchRows: TeamMatchStructureRow[],
 ): TeamMatch<R>[] {
   const byRoom = indexRoomsByHomeTable(rows);
-  const roomFor = (
-    section: string,
-    round: number,
-    seat: string,
-  ): Map<number, R> => {
-    let table: number;
-    try {
-      table = parseSeat(seat).tableNumber;
-    } catch {
-      /* v8 ignore next -- unreachable: callers only pass seats that already parsed in the loop below */
-      return new Map<number, R>();
-    }
-    return byRoom.get(`${section}|${round}|${table}`) ?? new Map<number, R>();
-  };
 
   const matches: TeamMatch<R>[] = [];
   for (const m of matchRows) {
@@ -212,8 +230,20 @@ export function groupTeamMatches<R extends TeamMatchRow>(
       opponentTable,
       homeTeamId: m.home,
       opponentTeamId: m.opponent,
-      homeRowsByBoard: roomFor(m.section, m.roundNumber, m.home),
-      opponentRowsByBoard: roomFor(m.section, m.roundNumber, m.opponent),
+      homeRowsByBoard: roomBoardsAt(
+        byRoom,
+        m.section,
+        m.home,
+        m.boardStart,
+        m.boardEnd,
+      ),
+      opponentRowsByBoard: roomBoardsAt(
+        byRoom,
+        m.section,
+        m.opponent,
+        m.boardStart,
+        m.boardEnd,
+      ),
       ruling: m.ruling ?? null,
     });
   }
@@ -642,33 +672,12 @@ export function groupTeamTriples<R extends TeamMatchRow>(
   if (byGroup.size === 0) return [];
 
   const byRoom = indexRoomsByHomeTable(rows);
-  /** The board rows at `seat`'s table within `[start,end]`, keyed by board. */
   const roomBoards = (
     section: string,
     seat: string,
     start: number,
     end: number,
-  ): Map<number, R> => {
-    let table: number;
-    try {
-      table = parseSeat(seat).tableNumber;
-    } catch {
-      /* v8 ignore next -- unreachable: every seat passed here was already parsed (and would have thrown) when the comparison's table numbers were read */
-      return new Map<number, R>();
-    }
-    const out = new Map<number, R>();
-    // A triple home table hosts two opponents across two rounds (LONG) / two
-    // sets (SHORT); gather this comparison's own board span from whichever
-    // round-keyed rooms hold those boards.
-    for (const [key, map] of byRoom) {
-      const [sec, , tbl] = key.split("|");
-      if (sec !== section || Number(tbl) !== table) continue;
-      for (const [board, row] of map) {
-        if (board >= start && board <= end) out.set(board, row);
-      }
-    }
-    return out;
-  };
+  ): Map<number, R> => roomBoardsAt(byRoom, section, seat, start, end);
 
   const triples: TeamTriple<R>[] = [];
   for (const comparisonRows of byGroup.values()) {

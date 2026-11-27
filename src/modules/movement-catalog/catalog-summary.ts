@@ -14,3 +14,16 @@ export interface CatalogMovementSummary {
   rounds: number;
   missingPair: number | null;
 }
+
+/**
+ * A stored teams movement's summary row, as the movement picker lists it for a
+ * Teams game. `tables` is the team count (one home table per team).
+ */
+export interface TeamsCatalogMovementSummary {
+  id: number;
+  name: string;
+  tables: number;
+  boards: number;
+  boardsPerRound: number;
+  rounds: number;
+}

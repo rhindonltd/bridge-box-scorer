@@ -742,3 +742,36 @@ describe("scoreOfRow", () => {
     ).toBeNull();
   });
 });
+
+describe("groupTeamMatches — rooms in different rounds", () => {
+  it("finds a match's two rooms by board span, not round", () => {
+    // A stored teams movement: team 1 hosts team 2 on boards 3-4 in round 1,
+    // and team 2 hosts team 1 on the same boards in round 2. Board 1 at table
+    // 1 belongs to another match and must not join this one.
+    const rows = [
+      row(1, 3, "A1NS", "A2EW", "4SN=" as BoardOutcome),
+      row(1, 4, "A1NS", "A2EW", "3NTN=" as BoardOutcome),
+      row(2, 1, "A1NS", "A3EW", "1NTN=" as BoardOutcome),
+      row(2, 3, "A2NS", "A1EW", "4SN-1" as BoardOutcome),
+      row(2, 4, "A2NS", "A1EW", "3NTN=" as BoardOutcome),
+    ];
+    const structure: TeamMatchStructureRow[] = [
+      {
+        section: "A",
+        roundNumber: 2,
+        kind: "TEAMS",
+        home: "A1NS",
+        opponent: "A2NS",
+        groupId: null,
+        vpPool: 20,
+        boardStart: 3,
+        boardEnd: 4,
+      },
+    ];
+    const [match] = groupTeamMatchesImpl(rows, structure);
+    expect([...match.homeRowsByBoard.keys()]).toEqual([3, 4]);
+    expect([...match.opponentRowsByBoard.keys()]).toEqual([3, 4]);
+    expect(match.round).toBe(2);
+    expect(teamMatchBoardImps(match).boardsPlayed).toBe(2);
+  });
+});

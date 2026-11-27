@@ -10,7 +10,7 @@
  * Manual testing (writes the box's data dirs; see docs/e2e/README.md):
  *
  *   npm run seed:e2e -- --scoring MP --tables 3 --rounds 3 --play partial
- *   npm run seed:e2e -- --scoring TEAMS_IMP_VP --tables 4 --play round1
+ *   npm run seed:e2e -- --scoring TEAMS_IMP_VP --tables 5 --play round1
  *   npm run seed:e2e -- --scoring MP --rounds 3 --play partial --withdraw A1NS@3
  *   npm run seed:e2e -- --scoring MP --rounds 2 --play all --expectedLate A3EW --lateArrive A3EW
  *   npm run seed:e2e -- --scoring MP --prestart --empty A3EW --tokens

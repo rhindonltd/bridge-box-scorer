@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { swrKeys } from "./swr-keys";
+import { storedMovementDetailKey, swrKeys } from "./swr-keys";
 
 describe("swrKeys", () => {
   it("pairs returns correct API path", () => {
@@ -100,5 +100,39 @@ describe("swrKeys", () => {
     expect(swrKeys.ebu()).toBe("/api/system/ebu");
     expect(swrKeys.cloudSync()).toBe("/api/system/cloud-sync");
     expect(swrKeys.cloudSyncStatus()).toBe("/api/system/cloud-sync/status");
+  });
+});
+
+describe("teams library keys", () => {
+  it("lists and details teams movements", () => {
+    expect(swrKeys.teamsMovements(6)).toBe("/api/movements/teams/6");
+    expect(swrKeys.teamsMovementDetail(3)).toBe(
+      "/api/movements/teams/detail/3",
+    );
+  });
+});
+
+describe("storedMovementDetailKey", () => {
+  it("is the pairs or teams detail of a stored movement", () => {
+    expect(
+      storedMovementDetailKey({ source: "SPEC", specId: 4, boardsPerRound: 2 }),
+    ).toBe("/api/movements/detail/4");
+    expect(
+      storedMovementDetailKey({
+        source: "TEAMS_SPEC",
+        specId: 5,
+        boardsPerRound: 2,
+      }),
+    ).toBe("/api/movements/teams/detail/5");
+  });
+
+  it("is null for no movement or a generated one", () => {
+    expect(storedMovementDetailKey(null)).toBeNull();
+    expect(
+      storedMovementDetailKey({
+        source: "MITCHELL",
+        mitchell: { tables: 3, rounds: 3, boardsPerRound: 2 },
+      }),
+    ).toBeNull();
   });
 });

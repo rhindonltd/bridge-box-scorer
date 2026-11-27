@@ -122,6 +122,26 @@ describe("useMovementResolution", () => {
     });
   });
 
+  describe("AMERICAN_WHIST_TEAMS", () => {
+    const americanWhist: SelectedMovement = {
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 3, boardsPerRound: 2 },
+    };
+
+    it("keeps each home pair stationary and moves the away pairs", () => {
+      const { result } = renderHook(() =>
+        useMovementResolution(americanWhist, 3),
+      );
+      expect(result.current.movementTables).toBe(3);
+      expect(result.current.stationary.get(1)).toEqual({ ns: true, ew: false });
+      // Table 1 starts on board set 1.
+      expect(result.current.placement.get(1)).toMatchObject({
+        boardStart: 1,
+        boardEnd: 2,
+      });
+    });
+  });
+
   describe("SPEC", () => {
     const spec: SelectedMovement = {
       source: "SPEC",

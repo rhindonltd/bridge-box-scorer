@@ -15,9 +15,9 @@
 //   server bundle, so the run command preloads scripts/allow-server-only.cjs:
 //     node -r ./scripts/allow-server-only.cjs dist/sync-movements.js
 //
-// The movement catalogue is read at RUNTIME from PSMovements.txt.
-// `splitLinesOfFile` resolves it relative to `__dirname`, which for the
-// bundled entry is `dist/`, so we copy the source file next to the bundle
+// The movement catalogue is read at RUNTIME from PSMovements.txt / TSMovements.txt.
+// `splitLinesOfFile` resolves these relative to `__dirname`, which for the
+// bundled entry is `dist/`, so we copy the source files next to the bundle
 // after building. This build step makes no network calls.
 import { build } from "esbuild";
 import { copyFileSync } from "fs";
@@ -36,10 +36,10 @@ await build({
   logLevel: "info",
 });
 
-// Copy the movement source file next to the bundle so the runtime
+// Copy the movement source files next to the bundle so the runtime
 // `fs.readFileSync(path.join(__dirname, "PSMovements.txt"))` in
 // src/modules/movement-catalog/storage/movement-file.ts resolves against dist/ at runtime.
-for (const file of ["PSMovements.txt"]) {
+for (const file of ["PSMovements.txt", "TSMovements.txt"]) {
   copyFileSync(
     path.join("src", "modules", "movement-catalog", "storage", file),
     path.join("dist", file),

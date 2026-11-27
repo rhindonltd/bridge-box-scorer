@@ -149,9 +149,9 @@ describe("broadcastResultsChanged", () => {
       expect.objectContaining({ teamMatches: [{ match: 1 }] }),
     );
   });
-  it("adds the team-match framing for a round-robin teams movement too", async () => {
+  it("adds the team-match framing for an American Whist teams movement too", async () => {
     vi.mocked(getAnySectionMovement).mockResolvedValue({
-      source: "ROUND_ROBIN_TEAMS",
+      source: "AMERICAN_WHIST_TEAMS",
     } as any);
     const io = makeIo({ [Rooms.traveller("g1", 3)]: 1 });
     await broadcastResultsChanged(io, "g1", 3);

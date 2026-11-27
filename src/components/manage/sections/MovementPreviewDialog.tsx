@@ -6,8 +6,10 @@ import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
 import { swrKeys } from "@/swr/swr-keys";
 import {
-  RecommendedMovement,
+  americanWhistPreview,
   MovementByTable,
+  RecommendedMovementSpecRef,
+  TeamsMovementRef,
   generatedToMovementByTable,
   generateMitchell,
 } from "@/modules/movement-catalog";
@@ -15,21 +17,40 @@ import { MovementDetailView } from "@/components/movement/MovementDetailView";
 import { Spinner } from "@/components/common/Spinner";
 
 /**
+ * A movement the dialog can preview: a pairs recommendation (a generated
+ * Mitchell or a pairs library spec) or a teams option (an American Whist or a
+ * teams library movement).
+ */
+export interface PreviewableMovement {
+  name: string;
+  specRef: RecommendedMovementSpecRef | TeamsMovementRef;
+}
+
+/** The detail endpoint for a stored movement, or null for a generated one. */
+function detailKey(specRef: PreviewableMovement["specRef"]): string | null {
+  if (specRef.source === "db") return swrKeys.movementDetail(specRef.id);
+  if (specRef.source === "library") {
+    return swrKeys.teamsMovementDetail(specRef.id);
+  }
+  return null;
+}
+
+/**
  * Popup showing the full table/round breakdown for the previewed movement, with
  * a Close action (dismiss) and a "Select Movement" action (persist and close).
  * Open when `movement` is non-null. The details content — including its data
  * fetch — is mounted only while open, so no request runs for a closed dialog.
  */
-export function MovementPreviewDialog({
+export function MovementPreviewDialog<M extends PreviewableMovement>({
   movement,
   saving,
   onClose,
   onConfirm,
 }: {
-  movement: RecommendedMovement | null;
+  movement: M | null;
   saving: boolean;
   onClose: () => void;
-  onConfirm: (movement: RecommendedMovement) => void;
+  onConfirm: (movement: M) => void;
 }) {
   return (
     <Transition show={movement != null} as={Fragment}>
@@ -74,8 +95,9 @@ export function MovementPreviewDialog({
 }
 
 /**
- * Contents of the movement-preview popup. Generated Mitchells are previewed
- * client-side; seeded (DB) specs are fetched from the detail API. Mounted only
+ * Contents of the movement-preview popup. Generated movements (Mitchell,
+ * American Whist) are previewed client-side; stored (pairs or teams library)
+ * movements are fetched from their detail API. Mounted only
  * while the dialog is open so its fetch is scoped to an open popup.
  */
 function MovementPreviewContent({
@@ -84,7 +106,7 @@ function MovementPreviewContent({
   onClose,
   onConfirm,
 }: {
-  movement: RecommendedMovement;
+  movement: PreviewableMovement;
   saving: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -94,9 +116,7 @@ function MovementPreviewContent({
   // fetcher already unwraps the `{ result }` success envelope, so `detail` is
   // the inner `{ name, tables }` payload.
   const { data: detail } = useSWR<{ tables: MovementByTable[] }>(
-    movement.specRef.source === "db"
-      ? swrKeys.movementDetail(movement.specRef.id)
-      : null,
+    detailKey(movement.specRef),
     fetcher,
   );
 
@@ -109,6 +129,9 @@ function MovementPreviewContent({
       } catch {
         return null;
       }
+    }
+    if (movement.specRef.source === "americanWhist") {
+      return americanWhistPreview(movement.specRef.spec);
     }
     return detail?.tables ?? null;
   }, [movement, detail]);

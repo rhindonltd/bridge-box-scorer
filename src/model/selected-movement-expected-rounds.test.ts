@@ -34,12 +34,12 @@ describe("expectedRounds", () => {
     expect(expectedRounds(m)).toBe(9);
   });
 
-  it("reads the round count from a ROUND_ROBIN_TEAMS spec", () => {
+  it("plays every round of an American Whist (teams − 1)", () => {
     const m: SelectedMovement = {
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 6 },
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 7, boardsPerRound: 3 },
     };
-    expect(expectedRounds(m)).toBe(5);
+    expect(expectedRounds(m)).toBe(6);
   });
 
   it("returns null for a SPEC selection (no round count in the stored selection)", () => {
@@ -81,10 +81,10 @@ describe("boardsPerRoundOf", () => {
     expect(boardsPerRoundOf(m)).toBe(6);
   });
 
-  it("reads boards-per-round from a nested ROUND_ROBIN_TEAMS spec", () => {
+  it("reads boards-per-round from a nested AMERICAN_WHIST_TEAMS spec", () => {
     const m: SelectedMovement = {
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 2 },
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 5, boardsPerRound: 2 },
     };
     expect(boardsPerRoundOf(m)).toBe(2);
   });

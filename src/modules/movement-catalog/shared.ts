@@ -34,7 +34,7 @@ export type MovementHeader = {
   missingParticipant: number;
 };
 
-/** One movement as parsed from PSMovements.txt. */
+/** One movement as parsed from PSMovements.txt / TSMovements.txt. */
 export type MovementFileEntry = {
   name: string;
   description: string;

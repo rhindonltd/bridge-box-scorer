@@ -1955,14 +1955,18 @@ these small pure rules, now moved:
   `fixedMovementSetup` and `stationaryFromTables`, from
   `hooks/stationary-pairs.ts`. The Swiss part stays in the hook, because it
   needs `swissPairHomeSeat` and modules may not import each other.
-- **Stored teams movements deleted:** `TSMovements.txt`, its loader, the
-  teams catalogue queries and writers, and the three `teammovement*` tables
-  (migration `0002`, which also drops the `individualmovement*` tables the
-  schema had already removed). The movement detail route is now
-  `/api/movements/detail/[movementId]` and `getMovementDetail(id)` takes no
-  kind. This also fixed a bug: in a plain Teams game using a stored movement,
-  the setup hooks fetched `/detail/TEAMS/<id>` with a pairs movement id, so
-  Show Tables and the timer setup read the wrong catalogue.
+- **Individual movements removed:** migration `0002` drops the
+  `individualmovement*` tables, which the schema had already removed without a
+  migration. It also dropped the `teammovement*` tables when the stored teams
+  movements were briefly deleted as unused; they were restored (the library is
+  wanted for teams games), and migration `0003` recreates those tables.
+  `TSMovements.txt`, its loader and the teams catalogue queries are back.
+- **Movement detail route:** now `/api/movements/detail/[movementId]`, and
+  `getMovementDetail(id)` reads the pairs catalogue only, as the start of a
+  game does for a stored movement. This fixed a bug: in a plain Teams game
+  using a stored movement, the setup hooks fetched `/detail/TEAMS/<id>` with a
+  pairs movement id, so Show Tables and the timer setup read the wrong
+  catalogue.
 - **Migration note:** Drizzle runs migrations in a transaction, where
   `PRAGMA foreign_keys=OFF` has no effect, so `0002` drops child tables
   before parents and does not rebuild `pairmovementtablespec` to apply the
@@ -1970,6 +1974,72 @@ these small pure rules, now moved:
   nullable in the database; the seed always sets it).
 - **Not a bug:** the movement routes accept any movement on any game type. A
   stored movement on a Teams game is a supported path, so no guard was added.
+
+**Teams library, as built.** A plain Teams game (not Swiss Teams) picks its
+movement from the teams library (`TSMovements.txt`):
+
+- **Selection:** a new source, `TEAMS_SPEC { specId, boardsPerRound }`, kept
+  apart from `SPEC` because the two libraries have their own ids.
+  `isTeamsMovement` (`model/event-format.ts`) covers it, so it is classified
+  and broadcast as a teams movement.
+- **Catalogue** (`movement-catalog/teams/teams-library.ts`):
+  `normaliseTeamsTables` puts rows into team order at load (table T is team
+  T's home); `isSupportedTeamsMovement` is the one rule for which movements the
+  app can run: tables 1..n, no team playing itself, every room's other room on
+  the same set, two teams meeting once, and a team playing each set once. 105
+  of the 211 movements pass. The server entry adds `listTeamMovements`,
+  `getTeamMovementDetail` and a `TEAMS_SPEC` branch in `describeMovement`;
+  `getTeamMovementRooms` reads every room for a team count in one query, and
+  the old per-table `getTeamMovement` was removed.
+- **Plan:** `teamsLayoutToMaterializable` (named `storedTeamsToMaterializable`
+  at the time) keys each match by its two teams
+  (not the round) and numbers it by its board set (`MatchDescriptor.roundNumber`),
+  because a match's two rooms may be in different rounds, and the per-round
+  teams scorers need one match per team per number.
+- **Scoring:** `groupTeamMatches` finds a match's rooms by home table and the
+  match's board span, as the triples reader already did, rather than by round.
+- **Start:** `validateTeamsStructure` takes `anyTeamCount`, so an odd library
+  field can start. Every teams start (Round Robin, since removed, Swiss Teams and the library)
+  now passes `teamsAnchors`, so each team's pairs keep their own seats' ids.
+  This fixed an existing bug: the round-1 layout stamped each EW seat with the
+  visiting team's away-pair id, so a team's away pair was scored as another
+  team's, and in round 1 played its own team's home pair.
+- **API and picker:** `/api/movements/teams/[tables]`,
+  `/api/movements/teams/detail/[movementId]`, and a `teamsSpecId` body field on
+  the section movement route (refused unless the movement is supported).
+  `TeamsMovementPicker` lists the movements grouped by boards per team, and
+  `MovementPreviewDialog` previews either library.
+- **Not yet reviewed:** which movements to offer and how (step 2): pivots,
+  "Team N missing", repeat meetings and the event-specific SPECIALs are hidden
+  by the rule above; the rest are listed as the file names them.
+
+**American Whist, as built (Round Robin removed).** The generated Teams Round
+Robin (`generation/round-robin-teams/`, source `ROUND_ROBIN_TEAMS`) was deleted:
+it put every table on the same set each round, so it needed board copies and
+did not match any club movement. A stored `ROUND_ROBIN_TEAMS` value now parses
+to null. In its place:
+
+- **Generator:** `generation/american-whist-teams/` (`generateAmericanWhistTeams`).
+  For n teams (odd, at least 3), in round k at table t the home pair is team t,
+  East/West is team `t + 2k` and the board set is `t + k - 1` (wrapping round
+  n). That is n - 1 rounds and n sets with one copy each; a match's two rooms
+  play the same set in rounds k and n - k. It reproduces the library's NBL
+  American Whist blocks for 5, 7 and 9 teams exactly.
+- **Selection:** source `AMERICAN_WHIST_TEAMS { americanWhistTeams: { teams,
+boardsPerRound } }`; the schema refuses an even or too small team count, and
+  `expectedRounds` is teams - 1. It is not a barometer movement.
+- **Plan and start:** `TEAMS_SPEC` and `AMERICAN_WHIST_TEAMS` share
+  `teamsLayoutToMaterializable` and `resolveFixedTeamsStart`. The unused match
+  descriptor parameter of `tablesToMaterializableMovement` went with Round Robin.
+- **Picker:** `teams/teams-options.ts` builds one American Whist card per
+  boards-per-round from 2 to 12 where a team plays 12 to 36 boards
+  (`AMERICAN_WHIST_BOARDS_PER_ROUND`, `AMERICAN_WHIST_BOARDS_PER_TEAM`), listed
+  before the library movements and grouped with them by boards per team. The
+  preview is built locally (`americanWhistPreview`).
+- **Library:** `isAmericanWhistTeamsLayout` hides stored movements with the
+  same layout, because the generator replaces them: the NBL blocks for 5, 7
+  and 9 teams and the EBU "6R/8R/12R No Scorebreak SPECIAL" blocks. 97 of the
+  105 supported movements are listed.
 
 Code that looks like a candidate but should stay in the core:
 
@@ -2136,11 +2206,12 @@ Behaviour changes and tidy-ups found during the design are in
 - **Q20.** That a teams game can only choose Swiss Teams or Round Robin.
   **Answered:** no. A plain Teams game (TEAMS, STANDARD format) picks a
   Mitchell or a stored pairs movement from the same picker as a pairs game;
-  only Swiss Teams has its own form, and Round Robin Teams has no picker
-  (the e2e seed sets it directly). The stored teams movements
-  (`TSMovements.txt`, `getTeamMovement`) had no caller and were deleted (see
-  "Further moves, as built" in §11). The pairs IMP error path (D11) is out of
-  scope here.
+  only Swiss Teams has its own form, and Round Robin Teams (since removed)
+  had no picker (the e2e seed set it directly). A plain Teams game used to get the pairs
+  picker, and its Board Results failed on a stored pairs movement ("Invalid
+  seat"), as the teams code reads board ids as seats. A Teams game now picks
+  from the teams library instead (see "Teams library, as built" in §11). The
+  pairs IMP error path (D11) is out of scope here.
 
 ## 15. Suggested order (outline only)
 

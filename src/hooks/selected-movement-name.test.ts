@@ -59,6 +59,16 @@ describe("useSelectedMovementName", () => {
     expect(result.current).toBe("Swiss Pairs");
   });
 
+  it("names an American Whist teams movement locally", () => {
+    const m: SelectedMovement = {
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 5, boardsPerRound: 4 },
+    };
+    const { result } = renderHook(() => useSelectedMovementName(m));
+    expect(result.current).toBe("American Whist");
+    expect(mockUseSWR).toHaveBeenCalledWith(null, expect.anything());
+  });
+
   it("uses the fetched name for a SPEC selection", () => {
     mockUseSWR.mockReturnValue({ data: { name: "Howell 6T" } });
     const m: SelectedMovement = {

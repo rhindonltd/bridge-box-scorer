@@ -13,6 +13,8 @@ import {
   deleteSection,
   updateSectionTables,
   setSectionMovementSpec,
+  setSectionTeamsMovementSpec,
+  setSectionAmericanWhistTeamsMovement,
   setSectionMitchellMovement,
   setSectionSwissMovement,
   setSectionSwissTeamsMovement,
@@ -72,6 +74,27 @@ describe("section-service (HTTP)", () => {
     expect(url).toBe("/api/games/g1/sections/A/tables");
     expect(init.method).toBe("PUT");
     expect(body).toEqual({ tables: 12 });
+  });
+
+  it("setSectionAmericanWhistTeamsMovement PUTs the American Whist setup", async () => {
+    await setSectionAmericanWhistTeamsMovement("g1", "A", {
+      teams: 5,
+      boardsPerRound: 4,
+    });
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({
+      americanWhistTeams: { teams: 5, boardsPerRound: 4 },
+    });
+  });
+
+  it("setSectionTeamsMovementSpec PUTs the teams library id + boardsPerRound", async () => {
+    await setSectionTeamsMovementSpec("g1", "A", 7, 4);
+    const { url, init, body } = lastCall();
+    expect(url).toBe("/api/games/g1/sections/A/movement");
+    expect(init.method).toBe("PUT");
+    expect(body).toEqual({ teamsSpecId: 7, boardsPerRound: 4 });
   });
 
   it("setSectionMovementSpec PUTs /sections/[section]/movement with id + boardsPerRound", async () => {

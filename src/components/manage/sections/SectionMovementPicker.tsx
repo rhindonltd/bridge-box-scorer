@@ -22,6 +22,7 @@ import {
   movementMatchesSelection,
 } from "./movement-recommendations";
 import { MovementPreviewDialog } from "./MovementPreviewDialog";
+import { TeamsMovementPicker } from "./TeamsMovementPicker";
 import { SwissSetupForm } from "./SwissSetupForm";
 import { SwissTeamsSetupForm } from "./SwissTeamsSetupForm";
 import type {
@@ -102,8 +103,11 @@ export function SectionMovementPicker({
   // Seeded specs for this table count, used to resolve a SPEC recommendation's
   // concrete id/type at selection time (recommendations reference specs by
   // name, not id).
+  // A Teams (not Swiss Teams) game lists the teams library instead, so the
+  // pairs specs are only fetched for a pairs game.
+  const usesTeamsLibrary = isTeams && !isSwiss;
   const { data: pairMovements } = useSWR<CatalogMovementSummary[]>(
-    `/api/movements/pairs/${tables}`,
+    usesTeamsLibrary ? null : `/api/movements/pairs/${tables}`,
     fetcher,
   );
 
@@ -244,6 +248,17 @@ export function SectionMovementPicker({
               />
             )}
           </div>
+        ) : usesTeamsLibrary ? (
+          <TeamsMovementPicker
+            gameId={gameId}
+            section={section}
+            tables={tables}
+            selectedMovement={selectedMovement}
+            onSelected={() => {
+              onDone?.();
+              onSelected?.();
+            }}
+          />
         ) : (
           <div className="p-4">
             {groups.length === 0 ? (

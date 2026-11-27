@@ -11,7 +11,8 @@ import { SelectedMovement } from "@/model/selected-movement";
  * - SWISS_PAIRS_VP: a Swiss Pairs event, ranked on per-round Victory Points.
  * - TEAMS_VP: a teams event ranked on per-round Victory Points, converting each
  *   match's IMP margin to VP on the WBF scale. The default for any teams
- *   movement (Swiss Teams or Round Robin) whose scoring type does not pick
+ *   movement (Swiss Teams, American Whist or a stored teams movement) whose
+ *   scoring type does not pick
  *   another method. Chosen when a teams game's scoring type is "IMP_VP".
  * - TEAMS_IMP_AGG: a teams event ranked on aggregate (total net) IMPs — the raw
  *   sum of each match's IMP margin across all boards, with NO conversion to
@@ -66,8 +67,8 @@ export interface EventClassification {
  *
  * The rules preserve the behaviour these consumers had before this classifier
  * existed:
- * - A Teams game whose movement is a teams-VP movement (Swiss Teams or Teams
- *   Round Robin) is TEAMS_VP. (A TEAMS game type alone does not imply the teams
+ * - A Teams game whose movement is a teams movement (Swiss Teams, Teams Round
+ *   Robin or a stored teams movement) is TEAMS_VP. (A TEAMS game type alone does not imply the teams
  *   format — the movement must also be one of those.)
  * - Any Swiss (Pairs) movement is SWISS_PAIRS_VP; its `swissVpMode` is the
  *   scoring type when that maps to a VP method (IMP or MP), else null. A Swiss
@@ -77,23 +78,24 @@ export interface EventClassification {
  * - Everything else is PAIRS_BOARD.
  */
 /**
- * Whether a selected movement is a teams-VP movement (ranked on per-round
- * Victory Points via the shared teams scorer). Both Swiss Teams and Teams Round
- * Robin qualify — they differ only in how the schedule is produced (live draw
- * vs fixed), not in how they are scored.
+ * Whether a selected movement is a teams movement (scored by the shared teams
+ * scorer). Swiss Teams, American Whist and a stored teams movement all
+ * qualify — they differ only in how the schedule is produced (live draw,
+ * generated or stored), not in how they are scored.
  */
-function isTeamsVpMovement(movement: SelectedMovement | null): boolean {
+export function isTeamsMovement(movement: SelectedMovement | null): boolean {
   return (
     movement?.source === "SWISS_TEAMS" ||
-    movement?.source === "ROUND_ROBIN_TEAMS"
+    movement?.source === "AMERICAN_WHIST_TEAMS" ||
+    movement?.source === "TEAMS_SPEC"
   );
 }
 
 /**
  * Whether a movement is a Swiss draw-as-you-go movement (Swiss Pairs or Swiss
  * Teams) — one whose later rounds are not fixed up front but drawn from the
- * current standings between rounds. Round Robin Teams is NOT Swiss: its whole
- * schedule is known in advance. Used to decide, among other things, that the
+ * current standings between rounds. An American Whist or stored teams movement
+ * is NOT Swiss: its whole schedule is known in advance. Used to decide, among other things, that the
  * session timer must wait for the director to draw each round rather than
  * auto-advancing through a move gap.
  */
@@ -132,9 +134,9 @@ export function classifyEvent(
   scoringType: ScoringType,
   movement: SelectedMovement | null,
 ): EventClassification {
-  if (gameType === "TEAMS" && isTeamsVpMovement(movement)) {
-    // The teams scoring method is orthogonal to the movement, so both Swiss
-    // Teams and Round Robin honour it:
+  if (gameType === "TEAMS" && isTeamsMovement(movement)) {
+    // The teams scoring method is orthogonal to the movement, so every teams
+    // movement honours it:
     //  - BAM / PAB rank on boards won (board-comparison);
     //  - IMP ranks on aggregate (total net) IMPs, no VP conversion;
     //  - IMP_VP (and any other/legacy value) ranks on per-round Victory Points.

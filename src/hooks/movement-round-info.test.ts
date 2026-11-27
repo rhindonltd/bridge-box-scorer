@@ -49,13 +49,13 @@ describe("useMovementRoundInfo", () => {
     expect(result.current.info).toEqual({ rounds: 5, boardsPerRound: 4 });
   });
 
-  it("reads inline round info for ROUND_ROBIN_TEAMS", () => {
+  it("derives AMERICAN_WHIST_TEAMS round info from the team count", () => {
     const m: SelectedMovement = {
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 4, rounds: 3, boardsPerRound: 6 },
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams: { teams: 5, boardsPerRound: 6 },
     };
     const { result } = renderHook(() => useMovementRoundInfo(m));
-    expect(result.current.info).toEqual({ rounds: 3, boardsPerRound: 6 });
+    expect(result.current.info).toEqual({ rounds: 4, boardsPerRound: 6 });
   });
 
   it("derives SPEC rounds from the fetched movement detail", () => {

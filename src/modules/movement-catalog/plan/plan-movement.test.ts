@@ -1,13 +1,12 @@
 import { describe, it, expect } from "vitest";
 import type { Tables } from "@/model/movement";
-import { generateRoundRobinTeams } from "@/modules/movement-catalog/generation/round-robin-teams/round-robin-teams-pairing";
 import {
   describeGeneratedMovement,
   type MovementDescription,
 } from "./describe-movement";
 import {
   planMovement,
-  roundRobinTeamsToMaterializable,
+  teamsLayoutToMaterializable,
   tablesToMaterializableMovement,
 } from "./plan-movement";
 
@@ -57,39 +56,6 @@ describe("tablesToMaterializableMovement", () => {
         ],
       },
     ]);
-  });
-});
-
-describe("roundRobinTeamsToMaterializable", () => {
-  it("maps a generated round robin to every table's per-round board rows", () => {
-    const teams = 6;
-    const rounds = teams - 1;
-    const boardsPerRound = 4;
-
-    const movement = roundRobinTeamsToMaterializable(
-      generateRoundRobinTeams({ teams, rounds, boardsPerRound }),
-    );
-
-    // One materializable table per team, each carrying every round.
-    expect(movement.map((t) => t.tableNumber)).toEqual([1, 2, 3, 4, 5, 6]);
-
-    for (const table of movement) {
-      expect(table.rounds.map((r) => r.roundNumber)).toEqual([1, 2, 3, 4, 5]);
-
-      for (const round of table.rounds) {
-        // Board range comes straight from boardsPerRound (round r plays set r).
-        expect(round.boardStart).toBe(
-          (round.roundNumber - 1) * boardsPerRound + 1,
-        );
-        expect(round.boardEnd).toBe(round.roundNumber * boardsPerRound);
-
-        // Home NS pair is this table's own team; away EW pair is another team.
-        expect(round.ns).toBe(`${table.tableNumber}NS`);
-        expect(round.ew).toMatch(/^\d+EW$/);
-        const away = Number(round.ew.replace(/EW$/, ""));
-        expect(away).not.toBe(table.tableNumber);
-      }
-    }
   });
 });
 
@@ -173,14 +139,66 @@ describe("planMovement", () => {
     ).toEqual(["4", "4"]);
   });
 
-  it("generates the whole Teams Round Robin schedule", () => {
-    const roundRobinTeams = { teams: 4, rounds: 3, boardsPerRound: 4 };
+  it("plans an American Whist's whole schedule as teams matches", () => {
+    const americanWhistTeams = { teams: 3, boardsPerRound: 2 };
     const description = describeGeneratedMovement({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams,
+      source: "AMERICAN_WHIST_TEAMS",
+      americanWhistTeams,
     });
+    const plan = planMovement(description, { sitOutSeat: null });
+    expect(plan).toEqual(teamsLayoutToMaterializable(description.layout, 2));
+    // Team 1 hosts team 3 in round 1 on set 1; team 3 hosts team 1 in round 2
+    // on the same set: one match, numbered by its set.
+    expect(plan[0].rounds[0].match).toMatchObject({
+      key: "teams|1-3",
+      roundNumber: 1,
+    });
+    expect(plan[2].rounds[1].match).toMatchObject({
+      key: "teams|1-3",
+      roundNumber: 1,
+    });
+  });
+});
+
+describe("teamsLayoutToMaterializable", () => {
+  // Team 1 hosts 2 in round 1 on set 2; team 2 hosts 1 in round 2 on set 2.
+  const layout = [
+    {
+      tableNumber: 1,
+      rounds: [
+        { roundNumber: 1, ns: "1NS", ew: "2EW", boardStart: 3, boardEnd: 4 },
+      ],
+    },
+    {
+      tableNumber: 2,
+      rounds: [
+        { roundNumber: 2, ns: "2NS", ew: "1EW", boardStart: 3, boardEnd: 4 },
+      ],
+    },
+  ];
+  const match = {
+    kind: "TEAMS",
+    scoredAsUnit: true,
+    key: "teams|1-2",
+    home: "1NS",
+    opponent: "2NS",
+    vpPool: 20,
+    roundNumber: 2,
+  };
+
+  it("groups a match's two rooms by the teams, numbered by board set", () => {
+    const plan = teamsLayoutToMaterializable(layout, 2);
+    expect(plan.map((t) => t.rounds[0].match)).toEqual([match, match]);
+  });
+
+  it("plans the described layout as it is", () => {
+    const description: MovementDescription = {
+      selected: { source: "TEAMS_SPEC", specId: 1, boardsPerRound: 2 },
+      layout,
+      missingPair: null,
+    };
     expect(planMovement(description, { sitOutSeat: null })).toEqual(
-      roundRobinTeamsToMaterializable(generateRoundRobinTeams(roundRobinTeams)),
+      teamsLayoutToMaterializable(layout, 2),
     );
   });
 });

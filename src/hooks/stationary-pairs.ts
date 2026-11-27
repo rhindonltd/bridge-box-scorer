@@ -3,7 +3,7 @@
 import useSWR from "swr";
 
 import { fetcher } from "@/lib/fetcher";
-import { swrKeys } from "@/swr/swr-keys";
+import { storedMovementDetailKey } from "@/swr/swr-keys";
 import type {
   SelectedMovement,
   SwissMovementSpec,
@@ -11,6 +11,7 @@ import type {
 import { swissPairHomeSeat } from "@/modules/swiss";
 import {
   fixedMovementSetup,
+  americanWhistPreview,
   generatedToMovementByTable,
   generateMitchell,
   type MovementByTable,
@@ -71,8 +72,10 @@ function swissResolution(
  * pair positions and board placement (round-1 boards, physical copy, and any
  * share/relay), keyed by table number.
  *
- * - `MITCHELL` selections are generated locally (no fetch).
- * - `SPEC` selections are fetched from the movement detail endpoint.
+ * - `MITCHELL` and `AMERICAN_WHIST_TEAMS` selections are generated locally (no
+ *   fetch).
+ * - `SPEC` and `TEAMS_SPEC` selections (a pairs or teams library movement)
+ *   are fetched from the movement's detail endpoint.
  *
  * Everything is gated on the movement's table count matching `sectionTables`:
  * on a mismatch (e.g. the director resized the section away from the movement's
@@ -84,10 +87,8 @@ export function useMovementResolution(
   selectedMovement: SelectedMovement | null,
   sectionTables: number,
 ): MovementResolution {
-  const isSpec = selectedMovement?.source === "SPEC";
-
   const { data } = useSWR<MovementDetailResult>(
-    isSpec ? swrKeys.movementDetail(selectedMovement.specId) : null,
+    storedMovementDetailKey(selectedMovement),
     fetcher,
   );
 
@@ -114,9 +115,13 @@ export function useMovementResolution(
     } catch {
       return EMPTY;
     }
+  } else if (selectedMovement.source === "AMERICAN_WHIST_TEAMS") {
+    // Generated locally; the selection only allows a team count it suits.
+    tables = americanWhistPreview(selectedMovement.americanWhistTeams);
   } else {
-    // SPEC: computed from the fetched detail (empty until it loads). Seeded
-    // specs never carry a provable relay, so shareAndRelay stays false.
+    // SPEC / TEAMS_SPEC: computed from the fetched detail (empty until it
+    // loads). Seeded specs never carry a provable relay, so shareAndRelay
+    // stays false.
     if (!data) {
       return EMPTY;
     }

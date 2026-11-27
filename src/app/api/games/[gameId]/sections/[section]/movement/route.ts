@@ -16,22 +16,26 @@ import {
   mitchellSpecSchema,
   swissSpecSchema,
   swissTeamsSpecSchema,
-  roundRobinTeamsSpecSchema,
+  americanWhistTeamsSpecSchema,
 } from "@/model/selected-movement";
+import { getTeamMovementDetail } from "@/modules/movement-catalog/server";
 
 const bodySchema = z.object({
   id: z.number().int().positive().optional(),
+  /** A stored teams movement's id (from the teams library), with boardsPerRound. */
+  teamsSpecId: z.number().int().positive().optional(),
   boardsPerRound: z.number().int().positive().optional(),
   mitchell: mitchellSpecSchema.optional(),
   swiss: swissSpecSchema.optional(),
   swissTeams: swissTeamsSpecSchema.optional(),
-  roundRobinTeams: roundRobinTeamsSpecSchema.optional(),
+  americanWhistTeams: americanWhistTeamsSpecSchema.optional(),
 });
 
 /**
  * PUT /api/games/[gameId]/sections/[section]/movement — set (or clear) the
- * section's movement. A `mitchell` spec, a spec `id` + `boardsPerRound`, or an
- * empty body (clear) are accepted. On an actual change, the section's timer is
+ * section's movement. A `mitchell` spec, a spec `id` + `boardsPerRound`, a
+ * teams library `teamsSpecId` + `boardsPerRound`, or an empty body (clear) are
+ * accepted. On an actual change, the section's timer is
  * cleared (its round structure is derived from the movement).
  */
 export const PUT = withDirectorEditRoute(
@@ -43,18 +47,40 @@ export const PUT = withDirectorEditRoute(
       );
     }
 
-    const { id, boardsPerRound, mitchell, swiss, swissTeams, roundRobinTeams } =
-      body;
+    const {
+      id,
+      teamsSpecId,
+      boardsPerRound,
+      mitchell,
+      swiss,
+      swissTeams,
+      americanWhistTeams,
+    } = body;
 
     let selected: SelectedMovement | null;
-    if (roundRobinTeams) {
-      selected = { source: "ROUND_ROBIN_TEAMS", roundRobinTeams };
+    if (americanWhistTeams) {
+      selected = { source: "AMERICAN_WHIST_TEAMS", americanWhistTeams };
     } else if (swissTeams) {
       selected = { source: "SWISS_TEAMS", swissTeams };
     } else if (swiss) {
       selected = { source: "SWISS", swiss };
     } else if (mitchell) {
       selected = { source: "MITCHELL", mitchell };
+    } else if (teamsSpecId != null) {
+      if (boardsPerRound == null) {
+        return NextResponse.json(
+          { success: false, error: "No boards per round specified" },
+          { status: 400 },
+        );
+      }
+      // Only a teams movement the app can run may be selected.
+      if ((await getTeamMovementDetail(teamsSpecId)) == null) {
+        return NextResponse.json(
+          { success: false, error: "Unknown teams movement" },
+          { status: 400 },
+        );
+      }
+      selected = { source: "TEAMS_SPEC", specId: teamsSpecId, boardsPerRound };
     } else if (id != null) {
       if (boardsPerRound == null) {
         return NextResponse.json(

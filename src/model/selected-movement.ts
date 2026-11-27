@@ -24,13 +24,12 @@ import { z } from "zod";
  *   boards. The selection carries only the setup parameters (team count, total
  *   rounds, boards-per-round); no per-round layout is stored. The team count
  *   must be even (three-way "triple" handling is not yet supported).
- * - ROUND_ROBIN_TEAMS: a Teams Round Robin movement. Like SWISS_TEAMS a team is
- *   the two pairs at one home table and matches use the same open/closed-room
- *   layout, but the schedule is fixed and fully known up front (every team
- *   plays every other exactly once), so the WHOLE schedule is materialized at
- *   start rather than drawn live. The selection still stores only the setup
- *   parameters (team count, total rounds, boards-per-round); the schedule is
- *   regenerated deterministically from them. The team count must be even.
+ * - AMERICAN_WHIST_TEAMS: the American Whist teams movement for an odd number
+ *   of teams (East/West pairs move down two tables, boards down one each
+ *   round). Its whole schedule is fixed, so it is materialized at start; the
+ *   selection stores only the team count and boards-per-round, and the
+ *   schedule is regenerated from them.
+ * - TEAMS_SPEC: a stored teams movement from the teams library.
  */
 
 export const mitchellSpecSchema = z.object({
@@ -317,23 +316,24 @@ export type SwissTeamsOddRound = z.infer<typeof swissTeamsOddRoundSchema>;
 export type SwissTeamsOddHandling = z.infer<typeof swissTeamsOddHandlingSchema>;
 
 /**
- * Setup parameters for a Teams Round Robin movement. As with Swiss Teams a team
- * is the two pairs seated at one home table, so `teams` equals the table count.
- * Unlike Swiss Teams the schedule is fixed and fully known up front (every team
- * plays every other exactly once), but the selection still stores only the
- * setup parameters — the whole schedule is regenerated deterministically at
- * start from the team count, rounds to play, and boards per round (which fixes
- * each round's board range). The team count must be even; odd counts are
- * rejected at start (bye handling is future work).
+ * American Whist teams setup: the team count (odd, at least 3, one table per
+ * team) and boards per round. It always plays every round (teams − 1), as a
+ * shorter session would leave matches with only one room played.
  */
-export const roundRobinTeamsSpecSchema = z.object({
-  teams: z.number().int().positive(),
-  rounds: z.number().int().positive(),
+export const americanWhistTeamsSpecSchema = z.object({
+  teams: z
+    .number()
+    .int()
+    .min(3)
+    .refine(
+      (teams) => teams % 2 === 1,
+      "American Whist needs an odd number of teams",
+    ),
   boardsPerRound: z.number().int().positive(),
 });
 
-export type RoundRobinTeamsMovementSpec = z.infer<
-  typeof roundRobinTeamsSpecSchema
+export type AmericanWhistTeamsMovementSpec = z.infer<
+  typeof americanWhistTeamsSpecSchema
 >;
 
 export const selectedMovementSchema = z.discriminatedUnion("source", [
@@ -343,6 +343,14 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
     // Boards played per round when this spec is materialized. Required: the
     // stored spec only carries board-set indices, so board numbers cannot be
     // derived without it.
+    boardsPerRound: z.number().int().positive(),
+  }),
+  z.object({
+    // A stored teams movement from the teams library (movements.db), used by
+    // a plain Teams game. A separate source from SPEC because the two
+    // libraries have their own ids.
+    source: z.literal("TEAMS_SPEC"),
+    specId: z.number().int().positive(),
     boardsPerRound: z.number().int().positive(),
   }),
   z.object({
@@ -358,8 +366,8 @@ export const selectedMovementSchema = z.discriminatedUnion("source", [
     swissTeams: swissTeamsSpecSchema,
   }),
   z.object({
-    source: z.literal("ROUND_ROBIN_TEAMS"),
-    roundRobinTeams: roundRobinTeamsSpecSchema,
+    source: z.literal("AMERICAN_WHIST_TEAMS"),
+    americanWhistTeams: americanWhistTeamsSpecSchema,
   }),
 ]);
 
@@ -374,8 +382,8 @@ export function serializeSelectedMovement(selected: SelectedMovement): string {
 
 /**
  * The number of rounds a movement is configured to run. For the three movements
- * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS,
- * ROUND_ROBIN_TEAMS) that value is authoritative. A SPEC (movement-library)
+ * that carry an explicit `rounds` in their spec (MITCHELL, SWISS, SWISS_TEAMS)
+ * that value is authoritative; an American Whist plays teams − 1 rounds. A SPEC (movement-library)
  * selection does not carry a round count in the stored selection — its schedule
  * is defined by the referenced spec and is fully materialized at start — so
  * null is returned and callers fall back to the materialized round count.
@@ -394,9 +402,10 @@ export function expectedRounds(
       return selected.swiss.rounds;
     case "SWISS_TEAMS":
       return selected.swissTeams.rounds;
-    case "ROUND_ROBIN_TEAMS":
-      return selected.roundRobinTeams.rounds;
+    case "AMERICAN_WHIST_TEAMS":
+      return selected.americanWhistTeams.teams - 1;
     case "SPEC":
+    case "TEAMS_SPEC":
       return null;
   }
 }
@@ -423,9 +432,10 @@ export function boardsPerRoundOf(
       return selected.swiss.boardsPerRound;
     case "SWISS_TEAMS":
       return selected.swissTeams.boardsPerRound;
-    case "ROUND_ROBIN_TEAMS":
-      return selected.roundRobinTeams.boardsPerRound;
+    case "AMERICAN_WHIST_TEAMS":
+      return selected.americanWhistTeams.boardsPerRound;
     case "SPEC":
+    case "TEAMS_SPEC":
       return selected.boardsPerRound;
   }
 }
@@ -455,6 +465,10 @@ export function selectedMovementsEqual(
   switch (a.source) {
     case "SPEC": {
       const y = b as Extract<SelectedMovement, { source: "SPEC" }>;
+      return a.specId === y.specId && a.boardsPerRound === y.boardsPerRound;
+    }
+    case "TEAMS_SPEC": {
+      const y = b as Extract<SelectedMovement, { source: "TEAMS_SPEC" }>;
       return a.specId === y.specId && a.boardsPerRound === y.boardsPerRound;
     }
     case "MITCHELL": {
@@ -507,14 +521,13 @@ export function selectedMovementsEqual(
           JSON.stringify(y.oddRoundPlan ?? null)
       );
     }
-    case "ROUND_ROBIN_TEAMS": {
+    case "AMERICAN_WHIST_TEAMS": {
       const y = (
-        b as Extract<SelectedMovement, { source: "ROUND_ROBIN_TEAMS" }>
-      ).roundRobinTeams;
+        b as Extract<SelectedMovement, { source: "AMERICAN_WHIST_TEAMS" }>
+      ).americanWhistTeams;
       return (
-        a.roundRobinTeams.teams === y.teams &&
-        a.roundRobinTeams.rounds === y.rounds &&
-        a.roundRobinTeams.boardsPerRound === y.boardsPerRound
+        a.americanWhistTeams.teams === y.teams &&
+        a.americanWhistTeams.boardsPerRound === y.boardsPerRound
       );
     }
   }

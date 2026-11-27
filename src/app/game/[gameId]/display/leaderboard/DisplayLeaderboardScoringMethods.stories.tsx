@@ -189,7 +189,7 @@ function teamBam(): OverallScoreAndParticipant {
   };
 }
 
-/** Point-a-Board teams (Round Robin / non-barometer): cumulative total only. */
+/** Point-a-Board teams (fixed movement / non-barometer): cumulative total only. */
 function teamPab(): OverallScoreAndParticipant {
   const rows = [
     { id: "T1", name: "Aces", totalWon: 5, totalPlayed: 8 },
@@ -271,7 +271,7 @@ export const BoardAMatchTeams: Story = {
   },
 };
 
-/** Point-a-Board teams (Round Robin): cumulative points won (e.g. "5/8" ×2 scale). */
+/** Point-a-Board teams (fixed movement): cumulative points won (e.g. "5/8" ×2 scale). */
 export const PointABoardTeams: Story = {
   args: {
     eventName: "Point-a-Board Teams",

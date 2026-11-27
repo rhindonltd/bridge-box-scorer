@@ -13,6 +13,7 @@ import {
 import { getAnySectionMovement } from "@/db/games/queries/get-section-movement";
 import { getDealHands } from "@/db/games/queries/get-deal";
 import type { Db } from "@/db/games";
+import { isTeamsMovement } from "@/model/event-format";
 
 /** How many sockets are currently in a room (0 if none / unknown). */
 function roomSize(io: Server, room: string): number {
@@ -120,10 +121,7 @@ export async function buildTravellerPayload(db: Db, boardNumber: number) {
   // rooms, team names, per-board IMP margin). A pairs movement gets an empty
   // array — the payload is otherwise byte-for-byte unchanged, so the pairs path
   // and every other `getBoardInstances` consumer are untouched.
-  const isTeams =
-    movement?.source === "SWISS_TEAMS" ||
-    movement?.source === "ROUND_ROBIN_TEAMS";
-  const teamMatches = isTeams
+  const teamMatches = isTeamsMovement(movement)
     ? await buildTeamTravellerMatches(db, boardNumber)
     : [];
 

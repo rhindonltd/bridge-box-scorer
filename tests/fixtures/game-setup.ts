@@ -142,9 +142,11 @@ async function confirmMovementSelection(page: Page): Promise<void> {
 export async function pickMovementByName(
   page: Page,
   nameSubstring: string,
+  /** "teams-movement-card" for a Teams game's teams library list. */
+  cardTestId = "movement-card",
 ): Promise<string> {
   await openSetupStep(page, "Movement");
-  const cards = page.getByTestId("movement-card");
+  const cards = page.getByTestId(cardTestId);
   await expect(cards.first()).toBeVisible({ timeout: 15000 });
 
   const needle = nameSubstring.toLowerCase();

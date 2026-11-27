@@ -68,7 +68,7 @@ function credit(
  *
  * `barometer` is carried straight onto the result: it tells the leaderboard
  * view whether to render a per-round table (Swiss Teams) or a single cumulative
- * total (Round Robin Teams); it does not affect the scoring maths. `scoring`
+ * total (a fixed teams movement); it does not affect the scoring maths. `scoring`
  * is likewise carried through so the view/export apply the right scale and tag.
  */
 export function calculateTeamsBoardComparisonOverall<R extends SwissVpBoardRow>(

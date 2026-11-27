@@ -5,11 +5,29 @@ vi.mock("./storage/db/queries/get-movement", () => ({
 }));
 vi.mock("./storage/db/queries/get-movement-spec", () => ({
   getPairMovementSpecById: vi.fn(),
+  getTeamMovementSpecById: vi.fn(),
+}));
+vi.mock("./storage/db/queries/get-movements", () => ({
+  getPairMovementSpecsForTables: vi.fn(),
+  getTeamMovementSpecsForTables: vi.fn(),
+  getTeamMovementRooms: vi.fn(),
 }));
 
 import { getPairMovement } from "./storage/db/queries/get-movement";
-import { getPairMovementSpecById } from "./storage/db/queries/get-movement-spec";
-import { describeMovement, getMovementDetail } from "./server";
+import {
+  getPairMovementSpecById,
+  getTeamMovementSpecById,
+} from "./storage/db/queries/get-movement-spec";
+import {
+  getTeamMovementRooms,
+  getTeamMovementSpecsForTables,
+} from "./storage/db/queries/get-movements";
+import {
+  describeMovement,
+  getMovementDetail,
+  getTeamMovementDetail,
+  listTeamMovements,
+} from "./server";
 
 describe("getMovementDetail", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -98,5 +116,141 @@ describe("describeMovement", () => {
     });
 
     expect(description.missingPair).toBeNull();
+  });
+});
+
+/** A room of a stored teams movement, as the rooms query returns it. */
+function room(
+  movementId: number,
+  tableNumber: number,
+  roundNumber: number,
+  ew: string,
+  boardSet: number,
+) {
+  return {
+    movementId,
+    tableNumber,
+    roundNumber,
+    ns: `${tableNumber}`,
+    ew,
+    boardSet,
+  };
+}
+
+// Movement 1 is a two-team match (both rooms on set 1), listed out of order
+// to show the rooms are sorted. Movement 2 has a team playing itself.
+const teamRooms = [
+  room(1, 2, 1, "1", 1),
+  room(1, 1, 1, "2", 1),
+  room(2, 1, 1, "1", 1),
+  room(2, 2, 1, "2", 1),
+];
+const teamSpec = (id: number, name: string) => ({
+  id,
+  name,
+  type: "5",
+  tables: 2,
+  boards: 8,
+  boardsPerRound: 4,
+  rounds: 1,
+});
+
+describe("stored teams movements", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("lists only the team count's movements the app can run", async () => {
+    vi.mocked(getTeamMovementSpecsForTables).mockResolvedValue([
+      teamSpec(1, "Match"),
+      teamSpec(2, "Pivot"),
+      teamSpec(3, "No rows"),
+    ]);
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(teamRooms);
+    expect(await listTeamMovements(2)).toEqual([
+      {
+        id: 1,
+        name: "Match",
+        tables: 2,
+        boards: 8,
+        boardsPerRound: 4,
+        rounds: 1,
+      },
+    ]);
+    expect(getTeamMovementSpecsForTables).toHaveBeenCalledWith(2);
+    expect(getTeamMovementRooms).toHaveBeenCalledWith([1, 2, 3]);
+  });
+
+  it("leaves out the library's American Whist movements", async () => {
+    // A 3-team American Whist: team t hosts t + 2k on set t + k − 1.
+    const aw = [
+      room(4, 1, 1, "3", 1),
+      room(4, 1, 2, "2", 2),
+      room(4, 2, 1, "1", 2),
+      room(4, 2, 2, "3", 3),
+      room(4, 3, 1, "2", 3),
+      room(4, 3, 2, "1", 1),
+    ];
+    vi.mocked(getTeamMovementSpecsForTables).mockResolvedValue([
+      { ...teamSpec(4, "American Whist"), tables: 3, rounds: 2 },
+    ]);
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(aw);
+    expect(await listTeamMovements(3)).toEqual([]);
+  });
+
+  it("lays out a supported movement for the preview", async () => {
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(
+      teamRooms.filter((r) => r.movementId === 1),
+    );
+    vi.mocked(getTeamMovementSpecById).mockResolvedValue(teamSpec(1, "Match"));
+    expect(await getTeamMovementDetail(1)).toEqual({
+      name: "Match",
+      tables: [
+        {
+          tableNumber: 1,
+          rounds: [
+            { roundNumber: 1, ns: "1", ew: "2", boardStart: 1, boardEnd: 4 },
+          ],
+        },
+        {
+          tableNumber: 2,
+          rounds: [
+            { roundNumber: 1, ns: "2", ew: "1", boardStart: 1, boardEnd: 4 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("has no detail for a missing or unsupported movement", async () => {
+    vi.mocked(getTeamMovementRooms).mockResolvedValue([]);
+    vi.mocked(getTeamMovementSpecById).mockResolvedValue(null);
+    expect(await getTeamMovementDetail(9)).toBeNull();
+
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(
+      teamRooms.filter((r) => r.movementId === 2),
+    );
+    vi.mocked(getTeamMovementSpecById).mockResolvedValue(teamSpec(2, "Pivot"));
+    expect(await getTeamMovementDetail(2)).toBeNull();
+  });
+
+  it("describes a selected teams movement from its rooms", async () => {
+    vi.mocked(getTeamMovementRooms).mockResolvedValue(
+      teamRooms.filter((r) => r.movementId === 1),
+    );
+    const description = await describeMovement({
+      source: "TEAMS_SPEC",
+      specId: 1,
+      boardsPerRound: 2,
+    });
+    expect(
+      description.layout.map((t) => [
+        t.tableNumber,
+        t.rounds[0].ns,
+        t.rounds[0].ew,
+      ]),
+    ).toEqual([
+      [1, "1NS", "2EW"],
+      [2, "2NS", "1EW"],
+    ]);
+    expect(getTeamMovementRooms).toHaveBeenCalledWith([1]);
   });
 });

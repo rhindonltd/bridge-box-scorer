@@ -107,8 +107,8 @@ npm run seed:e2e -- --scoring MP --play all
 # A Cross-IMP pairs game with ~half the boards played (test "finish the game"):
 npm run seed:e2e -- --scoring XIMP --play partial
 
-# A Teams IMP(VP) Round Robin, only round 1 played:
-npm run seed:e2e -- --scoring TEAMS_IMP_VP --tables 4 --play round1
+# A Teams IMP(VP) American Whist (odd teams), only round 1 played:
+npm run seed:e2e -- --scoring TEAMS_IMP_VP --tables 5 --play round1
 
 # A Swiss Pairs game ready to draw round 2 from the Movement screen:
 npm run seed:e2e -- --scoring SWISS_PAIRS_MP --tables 4 --rounds 5 --play round1
@@ -136,10 +136,10 @@ It prints something like:
 | `MP`               | Pairs · Matchpoints · standard two-winner Mitchell                                                                          |
 | `MP_HOWELL`        | Pairs · Matchpoints · Howell (one-winner, movement library — pass `--specId` if your box seeds Howell under a different id) |
 | `XIMP`             | Pairs · Cross-IMPs · Mitchell                                                                                               |
-| `TEAMS_IMP_VP`     | Teams · IMP (Victory Points) · Round Robin                                                                                  |
-| `TEAMS_IMP_AGG`    | Teams · IMP (aggregate net IMPs) · Round Robin                                                                              |
-| `TEAMS_BAM`        | Teams · Board-a-Match · Round Robin                                                                                         |
-| `TEAMS_PAB`        | Teams · Point-a-Board · Round Robin                                                                                         |
+| `TEAMS_IMP_VP`     | Teams · IMP (Victory Points) · American Whist                                                                               |
+| `TEAMS_IMP_AGG`    | Teams · IMP (aggregate net IMPs) · American Whist                                                                           |
+| `TEAMS_BAM`        | Teams · Board-a-Match · American Whist                                                                                      |
+| `TEAMS_PAB`        | Teams · Point-a-Board · American Whist                                                                                      |
 | `SWISS_PAIRS_MP`   | Swiss Pairs · Matchpoint→VP (round 1 only)                                                                                  |
 | `SWISS_PAIRS_XIMP` | Swiss Pairs · Cross-IMP→VP (round 1 only)                                                                                   |
 | `SWISS_TEAMS`      | Swiss Teams · IMP (VP) (round 1 only)                                                                                       |

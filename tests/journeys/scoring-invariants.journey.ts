@@ -99,7 +99,14 @@ test.describe("Pairs Cross-IMPs", () => {
 });
 
 test.describe("Teams", () => {
-  const TEAMS = { tables: 4, rounds: 3, boardsPerRound: 2 };
+  // A 5-team American Whist: 4 rounds, one match per round for each team, and
+  // two matches on each of the five board sets (the per-match columns).
+  const TEAMS = { tables: 5, boardsPerRound: 2 };
+  const TEAM_ROWS = 5;
+  const MATCH_COLUMNS = ["1", "2", "3", "4", "5"];
+  /** A team's per-match figures, skipping the matches it did not play. */
+  const played = (cells: string[]) =>
+    cells.map(parseScore).filter((v) => !Number.isNaN(v));
 
   test("IMP (Aggregate): net IMPs cancel out and rounds add to the total", async ({
     browser,
@@ -108,21 +115,20 @@ test.describe("Teams", () => {
     const [table] = await leaderboard(
       browser,
       { ...TEAMS, scoring: "TEAMS_IMP_AGG" },
-      4,
+      TEAM_ROWS,
     );
     expectRankingConsistent(table, "TOTAL");
     const totals = column(table, "TOTAL").map(parseScore);
     expect(totals.reduce((a, b) => a + b, 0)).toBe(0);
-    // Each team's total is the sum of its three rounds.
+    // Each team's total is the sum of its four matches.
     table.rows.forEach((row, i) => {
-      const rounds = row.slice(3).map(parseScore);
-      expect(totals[i]).toBe(rounds.reduce((a, b) => a + b, 0));
+      const matches = played(row.slice(3));
+      expect(matches).toHaveLength(4);
+      expect(totals[i]).toBe(matches.reduce((a, b) => a + b, 0));
     });
-    // In each round the two matches are zero-sum.
-    for (const round of ["1", "2", "3"]) {
-      const sum = column(table, round)
-        .map(parseScore)
-        .reduce((a, b) => a + b, 0);
+    // On each board set the two matches are zero-sum.
+    for (const match of MATCH_COLUMNS) {
+      const sum = played(column(table, match)).reduce((a, b) => a + b, 0);
       expect(sum).toBe(0);
     }
   });
@@ -132,7 +138,11 @@ test.describe("Teams", () => {
       browser,
     }) => {
       test.setTimeout(120_000);
-      const [table] = await leaderboard(browser, { ...TEAMS, scoring }, 4);
+      const [table] = await leaderboard(
+        browser,
+        { ...TEAMS, scoring },
+        TEAM_ROWS,
+      );
       expectRankingConsistent(table, "TOTAL");
       const shares = column(table, "TOTAL").map(parseScore);
       for (const s of shares) {
@@ -151,19 +161,17 @@ test.describe("Teams", () => {
     const [table] = await leaderboard(
       browser,
       { ...TEAMS, scoring: "TEAMS_IMP_VP" },
-      4,
+      TEAM_ROWS,
     );
     expectRankingConsistent(table, "TOTAL");
-    // Two matches a round, 20 VP each.
-    for (const round of ["1", "2", "3"]) {
-      const sum = column(table, round)
-        .map(parseScore)
-        .reduce((a, b) => a + b, 0);
+    // Two matches on each board set, 20 VP each.
+    for (const match of MATCH_COLUMNS) {
+      const sum = played(column(table, match)).reduce((a, b) => a + b, 0);
       expect(sum).toBe(40);
     }
     const totals = column(table, "TOTAL").map(parseScore);
     table.rows.forEach((row, i) => {
-      const rounds = row.slice(3).map(parseScore);
+      const rounds = played(row.slice(3));
       expect(totals[i]).toBeCloseTo(
         rounds.reduce((a, b) => a + b, 0),
         2,

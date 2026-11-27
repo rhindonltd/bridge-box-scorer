@@ -5,12 +5,15 @@ import { getTableConfig } from "drizzle-orm/sqlite-core";
 import { createDbHarness, type DbHarness } from "@/db/test/db-int-harness";
 
 /**
- * Fills the movements-catalogue coverage gap left by movements.int.test.ts:
- * the `.references(() => ...)` foreign-key thunks on the *tablespec and
- * *roundspec tables (exercised via getTableConfig, which forces drizzle to
- * evaluate the lazy reference closures).
+ * Fills the movements-catalogue coverage gaps left by movements.int.test.ts:
+ *  - the TEAM movement spec / table-spec / round-spec create actions and the
+ *    getTeamMovementSpecById, getTeamMovementSpecsForTables and
+ *    getTeamMovementRooms read paths;
+ *  - the `.references(() => ...)` foreign-key thunks on the *tablespec and
+ *    *roundspec tables (exercised via getTableConfig, which forces drizzle to
+ *    evaluate the lazy reference closures).
  */
-describe("movements db: schema references", () => {
+describe("movements db: team specs and schema references", () => {
   let harness: DbHarness;
 
   beforeEach(async () => {
@@ -22,16 +25,91 @@ describe("movements db: schema references", () => {
     harness.teardown();
   });
 
+  it("creates a team movement spec and reads it by id (null when missing)", async () => {
+    const { createTeamMovementSpec } =
+      await import("./actions/create-movement-spec");
+    const { getTeamMovementSpecById } =
+      await import("./queries/get-movement-spec");
+
+    const id = await createTeamMovementSpec({
+      name: "Team 4",
+      type: "AMERICAN_WHIST",
+      tables: 4,
+      boards: 24,
+      boardsPerRound: 6,
+      rounds: 4,
+    });
+    expect(id).toBeGreaterThan(0);
+
+    expect((await getTeamMovementSpecById(id))?.name).toBe("Team 4");
+    expect(await getTeamMovementSpecById(9999)).toBeNull();
+  });
+
+  it("lists a team count's movements and reads their rooms", async () => {
+    const { createTeamMovementSpec } =
+      await import("./actions/create-movement-spec");
+    const { createTeamMovementTableSpec } =
+      await import("./actions/create-movement-table-spec");
+    const { createTeamMovementRoundSpec } =
+      await import("./actions/create-movement-round-spec");
+    const { getTeamMovementRooms, getTeamMovementSpecsForTables } =
+      await import("./queries/get-movements");
+
+    const movementId = await createTeamMovementSpec({
+      name: "Team 2",
+      type: "AMERICAN_WHIST",
+      tables: 2,
+      boards: 8,
+      boardsPerRound: 4,
+      rounds: 2,
+    });
+
+    const tableId = await createTeamMovementTableSpec({
+      movementId,
+      tableNumber: 1,
+    });
+
+    await createTeamMovementRoundSpec({
+      tableId,
+      roundNumber: 1,
+      ns: "1",
+      ew: "2",
+      boardSet: 1,
+    });
+    await createTeamMovementRoundSpec({
+      tableId,
+      roundNumber: 2,
+      ns: "1",
+      ew: "3",
+      boardSet: 2,
+    });
+
+    expect(
+      (await getTeamMovementSpecsForTables(2)).map((spec) => spec.id),
+    ).toEqual([movementId]);
+    const rooms = await getTeamMovementRooms([movementId]);
+    expect(rooms.map((r) => [r.tableNumber, r.roundNumber, r.ew])).toEqual([
+      [1, 1, "2"],
+      [1, 2, "3"],
+    ]);
+    expect(await getTeamMovementRooms([])).toEqual([]);
+  });
+
   it("resolves the foreign-key thunks on every *spec table", async () => {
     const {
       pairmovementspec,
       pairmovementtablespec,
       pairmovementroundspec,
+      teammovementspec,
+      teammovementtablespec,
+      teammovementroundspec,
     } = await import("./schema");
 
     const cases: [unknown, unknown][] = [
       [pairmovementtablespec, pairmovementspec],
       [pairmovementroundspec, pairmovementtablespec],
+      [teammovementtablespec, teammovementspec],
+      [teammovementroundspec, teammovementtablespec],
     ];
 
     for (const [table, referenced] of cases) {

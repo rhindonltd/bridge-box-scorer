@@ -8,18 +8,24 @@ import type {
  * validation: every table must hold a full team (no single sit-out — that would
  * be half a team). `label` names the format in the director-facing messages.
  *
- * Odd team counts: by default an odd count is rejected (Round Robin, and Swiss
- * Teams with no odd handling). When `oddHandling` is supplied (Swiss Teams),
+ * Odd team counts: by default an odd count is rejected (Swiss Teams with no
+ * odd handling). When `oddHandling` is supplied (Swiss Teams),
  * "BYE" permits an odd count (one team sits out each round) and "TRIPLE"
  * permits it too (three teams play a three-way each round) — a triple needs
  * at least three teams to form, so an odd field of one is still rejected.
+ * `anyTeamCount` (a stored teams movement, which fills every table every
+ * round) accepts any team count.
  */
 export function validateTeamsStructure(
   baseValidation: StartValidationResult,
   teams: number,
-  options: { label: string; oddHandling?: "BYE" | "TRIPLE" },
+  options: {
+    label: string;
+    oddHandling?: "BYE" | "TRIPLE";
+    anyTeamCount?: boolean;
+  },
 ): StartValidationResult {
-  const { label, oddHandling } = options;
+  const { label, oddHandling, anyTeamCount = false } = options;
   const problems: StartProblem[] = [...baseValidation.problems];
 
   if (baseValidation.sitOutSeat !== null) {
@@ -29,7 +35,7 @@ export function validateTeamsStructure(
     });
   }
 
-  if (teams % 2 !== 0) {
+  if (teams % 2 !== 0 && !anyTeamCount) {
     if (oddHandling === "TRIPLE") {
       // A triple needs three teams to form the three-way.
       if (teams < 3) {

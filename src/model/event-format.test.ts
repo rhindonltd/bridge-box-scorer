@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { classifyEvent, isTwoWinnerPairs } from "./event-format";
+import {
+  classifyEvent,
+  isTeamsMovement,
+  isTwoWinnerPairs,
+} from "./event-format";
 import type { SelectedMovement } from "@/model/selected-movement";
 
 const SPEC: SelectedMovement = { source: "SPEC", specId: 1, boardsPerRound: 2 };
@@ -15,9 +19,9 @@ const SWISS_TEAMS: SelectedMovement = {
   source: "SWISS_TEAMS",
   swissTeams: { teams: 4, rounds: 4, boardsPerRound: 2 },
 };
-const ROUND_ROBIN_TEAMS: SelectedMovement = {
-  source: "ROUND_ROBIN_TEAMS",
-  roundRobinTeams: { teams: 6, rounds: 5, boardsPerRound: 2 },
+const AMERICAN_WHIST_TEAMS: SelectedMovement = {
+  source: "AMERICAN_WHIST_TEAMS",
+  americanWhistTeams: { teams: 5, boardsPerRound: 2 },
 };
 
 describe("classifyEvent", () => {
@@ -72,8 +76,8 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Round Robin Teams IMP_VP game as TEAMS_VP with null mode", () => {
-    expect(classifyEvent("TEAMS", "IMP_VP", ROUND_ROBIN_TEAMS)).toEqual({
+  it("classifies a Teams + American Whist IMP_VP game as TEAMS_VP with null mode", () => {
+    expect(classifyEvent("TEAMS", "IMP_VP", AMERICAN_WHIST_TEAMS)).toEqual({
       format: "TEAMS_VP",
       scoringType: "IMP_VP",
       swissVpMode: null,
@@ -88,8 +92,8 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Round Robin Teams IMP game as TEAMS_IMP_AGG", () => {
-    expect(classifyEvent("TEAMS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(
+  it("classifies a Teams + American Whist IMP game as TEAMS_IMP_AGG", () => {
+    expect(classifyEvent("TEAMS", "IMP", AMERICAN_WHIST_TEAMS).format).toBe(
       "TEAMS_IMP_AGG",
     );
   });
@@ -102,8 +106,8 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Round Robin Teams BAM game as TEAMS_BAM", () => {
-    expect(classifyEvent("TEAMS", "BAM", ROUND_ROBIN_TEAMS).format).toBe(
+  it("classifies a Teams + American Whist BAM game as TEAMS_BAM", () => {
+    expect(classifyEvent("TEAMS", "BAM", AMERICAN_WHIST_TEAMS).format).toBe(
       "TEAMS_BAM",
     );
   });
@@ -123,8 +127,8 @@ describe("classifyEvent", () => {
     });
   });
 
-  it("classifies a Teams + Round Robin Teams PAB game as TEAMS_PAB", () => {
-    expect(classifyEvent("TEAMS", "PAB", ROUND_ROBIN_TEAMS).format).toBe(
+  it("classifies a Teams + American Whist PAB game as TEAMS_PAB", () => {
+    expect(classifyEvent("TEAMS", "PAB", AMERICAN_WHIST_TEAMS).format).toBe(
       "TEAMS_PAB",
     );
   });
@@ -139,9 +143,9 @@ describe("classifyEvent", () => {
     expect(classifyEvent("PAIRS", "BAM", MITCHELL).format).toBe("PAIRS_BOARD");
   });
 
-  it("treats a Round Robin Teams movement in a PAIRS game as PAIRS_BOARD", () => {
+  it("treats an American Whist teams movement in a PAIRS game as PAIRS_BOARD", () => {
     // The teams format needs the TEAMS game type as well as a teams movement.
-    expect(classifyEvent("PAIRS", "IMP", ROUND_ROBIN_TEAMS).format).toBe(
+    expect(classifyEvent("PAIRS", "IMP", AMERICAN_WHIST_TEAMS).format).toBe(
       "PAIRS_BOARD",
     );
   });
@@ -198,7 +202,7 @@ describe("isTwoWinnerPairs", () => {
     expect(isTwoWinnerPairs("PAIRS", SPEC)).toBe(false);
     expect(isTwoWinnerPairs("PAIRS", SWISS)).toBe(false);
     expect(isTwoWinnerPairs("TEAMS", SWISS_TEAMS)).toBe(false);
-    expect(isTwoWinnerPairs("TEAMS", ROUND_ROBIN_TEAMS)).toBe(false);
+    expect(isTwoWinnerPairs("TEAMS", AMERICAN_WHIST_TEAMS)).toBe(false);
   });
 
   it("is false for a teams game even with a Mitchell movement", () => {
@@ -207,5 +211,20 @@ describe("isTwoWinnerPairs", () => {
 
   it("is false when there is no movement selected yet", () => {
     expect(isTwoWinnerPairs("PAIRS", null)).toBe(false);
+  });
+});
+
+describe("stored teams movements", () => {
+  const stored: SelectedMovement = {
+    source: "TEAMS_SPEC",
+    specId: 1,
+    boardsPerRound: 4,
+  };
+
+  it("are teams movements, scored as teams", () => {
+    expect(isTeamsMovement(stored)).toBe(true);
+    expect(isTeamsMovement(null)).toBe(false);
+    expect(classifyEvent("TEAMS", "IMP_VP", stored).format).toBe("TEAMS_VP");
+    expect(classifyEvent("TEAMS", "IMP", stored).format).toBe("TEAMS_IMP_AGG");
   });
 });

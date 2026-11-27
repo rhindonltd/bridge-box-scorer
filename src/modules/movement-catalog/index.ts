@@ -2,7 +2,7 @@
  * movement-catalog, pure entry (docs/design/modules.md §6.2).
  *
  * Every movement whose schedule is fixed before play: the Mitchell variants and
- * Teams Round Robin generators, the recommendations, the display shapes for a
+ * American Whist teams generators, the recommendations, the display shapes for a
  * movement preview, and turning a described movement into the plan the core
  * writes. Browser-safe: no framework or I/O. The stored catalogue
  * (movements.db and the movement files) is behind `./server`.
@@ -19,8 +19,24 @@ export type {
   RecommendedMovement,
   RecommendedMovementSpecRef,
 } from "./recommendations/recommendation-types";
-export type { CatalogMovementSummary } from "./catalog-summary";
+export type {
+  CatalogMovementSummary,
+  TeamsCatalogMovementSummary,
+} from "./catalog-summary";
 
+// Teams movements: the American Whist generator and the options a Teams game
+// can choose (American Whist plus the teams library).
+export {
+  generateAmericanWhistTeams,
+  isAmericanWhistTeamCount,
+  type AmericanWhistTeamsSpec,
+} from "./generation/american-whist-teams/american-whist-teams";
+export {
+  americanWhistPreview,
+  teamsMovementOptions,
+  type TeamsMovementOption,
+  type TeamsMovementRef,
+} from "./teams/teams-options";
 // Display shapes and helpers.
 export {
   buildRounds,

@@ -9,18 +9,20 @@ import {
   seedFixtureTeamsMatch,
 } from "@/mocks/fixtures/db-rows";
 
-// A Teams Round Robin game: the game-index lookup supplies the TEAMS game type
-// and a ROUND_ROBIN_TEAMS movement selection. The leaderboard service must
-// route this to the SAME teams-VP scorer Swiss Teams uses — round robin differs
-// only in how the schedule is produced, not how it is scored.
+// A Teams game on a fixed teams movement (here a stored teams movement): the
+// game-index lookup supplies the TEAMS game type and the selection. The
+// leaderboard service must route this to the SAME teams-VP scorer Swiss Teams
+// uses — a fixed movement differs only in how the schedule is produced, not
+// how it is scored.
 vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
   findGameById: vi.fn(async () => ({
     gameId: "g",
     gameType: "TEAMS",
     scoringType: "IMP_VP",
     selectedMovement: JSON.stringify({
-      source: "ROUND_ROBIN_TEAMS",
-      roundRobinTeams: { teams: 2, rounds: 1, boardsPerRound: 1 },
+      source: "TEAMS_SPEC",
+      specId: 1,
+      boardsPerRound: 1,
     }),
   })),
 }));
@@ -28,9 +30,9 @@ vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
 let tmpDir: string;
 let gameId: string;
 
-describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", () => {
+describe("Fixed teams movement leaderboard (real scoring, shared teams-VP path)", () => {
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "leaderboard-rr-teams-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "leaderboard-fixed-teams-"));
     process.env.DATABASE_GAMES_URL = tmpDir;
     gameId = `game-${Math.random().toString(16).slice(2)}`;
   });
@@ -87,14 +89,15 @@ describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", (
     const { boards } = await import("@/db/games/tables/boards");
     const { computeLeaderboard } = await import("./leaderboard-service");
 
-    // Same open/closed-room layout as Swiss Teams (round robin reuses it).
+    // Same open/closed-room layout as Swiss Teams.
     await seatPair(db, "A1NS", "T1", "T1b");
     await seatPair(db, "A1EW", "T1away", "T1awayb");
     await seatPair(db, "A2NS", "T2", "T2b");
     await seatPair(db, "A2EW", "T2away", "T2awayb");
 
     // Open room at team 1's home table: team 1 (NS) makes 3NT+1 = +430.
-    // Closed room at team 2's home table: team 2 (NS) makes 3NT= = +400.
+    // Closed room at team 2's home table: team 2 (NS) makes 3NT= = +400. As
+    // in an American Whist, the closed room is played in a later round.
     // Team 1 net +30 -> team 1 wins the match.
     db.insert(boards)
       .values(
@@ -111,7 +114,7 @@ describe("Teams Round Robin leaderboard (real scoring, shared teams-VP path)", (
           },
           {
             section: "A",
-            roundNumber: 1,
+            roundNumber: 2,
             tableNumber: 2,
             boardNumber: 1,
             ns: "A2NS",

@@ -62,7 +62,7 @@ function comparisonCell(
  *
  * Layout depends on the movement's barometer flag:
  * - Barometer (Swiss Teams): Rank / Team / Total / one column per round.
- * - Non-barometer (Round Robin): Rank / Team / Total only — teams meet on
+ * - Non-barometer (a fixed teams movement): Rank / Team / Total only — teams meet on
  *   different boards each round, so a per-round-number breakdown is not
  *   meaningful; the cumulative total is the score.
  */

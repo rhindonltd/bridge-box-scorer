@@ -33,7 +33,6 @@ export type PairMovement = {
   rounds: PairMovementRoundSpec[];
 };
 
-
 async function getPairMovementTableSpecsForMovementSpecId(
   movementSpecId: number,
 ): Promise<PairMovementTableSpec[]> {
