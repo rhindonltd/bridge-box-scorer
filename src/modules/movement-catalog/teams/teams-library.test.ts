@@ -8,8 +8,8 @@ import {
   isThurnerTeamsLayout,
   normaliseTeamsTables,
 } from "./teams-library";
-import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
-import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+import { generateAmericanWhistTeams } from "@/modules/movement-catalog/teams/american-whist-teams/american-whist-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 /** A stored table from per-round [home, visitor, set] triples. */
 function table(

@@ -25,7 +25,7 @@
  */
 
 import type { Table, Tables } from "@/model/movement";
-import { boardsForSet } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import { boardsForSet } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 
 /** Setup parameters for a Thurner teams movement. */
 export interface ThurnerTeamsSpec {

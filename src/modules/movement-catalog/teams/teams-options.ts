@@ -5,30 +5,30 @@ import {
   generateAmericanWhistTeams,
   isAmericanWhistTeamCount,
   type AmericanWhistTeamsSpec,
-} from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
+} from "@/modules/movement-catalog/teams/american-whist-teams/american-whist-teams";
 import {
   CIRCULATION_ROUNDS,
   CIRCULATION_TEAMS,
   generateCirculationTeams,
   type CirculationTeamsSpec,
-} from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
+} from "@/modules/movement-catalog/teams/circulation-teams/circulation-teams";
 import {
   generateThurnerTeams,
   thurnerTeamsRounds,
   type ThurnerTeamsSpec,
-} from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+} from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 import {
   generateStaggerTeams,
   isStaggerTeamCount,
   staggerTeamsRounds,
   type StaggerTeamsSpec,
-} from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
+} from "@/modules/movement-catalog/teams/stagger-teams/stagger-teams";
 import {
   HEAD_TO_HEAD_ROUNDS,
   HEAD_TO_HEAD_TEAMS,
   generateHeadToHeadTeams,
   type HeadToHeadTeamsSpec,
-} from "@/modules/movement-catalog/generation/head-to-head-teams/head-to-head-teams";
+} from "@/modules/movement-catalog/teams/head-to-head-teams/head-to-head-teams";
 import type { Tables } from "@/model/movement";
 
 /**

@@ -2019,7 +2019,7 @@ it put every table on the same set each round, so it needed board copies and
 did not match any club movement. A stored `ROUND_ROBIN_TEAMS` value now parses
 to null. In its place:
 
-- **Generator:** `generation/american-whist-teams/` (`generateAmericanWhistTeams`).
+- **Generator:** `teams/american-whist-teams/` (`generateAmericanWhistTeams`).
   For n teams (odd, at least 3), in round k at table t the home pair is team t,
   East/West is team `t + 2k` and the board set is `t + k - 1` (wrapping round
   n). That is n - 1 rounds and n sets with one copy each; a match's two rooms
@@ -2062,7 +2062,7 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   the round screen shows "Start with board N". A generator lists a round's
   boards in play order; `tablesToMaterializableMovement` and
   `generatedLayout` take the start from the list.
-- **Circulation** (`generation/circulation-teams/`): four teams, three rounds
+- **Circulation** (`teams/circulation-teams/`): four teams, three rounds
   (1v2 3v4, 1v3 2v4, 1v4 2v3: the opponent is the team number, from 0, with
   the round's bits flipped), new boards each round, each table starting on its
   own quarter and passing boards down a table. Source `CIRCULATION_TEAMS
@@ -2073,7 +2073,7 @@ boardsPerRound } }`; the schema refuses an even or too small team count, and
   hides the library's NBL 4 Teams Circulation (M138), which put every table on
   board 1.
 
-**Thurner, as built.** `generation/thurner-teams/` for an even team count T
+**Thurner, as built.** `teams/thurner-teams/` for an even team count T
 with C = T − 1 not a multiple of 3 (6, 8, 12, 14, 18, 20 …). Circuit table t
 plays set t + r − 1; team T's away pair starts at table 1 and moves up s tables
 a round, with 3·s ≡ 1 (mod C); team i's away pair starts at table 3 − 2i and
@@ -2092,7 +2092,7 @@ library's 12-team copy stays hidden), using the American Whist boards-per-round 
 `GENERATED_TEAMS_BOARDS_PER_ROUND` / `GENERATED_TEAMS_BOARDS_PER_TEAM`. Score
 breaks fall only at the end.
 
-**Stagger, as built.** `generation/stagger-teams/` for an even team count T
+**Stagger, as built.** `teams/stagger-teams/` for an even team count T
 (M = T / 2). Stanza 1 is rounds 1 … M − 1 on sets 1 … M (East/West at the
 table 2k above home in its k-th round); stanza 2 is rounds M … T − 1 on sets
 M + 1 … T (2k − 1 above). Tables t and t + M play the same set every round, and
@@ -2105,7 +2105,7 @@ stanzas. It uses T board sets (the example said T − 1). Source
 even count the boards-per-team range allows (4 … 18). The library's Stagger
 movements differ (two separate sessions) and stay listed.
 
-**Head to Head, as built.** `generation/head-to-head-teams/`: two teams, two
+**Head to Head, as built.** `teams/head-to-head-teams/`: two teams, two
 stanzas of their own boards (`HEAD_TO_HEAD_TEAMS { headToHeadTeams:
 { boardsPerRound } }`, even, offered at 6, 8, 10 and 12). Stanza 1 is 1NS v 2EW
 and 2NS v 1EW; in stanza 2 team 2's pairs swap tables and directions (1NS v
@@ -2123,6 +2123,14 @@ compares as a two-room match. Table 2 starts each stanza on its second half
   declare extra ones (`declaredScoreBreakRounds`, in `teams/score-breaks.ts`):
   a head-to-head declares a break after round 1. `schedule-service.ts` reads
   the section's movement and adds them to the match-derived breaks.
+
+**Generator layout, as built.** `generation/` was split by event type: the
+Mitchell generators moved to `pairs/mitchell/`, and the teams generators to
+`teams/` beside the teams library and options (`teams/american-whist-teams/`,
+`teams/circulation-teams/`, `teams/thurner-teams/`, `teams/stagger-teams/`,
+`teams/head-to-head-teams/`). The `generation/` paths in the sections above
+are as they were at the time.
+
 - **A pair's side comes from the board row, not its seat.** The submit and
   withdraw handlers read the side from where the pair's id sits on the board
   row (`seatSideAtBoard`, falling back to the seat's direction), and the

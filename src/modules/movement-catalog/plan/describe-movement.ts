@@ -1,12 +1,12 @@
 import { Tables } from "@/model/movement";
 import type { MovementPlan } from "@/model/movement-plan";
 import { SelectedMovement } from "@/model/selected-movement";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
-import { generateAmericanWhistTeams } from "@/modules/movement-catalog/generation/american-whist-teams/american-whist-teams";
-import { generateCirculationTeams } from "@/modules/movement-catalog/generation/circulation-teams/circulation-teams";
-import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
-import { generateStaggerTeams } from "@/modules/movement-catalog/generation/stagger-teams/stagger-teams";
-import { generateHeadToHeadTeams } from "@/modules/movement-catalog/generation/head-to-head-teams/head-to-head-teams";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
+import { generateAmericanWhistTeams } from "@/modules/movement-catalog/teams/american-whist-teams/american-whist-teams";
+import { generateCirculationTeams } from "@/modules/movement-catalog/teams/circulation-teams/circulation-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
+import { generateStaggerTeams } from "@/modules/movement-catalog/teams/stagger-teams/stagger-teams";
+import { generateHeadToHeadTeams } from "@/modules/movement-catalog/teams/head-to-head-teams/head-to-head-teams";
 import { boardRangeForSet } from "@/modules/movement-catalog/shared";
 import { isSupportedTeamsMovement } from "@/modules/movement-catalog/teams/teams-library";
 

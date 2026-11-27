@@ -23,7 +23,7 @@
  */
 
 import type { Table, Tables } from "@/model/movement";
-import { boardsForSet } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import { boardsForSet } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 
 /** Setup parameters for a Stagger teams movement. */
 export interface StaggerTeamsSpec {

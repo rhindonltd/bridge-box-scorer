@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { generateThurnerTeams } from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+import { generateThurnerTeams } from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 vi.mock("./storage/db/queries/get-movement", () => ({
   getPairMovement: vi.fn(),

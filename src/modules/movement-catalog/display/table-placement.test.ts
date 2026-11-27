@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { buildTablePlacement, withRelay } from "./table-placement";
 import { generatedToMovementByTable } from "./movementData";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
 import type { MovementByTable } from "./movementData";
 
 describe("buildTablePlacement", () => {

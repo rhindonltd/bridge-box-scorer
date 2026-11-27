@@ -9,7 +9,7 @@ import {
   stationaryPairsForRound,
   withStationaryHistory,
 } from "./selected-movement";
-import type { MitchellMovementSpec } from "@/modules/movement-catalog/generation/mitchell/mitchell-utils";
+import type { MitchellMovementSpec } from "@/modules/movement-catalog/pairs/mitchell/mitchell-utils";
 
 describe("SelectedMovement round-trip", () => {
   it("round-trips a SPEC selection", () => {

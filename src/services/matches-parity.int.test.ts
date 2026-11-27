@@ -75,7 +75,7 @@ describe("matches table — parity with board-derivation", () => {
     const { tablesToMaterializableMovement } =
       await import("@/modules/movement-catalog/plan/plan-movement");
     const { generateMitchell } =
-      await import("@/modules/movement-catalog/generation/mitchell/mitchell");
+      await import("@/modules/movement-catalog/pairs/mitchell/mitchell");
 
     await createSection(harness.gameId, { section: "A", tables: 3 });
     const movement = tablesToMaterializableMovement(

@@ -3,7 +3,7 @@ import type { StoredMovementTable } from "@/modules/movement-catalog/plan/descri
 import {
   generateThurnerTeams,
   isThurnerTeamCount,
-} from "@/modules/movement-catalog/generation/thurner-teams/thurner-teams";
+} from "@/modules/movement-catalog/teams/thurner-teams/thurner-teams";
 
 /**
  * The stored teams movement library (TSMovements.txt). Each row of a movement

@@ -5,7 +5,7 @@ import {
   generatedToMovementByTable,
   type MovementByTable,
 } from "./movementData";
-import { generateMitchell } from "@/modules/movement-catalog/generation/mitchell/mitchell";
+import { generateMitchell } from "@/modules/movement-catalog/pairs/mitchell/mitchell";
 
 describe("buildRounds", () => {
   it("returns an empty array for no tables", () => {

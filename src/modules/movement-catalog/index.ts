@@ -9,8 +9,8 @@
  */
 
 // Generation.
-export { generateMitchell } from "./generation/mitchell/mitchell";
-export type { MitchellMovementSpec } from "./generation/mitchell/mitchell-utils";
+export { generateMitchell } from "./pairs/mitchell/mitchell";
+export type { MitchellMovementSpec } from "./pairs/mitchell/mitchell-utils";
 
 // Recommendations. The stored movements are passed in, because the picker
 // computes recommendations in the browser.
@@ -30,25 +30,25 @@ export {
   generateAmericanWhistTeams,
   isAmericanWhistTeamCount,
   type AmericanWhistTeamsSpec,
-} from "./generation/american-whist-teams/american-whist-teams";
+} from "./teams/american-whist-teams/american-whist-teams";
 export {
   generateCirculationTeams,
   type CirculationTeamsSpec,
-} from "./generation/circulation-teams/circulation-teams";
+} from "./teams/circulation-teams/circulation-teams";
 export {
   generateThurnerTeams,
   isThurnerTeamCount,
   type ThurnerTeamsSpec,
-} from "./generation/thurner-teams/thurner-teams";
+} from "./teams/thurner-teams/thurner-teams";
 export {
   generateStaggerTeams,
   isStaggerTeamCount,
   type StaggerTeamsSpec,
-} from "./generation/stagger-teams/stagger-teams";
+} from "./teams/stagger-teams/stagger-teams";
 export {
   generateHeadToHeadTeams,
   type HeadToHeadTeamsSpec,
-} from "./generation/head-to-head-teams/head-to-head-teams";
+} from "./teams/head-to-head-teams/head-to-head-teams";
 export {
   americanWhistPreview,
   circulationPreview,
