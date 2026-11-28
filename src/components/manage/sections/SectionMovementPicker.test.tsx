@@ -785,7 +785,7 @@ describe("SectionMovementPicker", () => {
     );
   });
 
-  it("confirms an odd Swiss Teams field with a Triple when chosen", async () => {
+  it("confirms an odd Swiss Teams field with a triple round when chosen", async () => {
     mockRecommendations.mockReturnValue([]);
     render(
       <SectionMovementPicker
@@ -797,9 +797,7 @@ describe("SectionMovementPicker", () => {
       />,
     );
 
-    const triple = screen.getByRole("radio", { name: /triple/i });
-    expect(triple).toBeEnabled();
-    fireEvent.click(triple);
+    fireEvent.click(screen.getByRole("radio", { name: "Short for round 1" }));
     fireEvent.click(screen.getByRole("button", { name: /select movement/i }));
 
     await waitFor(() =>
@@ -808,7 +806,7 @@ describe("SectionMovementPicker", () => {
         rounds: 7,
         boardsPerRound: 6,
         oddHandling: "TRIPLE",
-        oddRoundPlan: Array(7).fill("SHORT"),
+        oddRoundPlan: ["SHORT", ...Array(6).fill("BYE")],
       }),
     );
   });

@@ -52,13 +52,13 @@ The create form is **two steps**: details, then options.
 
 Setup starts at the **Set Up Game** menu. Its buttons (**Tables**, **Movement**,
 **Timer**, **Start Game**, **Share Director Access**, **Delete Game**) open those
-pages, and the menu itself has no header menu. The back arrow on each page returns to the menu; the header
-menu on those pages only has **Share Director Access**.
+pages. Neither the menu nor those pages has a header menu. The back arrow on
+each page returns to the menu.
 
 | Check    | Step                                                                                                     | Expected                                                                                                                                             | Actual | Comments |
 | -------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | -------- |
 | ☐ MENU-1 | Open **Set Up Game** (after creating a game, or from **Create Game → Not started yet**).                 | Buttons **Game Details**, **Tables**, **Movement**, **Timer**, **Start Game**, **Share Director Access**, and a red **Delete Game**; no header menu. |        |          |
-| ☐ MENU-2 | Tap each of the middle four buttons (Tables to Start Game) in turn, going back to the menu between them. | Each lands on the matching page. The header menu on each has only **Share Director Access**.                                                         |        |          |
+| ☐ MENU-2 | Tap each of the middle four buttons (Tables to Start Game) in turn, going back to the menu between them. | Each lands on the matching page, with no header menu.                                                                                                |        |          |
 | ☐ MENU-3 | On Tables, Movement, Timer or Start Game tap the back arrow.                                             | Returns to the **Set Up Game** menu.                                                                                                                 |        |          |
 | ☐ MENU-4 | On the menu, tap **Game Details**, change the name, then **Save**.                                       | Event details open pre-filled; saving returns to the menu.                                                                                           |        |          |
 | ☐ MENU-5 | Tap **Delete Game**.                                                                                     | The delete confirmation.                                                                                                                             |        |          |

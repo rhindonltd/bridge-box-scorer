@@ -13,6 +13,9 @@ vi.mock("@/db/games/actions/delete-section", () => ({
 vi.mock("@/socket/broadcast/section-broadcast", () => ({
   broadcastSections: vi.fn(),
 }));
+vi.mock("@/services/game-table-count", () => ({
+  syncGameTableCount: vi.fn(),
+}));
 vi.mock("@/lib/log", () => ({
   logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() },
   childLogger: () => ({
@@ -28,6 +31,7 @@ import { validateDirectorToken } from "@/services/security/director-token";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 import { ClientError } from "@/lib/api/client-error";
 import { logger } from "@/lib/log";
 import { PATCH, DELETE } from "./route";
@@ -128,6 +132,8 @@ describe("DELETE /api/games/[gameId]/sections/[section]", () => {
 
     expect(res.status).toBe(200);
     expect(deleteSection).toHaveBeenCalledWith("g1", "B");
+    // The game lists' table count is brought up to date first.
+    expect(syncGameTableCount).toHaveBeenCalledWith("g1");
     expect(broadcastSections).toHaveBeenCalledWith("g1");
   });
 

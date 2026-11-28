@@ -1,10 +1,21 @@
 "use client";
-
+import { Suspense } from "react";
 import { ShareDirectorAccessPage } from "@/app/game/[gameId]/manage/share-access/ShareDirectorAccessPage";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 export default function ShareDirectorAccessRoute() {
-  const params = useParams<{ gameId: string }>();
+  return (
+    // The page reads the `?from=` search param.
+    <Suspense>
+      <ShareDirectorAccess />
+    </Suspense>
+  );
+}
 
-  return <ShareDirectorAccessPage gameId={params.gameId} />;
+function ShareDirectorAccess() {
+  const params = useParams<{ gameId: string }>();
+  const fromSetup = useSearchParams().get("from") === "setup";
+  return (
+    <ShareDirectorAccessPage gameId={params.gameId} fromSetup={fromSetup} />
+  );
 }

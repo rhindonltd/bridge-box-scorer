@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
@@ -12,8 +12,6 @@ import { errorMessage } from "@/lib/error-message";
 import type { StartProblem } from "@/modules/seating";
 
 type Props = {
-  /** Setup navigation menu rendered in the header's right-hand slot. */
-  menu?: ReactNode;
   /** Back-arrow action (to the setup menu). No arrow is shown without it. */
   onBack?: () => void;
 };
@@ -46,7 +44,7 @@ function groupBySection(
  * start; starting a game is director-authorised and runs the same flow the
  * Tables view used to own.
  */
-export function StartGameScreen({ menu, onBack }: Props) {
+export function StartGameScreen({ onBack }: Props) {
   const router = useRouter();
   const { game, mutateGame } = useRequiredGame();
   const { canStart, problems, sitOutSeat } = useStartCheck(game.gameId);
@@ -79,7 +77,6 @@ export function StartGameScreen({ menu, onBack }: Props) {
   return (
     <GamePageLayout
       headerTitle="Start Game"
-      headerRight={menu}
       backAction={onBack}
       hideBack={!onBack}
       // The Start Game button only appears in the ready state, inside the

@@ -55,7 +55,9 @@ describe("updateEventDetails", () => {
   });
 
   it("clears the selected movement when the game type changes", async () => {
-    await updateEventDetails("g1", { gameType: "TEAMS" });
+    await expect(
+      updateEventDetails("g1", { gameType: "TEAMS" }),
+    ).resolves.toEqual({ structuralChange: true });
 
     const payload = setSpy.mock.calls[0][0];
     expect(payload).toMatchObject({
@@ -81,11 +83,13 @@ describe("updateEventDetails", () => {
   });
 
   it("does not clear the movement when a structural field is set to its current value", async () => {
-    await updateEventDetails("g1", {
-      gameType: "PAIRS",
-      scoringType: "MP",
-      eventName: "Renamed",
-    });
+    await expect(
+      updateEventDetails("g1", {
+        gameType: "PAIRS",
+        scoringType: "MP",
+        eventName: "Renamed",
+      }),
+    ).resolves.toEqual({ structuralChange: false });
     const payload = setSpy.mock.calls[0][0];
     expect(payload).not.toHaveProperty("selectedMovement");
     expect(payload).toMatchObject({ eventName: "Renamed" });

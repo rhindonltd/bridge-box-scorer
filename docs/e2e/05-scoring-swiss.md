@@ -66,14 +66,14 @@ a live Swiss game. Needs a player device to prove the commit propagates.
 ## SWISS-C. Swiss Pairs odd field — bye vs half-matches
 
 **Setup:** create a Swiss Pairs game **live** with an **odd** number of pairs
-(leave one seat empty). On the Swiss setup, the odd-field handling is **Bye**
-(default) or **2 half matches**.
+(leave one seat empty). On the Swiss setup, each round in the per-round table
+is **Bye** (default) or **Half matches**.
 
-| Check      | Step                                                                               | Expected                                                                                                                                                                      |
-| ---------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ☐ SWISS-17 | With **Bye** handling, draw a round.                                               | One pair is shown as the **sit-out / bye**; it is credited (not blanked) — see the bye-credit case in [file 07](07-special-scoring.md) (`SITOUT-*`).                          |
-| ☐ SWISS-18 | With **2 half matches** handling and a round planned for it, draw that round.      | Three pairs form a group: an **anchor** plays the full round in two halves vs two opponents; the other two each play one half and are **compensated** for the half they miss. |
-| ☐ SWISS-19 | Confirm a one-table odd field (a single pair) **rejects** 2-half-matches at start. | Blocked with "needs at least three pairs (two tables)".                                                                                                                       |
+| Check      | Step                                                                             | Expected                                                                                                                                                                      |
+| ---------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ☐ SWISS-17 | With **Bye** for a round, draw that round.                                       | One pair is shown as the **sit-out / bye**; it is credited (not blanked) — see the bye-credit case in [file 07](07-special-scoring.md) (`SITOUT-*`).                          |
+| ☐ SWISS-18 | With **Half matches** for a round, draw that round.                              | Three pairs form a group: an **anchor** plays the full round in two halves vs two opponents; the other two each play one half and are **compensated** for the half they miss. |
+| ☐ SWISS-19 | Confirm a one-table odd field (a single pair) **rejects** half matches at start. | Blocked with "needs at least three pairs (two tables)".                                                                                                                       |
 
 ---
 
@@ -81,15 +81,15 @@ a live Swiss game. Needs a player device to prove the commit propagates.
 
 **Fixture:** `--scoring SWISS_TEAMS --tables 4 --rounds 5 --play round1`.
 
-| Check      | Step                                                                                                                                        | Expected                                                                                                       |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| ☐ SWISS-20 | Open the **Leaderboard**.                                                                                                                   | Teams ranked on **Victory Points**, shown as a per-round **barometer** (each round's VP contribution visible). |
-| ☐ SWISS-21 | With round 1 complete, **Draw Next Round** on the Movement screen.                                                                          | A **review** of the proposed **matches** (team names) plus any **bye** or **triple**.                          |
-| ☐ SWISS-22 | Confirm the teams review is **read-only** (accept or redraw; no hand-editing of matches — unlike Swiss Pairs).                              | No swap controls; **OK** / **Cancel** only.                                                                    |
-| ☐ SWISS-23 | Tap **Cancel**, then draw again and **OK**.                                                                                                 | Committed; new matches appear on every device; players' away pairs learn where to move.                        |
-| ☐ SWISS-24 | **Odd team count:** with **Bye** handling, confirm one team gets a **bye** (credited ~12 VP — see `SITOUT-TEAMS-1` in file 07).             | Bye team shown and credited.                                                                                   |
-| ☐ SWISS-25 | **Triples:** with **Triple** handling and a round planned for it, confirm a **three-way** (short or long triple) is drawn instead of a bye. | Three teams play a three-way; a long triple spans two consecutive rounds.                                      |
-| ☐ SWISS-26 | Confirm an odd team count with no triple option errors clearly ("needs at least three teams — add a table, or switch to the bye option").   | Clear rejection.                                                                                               |
+| Check      | Step                                                                                                                                       | Expected                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| ☐ SWISS-20 | Open the **Leaderboard**.                                                                                                                  | Teams ranked on **Victory Points**, shown as a per-round **barometer** (each round's VP contribution visible). |
+| ☐ SWISS-21 | With round 1 complete, **Draw Next Round** on the Movement screen.                                                                         | A **review** of the proposed **matches** (team names) plus any **bye** or **triple**.                          |
+| ☐ SWISS-22 | Confirm the teams review is **read-only** (accept or redraw; no hand-editing of matches — unlike Swiss Pairs).                             | No swap controls; **OK** / **Cancel** only.                                                                    |
+| ☐ SWISS-23 | Tap **Cancel**, then draw again and **OK**.                                                                                                | Committed; new matches appear on every device; players' away pairs learn where to move.                        |
+| ☐ SWISS-24 | **Odd team count:** with **Bye** handling, confirm one team gets a **bye** (credited ~12 VP — see `SITOUT-TEAMS-1` in file 07).            | Bye team shown and credited.                                                                                   |
+| ☐ SWISS-25 | **Triples:** with a round set to **Short** (or two to **Long**), confirm a **three-way** (short or long triple) is drawn instead of a bye. | Three teams play a three-way; a long triple spans two consecutive rounds.                                      |
+| ☐ SWISS-26 | Confirm an odd team count with no triple option errors clearly ("needs at least three teams — add a table, or switch to the bye option").  | Clear rejection.                                                                                               |
 
 > Swiss also has **§3.5 mismatch detection** (a retroactive score change can make
 > an earlier draw's opponents wrong). That is a director ruling — see

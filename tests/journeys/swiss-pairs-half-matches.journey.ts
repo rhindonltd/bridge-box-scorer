@@ -15,10 +15,10 @@ import { deleteGame } from "../fixtures/delete-game";
 import { closeSeatDevices, newParticipant, gotoStable } from "./support";
 
 /**
- * Swiss Pairs "2 half matches" (odd field) end to end.
+ * Swiss Pairs half matches (odd field) end to end.
  *
  * An odd Swiss Pairs field (one pair short) can resolve each round with a bye
- * OR with "2 half matches": three pairs play at one table — an ANCHOR plays the
+ * OR with half matches: three pairs play at one table — an ANCHOR plays the
  * full round against a different opponent in each half, and the two non-anchors
  * each play one half (and are credited an average-plus blend for the half they
  * miss). This journey creates an odd single-section Swiss game set to half
@@ -213,7 +213,7 @@ async function drawNextRound(
   });
 }
 
-test.describe("Swiss Pairs 2 half matches (odd field)", () => {
+test.describe("Swiss Pairs half matches (odd field)", () => {
   test("starts an odd field as a half-match round, scores it, and draws the next", async ({
     browser,
   }) => {

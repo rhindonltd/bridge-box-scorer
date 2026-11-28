@@ -94,7 +94,7 @@ describe("game-index actions and queries", () => {
         eventFormat: "SWISS",
         scoringType: "IMP",
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ structuralChange: false });
   });
 
   it("finaliseGame / reopenGame set and clear finalisedAt", async () => {

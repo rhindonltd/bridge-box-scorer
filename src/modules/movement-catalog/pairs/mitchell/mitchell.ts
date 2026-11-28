@@ -1,13 +1,13 @@
 import { Tables } from "@/model/movement";
 import { MitchellMovementSpec } from "./mitchell-utils";
-import { generateSkipMitchell } from "./skip-mitchell";
-import { generateShareAndRelayMitchell } from "./share-and-relay-mitchell";
-import { generateStandardMitchell } from "./standard-mitchell";
-import { generateBlackpool } from "./blackpool";
-import { generateHesitationMitchell } from "./hesitation-mitchell";
-import { generateDoubleHesitationMitchell } from "./double-hesitation-mitchell";
-import { generateWebMitchell } from "./web-mitchell";
-import { generateAmericanWhistMitchell } from "./american-whist-mitchell";
+import { generateSkipMitchell } from "@/modules/movement-catalog/pairs/skip-mitchell/skip-mitchell";
+import { generateShareAndRelayMitchell } from "@/modules/movement-catalog/pairs/share-and-relay-mitchell/share-and-relay-mitchell";
+import { generateStandardMitchell } from "@/modules/movement-catalog/pairs/standard-mitchell/standard-mitchell";
+import { generateBlackpool } from "@/modules/movement-catalog/pairs/blackpool/blackpool";
+import { generateHesitationMitchell } from "@/modules/movement-catalog/pairs/hesitation-mitchell/hesitation-mitchell";
+import { generateDoubleHesitationMitchell } from "@/modules/movement-catalog/pairs/hesitation-mitchell/double-hesitation-mitchell";
+import { generateWebMitchell } from "@/modules/movement-catalog/pairs/web-mitchell/web-mitchell";
+import { generateAmericanWhistMitchell } from "@/modules/movement-catalog/pairs/american-whist-mitchell/american-whist-mitchell";
 
 /**
  * Single entry point for generating any Mitchell-family pair movement.

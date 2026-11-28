@@ -1,10 +1,10 @@
 import "server-only";
 
+import type { Server } from "socket.io";
 import { getIO } from "@/socket/websocket";
 import { Rooms } from "@/socket/rooms";
 import { SocketEvents } from "@/socket/socket-events";
-import { getDb } from "@/db/games";
-import { findSections } from "@/db/games/queries/find-sections";
+import { findGameById } from "@/db/game-index/queries/find-game-by-id";
 import { clearTimerState } from "@/db/games/actions/clear-timer-state";
 import { clearEngine } from "@/services/timer/game-store";
 import { broadcastTimerCleared } from "@/socket/handlers/timer/broadcast-timer";
@@ -21,22 +21,16 @@ import {
  */
 
 /**
- * Broadcast the full section list game-wide. Section membership (add / delete /
- * rename / resize) affects the whole game view, so it goes to the game room.
- * No-op when the server or the game db is unavailable.
+ * Tell the game room that its sections changed. Section membership (add /
+ * delete / rename / resize) affects the whole game view, so it goes to the game
+ * room as `GAME_UPDATED`; the sections list revalidates on that event, and the
+ * pushed game row carries the updated table count. No-op when the server is not
+ * running.
  */
 export async function broadcastSections(gameId: string): Promise<void> {
   const io = getIO();
   if (!io) return;
-
-  const db = await getDb(gameId);
-  if (!db) return;
-
-  const sections = await findSections(db);
-  io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, {
-    gameId,
-    sections,
-  });
+  await emitGameUpdated(io, gameId);
 }
 
 /**
@@ -69,5 +63,19 @@ export async function broadcastSectionMovementChanged(
     gameId,
     section,
   });
-  io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { gameId });
+  await emitGameUpdated(io, gameId);
+}
+
+/**
+ * Emit `GAME_UPDATED` to the game room carrying the fresh game row. Clients
+ * write `payload.game` straight into their cached game, so this event must
+ * always carry the game: an emit without it used to wipe the cache back to the
+ * page's initial snapshot (e.g. undoing a game type change until a reload).
+ * Listeners that only revalidate their own keys (sections, start check) are
+ * nudged by the same event. Skipped when the game no longer exists.
+ */
+async function emitGameUpdated(io: Server, gameId: string): Promise<void> {
+  const game = await findGameById(gameId);
+  if (!game) return;
+  io.to(Rooms.game(gameId)).emit(SocketEvents.GAME_UPDATED, { game });
 }

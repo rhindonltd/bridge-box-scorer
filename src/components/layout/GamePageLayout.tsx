@@ -24,6 +24,11 @@ interface Props {
   backFallbackHref?: string;
   headerRight?: React.ReactNode;
   /**
+   * Leave the header's right-hand slot empty, overriding the manage screens'
+   * default hamburger (e.g. a manage screen opened from game setup).
+   */
+  hideHeaderMenu?: boolean;
+  /**
    * Optional content pinned directly beneath the header, above the scrollable
    * body (e.g. section pills that should stay visible while the body scrolls).
    */
@@ -55,6 +60,7 @@ export function GamePageLayout({
   hideBack,
   backFallbackHref,
   headerRight,
+  hideHeaderMenu,
   subHeader,
   actions,
   contentMode,
@@ -75,6 +81,7 @@ export function GamePageLayout({
         hideBack={hideBack}
         backFallbackHref={backFallbackHref}
         headerRight={headerRight}
+        hideHeaderMenu={hideHeaderMenu}
       />
 
       {/* Optional pinned sub-header (stays put while the body scrolls) */}

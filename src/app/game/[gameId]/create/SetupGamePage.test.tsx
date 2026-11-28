@@ -28,15 +28,8 @@ vi.mock("@/hooks/flow", () => ({
 }));
 
 vi.mock("./ShowTablesPage", () => ({
-  ShowTablesPage: ({
-    menu,
-    backAction,
-  }: {
-    menu?: React.ReactNode;
-    backAction?: () => void;
-  }) => (
+  ShowTablesPage: ({ backAction }: { backAction?: () => void }) => (
     <div>
-      {menu}
       <div>tables-view</div>
       <button onClick={() => backAction?.()} disabled={!backAction}>
         tables-back
@@ -46,15 +39,8 @@ vi.mock("./ShowTablesPage", () => ({
 }));
 
 vi.mock("./StartGameScreen", () => ({
-  StartGameScreen: ({
-    menu,
-    onBack,
-  }: {
-    menu?: React.ReactNode;
-    onBack?: () => void;
-  }) => (
+  StartGameScreen: ({ onBack }: { onBack?: () => void }) => (
     <div>
-      {menu}
       <button onClick={() => onBack?.()}>start-back</button>
       <div>start-game-view</div>
     </div>
@@ -106,10 +92,6 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
 
 import { SetupGamePage } from "./SetupGamePage";
 
-async function openSetupMenu() {
-  await userEvent.click(screen.getByRole("button", { name: "Setup menu" }));
-}
-
 describe("SetupGamePage step pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,17 +115,16 @@ describe("SetupGamePage step pages", () => {
     expect(screen.getByText(/timer-view/)).toHaveTextContent("embedded");
   });
 
-  it("only offers Share Director Access in the hamburger", async () => {
-    render(<SetupGamePage />);
-
-    await openSetupMenu();
-    expect(screen.getAllByRole("menuitem")).toHaveLength(1);
-    await userEvent.click(
-      screen.getByRole("menuitem", { name: "Share Director Access" }),
-    );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
-    expect(mockGoTo).not.toHaveBeenCalled();
-  });
+  it.each(["tables", "movements", "timer", "start"])(
+    "has no hamburger on the %s page",
+    (step) => {
+      currentStep = step;
+      render(<SetupGamePage />);
+      expect(
+        screen.queryByRole("button", { name: "Setup menu" }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe("SetupGamePage setup menu page", () => {
@@ -184,7 +165,9 @@ describe("SetupGamePage setup menu page", () => {
     render(<SetupGamePage />);
 
     await userEvent.click(screen.getByRole("button", { name: "Delete Game" }));
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/delete-game");
+    expect(mockPush).toHaveBeenCalledWith(
+      "/game/g1/manage/delete-game?from=setup",
+    );
   });
 
   it("opens Share Director Access from its button, with no hamburger", async () => {
@@ -195,7 +178,9 @@ describe("SetupGamePage setup menu page", () => {
     await userEvent.click(
       screen.getByRole("button", { name: "Share Director Access" }),
     );
-    expect(mockPush).toHaveBeenCalledWith("/game/g1/manage/share-access");
+    expect(mockPush).toHaveBeenCalledWith(
+      "/game/g1/manage/share-access?from=setup",
+    );
   });
 
   it("opens the event-details editor and returns to the menu when done", async () => {

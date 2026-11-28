@@ -89,11 +89,9 @@ After you create a game, or pick one that is still being set up under
 You can do them in any order. The back arrow (top-left) on each page returns to
 this menu, so to move from one page to another go back and tap the next button.
 The back arrow on the menu itself returns to the list of games not yet started.
-The top-right menu on Tables, Movement, Timer and Start Game only has **Share
-Director Access**.
-
-The menu itself has no top-right menu. To get back to the main menu, use the back arrow: from the menu to the list of games not
-yet started, then once more.
+Neither the menu nor the pages it opens have a top-right menu. To get back to
+the main menu, use the back arrow: from the menu to the list of games not yet
+started, then once more.
 
 **Game Details** is pre-filled with what you set when creating the game: the
 event name, director, event type, scoring, tournament level, and the Record
@@ -102,8 +100,9 @@ return to the menu, or use its back arrow to return without changes. You can com
 **Create Game** on the main menu, until it is started.
 
 > **Note:** changing the **event type** or **scoring** here clears the movement
-> you've already selected (the two have to match), so you'll be asked to confirm
-> and will need to pick a movement again on the Movements tab.
+> you've already selected in every section (the two have to match), and any
+> timer you set up for it, so you'll be asked to confirm and will need to pick a
+> movement again on the Movements tab.
 
 ### Tables tab
 
@@ -314,18 +313,20 @@ an odd number of pairs. Set these and tap **Select Movement** to confirm. You
 draw each later round during play from the game menu (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
-The setup also asks how to handle an **odd number of pairs** each round:
+Below the settings is a table with one row per round, where you choose how
+that round handles an **odd number of pairs**:
 
-- **Bye** (the default) — one pair sits out each round and is credited an
-  above-average result. Simple, and fine for most club events.
-- **2 half matches** — instead of a pair sitting out, three pairs play a group
-  at one table: one pair (the **anchor**) plays the full round, split into two
+- **Bye** (the default for every round) — one pair sits out the round and is
+  credited an above-average result. Simple, and fine for most club events.
+- **Half matches** — instead of a pair sitting out, three pairs play a group at
+  one table: one pair (the **anchor**) plays the full round, split into two
   halves against two different opponents, and the other two each play one half
   (and are credited an average-plus for the half they miss). No one sits out a
-  whole round. Choosing this reveals a per-round plan so you can pick **Bye** or
-  **Half matches** for each round individually — the usual EBU practice is to
-  vary it across the event. These settings only take effect if your field turns
-  out to be odd; an even field ignores them.
+  whole round.
+
+The usual EBU practice is to vary this across the event. The table is always
+shown because the number of pairs isn't known until seating; it only takes
+effect if your field turns out to be odd, and an even field ignores it.
 
 Swiss Pairs always runs as a single section.
 
@@ -344,24 +345,21 @@ later round from the standings during play (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
 Swiss Teams runs in a single section. With an **even number of teams** every
-round pairs cleanly. With an **odd number of teams** the dialog asks how to
-handle the odd team each round:
+round pairs cleanly. With an **odd number of teams** the setup shows a table
+with one row per round, where you choose how that round handles the odd team:
 
-- **Bye** (the default) — one team sits out each round (the lowest-ranked team
-  that hasn't had a bye) and is credited an above-average result. Simple, and
-  fine for most club events.
-- **Triple** — instead of a team sitting out, three teams play a **three-way**:
-  each of the three plays both of the others, so no one sits out. Choosing this
-  reveals a per-round plan where you set each round to:
-  - **Short** — the whole three-way runs in that one round (each pairing plays
-    half the round's boards), or
-  - **Long** — the three-way is spread over **two** rounds on full boards. A
-    long triple therefore takes two neighbouring rounds, so mark **Long** on two
-    rounds in a row.
+- **Bye** (the default for every round) — one team sits out the round (the
+  lowest-ranked team that hasn't had a bye) and is credited an above-average
+  result. Simple, and fine for most club events.
+- **Short** — instead of a team sitting out, three teams play a **three-way**
+  (each of the three plays both of the others) in that one round, with each
+  pairing playing half the round's boards.
+- **Long** — the three-way is spread over **two** rounds on full boards. A long
+  triple therefore takes two neighbouring rounds, so mark **Long** on two rounds
+  in a row.
 
-  The three teams are the lowest-ranked three that haven't had a triple
-  recently. These settings only take effect if your field is odd; an even field
-  ignores them.
+The three teams in a three-way are the lowest-ranked three that haven't had one
+recently.
 
 ### Timer tab (optional)
 

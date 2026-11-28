@@ -136,6 +136,19 @@ describe("GameContext", () => {
     );
   });
 
+  it("ignores a GAME_UPDATED payload that carries no game", () => {
+    renderHook(() => useGame(), {
+      wrapper: ({ children }) => wrapper(children),
+    });
+
+    act(() =>
+      handlerFor(SocketEvents.GAME_UPDATED)(
+        {} as unknown as { game: BridgeGame },
+      ),
+    );
+    expect(globalMutate).not.toHaveBeenCalled();
+  });
+
   it("clears the game from the cache on GAME_DELETED (so the screen shows not-found)", () => {
     renderHook(() => useGame(), {
       wrapper: ({ children }) => wrapper(children),

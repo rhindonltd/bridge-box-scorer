@@ -2131,6 +2131,14 @@ Mitchell generators moved to `pairs/mitchell/`, and the teams generators to
 `teams/head-to-head-teams/`). The `generation/` paths in the sections above
 are as they were at the time.
 
+**Pairs layout, as built.** The Mitchell variants then moved into one folder
+each under `pairs/`, as the teams movements are: `standard-mitchell/` (with
+the Standard Mitchell sit-out), `skip-mitchell/`, `share-and-relay-mitchell/`,
+`hesitation-mitchell/` (the hesitation and double hesitation, and their
+shared `hesitation-utils.ts`), `web-mitchell/`, `american-whist-mitchell/` and
+`blackpool/`. `pairs/mitchell/` keeps what they share: the `generateMitchell`
+dispatcher, `mitchell-utils.ts` and `mitchell-options.ts`.
+
 - **A pair's side comes from the board row, not its seat.** The submit and
   withdraw handlers read the side from where the pair's id sits on the board
   row (`seatSideAtBoard`, falling back to the seat's direction), and the

@@ -7,6 +7,7 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { renameSection } from "@/db/games/actions/rename-section";
 import { deleteSection } from "@/db/games/actions/delete-section";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 
 const renameSchema = z.object({ label: z.string().min(1) });
 
@@ -49,6 +50,7 @@ export const DELETE = withDirectorEditRoute(async ({ gameId, section }) => {
 
   try {
     await deleteSection(gameId, section);
+    await syncGameTableCount(gameId);
     await broadcastSections(gameId);
     return success({});
   } catch (err) {

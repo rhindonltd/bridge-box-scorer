@@ -7,6 +7,7 @@ import { respondToActionError } from "@/lib/api/client-error";
 import { updateSectionTables } from "@/db/games/actions/update-section-tables";
 import { findSections } from "@/db/games/queries/find-sections";
 import { broadcastSections } from "@/socket/broadcast/section-broadcast";
+import { syncGameTableCount } from "@/services/game-table-count";
 
 const bodySchema = z.object({ tables: z.number().int().min(1) });
 
@@ -34,6 +35,8 @@ export const PUT = withDirectorEditRoute(
 
     try {
       await updateSectionTables(gameId, section, body.tables);
+      // The game lists show the game's table count from the game index.
+      await syncGameTableCount(gameId);
       await broadcastSections(gameId);
       return success({});
     } catch (err) {

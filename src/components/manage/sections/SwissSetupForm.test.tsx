@@ -22,14 +22,21 @@ const confirmButton = () =>
   screen.getByRole("button", { name: "Select Movement" });
 
 describe("SwissSetupForm", () => {
-  it("defaults to a bye and omits the per-round plan on confirm", () => {
+  it("always shows the per-round plan, defaulting every round to a bye", () => {
     const { onConfirm } = renderForm();
 
-    // The per-round plan is hidden under the default (bye) handling.
-    expect(screen.queryByTestId("odd-round-plan")).not.toBeInTheDocument();
+    const plan = screen.getByTestId("odd-round-plan");
+    // No separate handling choice: the table is the only control.
+    expect(screen.getAllByRole("radio")).toHaveLength(14);
+    for (let round = 1; round <= 7; round++) {
+      expect(
+        within(plan).getByRole("radio", { name: `Bye for round ${round}` }),
+      ).toBeChecked();
+    }
 
     fireEvent.click(confirmButton());
 
+    // A bye every round is the default handling, so the spec stays minimal.
     expect(onConfirm).toHaveBeenCalledWith({
       tables: 5,
       rounds: 7,
@@ -37,15 +44,12 @@ describe("SwissSetupForm", () => {
     });
   });
 
-  it("reveals the per-round plan and emits HALF_MATCHES with a full plan", () => {
+  it("emits HALF_MATCHES with the full plan once any round uses half matches", () => {
     const { onConfirm } = renderForm();
 
-    fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
-
-    // The per-round plan appears, one entry per round (default 7).
-    const plan = screen.getByTestId("odd-round-plan");
-    expect(plan).toBeInTheDocument();
-
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Half matches for round 2" }),
+    );
     fireEvent.click(confirmButton());
 
     expect(onConfirm).toHaveBeenCalledWith({
@@ -53,45 +57,41 @@ describe("SwissSetupForm", () => {
       rounds: 7,
       boardsPerRound: 7,
       oddHandling: "HALF_MATCHES",
-      // Default: every round a half match.
-      oddRoundPlan: Array(7).fill("HALF_MATCHES"),
+      oddRoundPlan: ["BYE", "HALF_MATCHES", "BYE", "BYE", "BYE", "BYE", "BYE"],
     });
   });
 
-  it("lets the director set an individual round to a bye", () => {
+  it("returns to the minimal spec when a half-match round goes back to a bye", () => {
+    const { onConfirm } = renderForm();
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Half matches for round 1" }),
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "Bye for round 1" }));
+    fireEvent.click(confirmButton());
+    expect(onConfirm.mock.calls[0][0].oddHandling).toBeUndefined();
+    expect(onConfirm.mock.calls[0][0].oddRoundPlan).toBeUndefined();
+  });
+
+  it("resizes the per-round plan when the round count changes, padding with byes", () => {
     const { onConfirm } = renderForm();
 
-    fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
-    // Round 1's "Bye" radio — scoped to the per-round plan (the top-level
-    // handling also has a "Bye" radio).
-    const plan = screen.getByTestId("odd-round-plan");
-    const round1Bye = within(plan).getByRole("radio", {
-      name: "Bye for round 1",
-    });
-    fireEvent.click(round1Bye);
+    fireEvent.click(
+      screen.getByRole("radio", { name: "Half matches for round 1" }),
+    );
+    const rounds = screen.getByRole("spinbutton", { name: "Rounds" });
+    // Drop to 2 rounds, then grow to 4: the new rounds are byes.
+    fireEvent.change(rounds, { target: { value: "2" } });
+    fireEvent.change(rounds, { target: { value: "4" } });
+
+    expect(
+      screen.queryByRole("radio", { name: "Bye for round 5" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(confirmButton());
 
     const spec = onConfirm.mock.calls[0][0];
-    expect(spec.oddHandling).toBe("HALF_MATCHES");
-    expect(spec.oddRoundPlan[0]).toBe("BYE");
-    expect(spec.oddRoundPlan.slice(1)).toEqual(Array(6).fill("HALF_MATCHES"));
-  });
-
-  it("resizes the per-round plan when the round count changes", () => {
-    const { onConfirm } = renderForm();
-
-    fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
-    // Drop to 3 rounds via the Rounds input (the number field, not the label).
-    fireEvent.change(screen.getByRole("spinbutton", { name: "Rounds" }), {
-      target: { value: "3" },
-    });
-
-    fireEvent.click(confirmButton());
-
-    const spec = onConfirm.mock.calls[0][0];
-    expect(spec.rounds).toBe(3);
-    expect(spec.oddRoundPlan).toEqual(Array(3).fill("HALF_MATCHES"));
+    expect(spec.rounds).toBe(4);
+    expect(spec.oddRoundPlan).toEqual(["HALF_MATCHES", "BYE", "BYE", "BYE"]);
   });
 
   it("seeds from an existing HALF_MATCHES plan", () => {
@@ -105,27 +105,50 @@ describe("SwissSetupForm", () => {
       },
     });
 
-    // The half-matches handling is pre-selected and the plan is shown.
     expect(
-      screen.getByRole("radio", { name: /2 half matches/i }),
+      screen.getByRole("radio", { name: "Bye for round 1" }),
     ).toBeChecked();
-    expect(screen.getByTestId("odd-round-plan")).toBeInTheDocument();
+    expect(
+      screen.getByRole("radio", { name: "Half matches for round 2" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 3" }),
+    ).toBeChecked();
   });
-  it("returns to the bye handling and lets a bye round go back to half matches", () => {
-    const { onConfirm } = renderForm();
-    fireEvent.click(screen.getByRole("radio", { name: /2 half matches/i }));
-    const plan = screen.getByTestId("odd-round-plan");
-    fireEvent.click(
-      within(plan).getByRole("radio", { name: "Bye for round 1" }),
-    );
-    fireEvent.click(
-      within(plan).getByRole("radio", { name: "Half matches for round 1" }),
-    );
-    fireEvent.click(screen.getByRole("radio", { name: /^Bye — one pair/ }));
-    expect(screen.queryByTestId("odd-round-plan")).not.toBeInTheDocument();
-    fireEvent.click(confirmButton());
-    expect(onConfirm.mock.calls[0][0].oddHandling).toBeUndefined();
+
+  it("defaults rounds missing from a short persisted plan to a bye", () => {
+    renderForm({
+      initial: {
+        tables: 5,
+        rounds: 3,
+        boardsPerRound: 3,
+        oddHandling: "HALF_MATCHES",
+        oddRoundPlan: ["HALF_MATCHES"],
+      },
+    });
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 3" }),
+    ).toBeChecked();
   });
+
+  it("ignores a plan saved with the bye handling", () => {
+    renderForm({
+      initial: {
+        tables: 5,
+        rounds: 2,
+        boardsPerRound: 3,
+        oddHandling: "BYE",
+        oddRoundPlan: ["HALF_MATCHES", "HALF_MATCHES"],
+      },
+    });
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 1" }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "Bye for round 2" }),
+    ).toBeChecked();
+  });
+
   it("shows a disabled Saving button while a save is in flight", () => {
     renderForm({ saving: true });
     expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
