@@ -179,129 +179,138 @@ export function SwissTeamsSetupForm({
 
   return (
     <>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-        <div className="space-y-3">
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-gray-700">Teams</span>
-            <div className="w-40">
-              <StepperInput
-                label="Teams"
-                value={teams}
-                /* v8 ignore next -- readOnly StepperInput never calls onChange (the
+      {/* The settings sit in the middle of the space when they fit, and
+          scroll from the top when they don't (`my-auto` on a scrolling column
+          centres without clipping the top). */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+        <div className="my-auto w-full space-y-4">
+          <div className="space-y-3">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-700">Teams</span>
+              <div className="w-40">
+                <StepperInput
+                  label="Teams"
+                  value={teams}
+                  /* v8 ignore next -- readOnly StepperInput never calls onChange (the
                    team count is derived from the section's table count). */
-                onChange={() => {}}
-                readOnly
-              />
-            </div>
-          </label>
+                  onChange={() => {}}
+                  readOnly
+                />
+              </div>
+            </label>
 
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-gray-700">Rounds</span>
-            <div className="w-40">
-              <StepperInput
-                label="Rounds"
-                value={rounds}
-                onChange={changeRounds}
-                min={1}
-                max={30}
-              />
-            </div>
-          </label>
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-700">Rounds</span>
+              <div className="w-40">
+                <StepperInput
+                  label="Rounds"
+                  value={rounds}
+                  onChange={changeRounds}
+                  min={1}
+                  max={30}
+                />
+              </div>
+            </label>
 
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium text-gray-700">
-              Boards per round
-            </span>
-            <div className="w-40">
-              <StepperInput
-                label="Boards per round"
-                value={boardsPerRound}
-                onChange={setBoardsPerRound}
-                min={1}
-                max={16}
-              />
-            </div>
-          </label>
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-700">
+                Boards per round
+              </span>
+              <div className="w-40">
+                <StepperInput
+                  label="Boards per round"
+                  value={boardsPerRound}
+                  onChange={setBoardsPerRound}
+                  min={1}
+                  max={16}
+                />
+              </div>
+            </label>
+          </div>
+
+          {oddTeams && (
+            <fieldset className="space-y-2" data-testid="teams-odd-round-plan">
+              <legend className="text-sm font-medium text-gray-700">
+                You have an odd number of teams ({teams}). How should each round
+                handle the odd team?
+              </legend>
+              <p className="text-xs text-gray-600">
+                <span className="font-medium">Bye</span>: one team sits out (the
+                bottom table first, then the lowest-ranked team that hasn&apos;t
+                had a bye) and is credited an average-plus result.{" "}
+                <span className="font-medium">Short</span> or{" "}
+                <span className="font-medium">Long</span>: three teams play a
+                three-way (the bottom three tables first, then the lowest-ranked
+                three without a recent triple), in one round or over two. A long
+                triple takes two rounds, so pick{" "}
+                <span className="font-medium">Long</span> on two neighbouring
+                rounds.
+              </p>
+              <table className="w-full table-fixed text-sm">
+                <thead>
+                  <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
+                    <th className="w-14 px-2 py-1.5 text-left font-medium">
+                      Round
+                    </th>
+                    <th className="px-2 py-1.5 text-center font-medium">Bye</th>
+                    <th className="px-2 py-1.5 text-center font-medium">
+                      Short
+                    </th>
+                    <th className="px-2 py-1.5 text-center font-medium">
+                      Long
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: rounds }, (_, i) => {
+                    /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
+                    const value = plan[i] ?? "BYE";
+                    return (
+                      <tr key={i} className="border-t border-gray-100">
+                        <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
+                        {(["BYE", "SHORT", "LONG"] as const).map((kind) => (
+                          <td key={kind} className="px-2 py-1.5 text-center">
+                            <input
+                              type="radio"
+                              aria-label={`${KIND_LABEL[kind]} for round ${i + 1}`}
+                              name={`teamsOddRound-${i}`}
+                              value={kind}
+                              checked={value === kind}
+                              onChange={() => setRoundKind(i, kind)}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              {tooFewForTriple && (
+                <p role="alert" className="text-sm font-medium text-red-600">
+                  A triple needs at least three teams — choose Bye for every
+                  round, or add a table.
+                </p>
+              )}
+
+              {planInvalid && (
+                <p role="alert" className="text-sm font-medium text-red-600">
+                  A long triple takes two rounds — pair each{" "}
+                  <span className="font-medium">Long</span> round with a{" "}
+                  <span className="font-medium">Long</span> on the next round.
+                </p>
+              )}
+            </fieldset>
+          )}
         </div>
-
-        {oddTeams && (
-          <fieldset className="space-y-2" data-testid="teams-odd-round-plan">
-            <legend className="text-sm font-medium text-gray-700">
-              You have an odd number of teams ({teams}). How should each round
-              handle the odd team?
-            </legend>
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Bye</span>: one team sits out (the
-              bottom table first, then the lowest-ranked team that hasn&apos;t
-              had a bye) and is credited an average-plus result.{" "}
-              <span className="font-medium">Short</span> or{" "}
-              <span className="font-medium">Long</span>: three teams play a
-              three-way (the bottom three tables first, then the lowest-ranked
-              three without a recent triple), in one round or over two. A long
-              triple takes two rounds, so pick{" "}
-              <span className="font-medium">Long</span> on two neighbouring
-              rounds.
-            </p>
-            <table className="w-full table-fixed text-sm">
-              <thead>
-                <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
-                  <th className="w-14 px-2 py-1.5 text-left font-medium">
-                    Round
-                  </th>
-                  <th className="px-2 py-1.5 text-center font-medium">Bye</th>
-                  <th className="px-2 py-1.5 text-center font-medium">Short</th>
-                  <th className="px-2 py-1.5 text-center font-medium">Long</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: rounds }, (_, i) => {
-                  /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
-                  const value = plan[i] ?? "BYE";
-                  return (
-                    <tr key={i} className="border-t border-gray-100">
-                      <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
-                      {(["BYE", "SHORT", "LONG"] as const).map((kind) => (
-                        <td key={kind} className="px-2 py-1.5 text-center">
-                          <input
-                            type="radio"
-                            aria-label={`${KIND_LABEL[kind]} for round ${i + 1}`}
-                            name={`teamsOddRound-${i}`}
-                            value={kind}
-                            checked={value === kind}
-                            onChange={() => setRoundKind(i, kind)}
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-
-            {tooFewForTriple && (
-              <p role="alert" className="text-sm font-medium text-red-600">
-                A triple needs at least three teams — choose Bye for every
-                round, or add a table.
-              </p>
-            )}
-
-            {planInvalid && (
-              <p role="alert" className="text-sm font-medium text-red-600">
-                A long triple takes two rounds — pair each{" "}
-                <span className="font-medium">Long</span> round with a{" "}
-                <span className="font-medium">Long</span> on the next round.
-              </p>
-            )}
-          </fieldset>
-        )}
       </div>
 
-      <div className="flex shrink-0 justify-end gap-2 border-t border-gray-200 p-4">
+      <div className="shrink-0 border-t border-gray-200 p-4">
         <button
           type="button"
           onClick={confirm}
           disabled={saving || blocked}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          className="w-full rounded-xl bg-blue-600 py-3.5 text-lg font-semibold text-white transition hover:bg-blue-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Select Movement"}
         </button>

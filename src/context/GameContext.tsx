@@ -70,9 +70,11 @@ export function GameProvider({
 
   // Live updates: merge each pushed game snapshot straight into the SWR cache
   // (no revalidation), the same shared socket→SWR wiring the other contexts use.
+  // A payload without a game is ignored: writing `undefined` would drop the
+  // cache back to the stale `initialGame` snapshot.
   useSocketSWRSync(
     SocketEvents.GAME_UPDATED,
-    (payload) => ({ key, data: payload.game }),
+    (payload) => (payload?.game ? { key, data: payload.game } : null),
     [key],
   );
 

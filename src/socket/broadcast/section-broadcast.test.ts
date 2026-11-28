@@ -3,12 +3,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mockGetIO = vi.fn();
 vi.mock("@/socket/websocket", () => ({ getIO: () => mockGetIO() }));
 
-const mockGetDb = vi.fn();
-vi.mock("@/db/games", () => ({ getDb: (...a: unknown[]) => mockGetDb(...a) }));
-
-const mockFindSections = vi.fn();
-vi.mock("@/db/games/queries/find-sections", () => ({
-  findSections: (...a: unknown[]) => mockFindSections(...a),
+const mockFindGameById = vi.fn();
+vi.mock("@/db/game-index/queries/find-game-by-id", () => ({
+  findGameById: (...a: unknown[]) => mockFindGameById(...a),
 }));
 
 const mockGetSectionMovement = vi.fn();
@@ -50,25 +47,24 @@ function fakeIo() {
   return { io, emits };
 }
 
+const GAME = { gameId: "g1", gameType: "TEAMS" };
+
 describe("broadcastSections", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("emits GAME_UPDATED with the section list to the game room", async () => {
+  it("emits GAME_UPDATED with the fresh game row to the game room", async () => {
     const { io, emits } = fakeIo();
     mockGetIO.mockReturnValue(io);
-    mockGetDb.mockResolvedValue({});
-    mockFindSections.mockResolvedValue([{ section: "A" }, { section: "B" }]);
+    mockFindGameById.mockResolvedValue(GAME);
 
     await broadcastSections("g1");
 
+    expect(mockFindGameById).toHaveBeenCalledWith("g1");
     expect(emits).toEqual([
       {
         room: Rooms.game("g1"),
         event: SocketEvents.GAME_UPDATED,
-        payload: {
-          gameId: "g1",
-          sections: [{ section: "A" }, { section: "B" }],
-        },
+        payload: { game: GAME },
       },
     ]);
   });
@@ -76,17 +72,16 @@ describe("broadcastSections", () => {
   it("no-ops when the server is not running", async () => {
     mockGetIO.mockReturnValue(null);
     await broadcastSections("g1");
-    expect(mockGetDb).not.toHaveBeenCalled();
+    expect(mockFindGameById).not.toHaveBeenCalled();
   });
 
-  it("no-ops when the game db is missing", async () => {
+  it("emits nothing when the game no longer exists", async () => {
     const { io, emits } = fakeIo();
     mockGetIO.mockReturnValue(io);
-    mockGetDb.mockResolvedValue(null);
+    mockFindGameById.mockResolvedValue(undefined);
 
     await broadcastSections("g1");
 
-    expect(mockFindSections).not.toHaveBeenCalled();
     expect(emits).toEqual([]);
   });
 });
@@ -97,6 +92,7 @@ describe("broadcastSectionMovementChanged", () => {
   it("clears the timer and emits section + game updates when the movement changed", async () => {
     const { io, emits } = fakeIo();
     mockGetIO.mockReturnValue(io);
+    mockFindGameById.mockResolvedValue(GAME);
 
     const previous = { source: "SPEC" as const, specId: 1, boardsPerRound: 3 };
     const next = {
@@ -119,7 +115,7 @@ describe("broadcastSectionMovementChanged", () => {
       {
         room: Rooms.game("g1"),
         event: SocketEvents.GAME_UPDATED,
-        payload: { gameId: "g1" },
+        payload: { game: GAME },
       },
     ]);
   });
