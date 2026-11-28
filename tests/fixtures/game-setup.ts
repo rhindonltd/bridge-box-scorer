@@ -199,16 +199,14 @@ export async function pickSwissMovement(page: Page): Promise<void> {
 }
 
 /**
- * Open the Movement tab and set up a Swiss Pairs movement that uses "2 half
- * matches" for an odd field. Trims the inline Swiss form's round count down to `rounds` (default 2 — enough for the half-match journey),
- * selects the "2 half matches" odd-handling radio (which reveals the per-round
- * plan, defaulting every round to a half match), and confirms. Used by the
- * odd-field half-match journey.
+ * Open the Movement tab and set up a Swiss Pairs movement that uses half
+ * matches for an odd field. Trims the inline Swiss form's round count down to
+ * `rounds` (default 2 — enough for the half-match journey), sets every round
+ * of the per-round plan (which defaults to a bye) to "Half matches", and
+ * confirms. Used by the odd-field half-match journey.
  *
- * The rounds are trimmed FIRST, before expanding the per-round plan, so the
- * dialog stays short: on the narrow phone viewport the full 7-round plan pushes
- * the "Select Movement" button below the (non-scrolling) dialog, and the
- * confirm click can never land. Fewer rounds keeps the whole dialog on-screen.
+ * The rounds are trimmed first so the per-round plan stays short and the
+ * "Select Movement" button stays easy to reach on the phone viewport.
  */
 export async function pickSwissHalfMatchMovement(
   page: Page,
@@ -235,11 +233,17 @@ export async function pickSwissHalfMatchMovement(
     await page.waitForTimeout(50);
   }
 
-  // Choose "2 half matches" so every round resolves an odd pair with a group.
-  const halfMatches = page.getByRole("radio", { name: /2 half matches/i });
-  await expect(halfMatches).toBeVisible({ timeout: 15000 });
-  await halfMatches.click();
-  await expect(halfMatches).toBeChecked({ timeout: 5000 });
+  // Set every round to "Half matches" so each round resolves an odd pair with
+  // a group.
+  const planBuilder = page.getByTestId("odd-round-plan");
+  await expect(planBuilder).toBeVisible({ timeout: 15000 });
+  for (let round = 1; round <= rounds; round++) {
+    const halfMatches = planBuilder.getByRole("radio", {
+      name: `Half matches for round ${round}`,
+    });
+    await halfMatches.click();
+    await expect(halfMatches).toBeChecked({ timeout: 5000 });
+  }
 
   await confirmSwissForm(page);
 }
@@ -257,10 +261,9 @@ export async function pickSwissTeamsMovement(page: Page): Promise<void> {
 
 /**
  * Open the Movement tab and set up a Swiss Teams movement that resolves an ODD
- * field with triples, following a per-round plan. Trims the round count down to `plan.length` (so the revealed
- * per-round plan is short and fits the phone viewport), selects the "Triple"
- * odd-handling radio (which reveals the per-round builder), sets each round to
- * its planned kind ("BYE" | "SHORT" | "LONG"), and confirms.
+ * field with triples, following a per-round plan. Trims the round count down to
+ * `plan.length` (so the per-round plan is short and fits the phone viewport),
+ * sets each round to its planned kind ("BYE" | "SHORT" | "LONG"), and confirms.
  *
  * A LONG takes two rounds, so the plan must place "LONG" on two neighbouring
  * rounds (the dialog rejects a lone LONG). Used by the odd-field triple journey.
@@ -273,8 +276,8 @@ export async function pickSwissTeamsTripleMovement(
   const confirm = page.getByRole("button", { name: "Select Movement" });
   await expect(confirm).toBeVisible({ timeout: 15000 });
 
-  // Trim rounds down to the plan length via the Rounds stepper so the revealed
-  // per-round plan is short and the dialog fits the viewport.
+  // Trim rounds down to the plan length via the Rounds stepper so the
+  // per-round plan is short and the form fits the viewport.
   const decreaseRounds = page.getByRole("button", {
     name: "Decrease Rounds",
     exact: true,
@@ -288,14 +291,9 @@ export async function pickSwissTeamsTripleMovement(
     await page.waitForTimeout(50);
   }
 
-  // Choose "Triple" to reveal the per-round plan builder.
-  const triple = page.getByRole("radio", { name: /triple/i });
-  await expect(triple).toBeVisible({ timeout: 15000 });
-  await triple.click();
-
   // Set each round to its planned kind. The per-round plan is a table of radios
   // labelled "Bye for round N" / "Short for round N" / "Long for round N";
-  // "Short" is the default.
+  // "Bye" is the default.
   const planBuilder = page.getByTestId("teams-odd-round-plan");
   await expect(planBuilder).toBeVisible({ timeout: 15000 });
   for (let i = 0; i < plan.length; i++) {

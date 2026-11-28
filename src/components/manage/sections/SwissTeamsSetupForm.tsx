@@ -4,12 +4,18 @@ import { useState } from "react";
 import { StepperInput } from "@/components/common/StepperInput";
 import type {
   SwissTeamsMovementSpec,
-  SwissTeamsOddHandling,
   SwissTeamsOddRound,
 } from "@/model/selected-movement";
 
 /** A per-round plan entry as the UI tracks it (group ids are derived on confirm). */
 type RoundKind = "BYE" | "SHORT" | "LONG";
+
+/** Each plan choice's column heading, also naming its radio for a round. */
+const KIND_LABEL: Record<RoundKind, string> = {
+  BYE: "Bye",
+  SHORT: "Short",
+  LONG: "Long",
+};
 
 /**
  * Reduce a UI plan (`RoundKind` per round) to the persisted
@@ -69,8 +75,8 @@ function kindsFromPlan(
     if (entry && typeof entry === "object" && entry.kind === "LONG") {
       return "LONG";
     }
-    // No existing entry for this round: default to a short triple.
-    return "SHORT";
+    // No existing entry for this round: default to a bye.
+    return "BYE";
   });
 }
 
@@ -83,13 +89,13 @@ function kindsFromPlan(
  * the event runs. Confirming hands back a {@link SwissTeamsMovementSpec}.
  *
  * A match pits two teams across two tables, so an even count pairs cleanly.
- * With an odd count the director chooses how to handle the odd team: "Bye" (the
- * default) sits one team out each round, or "Triple" — three teams play a
- * three-way. A triple is set per round as a SHORT triple (the whole three-way
- * in one round) or a LONG triple (spread over two consecutive rounds); a long
- * triple therefore occupies two adjacent rounds. The chosen mode is carried on
- * the spec as `oddHandling` plus the per-round `oddRoundPlan`; an even count
- * omits both.
+ * With an odd count the director chooses, round by round, how to handle the
+ * odd team: a bye (the default) sits one team out, or a triple — three teams
+ * play a three-way, as a SHORT triple (the whole three-way in one round) or a
+ * LONG triple (spread over two consecutive rounds, so it occupies two adjacent
+ * rounds). A bye every round is carried as `oddHandling: "BYE"`; any triple
+ * round as `"TRIPLE"` plus the per-round `oddRoundPlan`. An even count omits
+ * both.
  */
 export function SwissTeamsSetupForm({
   teams,
@@ -108,22 +114,23 @@ export function SwissTeamsSetupForm({
   const [boardsPerRound, setBoardsPerRound] = useState(
     initial?.boardsPerRound ?? 6,
   );
-  const [oddHandling, setOddHandling] = useState<SwissTeamsOddHandling>(
-    initial?.oddHandling ?? "BYE",
-  );
-  // The per-round plan (one entry per round), used only under "Triple". Each
-  // round is a BYE / SHORT / LONG; group ids for long triples are derived on
-  // confirm (see resolveTeamsOddRoundPlan). Kept length-synced to `rounds`.
+  // How each round handles an odd team: a BYE, or a SHORT / LONG triple; group
+  // ids for long triples are derived on confirm (see resolveTeamsOddRoundPlan).
+  // Seeded from an existing triple plan, else a bye every round (the default).
+  // Kept length-synced to `rounds`.
   const [plan, setPlan] = useState<RoundKind[]>(() =>
-    kindsFromPlan(initial?.oddRoundPlan, initial?.rounds ?? 7),
+    kindsFromPlan(
+      initial?.oddHandling === "TRIPLE" ? initial.oddRoundPlan : undefined,
+      initial?.rounds ?? 7,
+    ),
   );
 
-  // Resize the plan to match the round count, padding new rounds with a short
-  // triple and truncating removed ones.
+  // Resize the plan to match the round count, padding new rounds with a bye
+  // and truncating removed ones.
   const changeRounds = (next: number) => {
     setRounds(next);
     setPlan((current) =>
-      Array.from({ length: next }, (_, i) => current[i] ?? "SHORT"),
+      Array.from({ length: next }, (_, i) => current[i] ?? "BYE"),
     );
   };
 
@@ -132,7 +139,7 @@ export function SwissTeamsSetupForm({
       const next = Array.from(
         { length: rounds },
         /* v8 ignore next -- unreachable fallback: `plan` is always kept length-synced to `rounds`, so current[i] is defined */
-        (_, i) => current[i] ?? "SHORT",
+        (_, i) => current[i] ?? "BYE",
       );
       next[index] = value;
       return next;
@@ -140,16 +147,21 @@ export function SwissTeamsSetupForm({
   };
 
   const oddTeams = teams % 2 !== 0;
+  const kinds = Array.from(
+    { length: rounds },
+    /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
+    (_, i) => plan[i] ?? "BYE",
+  );
+  // Any triple round makes this a "Triple" event; a bye every round is the
+  // plain "Bye" handling.
+  const triples = oddTeams && kinds.some((kind) => kind !== "BYE");
   // A triple needs at least three teams to form the three-way; if fewer are
   // present, that choice would be rejected at start, so confirming is blocked.
-  const tooFewForTriple = oddTeams && oddHandling === "TRIPLE" && teams < 3;
+  const tooFewForTriple = triples && teams < 3;
 
   // Validate the plan only when it will actually be sent (odd field + triple).
-  const resolved = resolveTeamsOddRoundPlan(
-    /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
-    Array.from({ length: rounds }, (_, i) => plan[i] ?? "SHORT"),
-  );
-  const planInvalid = oddTeams && oddHandling === "TRIPLE" && !resolved.valid;
+  const resolved = resolveTeamsOddRoundPlan(kinds);
+  const planInvalid = triples && !resolved.valid;
 
   const blocked = tooFewForTriple || planInvalid;
 
@@ -157,8 +169,8 @@ export function SwissTeamsSetupForm({
     const spec: SwissTeamsMovementSpec = { teams, rounds, boardsPerRound };
     // Only carry the odd handling for an odd field; an even field ignores it.
     if (oddTeams) {
-      spec.oddHandling = oddHandling;
-      if (oddHandling === "TRIPLE") {
+      spec.oddHandling = triples ? "TRIPLE" : "BYE";
+      if (triples) {
         spec.oddRoundPlan = resolved.plan;
       }
     }
@@ -213,135 +225,72 @@ export function SwissTeamsSetupForm({
         </div>
 
         {oddTeams && (
-          <fieldset className="space-y-2">
+          <fieldset className="space-y-2" data-testid="teams-odd-round-plan">
             <legend className="text-sm font-medium text-gray-700">
-              You have an odd number of teams ({teams}). How should the odd team
-              be handled each round?
+              You have an odd number of teams ({teams}). How should each round
+              handle the odd team?
             </legend>
-
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="oddHandling"
-                value="BYE"
-                checked={oddHandling === "BYE"}
-                onChange={() => setOddHandling("BYE")}
-                className="mt-0.5"
-              />
-              <span>
-                <span className="font-medium">Bye</span> — one team sits out
-                each round (the bottom table first, then the lowest-ranked team
-                that hasn&apos;t had a bye) and is credited an average-plus
-                result.
-              </span>
-            </label>
-
-            <label className="flex items-start gap-2 text-sm text-gray-700">
-              <input
-                type="radio"
-                name="oddHandling"
-                value="TRIPLE"
-                checked={oddHandling === "TRIPLE"}
-                onChange={() => setOddHandling("TRIPLE")}
-                className="mt-0.5"
-              />
-              <span>
-                <span className="font-medium">Triple</span> — three teams play a
-                three-way (the bottom three tables first, then the lowest-ranked
-                three without a recent triple). Set each round below as a short
-                triple (one round) or a long triple (two rounds).
-              </span>
-            </label>
+            <p className="text-xs text-gray-600">
+              <span className="font-medium">Bye</span>: one team sits out (the
+              bottom table first, then the lowest-ranked team that hasn&apos;t
+              had a bye) and is credited an average-plus result.{" "}
+              <span className="font-medium">Short</span> or{" "}
+              <span className="font-medium">Long</span>: three teams play a
+              three-way (the bottom three tables first, then the lowest-ranked
+              three without a recent triple), in one round or over two. A long
+              triple takes two rounds, so pick{" "}
+              <span className="font-medium">Long</span> on two neighbouring
+              rounds.
+            </p>
+            <table className="w-full table-fixed text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
+                  <th className="w-14 px-2 py-1.5 text-left font-medium">
+                    Round
+                  </th>
+                  <th className="px-2 py-1.5 text-center font-medium">Bye</th>
+                  <th className="px-2 py-1.5 text-center font-medium">Short</th>
+                  <th className="px-2 py-1.5 text-center font-medium">Long</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: rounds }, (_, i) => {
+                  /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
+                  const value = plan[i] ?? "BYE";
+                  return (
+                    <tr key={i} className="border-t border-gray-100">
+                      <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
+                      {(["BYE", "SHORT", "LONG"] as const).map((kind) => (
+                        <td key={kind} className="px-2 py-1.5 text-center">
+                          <input
+                            type="radio"
+                            aria-label={`${KIND_LABEL[kind]} for round ${i + 1}`}
+                            name={`teamsOddRound-${i}`}
+                            value={kind}
+                            checked={value === kind}
+                            onChange={() => setRoundKind(i, kind)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
             {tooFewForTriple && (
               <p role="alert" className="text-sm font-medium text-red-600">
-                A triple needs at least three teams — choose Bye, or add a
-                table.
+                A triple needs at least three teams — choose Bye for every
+                round, or add a table.
               </p>
             )}
 
-            {oddHandling === "TRIPLE" && (
-              <div
-                className="mt-2 rounded-lg border border-gray-200 p-3"
-                data-testid="teams-odd-round-plan"
-              >
-                <p className="mb-2 text-xs text-gray-500">
-                  Choose how each round resolves the odd team. A long triple
-                  takes two rounds, so pick{" "}
-                  <span className="font-medium">Long</span> on two neighbouring
-                  rounds. This only applies if your field is odd.
-                </p>
-                <table className="w-full table-fixed text-sm">
-                  <thead>
-                    <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
-                      <th className="w-14 px-2 py-1.5 text-left font-medium">
-                        Round
-                      </th>
-                      <th className="px-2 py-1.5 text-center font-medium">
-                        Bye
-                      </th>
-                      <th className="px-2 py-1.5 text-center font-medium">
-                        Short
-                      </th>
-                      <th className="px-2 py-1.5 text-center font-medium">
-                        Long
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from({ length: rounds }, (_, i) => {
-                      /* v8 ignore next -- unreachable fallback: `plan` is always length-synced to `rounds` */
-                      const value = plan[i] ?? "SHORT";
-                      return (
-                        <tr key={i} className="border-t border-gray-100">
-                          <td className="px-2 py-1.5 text-gray-700">{i + 1}</td>
-                          <td className="px-2 py-1.5 text-center">
-                            <input
-                              type="radio"
-                              aria-label={`Bye for round ${i + 1}`}
-                              name={`teamsOddRound-${i}`}
-                              value="BYE"
-                              checked={value === "BYE"}
-                              onChange={() => setRoundKind(i, "BYE")}
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
-                            <input
-                              type="radio"
-                              aria-label={`Short for round ${i + 1}`}
-                              name={`teamsOddRound-${i}`}
-                              value="SHORT"
-                              checked={value === "SHORT"}
-                              onChange={() => setRoundKind(i, "SHORT")}
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
-                            <input
-                              type="radio"
-                              aria-label={`Long for round ${i + 1}`}
-                              name={`teamsOddRound-${i}`}
-                              value="LONG"
-                              checked={value === "LONG"}
-                              onChange={() => setRoundKind(i, "LONG")}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-
-                {planInvalid && (
-                  <p
-                    role="alert"
-                    className="mt-2 text-sm font-medium text-red-600"
-                  >
-                    A long triple takes two rounds — pair each{" "}
-                    <span className="font-medium">Long</span> round with a{" "}
-                    <span className="font-medium">Long</span> on the next round.
-                  </p>
-                )}
-              </div>
+            {planInvalid && (
+              <p role="alert" className="text-sm font-medium text-red-600">
+                A long triple takes two rounds — pair each{" "}
+                <span className="font-medium">Long</span> round with a{" "}
+                <span className="font-medium">Long</span> on the next round.
+              </p>
             )}
           </fieldset>
         )}

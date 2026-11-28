@@ -177,7 +177,7 @@ below:
   (`seeded-game.journey.ts`).
 - **Swiss Pairs**: single-section setup, play round 1, draw round 2 from the
   Movement screen (`swiss-pairs.journey.ts`).
-- **Swiss Pairs "2 half matches"** (odd field): set up a Swiss game with a
+- **Swiss Pairs half matches** (odd field): set up a Swiss game with a
   half-matches odd-handling plan, seat an odd field (one seat short), start so
   round 1 materialises as a half-match group (HALF_AVERAGE compensation rows,
   not a sit-out), score the played halves over a socket, draw round 2, and
