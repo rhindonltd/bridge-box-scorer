@@ -71,7 +71,7 @@ export function OddRoundOptionInfo({
                 >
                   {children}
                 </Dialog.Description>
-                <div className="mt-6">
+                <div className="mt-6 flex">
                   <Button value="OK" onClick={close} />
                 </div>
               </Dialog.Panel>
