@@ -30,7 +30,7 @@ import { useMovementResolution } from "@/hooks/stationary-pairs";
 import { useSelectedMovementName } from "@/hooks/selected-movement-name";
 import { DirectorTableModal } from "@/components/tables/DirectorTableModal";
 import { buildDirectorTable } from "./build-director-table";
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState } from "react";
 
 /** Unwrap the `{ pairs }` envelope the pairs endpoint returns. */
 async function pairsFetcher(url: string): Promise<Pair[]> {
@@ -52,13 +52,11 @@ async function expectedLateFetcher(url: string): Promise<string[]> {
 }
 
 type Props = {
-  /** Setup navigation menu rendered in the header's right-hand slot. */
-  menu?: ReactNode;
   /** Back-arrow action — returns to the create form. Omit to hide the arrow. */
   backAction?: () => void;
 };
 
-export function ShowTablesPage({ menu, backAction }: Props) {
+export function ShowTablesPage({ backAction }: Props) {
   const { game } = useRequiredGame();
   const { mutate } = useSWRConfig();
 
@@ -330,7 +328,6 @@ export function ShowTablesPage({ menu, backAction }: Props) {
   return (
     <GamePageLayout
       headerTitle="Tables"
-      headerRight={menu}
       backAction={backAction}
       hideBack={!backAction}
     >

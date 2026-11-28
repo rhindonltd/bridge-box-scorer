@@ -6,7 +6,11 @@ import {
   seatStorage,
   seedGame,
 } from "../fixtures/seeded-game";
-import { openSetupStep, setTableCount } from "../fixtures/game-setup";
+import {
+  openSetupStep,
+  pickMovementByName,
+  setTableCount,
+} from "../fixtures/game-setup";
 import { createGame } from "../fixtures/game-create";
 import { deleteGame } from "../fixtures/delete-game";
 import { gotoStable, newParticipant } from "./support";
@@ -79,6 +83,11 @@ test.describe("Game Details", () => {
       await director.getByRole("button", { name: "Save", exact: true }).click();
       await expect.poll(async () => (await gameRow()).scoringType).toBe("XIMP");
       expect((await gameRow()).selectedMovement).toBeFalsy();
+      // The section's own movement (the one the Movement screen shows) too.
+      const sections = (
+        await (await request.get(`/api/games/${game.gameId}/sections`)).json()
+      ).result.sections as { selectedMovement: unknown }[];
+      expect(sections.every((s) => s.selectedMovement == null)).toBe(true);
     } finally {
       await closeDevices(director);
     }
@@ -254,6 +263,106 @@ test.describe("Game lists", () => {
           { timeout: 20000 },
         )
         .toContain("2 tables");
+    } finally {
+      await deleteGame(director, gameId);
+      await director.context().close();
+    }
+  });
+});
+
+test.describe("Set Up Game screens", () => {
+  test("have no header menu, and Share Director Access returns to the setup menu", async ({
+    browser,
+  }) => {
+    test.setTimeout(90_000);
+    const director = await newParticipant(browser);
+    const { gameId } = await createGame(director, {
+      eventName: `No Menus ${Date.now()}`,
+      recordOpeningLead: false,
+    });
+    try {
+      await gotoStable(director, `/game/${gameId}/create`);
+      for (const page of ["Tables", "Movement", "Timer", "Start Game"]) {
+        await director.getByRole("button", { name: page, exact: true }).click();
+        await expect(
+          director.getByRole("button", { name: "Go back" }),
+        ).toBeVisible({ timeout: 15000 });
+        await expect(
+          director.getByRole("button", { name: /menu/i }),
+        ).toHaveCount(0);
+        await director.getByRole("button", { name: "Go back" }).click();
+        await expect(
+          director.getByRole("button", { name: "Game Details" }),
+        ).toBeVisible({ timeout: 15000 });
+      }
+      // Delete Game (cancelled with the back arrow) has no header menu either.
+      await director.getByRole("button", { name: "Delete Game" }).click();
+      await expect(director).toHaveURL(/\/manage\/delete-game\?from=setup$/, {
+        timeout: 15000,
+      });
+      await expect(
+        director.getByRole("button", { name: "Go back" }),
+      ).toBeVisible({ timeout: 15000 });
+      await expect(director.getByRole("button", { name: /menu/i })).toHaveCount(
+        0,
+      );
+      await director.getByRole("button", { name: "Go back" }).click();
+      await expect(
+        director.getByRole("button", { name: "Game Details" }),
+      ).toBeVisible({ timeout: 15000 });
+      await director
+        .getByRole("button", { name: "Share Director Access" })
+        .click();
+      await expect(director.getByTestId("share-code")).toBeVisible({
+        timeout: 15000,
+      });
+      await expect(director.getByRole("button", { name: /menu/i })).toHaveCount(
+        0,
+      );
+      await director.getByRole("button", { name: "Go back" }).click();
+      await expect(
+        director.getByRole("button", { name: "Game Details" }),
+      ).toBeVisible({ timeout: 15000 });
+    } finally {
+      await deleteGame(director, gameId);
+      await director.context().close();
+    }
+  });
+});
+
+test.describe("Changing the event type", () => {
+  test("clears a movement picked on the Movement screen, after asking", async ({
+    browser,
+    request,
+  }) => {
+    test.setTimeout(90_000);
+    const director = await newParticipant(browser);
+    const { gameId } = await createGame(director, {
+      eventName: `Type Change ${Date.now()}`,
+      recordOpeningLead: false,
+    });
+    const sectionMovement = async () =>
+      (
+        (await (await request.get(`/api/games/${gameId}/sections`)).json())
+          .result.sections as { selectedMovement: unknown }[]
+      )[0].selectedMovement;
+    try {
+      // Pick the first movement offered for the section.
+      await setTableCount(director, 4);
+      await pickMovementByName(director, "");
+      await expect.poll(sectionMovement, { timeout: 15000 }).toBeTruthy();
+      // Switch the event type to Teams: asked first, then the movement goes.
+      await gotoStable(director, `/game/${gameId}/create`);
+      await director.getByRole("button", { name: "Game Details" }).click();
+      await director.getByLabel("Event Type").selectOption("TEAMS");
+      let message = "";
+      director.once("dialog", (d) => {
+        message = d.message();
+        void d.accept();
+      });
+      await director.getByRole("button", { name: "Save", exact: true }).click();
+      await expect.poll(() => message).toMatch(/clear the movement/);
+      await expect.poll(sectionMovement, { timeout: 15000 }).toBeNull();
     } finally {
       await deleteGame(director, gameId);
       await director.context().close();

@@ -7,9 +7,13 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 
 interface Props {
   gameId: string;
+  /**
+   * Opened from the game setup menu, whose screens have no hamburger: the
+   * page then leaves out the manage screens' header menu too.
+   */
+  fromSetup?: boolean;
 }
-
-export function ShareDirectorAccessPage({ gameId }: Props) {
+export function ShareDirectorAccessPage({ gameId, fromSetup = false }: Props) {
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expiresIn, setExpiresIn] = useState(300); // 5 minutes in seconds
@@ -66,6 +70,7 @@ export function ShareDirectorAccessPage({ gameId }: Props) {
       // the header's default pops the history stack. If the screen was opened
       // directly (no in-app history), fall back to the manage menu.
       backFallbackHref={`/game/${gameId}/manage`}
+      hideHeaderMenu={fromSetup}
       contentMode="center"
       // The regenerate button is the one primary action, so it lives in the
       // fixed bottom action bar as a full-width button (matching the rest of

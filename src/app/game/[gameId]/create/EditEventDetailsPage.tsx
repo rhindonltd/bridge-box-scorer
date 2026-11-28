@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRequiredGame } from "@/context/GameContext";
+import { useSections } from "@/hooks/sections";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
 import TextField from "@/components/common/TextField";
 import SelectField from "@/components/common/SelectField";
@@ -73,7 +74,12 @@ export function EditEventDetailsPage({ onDone }: Props) {
     gameType !== game.gameType ||
     eventFormat !== game.eventFormat ||
     scoringType !== game.scoringType;
-  const hasMovement = game.selectedMovement != null;
+  // A movement is chosen per section, so check the sections as well as the
+  // game's own copy.
+  const { sections } = useSections(game.gameId);
+  const hasMovement =
+    game.selectedMovement != null ||
+    sections.some((s) => s.selectedMovement != null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();

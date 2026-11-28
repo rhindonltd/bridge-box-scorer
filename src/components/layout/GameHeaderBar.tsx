@@ -12,6 +12,8 @@ type Props = {
   hideBack?: boolean;
   backFallbackHref?: string;
   headerRight?: React.ReactNode;
+  /** Leave the right-hand slot empty, even on a manage route. */
+  hideHeaderMenu?: boolean;
 };
 
 export function GameHeaderBar({
@@ -21,6 +23,7 @@ export function GameHeaderBar({
   hideBack,
   backFallbackHref,
   headerRight,
+  hideHeaderMenu,
 }: Props) {
   const { game } = useRequiredGame();
   const pathname = usePathname();
@@ -36,9 +39,12 @@ export function GameHeaderBar({
   // it (the explicit value wins); otherwise, on a manage route, default to the
   // switch. Non-manage game screens (play/display/settings) are unaffected.
   const onManageRoute = /\/game\/[^/]+\/manage(\/|$)/.test(pathname ?? "");
-  const resolvedHeaderRight =
-    headerRight ??
-    (onManageRoute ? <ManageHeaderSwitch gameId={game.gameId} /> : undefined);
+  const resolvedHeaderRight = hideHeaderMenu
+    ? undefined
+    : (headerRight ??
+      (onManageRoute ? (
+        <ManageHeaderSwitch gameId={game.gameId} />
+      ) : undefined));
 
   return (
     <HeaderBar

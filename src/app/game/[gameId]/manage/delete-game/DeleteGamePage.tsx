@@ -8,11 +8,17 @@ import { GamePageLayout } from "@/components/layout/GamePageLayout";
 interface DeleteGamePageProps {
   onGameDeleted: () => void;
   onCancel: () => void;
+  /**
+   * Opened from the game setup menu, whose screens have no hamburger: the
+   * page then leaves out the manage screens' header menu too.
+   */
+  fromSetup?: boolean;
 }
 
 export function DeleteGamePage({
   onGameDeleted,
   onCancel,
+  fromSetup = false,
 }: DeleteGamePageProps) {
   const { game } = useRequiredGame();
 
@@ -52,6 +58,7 @@ export function DeleteGamePage({
       headerTitle="Delete Game"
       centerContent={true}
       backAction={onCancel}
+      hideHeaderMenu={fromSetup}
       actions={
         <div className="flex flex-col gap-3 pt-4">
           <button

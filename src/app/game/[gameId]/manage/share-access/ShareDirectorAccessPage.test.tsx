@@ -14,17 +14,20 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
     actions,
     backAction,
     backFallbackHref,
+    hideHeaderMenu,
   }: {
     headerTitle: string;
     children: React.ReactNode;
     actions?: React.ReactNode;
     backAction?: () => void;
     backFallbackHref?: string;
+    hideHeaderMenu?: boolean;
   }) => (
     <div
       data-testid="layout"
       data-has-back-action={String(backAction != null)}
       data-back-fallback={backFallbackHref ?? ""}
+      data-hide-header-menu={String(hideHeaderMenu)}
     >
       <h1>{headerTitle}</h1>
       {children}
@@ -59,6 +62,22 @@ describe("ShareDirectorAccessPage", () => {
     await screen.findByText("ABCD");
   });
 
+  it("keeps the header menu unless opened from game setup", async () => {
+    mockGenerateShareCode.mockResolvedValue("ABCD");
+    const { unmount } = render(<ShareDirectorAccessPage gameId="g1" />);
+    expect(screen.getByTestId("layout")).toHaveAttribute(
+      "data-hide-header-menu",
+      "false",
+    );
+    await screen.findByText("ABCD");
+    unmount();
+    render(<ShareDirectorAccessPage gameId="g1" fromSetup />);
+    expect(screen.getByTestId("layout")).toHaveAttribute(
+      "data-hide-header-menu",
+      "true",
+    );
+    await screen.findByText("ABCD");
+  });
   it("requests a code on mount and displays it", async () => {
     mockGenerateShareCode.mockResolvedValue("ABCD");
 

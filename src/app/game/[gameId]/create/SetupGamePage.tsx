@@ -9,18 +9,12 @@ import { useRouter } from "next/navigation";
 import { createFlow, useFlow } from "@/hooks/flow";
 import { useRequiredGame } from "@/context/GameContext";
 import { GamePageLayout } from "@/components/layout/GamePageLayout";
-import {
-  HeaderMenu,
-  type HeaderMenuItem,
-} from "@/components/layout/HeaderMenu";
-import { useShareDirectorAccessItem } from "@/components/game/useShareDirectorAccessItem";
 import { MovementStep } from "@/components/manage/sections/MovementStep";
 import { TimerSetup } from "@/app/game/[gameId]/manage/timer/TimerSetup";
 
 /**
  * The screens of the game setup flow. "menu" is the landing page (the default,
- * with no `?step=`); the others are the pages its buttons and the hamburger
- * menu open.
+ * with no `?step=`); the others are the pages its buttons open.
  */
 export type SetupStep = "menu" | "tables" | "movements" | "timer" | "start";
 
@@ -57,13 +51,14 @@ export function SetupGamePage() {
   const goTo = rawGoTo;
 
   // The step pages are reached from the setup menu page and return to it with
-  // the back arrow, so their hamburger only holds Share Director Access.
-  const shareItem = useShareDirectorAccessItem(game.gameId);
+  // the back arrow; every setup action is a button on that menu, so none of
+  // them has a hamburger.
+  // Delete Game and Share Director Access are manage screens; opened from
+  // setup they leave out the manage hamburger too.
   const deleteGame = () =>
-    router.push(`/game/${game.gameId}/manage/delete-game`);
-  const menuItems: HeaderMenuItem[] = [shareItem];
-
-  const menu = <HeaderMenu items={menuItems} label="Setup menu" />;
+    router.push(`/game/${game.gameId}/manage/delete-game?from=setup`);
+  const shareAccess = () =>
+    router.push(`/game/${game.gameId}/manage/share-access?from=setup`);
 
   // Back from Tables, Movement or Timer returns to the setup menu.
   const handleSetupBack = () => rawGoTo("menu");
@@ -85,14 +80,14 @@ export function SetupGamePage() {
         onMovementClick={() => goTo("movements")}
         onTimerClick={() => goTo("timer")}
         onStartGameClick={() => goTo("start")}
-        onShareAccessClick={shareItem.onSelect}
+        onShareAccessClick={shareAccess}
         onDeleteGameClick={deleteGame}
       />
     );
   }
 
   if (step === "tables") {
-    return <ShowTablesPage menu={menu} backAction={handleSetupBack} />;
+    return <ShowTablesPage backAction={handleSetupBack} />;
   }
 
   if (step === "movements") {
@@ -100,11 +95,7 @@ export function SetupGamePage() {
     // step fills the remaining height and owns its own scrolling so the pills
     // stay pinned while only the recommendations scroll.
     return (
-      <GamePageLayout
-        headerTitle="Movement"
-        headerRight={menu}
-        backAction={handleSetupBack}
-      >
+      <GamePageLayout headerTitle="Movement" backAction={handleSetupBack}>
         {/* Selecting a movement stays on the Movement screen: the popup closes
             and the (now highlighted) selection remains visible, rather than
             jumping to another step. */}
@@ -116,17 +107,13 @@ export function SetupGamePage() {
   if (step === "start") {
     // Start-check issues (grouped by section) + the Start Game action. This
     // screen owns its own layout (header + pinned Start Game button).
-    return <StartGameScreen menu={menu} onBack={handleSetupBack} />;
+    return <StartGameScreen onBack={handleSetupBack} />;
   }
 
   // Optional timer configuration. Reuses the shared TimerSetup embedded;
   // configuring a timer here is never required to start the game.
   return (
-    <GamePageLayout
-      headerTitle="Timer"
-      headerRight={menu}
-      backAction={handleSetupBack}
-    >
+    <GamePageLayout headerTitle="Timer" backAction={handleSetupBack}>
       <TimerSetup embedded />
     </GamePageLayout>
   );

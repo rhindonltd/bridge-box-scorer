@@ -28,11 +28,14 @@ export interface EventDetailsUpdate {
  * any structural field actually changes, the selected movement is cleared so
  * the director re-picks one that fits; the name/director/toggles never touch
  * it. Only valid before the game is started (no boards are materialised yet).
+ *
+ * Returns whether the structure changed, so the caller can also clear each
+ * section's movement (stored in the game's own database).
  */
 export async function updateEventDetails(
   gameId: string,
   update: EventDetailsUpdate,
-): Promise<void> {
+): Promise<{ structuralChange: boolean }> {
   const db = getDb();
 
   const current = await findGameById(gameId);
@@ -74,4 +77,5 @@ export async function updateEventDetails(
       ...(structuralChange ? { selectedMovement: null } : {}),
     })
     .where(eq(games.gameId, gameId));
+  return { structuralChange };
 }

@@ -289,11 +289,6 @@ describe("ShowTablesPage", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders the setup menu passed via the menu slot", () => {
-    render(<ShowTablesPage menu={<div>setup menu</div>} />);
-    expect(screen.getByText("setup menu")).toBeInTheDocument();
-  });
-
   it("maps participants into occupied tables and exposes a sync selector", () => {
     currentPairs = [pairAt("A1NS"), pairAt("A1EW")];
 

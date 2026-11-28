@@ -108,4 +108,23 @@ describe("GameHeaderBar", () => {
       screen.queryByRole("button", { name: "Join" }),
     ).not.toBeInTheDocument();
   });
+  it("leaves the slot empty when asked, even on a manage route", () => {
+    mockGame.mockReturnValue({
+      gameId: "g1",
+      eventName: "Spring Pairs",
+      sectionName: "",
+    });
+    mockPathname.mockReturnValue("/game/g1/manage/share-access");
+    render(
+      <GameHeaderBar
+        headerTitle="Share Director Access"
+        headerRight={<span>Custom</span>}
+        hideHeaderMenu
+      />,
+    );
+    expect(screen.queryByText("Custom")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Join" }),
+    ).not.toBeInTheDocument();
+  });
 });

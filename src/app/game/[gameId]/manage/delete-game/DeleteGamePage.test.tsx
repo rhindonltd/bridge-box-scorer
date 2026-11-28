@@ -21,13 +21,15 @@ vi.mock("@/components/layout/GamePageLayout", () => ({
     actions,
     children,
     backAction,
+    hideHeaderMenu,
   }: {
     headerTitle: string;
     actions?: React.ReactNode;
     children: React.ReactNode;
     backAction?: () => void;
+    hideHeaderMenu?: boolean;
   }) => (
-    <div>
+    <div data-testid="layout" data-hide-header-menu={String(hideHeaderMenu)}>
       {backAction && (
         <button aria-label="Go back" onClick={backAction} type="button" />
       )}
@@ -158,6 +160,23 @@ describe("DeleteGamePage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Network error. Please try again.",
+    );
+  });
+  it("keeps the header menu unless opened from game setup", () => {
+    const { unmount } = render(
+      <DeleteGamePage onGameDeleted={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(screen.getByTestId("layout")).toHaveAttribute(
+      "data-hide-header-menu",
+      "false",
+    );
+    unmount();
+    render(
+      <DeleteGamePage onGameDeleted={vi.fn()} onCancel={vi.fn()} fromSetup />,
+    );
+    expect(screen.getByTestId("layout")).toHaveAttribute(
+      "data-hide-header-menu",
+      "true",
     );
   });
 });

@@ -89,11 +89,9 @@ After you create a game, or pick one that is still being set up under
 You can do them in any order. The back arrow (top-left) on each page returns to
 this menu, so to move from one page to another go back and tap the next button.
 The back arrow on the menu itself returns to the list of games not yet started.
-The top-right menu on Tables, Movement, Timer and Start Game only has **Share
-Director Access**.
-
-The menu itself has no top-right menu. To get back to the main menu, use the back arrow: from the menu to the list of games not
-yet started, then once more.
+Neither the menu nor the pages it opens have a top-right menu. To get back to
+the main menu, use the back arrow: from the menu to the list of games not yet
+started, then once more.
 
 **Game Details** is pre-filled with what you set when creating the game: the
 event name, director, event type, scoring, tournament level, and the Record
@@ -102,8 +100,9 @@ return to the menu, or use its back arrow to return without changes. You can com
 **Create Game** on the main menu, until it is started.
 
 > **Note:** changing the **event type** or **scoring** here clears the movement
-> you've already selected (the two have to match), so you'll be asked to confirm
-> and will need to pick a movement again on the Movements tab.
+> you've already selected in every section (the two have to match), and any
+> timer you set up for it, so you'll be asked to confirm and will need to pick a
+> movement again on the Movements tab.
 
 ### Tables tab
 

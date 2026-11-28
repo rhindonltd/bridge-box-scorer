@@ -7,6 +7,8 @@ import { success } from "@/lib/api/success";
 import { respondToActionError } from "@/lib/api/client-error";
 import { updateCombinedRanking } from "@/db/game-index/actions/update-combined-ranking";
 import { updateEventDetails } from "@/db/game-index/actions/update-event-details";
+import { clearSectionMovements } from "@/services/clear-section-movements";
+import { broadcastSectionMovementChanged } from "@/socket/broadcast/section-broadcast";
 import { GameTypes, GameFormats, ScoringTypes } from "@/model/game-types";
 import { broadcastGameUpdated } from "@/socket/broadcast/game-broadcast";
 import { broadcastLeaderboardChanged } from "@/socket/handlers/results/broadcast-results";
@@ -71,7 +73,7 @@ export const PATCH = withDirectorEditRoute(
         (k) => body[k] !== undefined,
       );
       if (hasEventDetails) {
-        await updateEventDetails(gameId, {
+        const { structuralChange } = await updateEventDetails(gameId, {
           eventName: body.eventName,
           director: body.director,
           gameType: body.gameType,
@@ -80,6 +82,21 @@ export const PATCH = withDirectorEditRoute(
           leadCardRequired: body.leadCardRequired,
           handEntryEnabled: body.handEntryEnabled,
         });
+        // The movement each section chose may not fit the new event type or
+        // scoring: clear them, resetting each section's timer as a movement
+        // change does.
+        if (structuralChange) {
+          for (const { section, previous } of await clearSectionMovements(
+            gameId,
+          )) {
+            await broadcastSectionMovementChanged(
+              gameId,
+              section,
+              previous,
+              null,
+            );
+          }
+        }
       }
 
       await broadcastGameUpdated(gameId);

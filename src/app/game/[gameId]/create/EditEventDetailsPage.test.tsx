@@ -8,6 +8,11 @@ vi.mock("@/lib/game-service", () => ({
 
 const mockMutateGame = vi.fn();
 let mockGame: Record<string, unknown>;
+// The sections' movements, as the Movement step chose them.
+let mockSections: { section: string; selectedMovement: unknown }[] = [];
+vi.mock("@/hooks/sections", () => ({
+  useSections: () => ({ sections: mockSections }),
+}));
 vi.mock("@/context/GameContext", () => ({
   useRequiredGame: () => ({ game: mockGame, mutateGame: mockMutateGame }),
 }));
@@ -34,6 +39,7 @@ describe("EditEventDetailsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGame = baseGame();
+    mockSections = [];
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
@@ -104,6 +110,21 @@ describe("EditEventDetailsPage", () => {
     );
   });
 
+  it("confirms before a structural change when a section has a movement", () => {
+    // The Movement step chooses a movement per section, not on the game.
+    mockSections = [
+      { section: "A", selectedMovement: null },
+      { section: "B", selectedMovement: { source: "MITCHELL" } },
+    ];
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<EditEventDetailsPage onDone={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Event Type"), {
+      target: { value: "TEAMS" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(mockUpdateEventDetails).not.toHaveBeenCalled();
+  });
   it("aborts the save when the clear-movement confirm is declined", () => {
     mockGame = baseGame({ selectedMovement: '{"source":"MITCHELL"}' });
     vi.spyOn(window, "confirm").mockReturnValue(false);
