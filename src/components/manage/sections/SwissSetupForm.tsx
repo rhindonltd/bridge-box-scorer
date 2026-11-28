@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StepperInput } from "@/components/common/StepperInput";
+import { OddRoundOptionInfo } from "./OddRoundOptionInfo";
 import type {
   SwissMovementSpec,
   SwissPairsOddRound,
@@ -147,24 +148,35 @@ export function SwissSetupForm({
               If you have an odd number of pairs, how should each round handle
               the odd pair?
             </legend>
-            <p className="text-xs text-gray-600">
-              <span className="font-medium">Bye</span>: one pair sits out (the
-              lowest-ranked pair without a prior bye) and is credited an
-              average-plus result.{" "}
-              <span className="font-medium">Half matches</span>: three pairs
-              play two half matches (one pair plays the full round against a
-              different opponent in each half). This only applies if your field
-              is odd.
-            </p>
             <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
                   <th className="w-14 px-2 py-1.5 text-left font-medium">
                     Round
                   </th>
-                  <th className="px-2 py-1.5 text-center font-medium">Bye</th>
                   <th className="px-2 py-1.5 text-center font-medium">
-                    Half matches
+                    <OddRoundOptionInfo option="Bye">
+                      <p>
+                        One pair sits out the round: the lowest-ranked pair that
+                        hasn&apos;t yet had a bye. They are credited an
+                        average-plus result for the round.
+                      </p>
+                      <p>This only applies if your field is odd.</p>
+                    </OddRoundOptionInfo>
+                  </th>
+                  <th className="px-2 py-1.5 text-center font-medium">
+                    <OddRoundOptionInfo option="Half matches">
+                      <p>
+                        Three pairs play two half matches at one table, so no
+                        pair sits out the whole round. One pair plays the full
+                        round, against a different opponent in each half.
+                      </p>
+                      <p>
+                        The other two pairs each play one half, and are credited
+                        an average-plus result for the half they miss.
+                      </p>
+                      <p>This only applies if your field is odd.</p>
+                    </OddRoundOptionInfo>
                   </th>
                 </tr>
               </thead>

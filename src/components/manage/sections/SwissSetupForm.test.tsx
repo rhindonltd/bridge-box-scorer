@@ -149,6 +149,20 @@ describe("SwissSetupForm", () => {
     ).toBeChecked();
   });
 
+  it("explains each option from an info button on its column heading", async () => {
+    renderForm();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "What does Half matches mean?" }),
+    );
+    expect(await screen.findByRole("dialog")).toHaveTextContent(
+      /two half matches/,
+    );
+    expect(
+      screen.getByRole("button", { name: "What does Bye mean?" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows a disabled Saving button while a save is in flight", () => {
     renderForm({ saving: true });
     expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();

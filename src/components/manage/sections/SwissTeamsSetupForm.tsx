@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { StepperInput } from "@/components/common/StepperInput";
+import { OddRoundOptionInfo } from "./OddRoundOptionInfo";
 import type {
   SwissTeamsMovementSpec,
   SwissTeamsOddRound,
@@ -15,6 +16,45 @@ const KIND_LABEL: Record<RoundKind, string> = {
   BYE: "Bye",
   SHORT: "Short",
   LONG: "Long",
+};
+
+/** What each plan choice means, shown from the info button on its heading. */
+const KIND_INFO: Record<RoundKind, ReactNode> = {
+  BYE: (
+    <p>
+      One team sits out the round: the bottom table first, then the
+      lowest-ranked team that hasn&apos;t had a bye. They are credited an
+      average-plus result for the round.
+    </p>
+  ),
+  SHORT: (
+    <>
+      <p>
+        Three teams play a three-way in this one round, so no team sits out.
+        Each of the three plays both of the others, over half the round&apos;s
+        boards each.
+      </p>
+      <p>
+        The bottom three tables play it first, then the lowest-ranked three
+        teams that haven&apos;t had a three-way recently.
+      </p>
+    </>
+  ),
+  LONG: (
+    <>
+      <p>
+        Three teams play a three-way spread over two rounds, on full sets of
+        boards. Each of the three plays both of the others.
+      </p>
+      <p>
+        Because it takes two rounds, choose Long on two neighbouring rounds.
+      </p>
+      <p>
+        The bottom three tables play it first, then the lowest-ranked three
+        teams that haven&apos;t had a three-way recently.
+      </p>
+    </>
+  ),
 };
 
 /**
@@ -234,31 +274,22 @@ export function SwissTeamsSetupForm({
                 You have an odd number of teams ({teams}). How should each round
                 handle the odd team?
               </legend>
-              <p className="text-xs text-gray-600">
-                <span className="font-medium">Bye</span>: one team sits out (the
-                bottom table first, then the lowest-ranked team that hasn&apos;t
-                had a bye) and is credited an average-plus result.{" "}
-                <span className="font-medium">Short</span> or{" "}
-                <span className="font-medium">Long</span>: three teams play a
-                three-way (the bottom three tables first, then the lowest-ranked
-                three without a recent triple), in one round or over two. A long
-                triple takes two rounds, so pick{" "}
-                <span className="font-medium">Long</span> on two neighbouring
-                rounds.
-              </p>
               <table className="w-full table-fixed text-sm">
                 <thead>
                   <tr className="bg-gray-100 text-xs font-medium uppercase tracking-wide text-gray-600">
                     <th className="w-14 px-2 py-1.5 text-left font-medium">
                       Round
                     </th>
-                    <th className="px-2 py-1.5 text-center font-medium">Bye</th>
-                    <th className="px-2 py-1.5 text-center font-medium">
-                      Short
-                    </th>
-                    <th className="px-2 py-1.5 text-center font-medium">
-                      Long
-                    </th>
+                    {(["BYE", "SHORT", "LONG"] as const).map((kind) => (
+                      <th
+                        key={kind}
+                        className="px-2 py-1.5 text-center font-medium"
+                      >
+                        <OddRoundOptionInfo option={KIND_LABEL[kind]}>
+                          {KIND_INFO[kind]}
+                        </OddRoundOptionInfo>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>

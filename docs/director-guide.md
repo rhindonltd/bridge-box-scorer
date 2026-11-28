@@ -314,7 +314,8 @@ draw each later round during play from the game menu (see
 [Drawing the next Swiss round](#drawing-the-next-swiss-round)).
 
 Below the settings is a table with one row per round, where you choose how
-that round handles an **odd number of pairs**:
+that round handles an **odd number of pairs**. Tap the ⓘ beside a column
+heading to see what that option means:
 
 - **Bye** (the default for every round) — one pair sits out the round and is
   credited an above-average result. Simple, and fine for most club events.
@@ -346,7 +347,8 @@ later round from the standings during play (see
 
 Swiss Teams runs in a single section. With an **even number of teams** every
 round pairs cleanly. With an **odd number of teams** the setup shows a table
-with one row per round, where you choose how that round handles the odd team:
+with one row per round, where you choose how that round handles the odd team.
+Tap the ⓘ beside a column heading to see what that option means:
 
 - **Bye** (the default for every round) — one team sits out the round (the
   lowest-ranked team that hasn't had a bye) and is credited an above-average

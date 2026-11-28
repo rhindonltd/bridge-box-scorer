@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import {
   SwissTeamsSetupForm,
   resolveTeamsOddRoundPlan,
@@ -269,6 +269,25 @@ describe("SwissTeamsSetupForm", () => {
       rounds: 7,
       boardsPerRound: 6,
     });
+  });
+
+  it("explains each option from an info button on its column heading", async () => {
+    renderForm();
+
+    for (const [option, text] of [
+      ["Bye", /sits out the round/],
+      ["Short", /in this one round/],
+      ["Long", /two neighbouring rounds/],
+    ] as const) {
+      fireEvent.click(
+        screen.getByRole("button", { name: `What does ${option} mean?` }),
+      );
+      expect(await screen.findByRole("dialog")).toHaveTextContent(text);
+      fireEvent.click(screen.getByRole("button", { name: "OK" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+      );
+    }
   });
 
   it("shows a disabled Saving button while a save is in flight", () => {
